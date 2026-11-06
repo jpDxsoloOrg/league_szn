@@ -1,12 +1,25 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { videosApi } from '../services/api';
 import type { Video, VideoCategory } from '../types';
 import { toMediaUrl } from '../utils/mediaUrl';
+import Badge from './ui/Badge';
+import type { BadgeTone } from './ui/Badge';
+import Card from './ui/Card';
+import EmptyState from './ui/EmptyState';
+import PageHeader from './ui/PageHeader';
 import Skeleton from './ui/Skeleton';
+import Tabs from './ui/Tabs';
 import './Highlights.css';
 
 const CATEGORIES: (VideoCategory | 'all')[] = ['all', 'match', 'highlight', 'promo', 'other'];
+
+const CATEGORY_TONES: Record<VideoCategory, BadgeTone> = {
+  match: 'primary',
+  highlight: 'pink',
+  promo: 'violet',
+  other: 'neutral',
+};
 
 function VideoCard({ video }: { video: Video }) {
   const { t } = useTranslation();
@@ -14,41 +27,27 @@ function VideoCard({ video }: { video: Video }) {
   const posterUrl = video.thumbnailUrl ? toMediaUrl(video.thumbnailUrl) : undefined;
 
   return (
-    <div className="highlight-card">
-      <div className="highlight-preview">
-        <video
-          controls
-          playsInline
-          preload="metadata"
-          poster={posterUrl}
-          className="highlight-video"
-        >
-          <source src={mediaUrl} />
-          {t('highlights.videoNotSupported')}
-        </video>
-      </div>
+    <Card padding="none" className="highlight-card">
+      <video
+        controls
+        playsInline
+        preload="metadata"
+        poster={posterUrl}
+        className="highlight-video"
+      >
+        <source src={mediaUrl} />
+        {t('highlights.videoNotSupported')}
+      </video>
       <div className="highlight-info">
-        <h3>{video.title}</h3>
+        <h2 className="highlight-title">{video.title}</h2>
         <div className="highlight-meta">
-          <span className={`category-badge category-${video.category}`}>
-            {t(`videos.categories.${video.category}`)}
-          </span>
-          <span className="highlight-date">
-            {new Date(video.createdAt).toLocaleDateString()}
-          </span>
+          <Badge tone={CATEGORY_TONES[video.category]}>{t(`videos.categories.${video.category}`)}</Badge>
+          <span className="highlight-date">{new Date(video.createdAt).toLocaleDateString()}</span>
         </div>
-        {video.description && (
-          <p className="highlight-description">{video.description}</p>
-        )}
-        {video.tags.length > 0 && (
-          <div className="highlight-tags">
-            {video.tags.map((tag) => (
-              <span key={tag} className="tag">{tag}</span>
-            ))}
-          </div>
-        )}
+        {video.description && <p className="highlight-description">{video.description}</p>}
+        {video.tags.length > 0 && <p className="highlight-tags">{video.tags.join(' · ')}</p>}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -56,57 +55,59 @@ export default function Highlights() {
   const { t } = useTranslation();
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
+  // Empty string means the request failed without a usable message.
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<VideoCategory | 'all'>('all');
 
   const loadVideos = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
+      setError(null);
       const category = selectedCategory === 'all' ? undefined : selectedCategory;
       const data = await videosApi.getPublished(category, signal);
-      setVideos(data);
+      if (!signal?.aborted) setVideos(data);
     } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') return;
-      setError(err instanceof Error ? err.message : t('highlights.loadError'));
+      if (!signal?.aborted) setError(err instanceof Error ? err.message : '');
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  }, [selectedCategory, t]);
+  }, [selectedCategory]);
 
   useEffect(() => {
     const controller = new AbortController();
-    loadVideos(controller.signal);
+    void loadVideos(controller.signal);
     return () => controller.abort();
   }, [loadVideos]);
 
   return (
     <div className="highlights-page">
-      <div className="highlights-header">
-        <h1 className="page-title--mobile-hidden">{t('highlights.title')}</h1>
-        <p className="highlights-subtitle">{t('highlights.subtitle')}</p>
-      </div>
+      <PageHeader title={t('highlights.title')} subtitle={t('highlights.subtitle')} />
 
-      <div className="highlights-filters">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat}
-            className={`filter-btn ${selectedCategory === cat ? 'active' : ''}`}
-            onClick={() => setSelectedCategory(cat)}
-          >
-            {cat === 'all' ? t('common.all') : t(`videos.categories.${cat}`)}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        className="highlights-filters"
+        label={t('highlights.title')}
+        value={selectedCategory}
+        onValueChange={(value) => setSelectedCategory(value as VideoCategory | 'all')}
+        items={CATEGORIES.map((category) => ({
+          value: category,
+          label: category === 'all' ? t('common.all') : t(`videos.categories.${category}`),
+        }))}
+      />
 
-      {error && <div className="error-message">{error}</div>}
+      {loading && <Skeleton variant="cards" count={6} />}
 
-      {loading ? (
-        <Skeleton variant="block" count={6} />
-      ) : videos.length === 0 ? (
-        <div className="empty-state">
-          <p>{t('highlights.noVideos')}</p>
-        </div>
-      ) : (
+      {!loading && error !== null && (
+        <EmptyState
+          title={t('highlights.loadError')}
+          description={error || undefined}
+          actionLabel={t('common.retry')}
+          onAction={() => void loadVideos()}
+        />
+      )}
+
+      {!loading && error === null && videos.length === 0 && <EmptyState title={t('highlights.noVideos')} />}
+
+      {!loading && error === null && videos.length > 0 && (
         <div className="highlights-grid">
           {videos.map((video) => (
             <VideoCard key={video.videoId} video={video} />

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // --- Hoisted mocks ---
@@ -16,17 +16,22 @@ vi.mock('../../../services/api', () => ({
 
 import ClearAllData from '../ClearAllData';
 
+type TestUser = ReturnType<typeof userEvent.setup>;
+
+async function confirmInDialog(user: TestUser, name: string) {
+  const dialog = await screen.findByRole('dialog');
+  await user.click(within(dialog).getByRole('button', { name }));
+}
+
 describe('ClearAllData', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Mock window.confirm to return true by default
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   it('renders danger zone styling with warning content and confirmation input', () => {
     render(<ClearAllData />);
 
-    expect(screen.getByText('Data Management')).toBeInTheDocument();
+    expect(screen.getByText('Danger Zone')).toBeInTheDocument();
     expect(screen.getByText('Danger Zone - Clear All Data')).toBeInTheDocument();
     expect(screen.getByText(/This action will permanently delete/)).toBeInTheDocument();
     expect(screen.getByText(/CANNOT/)).toBeInTheDocument();
@@ -82,6 +87,7 @@ describe('ClearAllData', () => {
 
     const clearBtn = screen.getByRole('button', { name: /Clear All Data/i });
     await user.click(clearBtn);
+    await confirmInDialog(user, 'Clear All Data');
 
     await waitFor(() => {
       expect(mockAdminApi.clearAll).toHaveBeenCalledTimes(1);
@@ -112,20 +118,28 @@ describe('ClearAllData', () => {
 
     const clearBtn = screen.getByRole('button', { name: /Clear All Data/i });
     await user.click(clearBtn);
+    await confirmInDialog(user, 'Clear All Data');
 
     await waitFor(() => {
       expect(screen.getByText('Permission denied')).toBeInTheDocument();
     });
   });
 
-  it('shows error when clicking clear without correct confirmation phrase typed', async () => {
+  it('does not clear data when the final warning is cancelled', async () => {
     const user = userEvent.setup();
     render(<ClearAllData />);
 
-    // The button is disabled if text doesn't match, but let's test the handleClearAll
-    // path where somehow the button is clicked with wrong text (e.g., programmatically).
-    // Actually the button is disabled, so we test the seed flow instead for coverage.
-    // Let's verify the seed data flow works.
+    await user.type(screen.getByPlaceholderText('DELETE ALL DATA'), 'DELETE ALL DATA');
+    await user.click(screen.getByRole('button', { name: /Clear All Data/i }));
+    await confirmInDialog(user, 'Cancel');
+
+    expect(mockAdminApi.clearAll).not.toHaveBeenCalled();
+  });
+
+  it('generates sample data and shows the created counts', async () => {
+    const user = userEvent.setup();
+    render(<ClearAllData />);
+
     const seedBtn = screen.getByRole('button', { name: /Generate Sample Data/i });
     mockAdminApi.seedData.mockResolvedValue({
       message: 'Sample data generated',
@@ -142,6 +156,7 @@ describe('ClearAllData', () => {
     });
 
     await user.click(seedBtn);
+    await confirmInDialog(user, 'Generate');
 
     await waitFor(() => {
       expect(mockAdminApi.seedData).toHaveBeenCalledTimes(1);
@@ -162,6 +177,7 @@ describe('ClearAllData', () => {
     render(<ClearAllData />);
     const seedBtn = screen.getByRole('button', { name: /Generate Sample Data/i });
     await user.click(seedBtn);
+    await confirmInDialog(user, 'Generate');
 
     await waitFor(() => {
       expect(mockAdminApi.seedData).toHaveBeenCalledTimes(1);
@@ -184,6 +200,7 @@ describe('ClearAllData', () => {
 
     const seedBtn = screen.getByRole('button', { name: /Generate Sample Data/i });
     await user.click(seedBtn);
+    await confirmInDialog(user, 'Generate');
 
     await waitFor(() => {
       expect(mockAdminApi.seedData).toHaveBeenCalledTimes(1);
@@ -204,6 +221,7 @@ describe('ClearAllData', () => {
 
     const seedBtn = screen.getByRole('button', { name: /Generate Sample Data/i });
     await user.click(seedBtn);
+    await confirmInDialog(user, 'Generate');
 
     await waitFor(() => {
       expect(mockAdminApi.seedData).toHaveBeenCalledTimes(1);
@@ -239,6 +257,7 @@ describe('ClearAllData', () => {
 
     const seedBtn = screen.getByRole('button', { name: /Generate Sample Data/i });
     await user.click(seedBtn);
+    await confirmInDialog(user, 'Generate');
 
     await waitFor(() => {
       expect(mockAdminApi.seedData).toHaveBeenCalledTimes(1);

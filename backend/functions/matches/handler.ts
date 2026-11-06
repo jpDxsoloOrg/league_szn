@@ -8,71 +8,72 @@ import { handler as releaseSlotHandler } from './releaseSlot';
 import { handler as adminUpdateSlotHandler } from './adminUpdateSlot';
 import { handler as setMatchOfTheNightHandler } from './setMatchOfTheNight';
 import { handler as submitRatingHandler } from './submitRating';
-import { createRouter, type RouteConfig } from '../../lib/router';
+import { createRouter, type RouteConfig, STAFF } from '../../lib/router';
 
 /**
  * Single Lambda for matches: routes by HTTP method and resource.
  * Replaces getMatches, scheduleMatch, recordResult, updateMatch, deleteMatch.
  */
-const routes: ReadonlyArray<RouteConfig> = [
+export const routes: ReadonlyArray<RouteConfig> = [
   {
     resource: '/matches',
     method: 'GET',
     handler: getMatchesHandler,
+    access: 'public',
   },
   {
     resource: '/matches',
     method: 'POST',
     handler: scheduleMatchHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/matches/{matchId}/result',
     method: 'PUT',
     handler: recordResultHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/matches/{matchId}/slots/{slotId}/claim',
     method: 'POST',
     handler: claimSlotHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/matches/{matchId}/slots/{slotId}/claim',
     method: 'DELETE',
     handler: releaseSlotHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/matches/{matchId}/slots/{slotId}',
     method: 'PUT',
     handler: adminUpdateSlotHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/matches/{matchId}/motn',
     method: 'PUT',
     handler: setMatchOfTheNightHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/matches/{matchId}/ratings',
     method: 'POST',
     handler: submitRatingHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/matches/{matchId}',
     method: 'PUT',
     handler: updateMatchHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/matches/{matchId}',
     method: 'DELETE',
     handler: deleteMatchHandler,
-    requireAuth: true,
+    access: STAFF,
   },
 ];
 

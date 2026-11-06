@@ -1,180 +1,190 @@
-.standings-row-clickable {
-  cursor: pointer;
+.standings-page {
+  min-width: 0;
 }
 
-.standings-container {
-  width: 100%;
-  max-width: 100%;
-  overflow: hidden;
+.standings-divisions {
+  margin-bottom: 1.5rem;
 }
 
-.standings-header {
+.standings-muted {
+  color: var(--color-text-muted);
+}
+
+.standings-section-header {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
   gap: 1rem;
+  margin-bottom: 0.75rem;
 }
 
-.standings-header h2 {
-  margin: 0;
+.standings-section-header__title {
+  font-size: 1.25rem;
 }
 
-.season-selector {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.season-selector label {
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-}
-
-.season-selector select {
-  padding: 0.5rem 1rem;
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  color: var(--color-text);
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-
-.season-selector select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.season-selector-help {
-  width: 100%;
-  margin-top: 0.1rem;
+.standings-section-header__range {
   color: var(--color-text-muted);
-  font-size: 0.75rem;
-}
-
-.season-badge {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-primary);
-  border-radius: 4px;
-  padding: 0.5rem 1rem;
-  margin-top: 1rem;
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-}
-
-.season-badge strong {
-  color: var(--color-primary);
-}
-
-.standings-table .division-name {
-  color: var(--color-text-secondary);
-}
-
-.standings-table .no-division {
-  color: var(--color-text-muted);
-  font-style: italic;
-}
-
-.no-players-message {
-  text-align: center;
-  color: var(--color-text-secondary);
-  padding: 2rem;
-  font-style: italic;
-}
-
-.standings-table-wrapper {
-  overflow-x: auto;
-  margin-top: 1.5rem;
-}
-
-.standings-table {
-  width: 100%;
-  min-width: 600px;
-}
-
-.standings-table th,
-.standings-table td {
-  text-align: center;
-  padding: 0.5rem 0.4rem;
-}
-
-/* Column widths */
-.standings-table .rank {
-  width: 50px;
-}
-
-.standings-table .image-header,
-.standings-table .wrestler-image-cell {
-  width: 60px;
-}
-
-.standings-table .player-name {
-  width: 14%;
-}
-
-.standings-table .wrestler-name {
-  width: 14%;
-}
-
-.standings-table .psn-id {
-  width: 12%;
-}
-
-.standings-table .division-name {
-  width: 11%;
-}
-
-.standings-table .wins,
-.standings-table .losses,
-.standings-table .draws {
-  width: 55px;
-}
-
-.standings-table .win-percentage {
-  width: 70px;
-}
-
-.standings-table .form-cell {
-  width: 80px;
-}
-
-.standings-table .streak-cell {
-  width: 70px;
-}
-
-/* Truncate text columns that may overflow */
-.standings-table td.player-name,
-.standings-table td.wrestler-name,
-.standings-table td.psn-id,
-.standings-table td.division-name {
-  text-overflow: ellipsis;
-  overflow: hidden;
+  font-size: 0.9375rem;
   white-space: nowrap;
 }
 
-.standings-table td.rank {
-  font-weight: bold;
-  color: var(--color-primary);
-  font-size: 1.1rem;
+.standings-rank {
+  display: inline-block;
+  min-width: 2.25rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-heading);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
 }
 
-.standings-table td.player-name {
-  font-weight: bold;
-  text-align: left;
+.standings-streak {
+  font-weight: 700;
 }
 
-.standings-table .player-name-link {
-  color: inherit;
+.standings-streak--w {
+  color: var(--color-win);
+}
+
+.standings-streak--l {
+  color: var(--color-loss);
+}
+
+.standings-streak--d {
+  color: var(--color-draw);
+}
+
+/* The hover card sits above its row, so the table must not clip it. */
+.standings-table.ui-table-wrap {
+  overflow: visible;
+}
+
+.standings-player {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.standings-player__names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.standings-player__name {
+  color: var(--color-text);
+  font-weight: 600;
   text-decoration: none;
 }
 
-.standings-table .player-name-link:hover {
-  text-decoration: underline;
-  color: var(--color-primary);
+.standings-player__name:hover {
+  color: var(--color-cyan);
 }
 
+.standings-player__wrestler {
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+/* Phone rows */
+.standings-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.standings-row {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: var(--touch-target);
+  padding: 0.75rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.standings-row__names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.standings-row__name,
+.standings-row__wrestler {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.standings-row__name {
+  font-weight: 700;
+}
+
+.standings-row__wrestler {
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.standings-row__stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.standings-row__record {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.standings-row__win-rate {
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+}
+
+.standings-row__form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 768px) {
+  .standings-page .page-header__actions {
+    width: 100%;
+  }
+
+  .standings-select {
+    flex: 1 1 9rem;
+    min-width: 0;
+    padding-inline: 0.75rem;
+  }
+
+  .standings-select > span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Two across cuts the value short on a phone, so each filter gets the row. */
+@media (max-width: 480px) {
+  .standings-select {
+    flex-basis: 100%;
+  }
+}
+
+/*
+ * Shared with the tag team and faction standings, which reuse these names.
+ * Move them to those pages' stylesheets when those pages adopt FormDots.
+ */
 .form-cell,
 .streak-cell {
   text-align: center;
@@ -197,15 +207,15 @@
 }
 
 .form-dot.win {
-  background-color: var(--color-success);
+  background-color: var(--color-win);
 }
 
 .form-dot.loss {
-  background-color: var(--color-danger-alt);
+  background-color: var(--color-loss);
 }
 
 .form-dot.draw {
-  background-color: var(--color-neutral-light);
+  background-color: var(--color-draw);
 }
 
 .form-empty,
@@ -217,388 +227,22 @@
   display: inline-block;
   padding: 0.2em 0.5em;
   border-radius: 4px;
-  font-size: 0.85rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .streak-badge.hot {
-  background: linear-gradient(135deg, #f97316 0%, var(--color-danger) 100%);
-  color: #fff;
+  background-color: var(--tint-win);
+  color: var(--color-win);
 }
 
 .streak-badge.cold {
-  background-color: var(--color-info);
-  color: #fff;
+  background-color: var(--tint-loss);
+  color: var(--color-loss);
 }
 
 .streak-badge.neutral {
-  background-color: var(--color-neutral);
-  color: #fff;
-}
-
-.standings-table td.wrestler-name {
-  text-align: left;
-  color: var(--color-text-secondary);
-}
-
-.standings-table td.wins {
-  color: var(--color-success);
-  font-weight: bold;
-}
-
-.standings-table td.losses {
-  color: var(--color-danger-alt);
-  font-weight: bold;
-}
-
-.standings-table td.draws {
-  color: var(--color-warning);
-}
-
-.standings-table td.win-percentage {
-  font-weight: bold;
-}
-
-.standings-table td.wrestler-image-cell {
-  padding: 0.25rem;
-}
-
-.standings-table .wrestler-thumbnail {
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
-  border-radius: 4px;
-  border: 1px solid var(--color-border);
-}
-
-.standings-table .no-image-placeholder {
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--color-surface);
-  border: 1px dashed var(--color-border);
-  border-radius: 4px;
-  color: var(--color-text-muted);
-  font-size: 0.875rem;
-}
-
-.loading, .error, .empty-state {
-  text-align: center;
-  padding: 2rem;
-}
-
-.error p {
-  color: var(--color-danger-alt);
-  margin-bottom: 1rem;
-}
-
-/* Mobile card list — rendered instead of the table below 768px (the
-   useMediaQuery switch in Standings.tsx, matching the mobile app shell).
-   Cards keep record, form, and streak visible without horizontal
-   scrolling. Layout follows docs/design/mobile-app/league-standings. */
-.standings-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.standings-card {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  padding: 0.85rem 0.9rem;
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  cursor: pointer;
-}
-
-.standings-card:active {
-  border-color: var(--color-primary);
-}
-
-/* Big condensed rank numeral — muted for the pack, gold for the top 3.
-   Cards are always rendered in rank order, so nth-child == rank. */
-.standings-card-rank {
-  flex: 0 0 2.4rem;
-  text-align: center;
-  font-weight: 800;
-  font-stretch: condensed;
-  font-size: 1.7rem;
-  line-height: 1;
-  color: var(--color-text-muted);
-}
-
-.standings-cards .standings-card:nth-child(-n + 3) .standings-card-rank {
-  color: var(--color-primary);
-}
-
-.standings-cards .standings-card:nth-child(-n + 3) {
-  border-color: var(--color-primary);
-  border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
-}
-
-.standings-card-avatar {
-  flex: 0 0 48px;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--color-border);
-}
-
-.standings-cards .standings-card:nth-child(-n + 3) .standings-card-avatar {
-  border-color: var(--color-primary);
-}
-
-.standings-card-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.standings-card-name {
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--color-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.standings-card-wrestler {
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.standings-card-stats {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.2rem;
-  font-size: 0.82rem;
-}
-
-.standings-card-record {
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.standings-card-winpct {
-  font-weight: 600;
-  color: var(--color-text-secondary);
-}
-
-/* OVR number in a gold-bordered rounded square on the right (overrides the
-   gold-filled .overall-badge-sm used by the desktop table). */
-.standings-card .standings-card-ovr {
-  flex-shrink: 0;
-  background: transparent;
-  border: 1px solid var(--color-primary);
-  color: var(--color-primary);
-  border-radius: 8px;
-  padding: 6px 8px;
-  font-size: 0.95rem;
-  line-height: 1;
-}
-
-@media (max-width: 768px) {
-  .standings-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .standings-table {
-    min-width: 500px;
-  }
-
-  .standings-table th,
-  .standings-table td {
-    padding: 0.5rem 0.25rem;
-    font-size: 0.8rem;
-  }
-
-  .standings-table .wrestler-thumbnail {
-    width: 36px;
-    height: 36px;
-  }
-
-  .standings-table .no-image-placeholder {
-    width: 36px;
-    height: 36px;
-    font-size: 0.75rem;
-  }
-
-  .standings-table .image-header,
-  .standings-table .wrestler-image-cell {
-    width: 44px;
-    padding: 0.25rem;
-  }
-
-  .form-dot {
-    width: 8px;
-    height: 8px;
-  }
-
-  .streak-badge {
-    font-size: 0.75rem;
-    padding: 0.15em 0.4em;
-  }
-}
-
-/* Alignment badge in standings */
-.alignment-badge {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 0.4rem;
-  font-size: 0.85rem;
-  vertical-align: middle;
-  cursor: default;
-}
-
-/* Filter row — division + alignment on one line */
-.standings-filters {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-}
-
-.standings-filters .division-filter {
-  margin-top: 0;
-  margin-bottom: 0;
-}
-
-/* Alignment filter */
-.alignment-filter {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.alignment-filter-label {
-  color: var(--color-text-secondary);
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-}
-
-.alignment-filter-select {
-  padding: 0.35rem 0.75rem;
-  background-color: var(--color-surface, #1a1a1a);
-  border: 1px solid var(--color-border, #333);
-  border-radius: 6px;
-  color: var(--color-text, #e8e8e8);
-  font-size: 0.875rem;
-  cursor: pointer;
-  min-width: 140px;
-  appearance: auto;
-}
-
-.alignment-filter-select:focus {
-  outline: 2px solid var(--color-primary, #d4af37);
-  outline-offset: 2px;
-}
-
-@media (max-width: 768px) {
-  .alignment-filter-select {
-    font-size: 0.8rem;
-  }
-}
-
-/* Mobile filter chips — horizontally scrollable pill rows rendered instead
-   of the select-based filters below 768px (isMobile switch in Standings.tsx). */
-.standings-filter-chips {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  margin-top: 1rem;
-}
-
-.filter-chip-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding-bottom: 2px;
-}
-
-.filter-chip-row::-webkit-scrollbar {
-  display: none;
-}
-
-.filter-chip {
-  flex-shrink: 0;
-  padding: 0.5rem 1.1rem;
-  border-radius: 999px;
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.filter-chip.selected {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-on-primary);
-  font-weight: 700;
-}
-
-.filter-chip:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.overall-cell {
-  text-align: center;
-}
-
-.overall-badge-sm {
-  display: inline-block;
-  background: var(--gold, #d4a017);
-  color: #000;
-  font-weight: 700;
-  font-size: 0.85rem;
-  padding: 2px 6px;
-  border-radius: 4px;
-  min-width: 2rem;
-  text-align: center;
-}
-
-/* Small pill shown next to a player's wrestler name when they haven't
-   claimed a roster entry yet. */
-.needs-wrestler-pill {
-  display: inline-block;
-  margin-left: 0.5rem;
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--color-warning-text, #6b4e00);
-  background: var(--color-warning-bg, #fff5d9);
-  border: 1px solid var(--color-warning, #d4a400);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  vertical-align: middle;
+  background-color: var(--color-overlay-soft);
+  color: var(--color-draw);
 }

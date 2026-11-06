@@ -1,4 +1,6 @@
 import { dynamoDb, TableNames } from './dynamodb';
+import { matchWinners } from './matchResult';
+import { isPlayerVisible } from './needsWrestler';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -12,10 +14,16 @@ export interface RankingCalculationParams {
   seasonId: string;
   minimumMatches: number;
   maxContenders: number;
+  /**
+   * Players who get a row even when they would not qualify on merit, as long
+   * as they could contend for the title at all. Their rows follow the top N.
+   */
+  alwaysIncludePlayerIds?: readonly string[];
 }
 
 export interface RankingResult {
   playerId: string;
+  /** Position on merit, or 0 for a player below the minimum-match threshold. */
   rank: number;
   rankingScore: number;
   winPercentage: number;
@@ -33,6 +41,7 @@ interface MatchRecord {
   participants: string[];
   winners: string[];
   losers: string[];
+  isDraw?: boolean;
   status: string;
   seasonId?: string;
 }
@@ -66,7 +75,9 @@ const RECENCY_DECAY_DAYS = 30;
  *   - Recency weighting     (15%)
  *
  * The current champion and players below the minimum-match threshold are
- * excluded from the results.
+ * excluded from the results. `alwaysIncludePlayerIds` adds rows past the top N
+ * for the eligible players it names, whatever their record. Anyone who may not
+ * contend for this title gets no row, so no later step can place them.
  */
 export async function calculateRankingsForChampionship(
   params: RankingCalculationParams,
@@ -77,22 +88,28 @@ export async function calculateRankingsForChampionship(
     seasonId,
     minimumMatches = 3,
     maxContenders = 10,
+    alwaysIncludePlayerIds = [],
   } = params;
 
   // ------------------------------------------------------------------
-  // 1a. If championship is division-locked, fetch eligible player IDs
+  // 1a. Fetch eligible player IDs. Matches keep the ids of deleted players,
+  //     so a candidate must still be a live player, shown on the roster, and
+  //     on a division-locked title a member of that division. A hidden player
+  //     would otherwise hold a slot that the read then drops.
   // ------------------------------------------------------------------
-  let divisionPlayerIds: Set<string> | null = null;
-  if (divisionId) {
-    const allPlayers = await dynamoDb.scanAll({
-      TableName: TableNames.PLAYERS,
-      FilterExpression: 'divisionId = :divisionId',
-      ExpressionAttributeValues: { ':divisionId': divisionId },
-    });
-    divisionPlayerIds = new Set(
-      allPlayers.map((p) => p.playerId as string),
-    );
-  }
+  const allPlayers = await dynamoDb.scanAll({
+    TableName: TableNames.PLAYERS,
+    ProjectionExpression: 'playerId, divisionId, deletedAt, currentWrestler',
+  });
+  const eligiblePlayerIds = new Set(
+    allPlayers
+      .filter((p) => (
+        !p.deletedAt
+        && isPlayerVisible({ currentWrestler: p.currentWrestler as string | undefined })
+        && (!divisionId || p.divisionId === divisionId)
+      ))
+      .map((p) => p.playerId as string),
+  );
 
   // ------------------------------------------------------------------
   // 1b. Fetch all completed matches in the active season
@@ -110,10 +127,6 @@ export async function calculateRankingsForChampionship(
   });
 
   const matches: MatchRecord[] = allMatches as unknown as MatchRecord[];
-
-  if (matches.length === 0) {
-    return [];
-  }
 
   // ------------------------------------------------------------------
   // 2. Build per-player match lists and aggregate stats
@@ -138,7 +151,7 @@ export async function calculateRankingsForChampionship(
       const stats = playerStats.get(playerId)!;
       stats.total += 1;
 
-      if (match.winners.includes(playerId)) {
+      if (matchWinners(match).includes(playerId)) {
         stats.wins += 1;
       } else if (match.losers.includes(playerId)) {
         stats.losses += 1;
@@ -163,6 +176,8 @@ export async function calculateRankingsForChampionship(
   // 4. Score each eligible player
   // ------------------------------------------------------------------
   const scoredPlayers: RankingResult[] = [];
+  const alwaysIncluded = new Set(alwaysIncludePlayerIds);
+  const belowThreshold: RankingResult[] = [];
 
   for (const [playerId, playerMatches] of playerMatchMap.entries()) {
     // Exclude the current champion
@@ -170,13 +185,16 @@ export async function calculateRankingsForChampionship(
       continue;
     }
 
-    // Exclude players not in the championship's division
-    if (divisionPlayerIds && !divisionPlayerIds.has(playerId)) {
+    // Exclude deleted players and anyone outside the championship's division
+    if (!eligiblePlayerIds.has(playerId)) {
       continue;
     }
 
     // Exclude players who have not met the minimum-match threshold
     if (playerMatches.length < minimumMatches) {
+      if (alwaysIncluded.has(playerId)) {
+        belowThreshold.push(calculatePlayerScore(playerId, playerMatches, playerStats));
+      }
       continue;
     }
 
@@ -189,14 +207,41 @@ export async function calculateRankingsForChampionship(
   // ------------------------------------------------------------------
   scoredPlayers.sort((a, b) => b.rankingScore - a.rankingScore);
 
-  const topContenders = scoredPlayers.slice(0, maxContenders);
-
   // Assign final rank positions (1-indexed)
-  for (let i = 0; i < topContenders.length; i++) {
-    topContenders[i].rank = i + 1;
+  for (let i = 0; i < scoredPlayers.length; i++) {
+    scoredPlayers[i].rank = i + 1;
   }
 
-  return topContenders;
+  const topContenders = scoredPlayers.slice(0, maxContenders);
+  const beyondTop = scoredPlayers
+    .slice(maxContenders)
+    .filter((player) => alwaysIncluded.has(player.playerId));
+
+  // An eligible player with no matches in the season has nothing to score.
+  const noMatches = [...alwaysIncluded]
+    .filter((playerId) => (
+      eligiblePlayerIds.has(playerId)
+      && !championIds.has(playerId)
+      && !playerMatchMap.has(playerId)
+    ))
+    .map(emptyRanking);
+
+  return [...topContenders, ...beyondTop, ...belowThreshold, ...noMatches];
+}
+
+/** The row for a player with no matches in the period. */
+function emptyRanking(playerId: string): RankingResult {
+  return {
+    playerId,
+    rank: 0,
+    rankingScore: 0,
+    winPercentage: 0,
+    currentStreak: 0,
+    qualityScore: 0,
+    recencyScore: 0,
+    matchesInPeriod: 0,
+    winsInPeriod: 0,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -217,7 +262,7 @@ export function calculatePlayerScore(
   playerMatches: MatchRecord[],
   allPlayers: Map<string, PlayerStats>,
 ): RankingResult {
-  const wins = playerMatches.filter((m) => m.winners.includes(playerId));
+  const wins = playerMatches.filter((m) => matchWinners(m).includes(playerId));
   const totalMatches = playerMatches.length;
 
   // ----- Win Percentage (0-100) -----
@@ -274,7 +319,7 @@ export function calculatePlayerScore(
     );
     const weight = Math.exp(-daysSinceMatch / RECENCY_DECAY_DAYS);
 
-    const isWin = match.winners.includes(playerId) ? 1 : 0;
+    const isWin = matchWinners(match).includes(playerId) ? 1 : 0;
     weightedWinSum += isWin * weight;
     weightSum += weight;
   }
@@ -316,7 +361,8 @@ export function calculatePlayerScore(
  *
  * Returns a positive number for a win streak (e.g. 4 means four consecutive
  * wins) and a negative number for a loss streak (e.g. -2 means two
- * consecutive losses).
+ * consecutive losses). A draw ends either kind of streak, the same as the
+ * streaks on the statistics pages, so a draw as the latest match returns 0.
  */
 export function calculateCurrentStreak(
   matches: MatchRecord[],
@@ -332,11 +378,12 @@ export function calculateCurrentStreak(
   }
 
   // Determine direction from the most recent match
-  const firstIsWin = sorted[0].winners.includes(playerId);
+  const firstIsWin = matchWinners(sorted[0]).includes(playerId);
   let streak = 0;
 
   for (const match of sorted) {
-    const isWin = match.winners.includes(playerId);
+    if (match.isDraw) break;
+    const isWin = matchWinners(match).includes(playerId);
     if (isWin === firstIsWin) {
       streak += 1;
     } else {
@@ -345,5 +392,5 @@ export function calculateCurrentStreak(
   }
 
   // Positive for wins, negative for losses
-  return firstIsWin ? streak : -streak;
+  return firstIsWin ? streak : 0 - streak;
 }

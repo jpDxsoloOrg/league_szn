@@ -7,9 +7,10 @@ import {
   AdminGetUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { success, badRequest, forbidden, serverError } from '../../lib/response';
+import { parseBody } from '../../lib/parseBody';
 import { requireRole, getAuthContext, isSuperAdmin } from '../../lib/auth';
 import { getRepositories } from '../../lib/repositories';
-import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
+import { NEEDS_WRESTLER, newPlayerName } from '../../lib/needsWrestler';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
@@ -21,15 +22,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   if (denied) return denied;
 
   try {
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    const { username, role, action } = JSON.parse(event.body) as {
+    const { data: body, error: parseError } = parseBody<{
       username: string;
       role: string;
       action: 'promote' | 'demote';
-    };
+    }>(event);
+    if (parseError) return parseError;
+    const { username, role, action } = body;
 
     if (!username || !role || !action) {
       return badRequest('username, role, and action are required');
@@ -70,6 +69,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           const attrs = userResult.UserAttributes || [];
           const sub = attrs.find((a) => a.Name === 'sub')?.Value;
           const wrestlerName = attrs.find((a) => a.Name === 'custom:wrestler_name')?.Value || '';
+          const playerName = attrs.find((a) => a.Name === 'custom:player_name')?.Value;
+          const psnId = attrs.find((a) => a.Name === 'custom:psn_id')?.Value;
 
           if (!sub) {
             console.error('User sub attribute missing for username:', username);
@@ -82,8 +83,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
           if (!existingPlayer) {
             const newPlayer = await players.create({
-              name: '',
+              name: newPlayerName(playerName, wrestlerName, sub),
               currentWrestler: wrestlerName || NEEDS_WRESTLER,
+              psnId: psnId || undefined,
             });
             await players.update(newPlayer.playerId, {
               userId: sub,

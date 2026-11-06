@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -6,6 +6,14 @@ import { usePresence } from '../../contexts/PresenceContext';
 import { matchmakingApi } from '../../services/api/matchmaking.api';
 import { stipulationsApi } from '../../services/api/stipulations.api';
 import type { MatchInvitation, QueueEntry } from '../../types/matchmaking';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
+import Avatar from '../ui/Avatar';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import Skeleton from '../ui/Skeleton';
+import { useVisiblePolling } from './useVisiblePolling';
+import '../MeForms.css';
 import './FindMatchWidget.css';
 
 const POLL_INTERVAL_MS = 15_000;
@@ -22,15 +30,10 @@ const formatJoinedAgo = (
   return t('findMatch.widget.ago.hours', { count: hours });
 };
 
-const getInitials = (name: string): string => {
-  const parts = name.trim().split(/\s+/).slice(0, 2);
-  return parts.map((p) => p.charAt(0).toUpperCase()).join('') || '?';
-};
-
 const FindMatchWidget: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isWrestler, playerId } = useAuth();
+  const { isWrestler, playerId, currentWrestler } = useAuth();
   const { presenceEnabled, enablePresence } = usePresence();
 
   const [queue, setQueue] = useState<QueueEntry[]>([]);
@@ -44,6 +47,7 @@ const FindMatchWidget: React.FC = () => {
   const [joiningQueue, setJoiningQueue] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionFailed, setActionFailed] = useState<boolean>(false);
 
   // Tick state to refresh "joined Xm ago" timestamps without refetching.
   const [, setNowTick] = useState<number>(0);
@@ -55,15 +59,16 @@ const FindMatchWidget: React.FC = () => {
   // Load stipulation names once so we can render preference chips.
   useEffect(() => {
     let cancelled = false;
-    stipulationsApi
-      .getAll()
-      .then((stips) => {
+    const loadStipulations = async (): Promise<void> => {
+      try {
+        const stips = await stipulationsApi.getAll();
         if (cancelled) return;
         setStipulationNameById(new Map(stips.map((s) => [s.stipulationId, s.name])));
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('[FindMatchWidget] failed to load stipulations', err);
-      });
+      }
+    };
+    void loadStipulations();
     return () => {
       cancelled = true;
     };
@@ -98,35 +103,21 @@ const FindMatchWidget: React.FC = () => {
     }
   }, []);
 
-  const fetchDataRef = useRef(fetchData);
-  useEffect(() => {
-    fetchDataRef.current = fetchData;
-  }, [fetchData]);
+  // The server refuses matchmaking for a player with no wrestler name. Null
+  // means the name is not known here, not that the player has none.
+  const needsWrestlerName = currentWrestler !== null && isNeedsWrestler(currentWrestler);
 
-  useEffect(() => {
-    if (!isWrestler || !playerId) {
-      return;
-    }
-
-    let cancelled = false;
-    const run = (): void => {
-      if (cancelled) return;
-      void fetchDataRef.current();
-    };
-
-    run();
-    const interval = window.setInterval(run, POLL_INTERVAL_MS);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
-  }, [isWrestler, playerId]);
+  useVisiblePolling(
+    fetchData,
+    POLL_INTERVAL_MS,
+    isWrestler && Boolean(playerId) && !needsWrestlerName,
+  );
 
   const handleChallenge = useCallback(
     async (targetId: string): Promise<void> => {
       if (challengingId) return;
       setChallengingId(targetId);
+      setActionFailed(false);
       try {
         await matchmakingApi.createInvitation(targetId, {});
         setInvitedIds((prev) => {
@@ -136,6 +127,7 @@ const FindMatchWidget: React.FC = () => {
         });
       } catch (err) {
         console.error('[FindMatchWidget] challenge failed', err);
+        setActionFailed(true);
       } finally {
         setChallengingId(null);
       }
@@ -147,6 +139,7 @@ const FindMatchWidget: React.FC = () => {
     async (invitationId: string): Promise<void> => {
       if (respondingId) return;
       setRespondingId(invitationId);
+      setActionFailed(false);
       try {
         const result = await matchmakingApi.acceptInvitation(invitationId);
         setIncomingInvitations((prev) =>
@@ -155,6 +148,7 @@ const FindMatchWidget: React.FC = () => {
         navigate('/matches', { state: { matchId: result.matchId } });
       } catch (err) {
         console.error('[FindMatchWidget] acceptInvitation failed', err);
+        setActionFailed(true);
       } finally {
         setRespondingId(null);
       }
@@ -166,6 +160,7 @@ const FindMatchWidget: React.FC = () => {
     async (invitationId: string): Promise<void> => {
       if (respondingId) return;
       setRespondingId(invitationId);
+      setActionFailed(false);
       try {
         await matchmakingApi.declineInvitation(invitationId);
         setIncomingInvitations((prev) =>
@@ -173,6 +168,7 @@ const FindMatchWidget: React.FC = () => {
         );
       } catch (err) {
         console.error('[FindMatchWidget] declineInvitation failed', err);
+        setActionFailed(true);
       } finally {
         setRespondingId(null);
       }
@@ -188,6 +184,7 @@ const FindMatchWidget: React.FC = () => {
   const handleJoinOrLeaveQueue = useCallback(async (): Promise<void> => {
     if (joiningQueue) return;
     setJoiningQueue(true);
+    setActionFailed(false);
     try {
       if (isSelfInQueue) {
         await matchmakingApi.leaveQueue();
@@ -200,6 +197,7 @@ const FindMatchWidget: React.FC = () => {
       await fetchData();
     } catch (err) {
       console.error('[FindMatchWidget] join/leave queue failed', err);
+      setActionFailed(true);
     } finally {
       setJoiningQueue(false);
     }
@@ -218,74 +216,65 @@ const FindMatchWidget: React.FC = () => {
     return null;
   }
 
+  if (needsWrestlerName) {
+    return (
+      <Card className="fm-widget" role="region" aria-label={t('findMatch.widget.title')}>
+        <h3 className="fm-widget__title">{t('findMatch.widget.title')}</h3>
+        <p className="fm-widget__hint">{t('me.matchmaking.needsNameBody')}</p>
+        <Button fullWidth to="/profile" linkState={{ editProfile: true }}>{t('me.matchmaking.needsNameAction')}</Button>
+      </Card>
+    );
+  }
+
   return (
-    <section className="fm-widget" aria-label={t('findMatch.widget.title')}>
-      <header className="fm-widget-header">
-        <h3 className="fm-widget-title">{t('findMatch.widget.title')}</h3>
-        <div className="fm-widget-online-count">
-          <span
-            className={`fm-widget-status-dot ${
-              queue.length > 0
-                ? 'fm-widget-status-dot--online'
-                : 'fm-widget-status-dot--offline'
-            }`}
-            aria-hidden="true"
-          />
-          <span>
-            {t('findMatch.widget.lookingCount', { count: queue.length })}
-          </span>
-        </div>
+    <Card className="fm-widget" role="region" aria-label={t('findMatch.widget.title')}>
+      <header className="fm-widget__header">
+        <h3 className="fm-widget__title">{t('findMatch.widget.title')}</h3>
+        <Badge tone={queue.length > 0 ? 'win' : 'neutral'}>
+          {t('findMatch.widget.lookingCount', { count: queue.length })}
+        </Badge>
       </header>
+
+      {actionFailed && (
+        <p className="me-alert me-alert--error" role="alert">{t('me.matchmaking.actionFailed')}</p>
+      )}
 
       {incomingInvitations.length > 0 && (
         <>
-          <div className="fm-widget-section-label">
+          <h4 className="fm-widget__label">
             <span>{t('findMatch.widget.incomingHeader')}</span>
-            <span className="fm-widget-section-count fm-widget-section-count--hot">
-              {incomingInvitations.length}
-            </span>
-          </div>
-          <ul className="fm-widget-invite-list">
+            <Badge tone="pink">{incomingInvitations.length}</Badge>
+          </h4>
+          <ul className="fm-widget__list">
             {incomingInvitations.map((inv) => {
               const responding = respondingId === inv.invitationId;
               return (
-                <li key={inv.invitationId} className="fm-widget-invite-card">
-                  <div className="fm-widget-avatar" aria-hidden="true">
-                    {inv.from.imageUrl ? (
-                      <img src={inv.from.imageUrl} alt="" />
-                    ) : (
-                      <span>
-                        {getInitials(inv.from.currentWrestler || inv.from.name)}
-                      </span>
-                    )}
+                <li key={inv.invitationId} className="fm-widget__row">
+                  <Avatar src={inv.from.imageUrl} name={inv.from.currentWrestler || inv.from.name} size="sm" />
+                  <div className="fm-widget__meta">
+                    <p className="fm-widget__wrestler">{inv.from.currentWrestler}</p>
+                    <p className="fm-widget__player">{inv.from.name}</p>
                   </div>
-                  <div className="fm-widget-queue-meta">
-                    <div className="fm-widget-wrestler-name">
-                      {inv.from.currentWrestler}
-                    </div>
-                    <div className="fm-widget-player-name">{inv.from.name}</div>
-                  </div>
-                  <div className="fm-widget-invite-actions">
-                    <button
-                      type="button"
-                      className="fm-widget-accept"
+                  <div className="fm-widget__actions">
+                    <Button
+                      size="sm"
                       disabled={responding}
                       onClick={() => {
                         void handleAcceptInvitation(inv.invitationId);
                       }}
                     >
                       {t('findMatch.invitations.accept')}
-                    </button>
-                    <button
-                      type="button"
-                      className="fm-widget-decline"
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
                       disabled={responding}
                       onClick={() => {
                         void handleDeclineInvitation(inv.invitationId);
                       }}
                     >
                       {t('findMatch.invitations.decline')}
-                    </button>
+                    </Button>
                   </div>
                 </li>
               );
@@ -294,28 +283,23 @@ const FindMatchWidget: React.FC = () => {
         </>
       )}
 
-      <div className="fm-widget-section-label">
+      <h4 className="fm-widget__label">
         <span>{t('findMatch.widget.lookingHeader')}</span>
-        <span className="fm-widget-section-count">{sortedQueue.length}</span>
-      </div>
+      </h4>
 
       {error && !loading && (
-        <div className="fm-widget-error">{t('findMatch.widget.loadFailed')}</div>
+        <p className="me-alert me-alert--error" role="alert">{t('findMatch.widget.loadFailed')}</p>
       )}
 
       {loading ? (
-        <div className="fm-widget-skeleton" aria-hidden="true">
-          <div className="fm-widget-skeleton-row" />
-          <div className="fm-widget-skeleton-row" />
-          <div className="fm-widget-skeleton-row" />
-        </div>
+        <Skeleton variant="block" count={3} />
       ) : sortedQueue.length === 0 ? (
-        <div className="fm-widget-empty">
-          <p className="fm-widget-empty-text">{t('findMatch.widget.empty')}</p>
-          <p className="fm-widget-empty-hint">{t('findMatch.widget.emptyHint')}</p>
+        <div className="fm-widget__empty">
+          <p className="fm-widget__empty-text">{t('findMatch.widget.empty')}</p>
+          <p className="fm-widget__hint">{t('findMatch.widget.emptyHint')}</p>
         </div>
       ) : (
-        <ul className="fm-widget-queue-list">
+        <ul className="fm-widget__list">
           {sortedQueue.map((entry) => {
             const isSelf = entry.playerId === playerId;
             const fmt = entry.preferences?.matchFormat;
@@ -325,93 +309,61 @@ const FindMatchWidget: React.FC = () => {
             const invited = invitedIds.has(entry.playerId);
             const sending = challengingId === entry.playerId;
             return (
-              <li
-                key={entry.playerId}
-                className={`fm-widget-queue-card ${
-                  isSelf ? 'fm-widget-queue-card--self' : ''
-                }`}
-              >
-                <div className="fm-widget-avatar" aria-hidden="true">
-                  {entry.imageUrl ? (
-                    <img src={entry.imageUrl} alt="" />
-                  ) : (
-                    <span>{getInitials(entry.currentWrestler || entry.name)}</span>
-                  )}
-                </div>
-                <div className="fm-widget-queue-meta">
-                  <div className="fm-widget-wrestler-name">
+              <li key={entry.playerId} className="fm-widget__row">
+                <Avatar src={entry.imageUrl} name={entry.currentWrestler || entry.name} size="sm" />
+                <div className="fm-widget__meta">
+                  <p className="fm-widget__wrestler">
                     {entry.currentWrestler}
-                    {isSelf && (
-                      <span className="fm-widget-self-badge">
-                        {t('findMatch.widget.you')}
-                      </span>
-                    )}
-                  </div>
-                  <div className="fm-widget-player-name">{entry.name}</div>
+                    {isSelf && <Badge tone="primary">{t('findMatch.widget.you')}</Badge>}
+                  </p>
+                  <p className="fm-widget__player">
+                    {entry.name}
+                    {' · '}
+                    {t('findMatch.widget.joinedAgo', { ago: formatJoinedAgo(entry.joinedAt, t) })}
+                  </p>
                   {(fmt || stipName) && (
-                    <div className="fm-widget-prefs">
-                      {fmt && <span className="fm-widget-pref-chip">{fmt}</span>}
-                      {stipName && (
-                        <span className="fm-widget-pref-chip">{stipName}</span>
-                      )}
+                    <div className="fm-widget__prefs">
+                      {fmt && <Badge tone="violet">{fmt}</Badge>}
+                      {stipName && <Badge tone="violet">{stipName}</Badge>}
                     </div>
                   )}
                 </div>
-                <div className="fm-widget-queue-action">
-                  {isSelf ? (
-                    <span className="fm-widget-joined-ago">
-                      {t('findMatch.widget.joinedAgo', {
-                        ago: formatJoinedAgo(entry.joinedAt, t),
-                      })}
-                    </span>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        className="fm-widget-challenge"
-                        onClick={() => {
-                          void handleChallenge(entry.playerId);
-                        }}
-                        disabled={invited || sending}
-                      >
-                        {invited
-                          ? t('findMatch.widget.challenged')
-                          : sending
-                            ? t('findMatch.widget.challenging')
-                            : t('findMatch.widget.challenge')}
-                      </button>
-                      <span className="fm-widget-joined-ago">
-                        {t('findMatch.widget.joinedAgo', {
-                          ago: formatJoinedAgo(entry.joinedAt, t),
-                        })}
-                      </span>
-                    </>
-                  )}
-                </div>
+                {!isSelf && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      void handleChallenge(entry.playerId);
+                    }}
+                    disabled={invited || sending}
+                  >
+                    {invited
+                      ? t('findMatch.widget.challenged')
+                      : sending
+                        ? t('findMatch.widget.challenging')
+                        : t('findMatch.widget.challenge')}
+                  </Button>
+                )}
               </li>
             );
           })}
         </ul>
       )}
 
-      <button
-        type="button"
-        className="fm-widget-cta"
+      <Button
+        fullWidth
+        variant={isSelfInQueue ? 'secondary' : 'primary'}
         onClick={() => {
           void handleJoinOrLeaveQueue();
         }}
         disabled={joiningQueue}
       >
-        {isSelfInQueue
-          ? t('findMatch.widget.leaveQueue')
-          : t('findMatch.widget.joinQueue')}
-      </button>
-      <p className="fm-widget-cta-subtitle">
-        {isSelfInQueue
-          ? t('findMatch.widget.inQueueLabel')
-          : t('findMatch.widget.joinQueueSubtitle')}
+        {isSelfInQueue ? t('findMatch.widget.leaveQueue') : t('findMatch.widget.joinQueue')}
+      </Button>
+      <p className="fm-widget__hint fm-widget__cta-note">
+        {isSelfInQueue ? t('findMatch.widget.inQueueLabel') : t('findMatch.widget.joinQueueSubtitle')}
       </p>
-    </section>
+    </Card>
   );
 };
 

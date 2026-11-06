@@ -69,7 +69,7 @@ describe('matchmaking/joinQueue', () => {
 
   it('queues caller when presence row exists', async () => {
     mockQuery.mockResolvedValueOnce({
-      Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller' }],
+      Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller', currentWrestler: 'Caller Wrestler' }],
     });
     mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', ttl: futureTtl } });
     mockPut.mockResolvedValue({});
@@ -91,7 +91,7 @@ describe('matchmaking/joinQueue', () => {
     // caller should just be added to the queue. Manual challenges (invitations)
     // are the only way to start a match from matchmaking now.
     mockQuery.mockResolvedValueOnce({
-      Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller' }],
+      Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller', currentWrestler: 'Caller Wrestler' }],
     });
     mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', ttl: futureTtl } });
     mockPut.mockResolvedValue({});
@@ -106,7 +106,7 @@ describe('matchmaking/joinQueue', () => {
 
   it('persists matchFormat and stipulationId preferences', async () => {
     mockQuery.mockResolvedValueOnce({
-      Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller' }],
+      Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller', currentWrestler: 'Caller Wrestler' }],
     });
     mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', ttl: futureTtl } });
     mockPut.mockResolvedValue({});
@@ -125,7 +125,7 @@ describe('matchmaking/joinQueue', () => {
 
   it('returns 400 when caller has no presence row', async () => {
     mockQuery.mockResolvedValueOnce({
-      Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller' }],
+      Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller', currentWrestler: 'Caller Wrestler' }],
     });
     mockGet.mockResolvedValueOnce({ Item: undefined });
 
@@ -150,7 +150,7 @@ describe('matchmaking/joinQueue', () => {
 
   it('replaces the caller queue row idempotently on repeat join', async () => {
     mockQuery.mockResolvedValueOnce({
-      Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller' }],
+      Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller', currentWrestler: 'Caller Wrestler' }],
     });
     mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', ttl: futureTtl } });
     mockPut.mockResolvedValue({});
@@ -160,7 +160,7 @@ describe('matchmaking/joinQueue', () => {
     expect(JSON.parse(first.body).status).toBe('queued');
 
     mockQuery.mockResolvedValueOnce({
-      Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller' }],
+      Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller', currentWrestler: 'Caller Wrestler' }],
     });
     mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', ttl: futureTtl } });
 

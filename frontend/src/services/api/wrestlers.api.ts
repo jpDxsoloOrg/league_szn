@@ -38,10 +38,4 @@ export const wrestlersApi = {
       body: JSON.stringify({ wrestlers }),
     });
   },
-
-  resetAssignments: async (): Promise<WrestlerResetAssignmentsResult> => {
-    return fetchWithAuth(`${API_BASE_URL}/wrestlers/reset-assignments`, {
-      method: 'POST',
-    });
-  },
 };

@@ -1,47 +1,56 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, NavLink, Routes, Route, useParams, useNavigate, Navigate } from 'react-router-dom';
+import type { ReactElement } from 'react';
+import { Routes, Route, useParams, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ArrowLeft } from 'lucide-react';
 import { playersApi, rivalriesApi } from '../../services/api';
+import type { PlayerDirectoryEntry } from '../../services/api/players.api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Player } from '../../types';
-import type { HydratedRivalry, RivalryStatus } from '../../types/rivalry';
+import type { HydratedRivalry } from '../../types/rivalry';
 import {
   DEFAULT_WRESTLER_IMAGE,
   applyImageFallback,
   resolveImageSrc,
 } from '../../constants/imageFallbacks';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import EmptyState from '../ui/EmptyState';
+import SectionTabs from '../ui/SectionTabs';
+import Skeleton from '../ui/Skeleton';
+import { useToast } from '../ui/toastContext';
+import { useLocationToast } from '../factions/useLocationToast';
 import OverviewTab from './tabs/OverviewTab';
 import MatchHistoryTab from './tabs/MatchHistoryTab';
 import FutureMatchesTab from './tabs/FutureMatchesTab';
 import PromosTab from './tabs/PromosTab';
 import NotesPlansTab from './tabs/NotesPlansTab';
 import MessagesTab from './tabs/MessagesTab';
-import { resolveWrestlerName, resolveWrestlerFullLabel, heatScorePercent } from './rivalryUtils';
+import {
+  RIVALRY_STATUS_KEY,
+  heatScorePercent,
+  resolvePlayerCaption,
+  resolveWrestlerName,
+  withDirectoryPlayers,
+} from './rivalryUtils';
 import HeatBadge from './HeatBadge';
 import './RivalryDetail.css';
 
-const TAB_DEFS: Array<{ id: string; labelKey: string }> = [
+const TAB_DEFS: Array<{ id: string; labelKey: string; insidersOnly?: boolean }> = [
   { id: 'overview', labelKey: 'rivalries.detail.overviewTab' },
   { id: 'matches', labelKey: 'rivalries.detail.matchesTab' },
   { id: 'future', labelKey: 'rivalries.detail.futureTab' },
   { id: 'promos', labelKey: 'rivalries.detail.promosTab' },
-  { id: 'notes', labelKey: 'rivalries.detail.notesTab' },
-  { id: 'messages', labelKey: 'rivalries.detail.messagesTab' },
+  { id: 'notes', labelKey: 'rivalries.detail.notesTab', insidersOnly: true },
+  { id: 'messages', labelKey: 'rivalries.detail.messagesTab', insidersOnly: true },
 ];
-
-const STATUS_KEY: Record<RivalryStatus, string> = {
-  pending: 'rivalries.status.pending',
-  active: 'rivalries.status.active',
-  completed: 'rivalries.status.completed',
-  rejected: 'rivalries.status.rejected',
-  cancelled: 'rivalries.status.cancelled',
-};
 
 export default function RivalryDetail() {
   const { t } = useTranslation();
   const { rivalryId } = useParams<{ rivalryId: string }>();
-  const navigate = useNavigate();
-  const { isAdminOrModerator, email, isAuthenticated } = useAuth();
+  const { showToast } = useToast();
+  const { isAdminOrModerator, isAuthenticated, isLoading: authLoading, playerId } = useAuth();
+  useLocationToast();
   const [hydrated, setHydrated] = useState<HydratedRivalry | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,11 +65,12 @@ export default function RivalryDetail() {
     Promise.all([
       rivalriesApi.get(rivalryId, controller.signal),
       playersApi.getAll(controller.signal).catch(() => [] as Player[]),
+      playersApi.getDirectory(controller.signal).catch(() => [] as PlayerDirectoryEntry[]),
     ])
-      .then(([res, p]) => {
+      .then(([res, roster, directory]) => {
         if (!mounted) return;
         setHydrated(res);
-        setPlayers(p);
+        setPlayers(withDirectoryPlayers(roster, directory));
         setError(null);
       })
       .catch((err: Error) => {
@@ -87,22 +97,35 @@ export default function RivalryDetail() {
     return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
   }, [hydrated]);
 
+  const backLink = (
+    <Button
+      variant="ghost"
+      size="sm"
+      to="/rivalries"
+      icon={<ArrowLeft aria-hidden="true" size={18} />}
+      className="rivalry-detail__back"
+    >
+      {t('rivalries.detail.backToHub')}
+    </Button>
+  );
+
   if (loading) {
     return (
       <div className="rivalry-detail">
-        <div className="rivalry-detail__hero rivalry-detail__hero--skeleton" />
-        <div className="rivalry-detail__stats rivalry-detail__stats--skeleton" />
+        <Skeleton variant="block" count={3} />
       </div>
     );
   }
 
   if (error || !hydrated) {
+    const notFoundTitle = t('rivalries.detail.notFound', { defaultValue: 'Rivalry not found' });
     return (
       <div className="rivalry-detail">
-        <Link to="/rivalries" className="rivalry-detail__back">
-          ← {t('rivalries.detail.backToHub')}
-        </Link>
-        <p className="rivalry-detail__error">{error ?? 'Not found'}</p>
+        {backLink}
+        <EmptyState
+          title={notFoundTitle}
+          description={error && error !== notFoundTitle ? error : undefined}
+        />
       </div>
     );
   }
@@ -113,216 +136,157 @@ export default function RivalryDetail() {
   const pidB = partB?.playerId ?? '';
   const a = playerLookup.get(pidA);
   const b = playerLookup.get(pidB);
-  // alt text gets the bare wrestler name; the visible heading carries
-  // the WrestlerName (PlayerName · PSN) suffix.
   const nameA = resolveWrestlerName(partA, a);
   const nameB = resolveWrestlerName(partB, b);
-  const labelA = resolveWrestlerFullLabel(partA, a);
-  const labelB = resolveWrestlerFullLabel(partB, b);
+  const captionA = resolvePlayerCaption(a);
+  const captionB = resolvePlayerCaption(b);
 
-  const callerLabel = email ? email.split('@')[0] : '';
+  // bookerName is public, so it holds the linked player's name, never the email.
+  const callerLabel = (playerId && playerLookup.get(playerId)?.name) || '';
   const isBooker = !!r.bookerName && r.bookerName === callerLabel;
-  async function assignSelfAsBooker() {
-    if (!isAdminOrModerator || !callerLabel) return;
-    setBookerBusy(true);
-    try {
-      const updated = await rivalriesApi.update(rivalryId!, { bookerName: callerLabel });
-      setHydrated((prev) => (prev ? { ...prev, rivalry: updated } : prev));
-    } finally {
-      setBookerBusy(false);
-    }
-  }
-  async function clearBooker() {
+  async function updateBooker(bookerName: string) {
     if (!isAdminOrModerator) return;
     setBookerBusy(true);
     try {
-      const updated = await rivalriesApi.update(rivalryId!, { bookerName: '' });
+      const updated = await rivalriesApi.update(rivalryId!, { bookerName });
       setHydrated((prev) => (prev ? { ...prev, rivalry: updated } : prev));
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : String(err), 'error');
     } finally {
       setBookerBusy(false);
     }
   }
 
-  const winsA = (pidA && hydrated.headToHead.winsByParticipant[pidA]) ?? 0;
-  const winsB = (pidB && hydrated.headToHead.winsByParticipant[pidB]) ?? 0;
-
-  // Mobile heat meter position, quantized to 5% steps so the fill width
-  // stays in CSS (no inline styles) — RivalryDetail.css declares the
-  // .rivalry-detail__heat-fill--p{0..100} ladder.
+  const winsA = hydrated.headToHead.winsByParticipant[pidA] ?? 0;
+  const winsB = hydrated.headToHead.winsByParticipant[pidB] ?? 0;
   const heatPercent = heatScorePercent(r.heatScore);
-  const heatStep = Math.round(heatPercent / 5) * 5;
+  const basePath = `/rivalries/${rivalryId}`;
+  // Notes and messages are refused to everyone but the rivals and the GMs.
+  const isInsider = isAdminOrModerator || r.participants.some((participant) => participant.playerId === playerId);
+  const tabItems = TAB_DEFS.filter((tab) => isInsider || !tab.insidersOnly).map((tab) => ({
+    to: tab.id === 'overview' ? basePath : `${basePath}/${tab.id}`,
+    label: t(tab.labelKey),
+  }));
+  const insidersOnly = (tab: ReactElement) => {
+    if (isInsider) return tab;
+    if (authLoading) return <Skeleton variant="block" count={3} />;
+    return (
+      <Navigate
+        to={basePath}
+        replace
+        state={{ toast: t('rivalries.detail.insidersOnly', { defaultValue: 'Only the rivals and the GMs can open this tab.' }) }}
+      />
+    );
+  };
 
   return (
     <div className="rivalry-detail">
-      <Link to="/rivalries" className="rivalry-detail__back">
-        ← {t('rivalries.detail.backToHub')}
-      </Link>
+      {backLink}
 
       <header className="rivalry-detail__hero">
-        <div className="rivalry-detail__portrait">
-          <img
-            src={resolveImageSrc(a?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-            alt={nameA}
-            loading="lazy"
-            decoding="async"
-            onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
-          />
-          <h2 className="rivalry-detail__name">{labelA}</h2>
+        <div className="rivalry-detail__headline">
+          <h1 className="rivalry-detail__title">{r.title}</h1>
+          <div className="rivalry-detail__booker">
+            {r.status !== 'active' && <Badge>{t(RIVALRY_STATUS_KEY[r.status])}</Badge>}
+            {r.bookerName && (
+              <span className="rivalry-detail__booker-name">
+                {t('rivalries.detail.bookerBadge', { defaultValue: 'Booked by {{name}}', name: r.bookerName })}
+              </span>
+            )}
+            {isAdminOrModerator && isAuthenticated && (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={bookerBusy || (!isBooker && !callerLabel)}
+                onClick={() => updateBooker(isBooker ? '' : callerLabel)}
+              >
+                {isBooker && t('rivalries.detail.clearBooker', { defaultValue: 'Clear booker' })}
+                {!isBooker && r.bookerName && t('rivalries.detail.takeBooker', { defaultValue: 'Take over booking' })}
+                {!isBooker && !r.bookerName && t('rivalries.detail.assignBooker', { defaultValue: "I'll book this" })}
+              </Button>
+            )}
+          </div>
         </div>
-        <span className="rivalry-detail__vs" aria-hidden="true">VS</span>
-        <div className="rivalry-detail__portrait">
-          <img
-            src={resolveImageSrc(b?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-            alt={nameB}
-            loading="lazy"
-            decoding="async"
-            onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
-          />
-          <h2 className="rivalry-detail__name">{labelB}</h2>
+        <div className="rivalry-detail__faceoff">
+          <div className="rivalry-detail__portrait">
+            <img
+              src={resolveImageSrc(a?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+              alt={nameA}
+              loading="lazy"
+              decoding="async"
+              onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
+            />
+            <p className="rivalry-detail__name">{nameA}</p>
+            {captionA && <p className="rivalry-detail__caption">{captionA}</p>}
+          </div>
+          <span className="rivalry-detail__vs" aria-hidden="true">VS</span>
+          <div className="rivalry-detail__portrait">
+            <img
+              src={resolveImageSrc(b?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+              alt={nameB}
+              loading="lazy"
+              decoding="async"
+              onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
+            />
+            <p className="rivalry-detail__name">{nameB}</p>
+            {captionB && <p className="rivalry-detail__caption">{captionB}</p>}
+          </div>
         </div>
       </header>
 
-      {/* Gradient heat meter — mobile app shell only (hidden on desktop
-          via RivalryDetail.css; the stats strip below keeps carrying the
-          heat badge for desktop). */}
-      <section className="rivalry-detail__heat-meter">
-        <div className="rivalry-detail__heat-meter-top">
-          <span className="rivalry-detail__heat-meter-label">
-            {t('rivalries.detail.heatMeterLabel', 'Rivalry Heat')}
-          </span>
-          <HeatBadge heat={r.heat} heatScore={r.heatScore} size="sm" />
-        </div>
-        <div className="rivalry-detail__heat-track" aria-hidden="true">
-          <div
-            className={`rivalry-detail__heat-fill rivalry-detail__heat-fill--p${heatStep}`}
+      <section className="rivalry-detail__stats">
+        <div className="rivalry-detail__stat rivalry-detail__stat--heat">
+          <div className="rivalry-detail__heat-top">
+            <span className="rivalry-detail__stat-label">
+              {t('rivalries.detail.heatMeterLabel', { defaultValue: 'Rivalry Heat' })}
+            </span>
+            <HeatBadge heat={r.heat} heatScore={r.heatScore} size="sm" />
+          </div>
+          <progress
+            className="rivalry-detail__heat-meter"
+            value={heatPercent}
+            max={100}
+            aria-label={t('rivalries.detail.heatScoreOutOf', { defaultValue: 'Heat: {{score}}/100', score: heatPercent })}
           />
         </div>
-        <div className="rivalry-detail__heat-scale">
-          <span>{t('rivalries.detail.heatScaleCold', 'Cold')}</span>
-          <span className="rivalry-detail__heat-score">
-            {t('rivalries.detail.heatScoreOutOf', {
-              defaultValue: 'Heat: {{score}}/100',
-              score: heatPercent,
+        <div className="rivalry-detail__stat">
+          <span className="rivalry-detail__stat-label">{t('rivalries.detail.headToHead')}</span>
+          <span className="rivalry-detail__stat-value">
+            {t('rivalries.detail.headToHeadRecord', {
+              defaultValue: '{{wins}}W – {{losses}}L – {{draws}}D',
+              wins: winsA,
+              losses: winsB,
+              draws: hydrated.headToHead.draws,
             })}
           </span>
-          <span>{t('rivalries.detail.heatScaleExtreme', 'Extreme')}</span>
         </div>
-      </section>
-
-      <h1 className="rivalry-detail__title">{r.title}</h1>
-
-      <div className="rivalry-detail__booker">
-        {r.bookerName ? (
-          <>
-            <span className="rivalry-detail__booker-badge">
-              {t('rivalries.detail.bookerBadge', {
-                defaultValue: 'Booked by {{name}}',
-                name: r.bookerName,
-              })}
-            </span>
-            {isAdminOrModerator && (
-              <button
-                type="button"
-                className="rivalry-detail__booker-btn"
-                disabled={bookerBusy}
-                onClick={isBooker ? clearBooker : assignSelfAsBooker}
-              >
-                {isBooker
-                  ? t('rivalries.detail.clearBooker', { defaultValue: 'Clear booker' })
-                  : t('rivalries.detail.takeBooker', { defaultValue: 'Take over booking' })}
-              </button>
-            )}
-          </>
-        ) : (
-          isAdminOrModerator && isAuthenticated && (
-            <button
-              type="button"
-              className="rivalry-detail__booker-btn"
-              disabled={bookerBusy || !callerLabel}
-              onClick={assignSelfAsBooker}
-            >
-              {t('rivalries.detail.assignBooker', { defaultValue: "I'll book this" })}
-            </button>
-          )
-        )}
-      </div>
-
-      <section className="rivalry-detail__stats">
         <div className="rivalry-detail__stat">
-          <span className="rivalry-detail__stat-label">
-            {t('rivalries.detail.headToHead')}
-          </span>
-          <span className="rivalry-detail__stat-value">
-            {winsA}W – {winsB}L – {hydrated.headToHead.draws}D
-          </span>
-        </div>
-        <div className="rivalry-detail__stat rivalry-detail__stat--center">
           <span className="rivalry-detail__stat-label">
             {t('rivalries.detail.matchesInRivalry', { defaultValue: 'Matches in Rivalry' })}
           </span>
-          <span className="rivalry-detail__stat-value">
-            {hydrated.headToHead.totalMatches}
-          </span>
-        </div>
-        <div className="rivalry-detail__stat">
-          <span className="rivalry-detail__stat-label">Heat</span>
-          <span className="rivalry-detail__stat-value">
-            <HeatBadge heat={r.heat} heatScore={r.heatScore} size="md" />
-          </span>
-        </div>
-        <div className="rivalry-detail__stat">
-          <span className="rivalry-detail__stat-label">Status</span>
-          <span className={`rivalry-detail__pill rivalry-detail__pill--${r.status}`}>
-            {t(STATUS_KEY[r.status])}
-          </span>
+          <span className="rivalry-detail__stat-value">{hydrated.headToHead.totalMatches}</span>
         </div>
         {daysToNext !== null && (
           <div className="rivalry-detail__stat">
-            <span className="rivalry-detail__stat-label">
-              {t('rivalries.detail.nextEvent')}
-            </span>
-            <span className="rivalry-detail__stat-value">
-              {daysToNext}d
-            </span>
+            <span className="rivalry-detail__stat-label">{t('rivalries.detail.nextEvent')}</span>
+            <span className="rivalry-detail__stat-value">{daysToNext}d</span>
           </div>
         )}
       </section>
 
-      <nav className="rivalry-detail__tabs" role="tablist">
-        {TAB_DEFS.map((tab) => (
-          <NavLink
-            key={tab.id}
-            to={tab.id === 'overview' ? '' : tab.id}
-            end={tab.id === 'overview'}
-            className={({ isActive }) =>
-              `rivalry-detail__tab ${isActive ? 'is-active' : ''}`
-            }
-          >
-            {t(tab.labelKey)}
-          </NavLink>
-        ))}
-      </nav>
+      <SectionTabs items={tabItems} label={r.title} variant="compact" className="rivalry-detail__tabs" />
 
       <div className="rivalry-detail__content">
         <Routes>
-          <Route index element={<OverviewTab hydrated={hydrated} players={players} />} />
+          <Route index element={<OverviewTab hydrated={hydrated} players={players} showNotesLink={isInsider} />} />
           <Route path="matches" element={<MatchHistoryTab hydrated={hydrated} players={players} />} />
           <Route path="future" element={<FutureMatchesTab hydrated={hydrated} players={players} />} />
           <Route path="promos" element={<PromosTab hydrated={hydrated} players={players} />} />
-          <Route path="notes" element={<NotesPlansTab hydrated={hydrated} players={players} />} />
-          <Route path="messages" element={<MessagesTab hydrated={hydrated} players={players} />} />
+          <Route path="notes" element={insidersOnly(<NotesPlansTab hydrated={hydrated} players={players} />)} />
+          <Route path="messages" element={insidersOnly(<MessagesTab hydrated={hydrated} players={players} />)} />
           <Route path="*" element={<Navigate to="" replace />} />
         </Routes>
       </div>
-
-      <button
-        type="button"
-        className="rivalry-detail__message-gm"
-        onClick={() => navigate('messages')}
-        aria-label="Message GM"
-      >
-        💬
-      </button>
     </div>
   );
 }

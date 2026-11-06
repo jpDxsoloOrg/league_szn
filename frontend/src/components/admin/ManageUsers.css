@@ -1,362 +1,40 @@
-.manage-users {
-  padding: 1rem;
-}
-
-.users-header {
+.user-manage-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.users-header h2 {
-  margin: 0;
-  color: var(--text-primary, #fff);
-}
-
-.btn-refresh {
-  background: var(--card-bg, #1a1a2e);
-  border: 1px solid var(--border-color, #444);
-  color: var(--text-primary, #fff);
-  padding: 0.4rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
-}
-
-.btn-refresh:hover {
-  border-color: var(--accent-color, #e50914);
-}
-
-.wrestler-requests-banner {
-  background: rgba(255, 193, 7, 0.15);
-  border: 1px solid rgba(255, 193, 7, 0.4);
-  color: #ffc107;
-  padding: 0.7rem 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-}
-
-.filter-tabs {
-  display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
 }
 
-.filter-tabs button {
-  background: var(--card-bg, #1a1a2e);
-  border: 1px solid var(--border-color, #444);
-  color: var(--text-secondary, #aaa);
-  padding: 0.4rem 0.8rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  transition: all 0.2s;
-}
-
-.filter-tabs button.active,
-.filter-tabs button:hover {
-  border-color: var(--accent-color, #e50914);
-  color: var(--text-primary, #fff);
-}
-
-.filter-tabs button.active {
-  background: rgba(229, 9, 20, 0.15);
-}
-
-.users-table-container {
-  overflow-x: auto;
-}
-
-.users-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-}
-
-.users-table th {
-  text-align: left;
-  padding: 0.6rem 0.8rem;
-  border-bottom: 2px solid var(--border-color, #444);
-  color: var(--text-secondary, #aaa);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.users-table td {
-  padding: 0.6rem 0.8rem;
-  border-bottom: 1px solid var(--border-color, #333);
-  color: var(--text-primary, #fff);
-}
-
-.wrestler-request-row {
-  background: rgba(255, 193, 7, 0.05);
-}
-
-.wrestler-name {
-  color: #ffc107;
-  font-weight: 500;
-}
-
-.no-value {
-  color: var(--text-muted, #666);
-}
-
-.roles-cell-content {
-  display: flex;
-  gap: 0.3rem;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.role-badge {
-  display: inline-block;
-  padding: 0.15rem 0.5rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.role-admin {
-  background: rgba(229, 9, 20, 0.2);
-  color: #ff6b6b;
-  border: 1px solid rgba(229, 9, 20, 0.4);
-}
-
-.role-wrestler {
-  background: rgba(255, 193, 7, 0.2);
-  color: #ffc107;
-  border: 1px solid rgba(255, 193, 7, 0.4);
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 0.15rem 0.5rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-}
-
-.status-confirmed {
-  background: rgba(76, 175, 80, 0.15);
-  color: #81c784;
-}
-
-.status-unconfirmed {
-  background: rgba(255, 193, 7, 0.15);
-  color: #ffc107;
-}
-
-.status-force_change_password {
-  background: rgba(255, 152, 0, 0.15);
-  color: #ffb74d;
-}
-
-.actions-cell-content {
-  display: flex;
-  gap: 0.3rem;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.btn-action {
-  padding: 0.25rem 0.6rem;
-  border-radius: 4px;
-  border: 1px solid;
-  font-size: 0.75rem;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: opacity 0.2s;
-}
-
-.btn-action:hover {
-  opacity: 0.8;
-}
-
-.btn-approve {
-  background: rgba(76, 175, 80, 0.2);
-  border-color: rgba(76, 175, 80, 0.5);
-  color: #81c784;
-}
-
-.btn-promote {
-  background: rgba(33, 150, 243, 0.2);
-  border-color: rgba(33, 150, 243, 0.5);
-  color: #64b5f6;
-}
-
-.btn-promote-admin {
-  background: rgba(229, 9, 20, 0.15);
-  border-color: rgba(229, 9, 20, 0.4);
-  color: #ff6b6b;
-}
-
-.btn-promote-moderator {
-  background: rgba(156, 39, 176, 0.2);
-  border-color: rgba(156, 39, 176, 0.5);
-  color: #ce93d8;
-}
-
-.btn-disable {
-  background: rgba(255, 152, 0, 0.15);
-  border-color: rgba(255, 152, 0, 0.4);
-  color: #ffb74d;
-}
-
-.btn-enable {
-  background: rgba(76, 175, 80, 0.2);
-  border-color: rgba(76, 175, 80, 0.5);
-  color: #81c784;
-}
-
-.btn-demote {
-  background: rgba(158, 158, 158, 0.15);
-  border-color: rgba(158, 158, 158, 0.4);
-  color: #bdbdbd;
-}
-
-.btn-delete {
-  background: rgba(229, 9, 20, 0.2);
-  border-color: rgba(229, 9, 20, 0.5);
-  color: #ef5350;
-}
-
-.role-moderator {
-  background: rgba(156, 39, 176, 0.2);
-  color: #ce93d8;
-  border: 1px solid rgba(156, 39, 176, 0.4);
-}
-
-.status-disabled {
-  background: rgba(229, 9, 20, 0.15);
-  color: #ff6b6b;
-}
-
-.disabled-user-row {
-  opacity: 0.6;
-}
-
-.action-loading {
-  color: var(--text-muted, #888);
-  font-size: 0.8rem;
-  font-style: italic;
-}
-
-.empty-state {
-  text-align: center;
-  color: var(--text-muted, #666);
-  padding: 2rem !important;
-}
-
-.error-message {
-  background: rgba(229, 9, 20, 0.1);
-  border: 1px solid rgba(229, 9, 20, 0.3);
-  color: #ff6b6b;
-  padding: 0.6rem 0.8rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.dismiss-btn {
-  background: none;
-  border: none;
-  color: #ff6b6b;
-  cursor: pointer;
-  font-size: 0.8rem;
-  text-decoration: underline;
-}
-
-.division-select,
-.wrestler-select {
-  background: var(--card-bg, #1a1a2e);
-  border: 1px solid var(--border-color, #444);
-  color: var(--text-primary, #fff);
-  padding: 0.25rem 0.4rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  min-width: 120px;
-}
-
-.division-select:hover,
-.wrestler-select:hover {
-  border-color: var(--accent-color, #e50914);
-}
-
-.division-select:focus,
-.wrestler-select:focus {
-  outline: none;
-  border-color: var(--accent-color, #e50914);
-  box-shadow: 0 0 0 1px var(--accent-color, #e50914);
+.users-table .ar-input {
+  min-width: 10rem;
 }
 
 @media (max-width: 768px) {
-  .manage-users {
-    padding: 0;
+  .user-manage-actions .ui-btn {
+    flex: 1 1 100%;
   }
 
-  .users-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
+  /* Selects need the card's full width, so their label sits above them. */
+  .users-table .ui-table td:has(select) {
+    flex-wrap: wrap;
+    gap: 0.25rem;
   }
 
-  .users-table {
-    font-size: 0.78rem;
+  .users-table .ar-stack:has(select) {
+    flex: 1 1 100%;
   }
 
-  .users-table th,
-  .users-table td {
-    padding: 0.4rem 0.5rem;
-  }
-
-  .filter-tabs button {
-    padding: 0.3rem 0.6rem;
-    font-size: 0.75rem;
-  }
-
-  .btn-action {
-    padding: 0.2rem 0.4rem;
-    font-size: 0.7rem;
-  }
-
-  .division-select,
-  .wrestler-select {
-    min-width: 90px;
-    font-size: 0.75rem;
+  .users-table .ar-input {
+    flex: 1 1 100%;
+    min-width: 0;
   }
 }
 
-.users-header-actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.btn-refresh:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.success-message {
-  background: rgba(76, 175, 80, 0.1);
-  border: 1px solid rgba(76, 175, 80, 0.3);
-  color: #81c784;
-  padding: 0.6rem 0.8rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.success-message .dismiss-btn {
-  color: #81c784;
+/* ManageFeatures uses this button class and has no style of its own for it. */
+.dismiss-btn {
+  background: none;
+  border: none;
+  color: var(--color-loss);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  cursor: pointer;
 }

@@ -1,0 +1,183 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+const { mockTransactWrite } = vi.hoisted(() => ({ mockTransactWrite: vi.fn() }));
+
+vi.mock('../../../dynamodb', () => ({
+  dynamoDb: { transactWrite: mockTransactWrite },
+  TableNames: {
+    PLAYERS: 'Players',
+    WRESTLERS: 'Wrestlers',
+    SEASON_STANDINGS: 'SeasonStandings',
+    MATCHES: 'Matches',
+    MATCH_RATINGS: 'MatchRatings',
+  },
+}));
+
+import { DynamoUnitOfWork } from '../DynamoUnitOfWork';
+import { ConcurrencyError } from '../../errors';
+import { RatingAlreadyExistsError } from '../../matchRatings';
+
+interface StagedUpdate {
+  ConditionExpression?: string;
+  UpdateExpression: string;
+  ExpressionAttributeNames?: Record<string, string>;
+  ExpressionAttributeValues?: Record<string, unknown>;
+}
+
+function lastUpdate(uow: DynamoUnitOfWork): StagedUpdate {
+  const items = (uow as unknown as { staged: Array<{ Update: StagedUpdate }> }).staged;
+  return items[items.length - 1].Update;
+}
+
+function cancelled(codes: string[]): Error {
+  const err = new Error('cancelled') as Error & { CancellationReasons: Array<{ Code: string }> };
+  err.name = 'TransactionCanceledException';
+  err.CancellationReasons = codes.map((Code) => ({ Code }));
+  return err;
+}
+
+beforeEach(() => {
+  mockTransactWrite.mockReset();
+  mockTransactWrite.mockResolvedValue({});
+});
+
+describe('updateMatch conditions', () => {
+  it('stays unconditional when no condition is passed', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updateMatch('m1', 'd1', { isTitleDefense: true });
+    expect(lastUpdate(uow).ConditionExpression).toBeUndefined();
+  });
+
+  it('notCompleted requires the row and a non-completed status', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updateMatch('m1', 'd1', { status: 'completed', winners: ['p1'] }, { kind: 'notCompleted' });
+    const update = lastUpdate(uow);
+    expect(update.ConditionExpression).toBe('attribute_exists(matchId) AND #s <> :completedStatus');
+    expect(update.ExpressionAttributeNames?.['#s']).toBe('status');
+    expect(update.ExpressionAttributeValues?.[':completedStatus']).toBe('completed');
+  });
+
+  it('notCompleted declares #s even when the patch does not set status', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updateMatch('m1', 'd1', { winners: ['p1'] }, { kind: 'notCompleted' });
+    expect(lastUpdate(uow).ExpressionAttributeNames?.['#s']).toBe('status');
+  });
+
+  it('unchangedSince compares updatedAt through the name the update already declares', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updateMatch('m1', 'd1', { slots: [] }, { kind: 'unchangedSince', updatedAt: 't0' });
+    const update = lastUpdate(uow);
+    expect(update.ConditionExpression).toBe('attribute_exists(matchId) AND #f1 = :expectedUpdatedAt');
+    expect(update.ExpressionAttributeNames?.['#f1']).toBe('updatedAt');
+    expect(update.ExpressionAttributeValues?.[':expectedUpdatedAt']).toBe('t0');
+  });
+
+  it('unchangedSince handles a legacy row with no updatedAt', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updateMatch('m1', 'd1', { slots: [] }, { kind: 'unchangedSince', updatedAt: undefined });
+    const update = lastUpdate(uow);
+    expect(update.ConditionExpression).toBe('attribute_exists(matchId) AND attribute_not_exists(#f1)');
+    expect(update.ExpressionAttributeValues).not.toHaveProperty(':expectedUpdatedAt');
+  });
+});
+
+describe('ghost-row and ownership conditions', () => {
+  it('incrementPlayerRecord requires a live player', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.incrementPlayerRecord('p1', { wins: 1 });
+    expect(lastUpdate(uow).ConditionExpression).toBe('attribute_exists(playerId) AND attribute_not_exists(deletedAt)');
+  });
+
+  it('incrementStanding stays unconditional because a first result creates the row', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.incrementStanding('s1', 'p1', { wins: 1 });
+    expect(lastUpdate(uow).ConditionExpression).toBeUndefined();
+  });
+
+  it('assignWrestlerToPlayer requires the wrestler to be free or already held by the player', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.assignWrestlerToPlayer({ wrestlerId: 'w1', playerId: 'p1', slot: 'primary' });
+    const update = lastUpdate(uow);
+    expect(update.ConditionExpression).toBe(
+      'attribute_exists(wrestlerId) AND (attribute_not_exists(isInUse) OR isInUse = :notInUse OR assignedPlayerId = :playerId)',
+    );
+    expect(update.ExpressionAttributeValues?.[':notInUse']).toBe('false');
+    expect(update.ExpressionAttributeValues?.[':isInUse']).toBe('true');
+  });
+
+  it('releaseWrestlerFromPlayer only checks the owner when asked to', () => {
+    const unguarded = new DynamoUnitOfWork();
+    unguarded.releaseWrestlerFromPlayer({ wrestlerId: 'w1' });
+    expect(lastUpdate(unguarded).ConditionExpression).toBe('attribute_exists(wrestlerId)');
+
+    const guarded = new DynamoUnitOfWork();
+    guarded.releaseWrestlerFromPlayer({ wrestlerId: 'w1', expectedPlayerId: 'p1' });
+    const update = lastUpdate(guarded);
+    expect(update.ConditionExpression).toBe('attribute_exists(wrestlerId) AND assignedPlayerId = :expectedPlayerId');
+    expect(update.ExpressionAttributeValues?.[':expectedPlayerId']).toBe('p1');
+  });
+});
+
+describe('commit error mapping', () => {
+  it('maps a failed match guard to ConcurrencyError', async () => {
+    mockTransactWrite.mockRejectedValue(cancelled(['ConditionalCheckFailed', 'None']));
+    const uow = new DynamoUnitOfWork();
+    uow.updateMatch('m1', 'd1', { status: 'completed' }, { kind: 'notCompleted' });
+    uow.incrementPlayerRecord('p1', { wins: 1 });
+    await expect(uow.commit()).rejects.toBeInstanceOf(ConcurrencyError);
+  });
+
+  it('maps a guard failure at a later index to the right item', async () => {
+    mockTransactWrite.mockRejectedValue(cancelled(['None', 'ConditionalCheckFailed']));
+    const uow = new DynamoUnitOfWork();
+    uow.updatePlayer('p1', { name: 'x' });
+    uow.assignWrestlerToPlayer({ wrestlerId: 'w1', playerId: 'p1', slot: 'primary' });
+    await expect(uow.commit()).rejects.toThrow('Wrestler with id w1');
+  });
+
+  it('keeps rating duplicates typed when other items were staged first', async () => {
+    mockTransactWrite.mockRejectedValue(cancelled(['None', 'ConditionalCheckFailed']));
+    const uow = new DynamoUnitOfWork();
+    uow.updatePlayer('p1', { name: 'x' });
+    uow.createMatchRating({ matchId: 'm1', userId: 'u1', rating: 4 });
+    await expect(uow.commit()).rejects.toBeInstanceOf(RatingAlreadyExistsError);
+  });
+
+  it('rethrows an unguarded item failure unchanged', async () => {
+    const err = cancelled(['ConditionalCheckFailed']);
+    mockTransactWrite.mockRejectedValue(err);
+    const uow = new DynamoUnitOfWork();
+    uow.incrementPlayerRecord('p1', { wins: 1 });
+    await expect(uow.commit()).rejects.toBe(err);
+  });
+});
+
+describe('chunking warning', () => {
+  let warn: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  });
+  afterEach(() => {
+    warn.mockRestore();
+  });
+
+  const stage = (uow: DynamoUnitOfWork, count: number) => {
+    for (let i = 0; i < count; i++) uow.incrementPlayerRecord(`p${i}`, { wins: 1 });
+  };
+
+  it('warns once when the work spans more than one transaction', async () => {
+    const uow = new DynamoUnitOfWork();
+    stage(uow, 250);
+    await uow.commit();
+    expect(mockTransactWrite).toHaveBeenCalledTimes(3);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain('250 items into 3 transactions');
+  });
+
+  it('stays quiet at exactly one full transaction', async () => {
+    const uow = new DynamoUnitOfWork();
+    stage(uow, 100);
+    await uow.commit();
+    expect(warn).not.toHaveBeenCalled();
+  });
+});

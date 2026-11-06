@@ -48,6 +48,7 @@ import { handler as updatePlayer } from '../updatePlayer';
 import { handler as deletePlayer } from '../deletePlayer';
 import { handler as updateMyProfile } from '../updateMyProfile';
 import { filterExistingWrestlerIds } from '../wrestlerAssignment';
+import { NEEDS_WRESTLER } from '../../../lib/needsWrestler';
 
 let repos: Repositories;
 const ctx = {} as Context;
@@ -342,6 +343,68 @@ describe('updatePlayer FK transitions', () => {
   });
 });
 
+// ─── updatePlayer clears with no wrestler change ────────────────────
+
+describe('updatePlayer clearing plain fields', () => {
+  async function seedPlayer() {
+    const division = await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const player = await repos.roster.players.create({ name: 'Plain', currentWrestler: 'Edge' });
+    await repos.roster.players.update(player.playerId, {
+      divisionId: division.divisionId,
+      alignment: 'heel',
+      alternateWrestler: 'Christian',
+    });
+    return player.playerId;
+  }
+
+  const save = (playerId: string, body: Record<string, unknown>) =>
+    updatePlayer(
+      makeEvent({ httpMethod: 'PUT', pathParameters: { playerId }, body: JSON.stringify(body) }),
+      ctx,
+      cb,
+    );
+
+  it.each([
+    ['divisionId', ''],
+    ['divisionId', null],
+    ['alignment', ''],
+    ['alignment', null],
+    ['alternateWrestler', ''],
+    ['alternateWrestler', null],
+  ])('removes %s when sent %j', async (field, value) => {
+    const playerId = await seedPlayer();
+
+    const result = await save(playerId, { [field]: value });
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body)).not.toHaveProperty(field);
+    expect(await repos.roster.players.findById(playerId)).not.toHaveProperty(field);
+  });
+
+  it('saves other fields alongside a clear and leaves the rest alone', async () => {
+    const playerId = await seedPlayer();
+
+    await save(playerId, { name: 'Renamed', divisionId: '' });
+
+    const stored = await repos.roster.players.findById(playerId);
+    expect(stored).toMatchObject({
+      name: 'Renamed',
+      alignment: 'heel',
+      alternateWrestler: 'Christian',
+      currentWrestler: 'Edge',
+    });
+    expect(stored).not.toHaveProperty('divisionId');
+  });
+
+  it('keeps a field that is not in the request', async () => {
+    const playerId = await seedPlayer();
+
+    await save(playerId, { name: 'Renamed' });
+
+    expect(await repos.roster.players.findById(playerId)).toMatchObject({ alignment: 'heel' });
+  });
+});
+
 // ─── deletePlayer releases wrestlers ────────────────────────────────
 
 describe('deletePlayer releases assigned wrestlers', () => {
@@ -558,5 +621,235 @@ describe('updateMyProfile with FK fields', () => {
     );
 
     expect(result!.statusCode).toBe(409);
+  });
+});
+
+describe('assigning a wrestler with stale release state', () => {
+  async function seedStaleRelease() {
+    const wrestler = await repos.roster.wrestlers.create({
+      promotion: 'WWE',
+      name: 'Stale',
+      overallCap: 90,
+    });
+    const holder = await repos.roster.players.create({ name: 'Holder', currentWrestler: 'Stale' });
+    // The state an older release left behind: flagged free, still linked.
+    await repos.roster.wrestlers.update(wrestler.wrestlerId, {
+      isInUse: false,
+      assignedPlayerId: holder.playerId,
+      assignedSlot: 'primary',
+    } as Parameters<typeof repos.roster.wrestlers.update>[1]);
+    return { wrestler, holder };
+  }
+
+  it('rejects with 409 while the linked player still holds the wrestler', async () => {
+    const { wrestler, holder } = await seedStaleRelease();
+    await repos.roster.players.update(holder.playerId, { currentWrestlerId: wrestler.wrestlerId });
+
+    const result = await createPlayer(
+      makeEvent({ body: JSON.stringify({ name: 'New', currentWrestlerId: wrestler.wrestlerId }) }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(409);
+  });
+
+  it('allows it once the linked player no longer holds the wrestler', async () => {
+    const { wrestler } = await seedStaleRelease();
+
+    const result = await createPlayer(
+      makeEvent({ body: JSON.stringify({ name: 'New', currentWrestlerId: wrestler.wrestlerId }) }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(201);
+  });
+
+
+  describe('players with a wrestler name but no FK', () => {
+    async function seedLegacyPlayer() {
+      const player = await repos.roster.players.create({ name: 'Adam', currentWrestler: 'Edge' });
+      await repos.roster.players.update(player.playerId, {
+        userId: 'user-sub-1',
+        alternateWrestler: 'Christian',
+      });
+      return player.playerId;
+    }
+
+    function adminSave(playerId: string, body: Record<string, unknown>) {
+      return updatePlayer(
+        makeEvent({ httpMethod: 'PUT', pathParameters: { playerId }, body: JSON.stringify(body) }),
+        ctx,
+        cb,
+      );
+    }
+
+    function selfSave(body: Record<string, unknown>) {
+      return updateMyProfile(
+        withWrestlerAuth(makeEvent({ httpMethod: 'PUT', body: JSON.stringify(body) })),
+        ctx,
+        cb,
+      );
+    }
+
+    it.each([['an empty string', ''], ['null', null]])(
+      'updatePlayer keeps both names when the form echoes %s for the FKs',
+      async (_label, emptyId) => {
+        const playerId = await seedLegacyPlayer();
+
+        const result = await adminSave(playerId, {
+          name: 'Renamed',
+          currentWrestlerId: emptyId,
+          alternateWrestlerId: emptyId,
+        });
+
+        expect(result!.statusCode).toBe(200);
+        const after = await repos.roster.players.findById(playerId);
+        expect(after?.name).toBe('Renamed');
+        expect(after?.currentWrestler).toBe('Edge');
+        expect(after?.alternateWrestler).toBe('Christian');
+      },
+    );
+
+    it('updatePlayer keeps the current name when only that slot echoes empty', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      await adminSave(playerId, { name: 'Renamed', currentWrestlerId: '' });
+
+      expect((await repos.roster.players.findById(playerId))?.currentWrestler).toBe('Edge');
+    });
+
+    it('updatePlayer keeps the alternate name when only that slot echoes empty', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      await adminSave(playerId, { name: 'Renamed', alternateWrestlerId: '' });
+
+      expect((await repos.roster.players.findById(playerId))?.alternateWrestler).toBe('Christian');
+    });
+
+    it('updatePlayer clears a name-only primary slot on an explicit clear', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      const result = await adminSave(playerId, { name: 'Renamed', clearCurrentWrestler: true });
+
+      expect(result!.statusCode).toBe(200);
+      const after = await repos.roster.players.findById(playerId);
+      expect(after?.name).toBe('Renamed');
+      expect(after?.currentWrestler).toBe(NEEDS_WRESTLER);
+      expect(after?.alternateWrestler).toBe('Christian');
+    });
+
+    it('updatePlayer clears a name-only alternate slot on an explicit clear', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      const result = await adminSave(playerId, { name: 'Renamed', clearAlternateWrestler: true });
+
+      expect(result!.statusCode).toBe(200);
+      const after = await repos.roster.players.findById(playerId);
+      expect(after?.alternateWrestler).toBeUndefined();
+      expect(after?.currentWrestler).toBe('Edge');
+    });
+
+    it('updatePlayer releases the roster row on an explicit clear of an FK slot', async () => {
+      const rock = await seedWrestler('The Rock');
+      const created = await createPlayer(
+        makeEvent({ body: JSON.stringify({ name: 'X', currentWrestlerId: rock.wrestlerId }) }),
+        ctx,
+        cb,
+      );
+      const { playerId } = JSON.parse(created!.body);
+
+      await adminSave(playerId, { clearCurrentWrestler: true });
+
+      expect((await repos.roster.players.findById(playerId))?.currentWrestler).toBe(NEEDS_WRESTLER);
+      expect((await repos.roster.wrestlers.findById(rock.wrestlerId))?.isInUse).toBe(false);
+    });
+
+    it('updatePlayer lets a wrestlerId win over an explicit clear on the same slot', async () => {
+      const playerId = await seedLegacyPlayer();
+      const rock = await seedWrestler('The Rock');
+
+      await adminSave(playerId, { currentWrestlerId: rock.wrestlerId, clearCurrentWrestler: true });
+
+      expect((await repos.roster.players.findById(playerId))?.currentWrestler).toBe('The Rock');
+    });
+
+    it('updatePlayer ignores a clear flag that is not literally true', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      await adminSave(playerId, { name: 'Renamed', clearCurrentWrestler: 'true' });
+
+      expect((await repos.roster.players.findById(playerId))?.currentWrestler).toBe('Edge');
+    });
+
+    it('updateMyProfile ignores the clear flags, which are for staff edits only', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      await selfSave({ name: 'Renamed', clearCurrentWrestler: true, clearAlternateWrestler: true });
+
+      const after = await repos.roster.players.findById(playerId);
+      expect(after?.currentWrestler).toBe('Edge');
+      expect(after?.alternateWrestler).toBe('Christian');
+    });
+
+    it('updatePlayer takes the text name when an empty FK echo sits beside it', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      await adminSave(playerId, { currentWrestlerId: '', currentWrestler: 'Rhyno' });
+
+      expect((await repos.roster.players.findById(playerId))?.currentWrestler).toBe('Rhyno');
+    });
+
+    it('updateMyProfile takes the text name when an empty FK echo sits beside it', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      await selfSave({ currentWrestlerId: '', currentWrestler: 'Rhyno' });
+
+      expect((await repos.roster.players.findById(playerId))?.currentWrestler).toBe('Rhyno');
+    });
+
+    it('updateMyProfile keeps both names when the form echoes empty FKs', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      const result = await selfSave({ name: 'Renamed', currentWrestlerId: '', alternateWrestlerId: '' });
+
+      expect(result!.statusCode).toBe(200);
+      const after = await repos.roster.players.findById(playerId);
+      expect(after?.currentWrestler).toBe('Edge');
+      expect(after?.alternateWrestler).toBe('Christian');
+    });
+
+    it('updatePlayer still assigns a real wrestler over the legacy name', async () => {
+      const playerId = await seedLegacyPlayer();
+      const rock = await seedWrestler('The Rock');
+
+      await adminSave(playerId, { currentWrestlerId: rock.wrestlerId });
+
+      const after = await repos.roster.players.findById(playerId);
+      expect(after?.currentWrestlerId).toBe(rock.wrestlerId);
+      expect(after?.currentWrestler).toBe('The Rock');
+    });
+
+    it.each([
+      ['current', 'currentWrestlerId', 'currentWrestler'],
+      ['alternate', 'alternateWrestlerId', 'alternateWrestler'],
+    ] as const)('updatePlayer still clears the %s slot when it holds an FK', async (_label, idField, nameField) => {
+      const rock = await seedWrestler('The Rock');
+      const created = await createPlayer(
+        makeEvent({ body: JSON.stringify({ name: 'X', [idField]: rock.wrestlerId }) }),
+        ctx,
+        cb,
+      );
+      const { playerId } = JSON.parse(created!.body);
+
+      const result = await adminSave(playerId, { [idField]: '' });
+
+      expect(result!.statusCode).toBe(200);
+      const after = await repos.roster.players.findById(playerId);
+      expect(after?.[idField]).toBeFalsy();
+      expect(after?.[nameField]).not.toBe('The Rock');
+      expect((await repos.roster.wrestlers.findById(rock.wrestlerId))?.isInUse).toBe(false);
+    });
   });
 });

@@ -55,13 +55,24 @@ const mockEventsRepo = {
 const mockContendersRepo = {
   listByChampionship: vi.fn(),
   listByChampionshipRanked: vi.fn(),
-  deleteAllForChampionship: vi.fn(),
   upsertRanking: vi.fn(),
   findOverride: vi.fn(),
   listActiveOverrides: vi.fn(),
   createOverride: vi.fn(),
   deactivateOverride: vi.fn(),
   writeHistory: vi.fn(),
+};
+
+const mockPlayersRepo = {
+  findById: vi.fn(async (playerId: string): Promise<{ playerId: string } | null> => ({ playerId })),
+};
+
+const mockSeasonsRepo = {
+  findById: vi.fn(async (seasonId: string): Promise<Record<string, unknown> | null> => ({
+    seasonId,
+    name: 'Season 1',
+    status: 'active',
+  })),
 };
 
 const mockRunInTransaction = vi.fn();
@@ -77,6 +88,8 @@ vi.mock('../../../lib/repositories', () => ({
     leagueOps: {
       events: mockEventsRepo,
     },
+    roster: { players: mockPlayersRepo },
+    season: { seasons: mockSeasonsRepo },
     runInTransaction: mockRunInTransaction,
   }),
 }));
@@ -121,13 +134,35 @@ function stubCoreTransaction() {
   });
 }
 
+// ---- Single-Elimination Draws ----------------------------------------------
+
+describe('recordResult — single-elimination draws', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('rejects a draw before anything is written', async () => {
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue({ ...base, tournamentId: 't1' });
+    mockTournamentsRepo.findById.mockResolvedValue({ tournamentId: 't1', type: 'single-elimination' });
+
+    const r = await recordResult(ev({ winners: ['p1', 'p2'], losers: [], isDraw: true }), ctx, cb);
+
+    expect(r!.statusCode).toBe(400);
+    expect(mockRunInTransaction).not.toHaveBeenCalled();
+  });
+});
+
 // ---- Round-Robin Tests -----------------------------------------------------
 
 describe('recordResult — round-robin tournament', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  function stubRR(standings: Record<string, unknown>, participants: string[], status = 'in-progress') {
-    mockMatchesRepo.findByIdWithDate.mockResolvedValue({ ...base, tournamentId: 't1' });
+  function stubRR(
+    standings: Record<string, unknown>,
+    participants: string[],
+    status = 'in-progress',
+    tournamentMatches: Array<Record<string, unknown>> = [],
+  ) {
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue({ ...base, participants, tournamentId: 't1' });
+    mockMatchesRepo.listByTournament.mockResolvedValue(tournamentMatches);
     stubCoreTransaction();
     mockTournamentsRepo.findById.mockResolvedValue({
       tournamentId: 't1', type: 'round-robin', standings, participants, status,
@@ -154,12 +189,31 @@ describe('recordResult — round-robin tournament', () => {
     );
   });
 
-  // Note: Draw detection requires winners === losers (sorted), but the overlap
-  // validation returns 400 before reaching draw logic. Draw paths are unreachable.
+  const played = (matchId: string, participants: string[], winners: string[], extra: object = {}) => ({
+    matchId, participants, winners, status: 'completed', ...extra,
+  });
 
-  it('does not complete tournament when totalMatchesPlayed formula has not reached threshold', async () => {
-    // The completion formula uses (wins + draws) / 2 which only counts wins at half-rate.
-    // 3 participants = 3 expected matches, but 3 wins / 2 = 1.5 < 3, so stays in-progress.
+  it('stays in progress until every pairing has been played', async () => {
+    // 3 participants = 3 expected matches; this result is only the second.
+    stubRR(
+      {
+        p1: { wins: 1, losses: 0, draws: 0, points: 2 },
+        p2: { wins: 0, losses: 0, draws: 0, points: 0 },
+        p3: { wins: 0, losses: 1, draws: 0, points: 0 },
+      },
+      ['p1', 'p2', 'p3'],
+      'in-progress',
+      [played('m0', ['p1', 'p3'], ['p1']), { matchId: 'mX', participants: ['p1', 'p2'], status: 'scheduled' }],
+    );
+    await recordResult(ev({ winners: ['p2'], losers: ['p3'] }), ctx, cb);
+
+    expect(mockTournamentsRepo.update).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ status: 'in-progress' }),
+    );
+  });
+
+  it('completes when the last pairing is recorded and crowns the points leader', async () => {
     stubRR(
       {
         p1: { wins: 2, losses: 0, draws: 0, points: 4 },
@@ -167,12 +221,110 @@ describe('recordResult — round-robin tournament', () => {
         p3: { wins: 0, losses: 1, draws: 0, points: 0 },
       },
       ['p1', 'p2', 'p3'],
+      'in-progress',
+      [played('m0', ['p1', 'p3'], ['p1']), played('m9', ['p1', 'p2'], ['p1'])],
     );
     await recordResult(ev({ winners: ['p2'], losers: ['p3'] }), ctx, cb);
 
     expect(mockTournamentsRepo.update).toHaveBeenCalledWith(
       't1',
+      expect.objectContaining({ status: 'completed', winner: 'p1' }),
+    );
+  });
+
+  it('counts the current match once even when the index already includes it', async () => {
+    stubRR(
+      {},
+      ['p1', 'p2', 'p3'],
+      'in-progress',
+      [played('m0', ['p1', 'p3'], ['p1']), played('m1', ['p1', 'p2'], ['p1'])],
+    );
+    await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
+
+    expect(mockTournamentsRepo.update).toHaveBeenCalledWith(
+      't1',
       expect.objectContaining({ status: 'in-progress' }),
+    );
+  });
+
+  it('completes a tournament whose last match is a draw', async () => {
+    stubRR(
+      {
+        p1: { wins: 1, losses: 0, draws: 0, points: 2 },
+        p2: { wins: 0, losses: 1, draws: 0, points: 0 },
+      },
+      ['p1', 'p2'],
+      'in-progress',
+      [],
+    );
+    await recordResult(ev({ winners: ['p1', 'p2'], losers: [], isDraw: true }), ctx, cb);
+
+    expect(mockTournamentsRepo.update).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ status: 'completed', winner: 'p1' }),
+    );
+  });
+
+  it('breaks a points tie on wins before head-to-head', async () => {
+    // p2 is listed first and level on points, but p1 has more wins.
+    stubRR(
+      {
+        p2: { wins: 0, losses: 0, draws: 3, points: 3 },
+        p1: { wins: 0, losses: 0, draws: 0, points: 1 },
+      },
+      ['p1', 'p2'],
+    );
+    await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
+
+    expect(mockTournamentsRepo.update).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ status: 'completed', winner: 'p1' }),
+    );
+  });
+
+  it('breaks a tie on points and wins by head-to-head result', async () => {
+    // p3 and p1 finish level; p3 beat p1, even though p1 comes first by id and key order.
+    stubRR(
+      {
+        p1: { wins: 1, losses: 1, draws: 0, points: 2 },
+        p2: { wins: 0, losses: 1, draws: 0, points: 0 },
+        p3: { wins: 0, losses: 1, draws: 0, points: 0 },
+      },
+      ['p1', 'p2', 'p3'],
+      'in-progress',
+      [played('m0', ['p1', 'p3'], ['p3']), played('m9', ['p1', 'p2'], ['p1'])],
+    );
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue({
+      ...base, participants: ['p2', 'p3'], tournamentId: 't1',
+    });
+    await recordResult(ev({ winners: ['p3'], losers: ['p2'] }), ctx, cb);
+
+    expect(mockTournamentsRepo.update).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ status: 'completed', winner: 'p3' }),
+    );
+  });
+
+  it('settles a tie that survives every step on the lowest playerId', async () => {
+    // Three-way cycle: each player has one win, one loss and one head-to-head win.
+    stubRR(
+      {
+        p3: { wins: 1, losses: 0, draws: 0, points: 2 },
+        p2: { wins: 0, losses: 1, draws: 0, points: 0 },
+        p1: { wins: 1, losses: 1, draws: 0, points: 2 },
+      },
+      ['p1', 'p2', 'p3'],
+      'in-progress',
+      [played('m0', ['p1', 'p2'], ['p1']), played('m9', ['p1', 'p3'], ['p3'])],
+    );
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue({
+      ...base, participants: ['p2', 'p3'], tournamentId: 't1',
+    });
+    await recordResult(ev({ winners: ['p2'], losers: ['p3'] }), ctx, cb);
+
+    expect(mockTournamentsRepo.update).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ status: 'completed', winner: 'p1' }),
     );
   });
 
@@ -320,6 +472,22 @@ describe('recordResult — event auto-complete', () => {
     mockMatchesRepo.findById
       .mockResolvedValueOnce({ matchId: 'm1', status: 'completed' })
       .mockResolvedValueOnce({ matchId: 'm2', status: 'completed' });
+    mockEventsRepo.update.mockResolvedValue(undefined);
+
+    await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
+
+    expect(mockEventsRepo.update).toHaveBeenCalledWith('e1', { status: 'completed' });
+  });
+
+  it('does not let a card whose match is gone hold the event open', async () => {
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue(base);
+    stubCoreTransaction();
+    mockEventsRepo.list.mockResolvedValue([
+      { eventId: 'e1', status: 'in-progress', matchCards: [{ matchId: 'm1' }, { matchId: 'gone' }] },
+    ]);
+    mockMatchesRepo.findById
+      .mockResolvedValueOnce({ matchId: 'm1', status: 'completed' })
+      .mockResolvedValueOnce(null);
     mockEventsRepo.update.mockResolvedValue(undefined);
 
     await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);

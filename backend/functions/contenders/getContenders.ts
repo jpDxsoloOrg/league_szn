@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { isPlayerVisible } from '../../lib/needsWrestler';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -75,7 +76,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // ------------------------------------------------------------------
-    // 6. Build enriched contender list, excluding the current champion
+    // 6. Build enriched contender list, excluding the current champion and
+    //    hidden or deleted players
     // ------------------------------------------------------------------
     const championIds = new Set<string>();
     if (currentChampion) {
@@ -86,12 +88,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    const filteredRankings = rankings.filter(
-      (ranking) => !championIds.has(ranking.playerId),
-    );
-
-    const contendersList = filteredRankings.map((ranking, index) => {
+    // Ranks are renumbered below, so dropping players leaves no gaps. A stored
+    // ranking can outlive its player, so a missing row is dropped too.
+    const filteredRankings = rankings.flatMap((ranking) => {
+      if (championIds.has(ranking.playerId)) return [];
       const player = playersMap.get(ranking.playerId);
+      return player && isPlayerVisible(player) ? [{ ranking, player }] : [];
+    });
+
+    const contendersList = filteredRankings.map(({ ranking, player }, index) => {
       const previousRank = ranking.previousRank ?? null;
       const isNew = previousRank === null || previousRank === undefined;
       const adjustedRank = index + 1;
@@ -100,9 +105,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return {
         rank: adjustedRank,
         playerId: ranking.playerId,
-        playerName: player?.name || 'Unknown',
-        wrestlerName: player?.currentWrestler || 'Unknown',
-        imageUrl: player?.imageUrl || null,
+        playerName: player.name,
+        wrestlerName: player.currentWrestler,
+        imageUrl: player.imageUrl || null,
         rankingScore: ranking.rankingScore,
         winPercentage: ranking.winPercentage,
         currentStreak: ranking.currentStreak,

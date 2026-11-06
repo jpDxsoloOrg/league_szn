@@ -1,945 +1,511 @@
-/* ===========================
-   Dashboard — Championship Gold
-   Tonal layering, no borders
-   =========================== */
-
-.dashboard {
-  width: 100%;
+.home {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2.5rem;
+  min-width: 0;
 }
 
-/* — Section titles — */
-.db-section-title {
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #d0c5af;
-  margin: 0 0 1rem 0;
+.home-skeleton-hero .skeleton-block-item {
+  height: 22rem;
+  border-radius: var(--radius-card);
 }
 
-/* — Empty states — */
-.db-empty-block {
+/* Section header */
+.home-section {
+  min-width: 0;
+}
+
+.home-section__header {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  align-items: flex-start;
-}
-
-.db-empty-text {
-  color: #666;
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-.db-empty-action {
-  font-size: 0.85rem;
-  color: #d4af37;
-  text-decoration: none;
-}
-
-.db-empty-action:hover {
-  text-decoration: underline;
-}
-
-/* ===========================
-   ROW 1 — Hero: Featured Champion
-   =========================== */
-.db-hero {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 2rem;
-  background: linear-gradient(135deg, #1c1b1b 0%, #201f1f 60%, #1c1b1b 100%);
-  border-radius: 8px;
-  padding: 2rem;
-  min-height: 180px;
-}
-
-.db-hero--empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 120px;
-}
-
-.db-hero-image {
-  flex-shrink: 0;
-}
-
-.db-hero-image img {
-  width: 120px;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 6px;
-}
-
-.db-hero-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.db-hero-belt {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #d4af37;
-}
-
-.db-hero-name {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: #e5e2e1;
-  margin: 0;
-  letter-spacing: -0.02em;
-}
-
-.db-hero-stats {
-  display: flex;
-  gap: 1.5rem;
-  margin-top: 0.5rem;
-}
-
-.db-hero-stat {
-  display: flex;
-  flex-direction: column;
-}
-
-.db-hero-stat-value {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #f2ca50;
-}
-
-.db-hero-stat-label {
-  font-size: 0.7rem;
-  color: #99907c;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.db-hero-link {
-  margin-top: 0.75rem;
-  font-size: 0.8rem;
-  color: #d4af37;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.db-hero-link:hover {
-  text-decoration: underline;
-}
-
-/* Secondary champions in hero */
-.db-hero-others {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding-left: 1.5rem;
-  border-left: 2px solid #2a2a2a;
-}
-
-.db-hero-other {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.db-hero-other img {
-  width: 40px;
-  height: 40px;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-.db-hero-other-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.db-hero-other-belt {
-  font-size: 0.6rem;
-  color: #d4af37;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 600;
-}
-
-.db-hero-other-name {
-  font-size: 0.85rem;
-  color: #c8c6c5;
-  font-weight: 600;
-}
-
-/* Mobile-only hero elements (CHAMPION pill + carousel dots) */
-.db-hero-pill,
-.db-hero-dots {
-  display: none;
-}
-
-/* ===========================
-   ROW 2 — Events + Quick Stats
-   =========================== */
-.db-row-2 {
-  display: grid;
-  grid-template-columns: 3fr 2fr;
-  gap: 1.5rem;
-}
-
-.db-events,
-.db-stats {
-  background-color: #1c1b1b;
-  border-radius: 8px;
-  padding: 1.5rem;
-}
-
-/* Live events */
-.db-live-events {
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
   margin-bottom: 1rem;
 }
 
-.db-event-card {
-  display: block;
-  background-color: #2a2a2a;
-  border-radius: 6px;
-  padding: 1rem;
-  text-decoration: none;
-  color: inherit;
-  transition: background-color 0.15s;
+.home-section__title {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-size: clamp(1.25rem, 3vw, 1.625rem);
+  font-weight: 800;
 }
 
-.db-event-card:hover {
-  background-color: #353534;
+.home-section__title::before {
+  content: '';
+  flex: none;
+  width: 5px;
+  height: 1.25em;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-pink);
 }
 
-.db-event-card--live {
-  background-color: #2a2a2a;
-  position: relative;
+.home-section__title--cyan::before {
+  background-color: var(--color-cyan);
 }
 
-.db-live-badge {
-  display: inline-block;
-  margin-bottom: 0.5rem;
-  padding: 0.15rem 0.6rem;
-  background-color: #dc2626;
-  color: #fff;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  border-radius: 4px;
-  text-transform: uppercase;
-  animation: live-pulse 1.6s ease-in-out infinite;
+.home-section__note {
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
 }
 
-@keyframes live-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.db-event-name {
-  font-weight: 700;
-  font-size: 1rem;
-  color: #e5e2e1;
-  margin-bottom: 0.25rem;
-}
-
-.db-event-date {
-  font-size: 0.8rem;
-  color: #99907c;
-}
-
-.db-event-countdown {
-  font-size: 0.85rem;
+.home-section__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  color: var(--color-cyan);
+  font-size: 0.9375rem;
   font-weight: 600;
-  color: #f2ca50;
-  margin-bottom: 0.15rem;
-}
-
-/* Mobile-only event details (venue, live match count) */
-.db-event-venue,
-.db-event-matches {
-  display: none;
-}
-
-.db-upcoming-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-/* Quick Stats 2x2 */
-.db-stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-
-.db-stat-card {
-  background-color: #2a2a2a;
-  border-radius: 6px;
-  padding: 1.25rem 1rem;
-  text-align: center;
-  border-top: 2px solid #d4af37;
-}
-
-.db-stat-value {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: #f2ca50;
-  line-height: 1;
-}
-
-.db-stat-label {
-  font-size: 0.7rem;
-  color: #99907c;
-  margin-top: 0.4rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-/* ===========================
-   ROW 3 — Recent Results (horizontal scroll)
-   =========================== */
-.db-results {
-  background-color: #1c1b1b;
-  border-radius: 8px;
-  padding: 1.5rem;
-}
-
-.db-results-scroll {
-  display: flex;
-  gap: 0.75rem;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
-  scrollbar-width: thin;
-  scrollbar-color: #353534 transparent;
-}
-
-.db-result-card {
-  flex: 0 0 240px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 1rem;
-  background-color: #2a2a2a;
-  border-radius: 6px;
   text-decoration: none;
-  color: inherit;
-  transition: background-color 0.15s;
 }
 
-.db-result-card:hover {
-  background-color: #353534;
+.home-section__link:hover {
+  color: var(--color-cyan-bright);
+  text-decoration: underline;
 }
 
-.db-result-outcome {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-/* Desktop: winner/loser lines collapse into the outcome column;
-   WIN/LOSS tags are mobile-only. */
-.db-result-line {
-  display: contents;
-}
-
-.db-result-tag {
-  display: none;
-}
-
-.db-result-winner {
-  font-weight: 700;
-  color: #f2ca50;
-  font-size: 0.95rem;
-}
-
-.db-result-vs {
-  color: #666;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.db-result-loser {
-  color: #c8c6c5;
-  font-size: 0.9rem;
-}
-
-.db-result-type {
-  font-size: 0.7rem;
-  color: #99907c;
-}
-
-.db-result-footer {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: auto;
-}
-
-.db-result-belt {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-}
-
-.db-result-stars {
-  font-size: 0.8rem;
-  color: #fbbf24;
-}
-
-.db-result-motn {
-  font-size: 0.6rem;
-  font-weight: 700;
-  color: #d4af37;
-  text-transform: uppercase;
-  padding: 2px 6px;
-  background-color: rgba(212, 175, 55, 0.1);
-  border-radius: 4px;
-}
-
-/* ===========================
-   ROW 4 — Season Progress
-   =========================== */
-.db-season {
-  background-color: #1c1b1b;
-  border-radius: 8px;
-  padding: 1.5rem;
-}
-
-/* Season Progress Ring */
-.db-season-content {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.season-ring-wrapper {
+/* Hero */
+.home-hero {
   position: relative;
-  width: 120px;
-  height: 120px;
-  flex-shrink: 0;
+  min-height: 20rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border: 1px solid var(--color-hairline);
 }
 
-.season-ring {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
+.home-hero--live {
+  border-color: var(--color-pink);
+  box-shadow: var(--glow-pink);
 }
 
-.season-ring-bg {
-  fill: none;
-  stroke: #2a2a2a;
-  stroke-width: 8;
+.home-hero--empty {
+  min-height: 16rem;
 }
 
-.season-ring-fill {
-  fill: none;
-  stroke: #d4af37;
-  stroke-width: 8;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.6s ease;
+.home-hero__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
 }
 
-.season-ring-text {
-  position: absolute;
-  inset: 0;
+.home-hero__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.home-hero__countdown {
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-hero__title {
+  max-width: 100%;
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-size: clamp(2.25rem, 6vw, 4rem);
+  font-weight: 800;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+}
+
+.home-hero__matchup {
+  margin: 0.625rem 0 0;
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.home-hero__match-detail {
+  margin: 0.25rem 0 0;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.home-hero__facts {
+  margin: 0.75rem 0 0;
+  color: var(--color-text);
+}
+
+.home-hero__description {
+  display: -webkit-box;
+  max-width: 60ch;
+  margin: 0.75rem 0 0;
+  overflow: hidden;
+  color: var(--color-text);
+  line-height: 1.6;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+.home-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+/* One quiet line: the header link beside it already goes to the full page. */
+.home-empty {
+  margin: 0;
+  padding: 1rem 0;
+  color: var(--color-text-muted);
+}
+
+/* Other events under the hero */
+.home-more-events {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 0 1.5rem;
+  margin: -1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-more-events__link {
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
+  gap: 0.125rem;
+  min-height: var(--touch-target);
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--color-hairline);
+  color: var(--color-text);
+  text-decoration: none;
 }
 
-.season-ring-value {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #f2ca50;
-  line-height: 1;
+.home-more-events__link:hover .home-more-events__name {
+  color: var(--color-cyan);
 }
 
-.season-ring-label {
-  font-size: 0.55rem;
-  color: #99907c;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-top: 0.2rem;
+.home-more-events__name {
+  font-weight: 600;
 }
 
-.db-season-info {
+.home-more-events__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Results and table */
+.home-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 2.5rem 2rem;
+}
+
+.home-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-list > li + li {
+  border-top: 1px solid var(--color-hairline);
+}
+
+.home-list > li:first-child > a {
+  border-top-left-radius: var(--radius-card);
+  border-top-right-radius: var(--radius-card);
+}
+
+.home-list > li:last-child > a {
+  border-bottom-right-radius: var(--radius-card);
+  border-bottom-left-radius: var(--radius-card);
+}
+
+.home-result {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  padding: 0.875rem 1.25rem;
+  color: var(--color-text);
+  text-decoration: none;
 }
 
-.db-season-name {
+.home-result:hover,
+.home-table__row:hover,
+.home-rivalry:hover {
+  background-color: var(--color-overlay-soft);
+}
+
+.home-result__outcome {
+  font-family: var(--font-heading);
+  font-size: 1.0625rem;
+  overflow-wrap: anywhere;
+}
+
+.home-result__winner,
+.home-result__drawn {
   font-weight: 700;
-  font-size: 1.1rem;
-  color: #e5e2e1;
 }
 
-.db-season-meta {
-  font-size: 0.8rem;
-  color: #99907c;
+.home-result__def {
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
 }
 
-
-/* ===========================
-   Error & Loading
-   =========================== */
-.dashboard-error {
-  padding: 2rem;
-  text-align: center;
-  background-color: #1c1b1b;
-  border-radius: 8px;
-}
-
-.dashboard-error p {
-  margin-bottom: 1rem;
-  color: #ccc;
-}
-
-.dashboard-error button {
-  background: linear-gradient(135deg, #f2ca50, #d4af37);
-  color: #3c2f00;
-  border: none;
-  padding: 0.5rem 1.25rem;
-  border-radius: 4px;
+.home-result__loser {
+  color: var(--color-text-secondary);
   font-weight: 600;
-  cursor: pointer;
 }
 
-/* ===========================
-   Responsive — mobile app design
-   (docs/design/mobile-app/league-szn-home-dashboard)
-   =========================== */
+.home-result__type {
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.home-result__type::first-letter {
+  text-transform: uppercase;
+}
+
+.home-result__extras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.home-table__season {
+  margin: 0;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--color-hairline);
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-table__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 4rem;
+  padding: 0.625rem 1.25rem;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.home-table__rank {
+  flex: none;
+  width: 1.5rem;
+  color: var(--color-cyan);
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.home-list > li:first-child .home-table__rank {
+  color: var(--color-pink);
+}
+
+.home-table__names {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.home-table__wrestler,
+.home-table__player {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-table__wrestler {
+  font-weight: 700;
+}
+
+.home-table__player {
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.home-table__record {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.home-table__wld {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Rivalries */
+.home-rivalry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.25rem;
+  padding: 0.5rem 1.25rem;
+  color: var(--color-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Season and league numbers */
+.home-season {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  align-items: center;
+  gap: 1.5rem 2.5rem;
+}
+
+.home-season__empty {
+  padding: 0.5rem;
+}
+
+.home-season__name {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.home-season__start {
+  margin: 0.25rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.home-season__progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.home-season__bar {
+  flex: 1;
+  min-width: 0;
+  height: 0.5rem;
+  overflow: hidden;
+  border: none;
+  border-radius: var(--radius-pill);
+  appearance: none;
+  background-color: var(--color-surface-raised);
+}
+
+.home-season__bar::-webkit-progress-bar {
+  background-color: var(--color-surface-raised);
+}
+
+.home-season__bar::-webkit-progress-value {
+  background-color: var(--color-cyan);
+}
+
+.home-season__bar::-moz-progress-bar {
+  background-color: var(--color-cyan);
+}
+
+.home-season__percent {
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-season__stats-title {
+  margin: 0 0 0.75rem;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 0;
+}
+
+.home-stats__item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.home-stats__value {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.625rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-stats__label {
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1024px) {
+  .home-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
-  .dashboard {
-    gap: 1.75rem;
+  .home {
+    gap: 2rem;
   }
 
-  /* — Section labels: small uppercase gold with gold left bar — */
-  .db-section-title {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    font-size: 0.85rem;
-    letter-spacing: 0.12em;
-    color: var(--color-primary);
-    margin-bottom: 0.85rem;
-  }
-
-  .db-section-title::before {
-    content: '';
-    flex-shrink: 0;
-    width: 4px;
-    height: 1.15em;
-    border-radius: 1px;
-    background-color: var(--color-primary);
-  }
-
-  /* ===== Hero champion card ===== */
-  .db-hero {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    gap: 0;
-    min-height: 340px;
-    padding: 2.25rem 1.25rem 1.5rem;
-    border-radius: 1rem;
-    border: 1px solid var(--color-border);
-    background:
-      radial-gradient(120% 85% at 50% 0%, rgba(212, 175, 55, 0.16) 0%, rgba(212, 175, 55, 0.04) 45%, transparent 72%),
-      linear-gradient(180deg, #201f1f 0%, #131212 100%);
-  }
-
-  .db-hero--empty {
-    min-height: 200px;
-  }
-
-  .db-hero-image {
-    position: relative;
-    margin-bottom: 1.4rem;
-  }
-
-  .db-hero-image img {
-    width: 96px;
-    height: 96px;
-    border-radius: 50%;
-    border: 4px solid var(--color-primary);
-    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.55);
-  }
-
-  .db-hero-pill {
-    display: inline-block;
-    position: absolute;
-    bottom: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 2px 8px;
-    border-radius: 4px;
-    background-color: var(--color-primary);
-    color: var(--color-on-primary);
-    font-size: 0.6rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    white-space: nowrap;
-  }
-
-  .db-hero-content {
-    align-items: center;
-    gap: 0.3rem;
-  }
-
-  /* Championship name becomes the big uppercase gold headline */
-  .db-hero-belt {
-    font-size: 1.5rem;
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: 0.02em;
-    color: var(--color-primary);
-  }
-
-  /* Champion name sits below in white */
-  .db-hero-name {
-    font-size: 1.15rem;
-    font-weight: 500;
-    color: var(--color-text);
-    letter-spacing: 0;
-  }
-
-  /* Reign stats collapse into a small uppercase line */
-  .db-hero-stats {
-    justify-content: center;
-    gap: 1.1rem;
-    margin-top: 0.4rem;
-  }
-
-  .db-hero-stat {
-    flex-direction: row;
-    align-items: baseline;
-    gap: 0.3rem;
-  }
-
-  .db-hero-stat-value {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: #99907c;
-  }
-
-  .db-hero-stat-label {
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-  }
-
-  .db-hero-link {
-    margin-top: 0.65rem;
-  }
-
-  /* Secondary champion strip is replaced by carousel dots */
-  .db-hero-others {
-    display: none;
-  }
-
-  .db-hero-dots {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 1.5rem;
-  }
-
-  .db-hero-dot {
-    width: 6px;
-    height: 6px;
-    padding: 0;
-    border: none;
-    border-radius: 9999px;
-    background-color: var(--color-border);
-    cursor: pointer;
-    transition: width 0.2s ease, background-color 0.2s ease;
-  }
-
-  .db-hero-dot--active {
-    width: 24px;
-    background-color: var(--color-primary);
-  }
-
-  /* ===== What's Happening / Quick Stats ===== */
-  .db-row-2 {
-    grid-template-columns: 1fr;
-    gap: 1.75rem;
-  }
-
-  /* Section wrappers dissolve; the inner cards become the surfaces */
-  .db-events,
-  .db-stats,
-  .db-results {
-    background-color: transparent;
-    border-radius: 0;
-    padding: 0;
-  }
-
-  .db-empty-block {
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 0.75rem;
-    padding: 1rem;
-  }
-
-  .db-live-events {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .db-event-card {
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 0.75rem;
-    padding: 1rem;
-  }
-
-  .db-event-card:hover {
-    background-color: var(--color-surface-hover);
-  }
-
-  /* Live event: red icon-style chip on the left */
-  .db-event-card--live {
-    display: grid;
-    grid-template-columns: 48px 1fr;
-    column-gap: 1rem;
-    row-gap: 0.1rem;
-    align-items: center;
-  }
-
-  .db-event-card--live .db-live-badge {
-    grid-column: 1;
-    grid-row: 1 / span 3;
-    align-self: center;
-    width: 48px;
-    height: 48px;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(220, 38, 38, 0.16);
-    border: 1px solid rgba(220, 38, 38, 0.4);
-    border-radius: 0.6rem;
-    color: var(--color-danger-alt);
-    font-size: 0.55rem;
-  }
-
-  .db-event-card--live .db-event-name,
-  .db-event-card--live .db-event-date,
-  .db-event-card--live .db-event-matches {
-    grid-column: 2;
-  }
-
-  .db-event-card--live .db-event-name {
-    margin-bottom: 0;
-  }
-
-  .db-event-matches {
-    display: block;
-    font-size: 0.7rem;
-    font-weight: 500;
-    color: var(--color-text-muted);
-  }
-
-  /* Upcoming event: countdown pill + venue */
-  .db-event-countdown {
-    display: inline-block;
-    margin: 0.3rem 0.5rem 0.3rem 0;
-    padding: 2px 7px;
-    border-radius: 4px;
-    background-color: var(--color-border);
-    color: var(--color-primary);
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.7rem;
-    font-weight: 700;
-  }
-
-  .db-event-venue {
-    display: inline-block;
-    font-size: 0.6rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    color: var(--color-text-muted);
-  }
-
-  .db-event-date {
-    font-size: 0.75rem;
-  }
-
-  /* Quick stats: 2x2 grid, label on top, big gold number */
-  .db-stat-card {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-    text-align: left;
-    padding: 1rem;
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-top: 1px solid var(--color-border);
-    border-radius: 0.75rem;
-  }
-
-  .db-stat-label {
-    order: 1;
-    margin-top: 0;
-    font-size: 0.6rem;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-  }
-
-  .db-stat-value {
-    order: 2;
-    font-size: 1.9rem;
-  }
-
-  /* ===== Recent results: edge-bled snap scroller ===== */
-  .db-results-scroll {
-    gap: 1rem;
-    margin: 0 -16px;
-    padding: 0 16px 0.5rem;
-    scroll-snap-type: x mandatory;
-  }
-
-  .db-result-card {
-    position: relative;
-    flex: 0 0 260px;
-    scroll-snap-align: center;
-    gap: 0.6rem;
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 0.75rem;
-  }
-
-  .db-result-line {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-  }
-
-  .db-result-winner {
-    color: var(--color-success);
-  }
-
-  .db-result-tag {
-    display: inline-block;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-style: italic;
-    font-size: 0.65rem;
-    text-transform: uppercase;
-    color: var(--color-text-muted);
-  }
-
-  .db-result-vs {
-    text-align: center;
-    margin: 0.15rem 0;
-    padding: 2px 0;
-    border-radius: 4px;
-    background-color: rgba(51, 51, 51, 0.4);
-  }
-
-  /* Stars/belt/MOTN move to the top of the card */
-  .db-result-footer {
-    order: -1;
-    margin-top: 0;
-    justify-content: flex-start;
-  }
-
-  .db-result-motn {
-    position: absolute;
-    top: 0.6rem;
-    right: 0.6rem;
-    background-color: rgba(212, 175, 55, 0.15);
-    border: 1px solid rgba(212, 175, 55, 0.3);
-  }
-
-  /* Match type becomes the bottom divider line */
-  .db-result-type {
-    order: 3;
-    margin-top: 0.25rem;
-    padding-top: 0.6rem;
-    border-top: 1px solid var(--color-border);
-    text-align: center;
-    text-transform: uppercase;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-  }
-
-  /* ===== Season progress: info left, gold ring right ===== */
-  .db-season {
-    position: relative;
-    overflow: hidden;
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 1rem;
+  .home-hero {
+    min-height: 0;
     padding: 1.25rem;
   }
 
-  .db-season::after {
-    content: '';
-    position: absolute;
-    right: -3rem;
-    bottom: -3rem;
-    width: 12rem;
-    height: 12rem;
-    border-radius: 50%;
-    background-color: rgba(212, 175, 55, 0.05);
-    border: 1px solid rgba(212, 175, 55, 0.1);
-    pointer-events: none;
+  .home-hero__actions .ui-btn {
+    flex: 1 1 100%;
   }
 
-  .db-season .db-empty-block {
-    background-color: transparent;
-    border: none;
-    padding: 0;
+  .home-more-events {
+    margin-top: -1rem;
   }
 
-  .db-season-content {
-    position: relative;
-    z-index: 1;
-    flex-direction: row-reverse;
-    justify-content: space-between;
+  .home-result,
+  .home-table__row,
+  .home-rivalry,
+  .home-table__season {
+    padding-right: 1rem;
+    padding-left: 1rem;
   }
 
-  .season-ring-wrapper {
-    width: 96px;
-    height: 96px;
+  .home-result__type,
+  .home-stats__label {
+    font-size: 1rem;
   }
 
-  .season-ring-value {
-    font-size: 1.25rem;
-  }
-
-  .db-season-name {
-    font-size: 1.4rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    color: var(--color-primary);
-  }
-
-  .db-season-meta {
-    font-size: 0.7rem;
-    font-weight: 700;
-    font-style: italic;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
+  .home-season {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

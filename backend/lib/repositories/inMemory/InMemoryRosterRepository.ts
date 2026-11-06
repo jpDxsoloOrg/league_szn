@@ -48,10 +48,19 @@ export class InMemoryRosterRepository implements RosterRepository {
 
   players: RosterRepository['players'] = {
     findById: async (playerId: string): Promise<Player | null> => {
-      return this.playersStore.get(playerId) ?? null;
+      const player = this.playersStore.get(playerId);
+      return player && !player.deletedAt ? player : null;
     },
 
     list: async (): Promise<Player[]> => {
+      return Array.from(this.playersStore.values()).filter((player) => !player.deletedAt);
+    },
+
+    findByIdWithDeleted: async (playerId: string): Promise<Player | null> => {
+      return this.playersStore.get(playerId) ?? null;
+    },
+
+    listWithDeleted: async (): Promise<Player[]> => {
       return Array.from(this.playersStore.values());
     },
 
@@ -81,7 +90,7 @@ export class InMemoryRosterRepository implements RosterRepository {
 
     update: async (playerId: string, patch: PlayerPatch): Promise<Player> => {
       const existing = this.playersStore.get(playerId);
-      if (!existing) throw new NotFoundError('Player', playerId);
+      if (!existing || existing.deletedAt) throw new NotFoundError('Player', playerId);
       const updated: Player = {
         ...existing,
         ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)),
@@ -97,7 +106,7 @@ export class InMemoryRosterRepository implements RosterRepository {
 
     findByUserId: async (userId: string): Promise<Player | null> => {
       for (const player of this.playersStore.values()) {
-        if (player.userId === userId) {
+        if (player.userId === userId && !player.deletedAt) {
           return player;
         }
       }

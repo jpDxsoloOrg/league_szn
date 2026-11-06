@@ -1,11 +1,16 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import { success, serverError } from '../../lib/response';
+import { forbidden, success, serverError } from '../../lib/response';
 import { requireSuperAdmin } from '../../lib/auth';
+import { BULK_DATA_BLOCKED_MESSAGE, isBulkDataOperationAllowed } from './dataTransferConfig';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireSuperAdmin(event);
   if (denied) return denied;
+
+  if (!isBulkDataOperationAllowed()) {
+    return forbidden(BULK_DATA_BLOCKED_MESSAGE);
+  }
 
   try {
     const { clearAllData } = getRepositories();
@@ -37,6 +42,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
     const stack = err instanceof Error ? err.stack : undefined;
     console.error('Error clearing all data:', detail, stack);
-    return serverError(`Failed to clear all data: ${detail}`);
+    return serverError('Failed to clear all data');
   }
 };

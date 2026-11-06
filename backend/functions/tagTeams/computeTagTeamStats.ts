@@ -3,6 +3,10 @@ import {
   computeRecentFormAndStreak,
   type FormResult as SharedFormResult,
 } from '../../lib/stats/recentFormAndStreak';
+import { tallyResults, type WinLossDrawRecord } from '../../lib/stats/record';
+import { FORMER_MEMBER, resolveBilledName } from '../../lib/needsWrestler';
+import { isWithinLifetime } from '../../lib/stats/lifetime';
+import { compareMatchesNewestFirst } from '../../lib/recentForm';
 
 export type FormResult = SharedFormResult;
 
@@ -38,6 +42,12 @@ export interface TagTeamRecord {
   updatedAt: string;
   dissolvedAt?: string;
 }
+
+/** The parts of a team that decide which matches belong to it. */
+export type TagTeamLifetime = Pick<
+  TagTeamRecord,
+  'player1Id' | 'player2Id' | 'createdAt' | 'dissolvedAt'
+>;
 
 export interface TagTeamMatchResult {
   match: MatchRecord;
@@ -76,17 +86,18 @@ function getTagTeamResult(
 
 /**
  * Scans all completed matches and finds those where a given tag team's
- * members competed together on the same team.
+ * members competed together on the same team while that team existed.
  */
 export function findTagTeamMatches(
   completedMatches: MatchRecord[],
-  player1Id: string,
-  player2Id: string
+  team: TagTeamLifetime
 ): TagTeamMatchResult[] {
+  const { player1Id, player2Id } = team;
   const results: TagTeamMatchResult[] = [];
 
   for (const match of completedMatches) {
     if (!match.teams || match.teams.length === 0) continue;
+    if (!isWithinLifetime(match.date, { createdAt: team.createdAt, endedAt: team.dissolvedAt })) continue;
 
     const teamIdx = findTeamIndex(match.teams, player1Id, player2Id);
     if (teamIdx === -1) continue;
@@ -114,13 +125,31 @@ export function computeFormAndStreak(
   matchResults: TagTeamMatchResult[],
   limit: number
 ): { recentForm: FormResult[]; currentStreak: { type: FormResult; count: number } } {
-  const sorted = [...matchResults].sort((a, b) => {
-    const aTime = new Date(a.match.updatedAt ?? a.match.date).getTime();
-    const bTime = new Date(b.match.updatedAt ?? b.match.date).getTime();
-    return bTime - aTime;
-  });
+  const sorted = [...matchResults].sort((a, b) => compareMatchesNewestFirst(a.match, b.match));
 
   return computeRecentFormAndStreak(sorted.map((r) => r.result), limit);
+}
+
+/**
+ * A team's record from the matches its members fought together. Every tag team
+ * response uses this, so the record agrees with the streak and match breakdown
+ * shown beside it. The stored wins/losses/draws counters are not read for display.
+ */
+export function computeTagTeamRecord(
+  matchResults: ReadonlyArray<TagTeamMatchResult>,
+): WinLossDrawRecord {
+  return tallyResults(matchResults.map((r) => r.result));
+}
+
+/**
+ * Name of a team member for lists: the player's name, then the wrestler name
+ * stored on the team, which outlives a deleted player row.
+ */
+export function resolveMemberName(
+  player: { name?: string | null } | undefined,
+  storedWrestlerName: string | undefined,
+): string {
+  return player?.name?.trim() || resolveBilledName(storedWrestlerName, null, FORMER_MEMBER);
 }
 
 /**
@@ -147,7 +176,7 @@ export function buildTagTeamMatchMap(
   );
 
   for (const team of tagTeams) {
-    const results = findTagTeamMatches(teamMatches, team.player1Id, team.player2Id);
+    const results = findTagTeamMatches(teamMatches, team);
     map.set(team.tagTeamId, results);
   }
 

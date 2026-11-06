@@ -1,15 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { buildWikiNav, type WikiArticleEntry } from './wikiNav';
 import './Wiki.css';
-
-interface WikiArticleEntry {
-  slug: string;
-  titleKey: string;
-  file: string;
-  adminOnly?: boolean;
-}
 
 export default function WikiSidebar() {
   const { slug: currentSlug } = useParams<{ slug?: string }>();
@@ -19,24 +14,37 @@ export default function WikiSidebar() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    fetch('/wiki/index.json')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: WikiArticleEntry[]) => setArticles(Array.isArray(data) ? data : []))
-      .catch(() => setArticles([]));
+    const loadIndex = async () => {
+      try {
+        const res = await fetch('/wiki/index.json');
+        const data: WikiArticleEntry[] = res.ok ? await res.json() : [];
+        setArticles(Array.isArray(data) ? data : []);
+      } catch {
+        setArticles([]);
+      }
+    };
+    void loadIndex();
   }, []);
 
-  const visibleArticles = useMemo(
-    () =>
-      articles.filter(
-        (a) =>
-          !a.adminOnly ||
-          isAdminOrModerator
-      ),
+  const navItems = useMemo(
+    () => buildWikiNav(articles.filter((a) => !a.adminOnly || isAdminOrModerator)),
     [articles, isAdminOrModerator]
   );
 
-  const isAdminCurrent =
-    currentSlug === 'admin' || (currentSlug?.startsWith('admin-') ?? false);
+  const renderLink = (entry: WikiArticleEntry, label: string, hasCurrentChild = false) => {
+    const isCurrent = currentSlug === entry.slug;
+    const stateClass = hasCurrentChild ? 'wiki-sidebar-parent-current' : '';
+    return (
+      <Link
+        to={`/guide/wiki/${entry.slug}`}
+        className={isCurrent ? 'wiki-sidebar-current' : stateClass}
+        aria-current={isCurrent ? 'page' : undefined}
+        onClick={() => setOpen(false)}
+      >
+        {label}
+      </Link>
+    );
+  };
 
   return (
     <>
@@ -45,9 +53,9 @@ export default function WikiSidebar() {
         className="wiki-sidebar-toggle"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
-        aria-label={t('wiki.articlesLabel')}
       >
         {t('wiki.articlesLabel')}
+        <ChevronDown aria-hidden="true" size={18} />
       </button>
       <aside
         className={`wiki-sidebar ${open ? 'wiki-sidebar-open' : ''}`}
@@ -55,41 +63,27 @@ export default function WikiSidebar() {
       >
         <nav>
           <ul className="wiki-sidebar-list">
-            {visibleArticles.map((entry) => (
+            {navItems.map(({ entry, children }) => (
               <li key={entry.slug}>
-                <Link
-                  to={`/guide/wiki/${entry.slug}`}
-                  className={
-                    currentSlug === entry.slug ||
-                    (entry.slug === 'admin' && isAdminCurrent)
-                      ? 'wiki-sidebar-current'
-                      : ''
-                  }
-                  aria-current={
-                    currentSlug === entry.slug ||
-                    (entry.slug === 'admin' && isAdminCurrent)
-                      ? 'page'
-                      : undefined
-                  }
-                  onClick={() => setOpen(false)}
-                >
-                  {t(entry.titleKey)}
-                </Link>
+                {renderLink(
+                  entry,
+                  t(entry.titleKey),
+                  children.some((child) => child.slug === currentSlug)
+                )}
+                {children.length > 0 && (
+                  <ul className="wiki-sidebar-sublist">
+                    {children.map((child) => (
+                      <li key={child.slug}>
+                        {renderLink(child, t(child.navTitleKey ?? child.titleKey))}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>
         </nav>
       </aside>
-      {open ? (
-        <div
-          className="wiki-sidebar-overlay"
-          role="button"
-          tabIndex={0}
-          aria-label={t('common.close')}
-          onClick={() => setOpen(false)}
-          onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
-        />
-      ) : null}
     </>
   );
 }

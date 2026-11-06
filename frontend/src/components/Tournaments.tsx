@@ -1,36 +1,43 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Check, Trophy } from 'lucide-react';
 import { tournamentsApi, playersApi } from '../services/api';
-import type { Tournament, Player } from '../types';
-import Skeleton from './ui/Skeleton';
+import type { PlayerDirectoryEntry } from '../services/api/players.api';
+import type { Tournament } from '../types';
+import Badge from './ui/Badge';
+import type { BadgeTone } from './ui/Badge';
+import Button from './ui/Button';
+import Card from './ui/Card';
+import DataTable from './ui/DataTable';
 import EmptyState from './ui/EmptyState';
+import Modal from './ui/Modal';
+import PageHeader from './ui/PageHeader';
+import Skeleton from './ui/Skeleton';
 import './Tournaments.css';
+
+const STATUS_TONES: Record<Tournament['status'], BadgeTone> = {
+  upcoming: 'primary',
+  'in-progress': 'live',
+  completed: 'neutral',
+};
+
+interface StandingRow {
+  playerId: string;
+  rank: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  points: number;
+}
 
 export default function Tournaments() {
   const { t } = useTranslation();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [players, setPlayers] = useState<PlayerDirectoryEntry[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Reload data when retry button is clicked
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const [tournamentData, playerData] = await Promise.all([
-        tournamentsApi.getAll(),
-        playersApi.getAll(),
-      ]);
-      setTournaments(tournamentData);
-      setPlayers(playerData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load tournaments');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -41,7 +48,7 @@ export default function Tournaments() {
         setError(null);
         const [tournamentData, playerData] = await Promise.all([
           tournamentsApi.getAll(abortController.signal),
-          playersApi.getAll(abortController.signal),
+          playersApi.getDirectory(abortController.signal),
         ]);
         if (!abortController.signal.aborted) {
           setTournaments(tournamentData);
@@ -60,234 +67,204 @@ export default function Tournaments() {
 
     fetchData();
     return () => abortController.abort();
-  }, []);
+  }, [reloadKey]);
 
-  useEffect(() => {
-    if (!selectedTournament) return;
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSelectedTournament(null);
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [selectedTournament]);
+  const playerNames = useMemo(
+    () => new Map(players.map((player) => [player.playerId, player.name])),
+    [players],
+  );
 
-  const getPlayerName = (playerId: string) => {
-    const player = players.find(p => p.playerId === playerId);
-    return player ? player.name : t('common.unknown');
-  };
+  const getPlayerName = (playerId: string) => playerNames.get(playerId) ?? t('common.formerMember');
 
-  const getStatusBadge = (status: string) => {
-    const classMap = {
-      upcoming: 'status-upcoming',
-      'in-progress': 'status-in-progress',
-      completed: 'status-completed',
-    };
-    const statusLabels: Record<string, string> = {
+  const typeLabel = (tournament: Tournament) =>
+    tournament.type === 'single-elimination' ? t('tournaments.singleElimination') : t('tournaments.roundRobin');
+
+  const statusBadge = (status: Tournament['status']) => {
+    const statusLabels: Record<Tournament['status'], string> = {
       upcoming: t('tournaments.statusUpcoming'),
       'in-progress': t('tournaments.statusInProgress'),
       completed: t('tournaments.statusCompleted'),
     };
-    return <span className={`status-badge ${classMap[status as keyof typeof classMap]}`}>{statusLabels[status] || status}</span>;
+    return <Badge tone={STATUS_TONES[status]}>{statusLabels[status]}</Badge>;
   };
 
   const renderRoundRobinStandings = (tournament: Tournament) => {
     if (!tournament.standings) return null;
 
-    const standingsArray = Object.entries(tournament.standings).map(([playerId, stats]) => ({
-      playerId,
-      ...stats,
-    }));
-
     // Sort by points desc, then wins desc for a stable tiebreak display.
-    standingsArray.sort((a, b) => (b.points - a.points) || (b.wins - a.wins));
-    const leader = standingsArray[0];
-    const runnerUp = standingsArray[1];
+    const standingRows: StandingRow[] = Object.entries(tournament.standings)
+      .map(([playerId, stats]) => ({ playerId, rank: 0, ...stats }))
+      .sort((first, second) => (second.points - first.points) || (second.wins - first.wins))
+      .map((row, index) => ({ ...row, rank: index + 1 }));
+
+    const leader = standingRows[0];
+    const runnerUp = standingRows[1];
     const pointsGap = leader && runnerUp ? leader.points - runnerUp.points : 0;
 
     return (
-      <div className="round-robin-standings">
-        <h4>{t('tournaments.standings')}</h4>
+      <section className="tournament-detail__section">
+        <h3>{t('tournaments.standings')}</h3>
         {leader && (
-          <div className="round-robin-summary">
-            <div className="summary-card">
-              <span className="summary-label">{t('tournaments.summaryLeader')}</span>
-              <span className="summary-value">{getPlayerName(leader.playerId)}</span>
+          <dl className="tournament-summary">
+            <div>
+              <dt>{t('tournaments.summaryLeader')}</dt>
+              <dd>{getPlayerName(leader.playerId)}</dd>
             </div>
-            <div className="summary-card">
-              <span className="summary-label">{t('tournaments.summaryPoints')}</span>
-              <span className="summary-value">{leader.points}</span>
+            <div>
+              <dt>{t('tournaments.summaryPoints')}</dt>
+              <dd>{leader.points}</dd>
             </div>
-            <div className="summary-card">
-              <span className="summary-label">{t('tournaments.summaryGap')}</span>
-              <span className="summary-value">
-                {runnerUp ? t('tournaments.summaryGapValue', { count: pointsGap }) : t('common.unknown')}
-              </span>
+            <div>
+              <dt>{t('tournaments.summaryGap')}</dt>
+              <dd>{runnerUp ? t('tournaments.summaryGapValue', { count: pointsGap }) : t('common.unknown')}</dd>
             </div>
-          </div>
+          </dl>
         )}
-        <table>
-          <thead>
-            <tr>
-              <th>{t('tournaments.table.rank')}</th>
-              <th>{t('tournaments.table.player')}</th>
-              <th>{t('tournaments.table.w')}</th>
-              <th>{t('tournaments.table.l')}</th>
-              <th>{t('tournaments.table.d')}</th>
-              <th>{t('tournaments.table.points')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {standingsArray.map((standing, index) => (
-              <tr key={standing.playerId}>
-                <td>{index + 1}</td>
-                <td>{getPlayerName(standing.playerId)}</td>
-                <td className="wins">{standing.wins}</td>
-                <td className="losses">{standing.losses}</td>
-                <td className="draws">{standing.draws}</td>
-                <td className="points">{standing.points}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+        <DataTable
+          caption={t('tournaments.standings')}
+          density="dense"
+          rows={standingRows}
+          rowKey={(row) => row.playerId}
+          columns={[
+            { key: 'rank', header: t('tournaments.table.rank'), render: (row) => row.rank },
+            { key: 'player', header: t('tournaments.table.player'), render: (row) => getPlayerName(row.playerId) },
+            { key: 'wins', header: t('tournaments.table.w'), align: 'center', render: (row) => row.wins },
+            { key: 'losses', header: t('tournaments.table.l'), align: 'center', render: (row) => row.losses },
+            { key: 'draws', header: t('tournaments.table.d'), align: 'center', render: (row) => row.draws },
+            {
+              key: 'points',
+              header: t('tournaments.table.points'),
+              align: 'center',
+              render: (row) => <span className="points">{row.points}</span>,
+            },
+          ]}
+        />
+      </section>
     );
   };
+
+  const renderBracketParticipant = (participant: string | undefined, winner: string | undefined) => (
+    <div className={`bracket-participant${participant && winner === participant ? ' bracket-participant--winner' : ''}`}>
+      <span>{participant ? getPlayerName(participant) : t('common.tbd')}</span>
+      {participant && winner === participant && (
+        <Check aria-label={t('tournaments.winner')} size={16} />
+      )}
+    </div>
+  );
 
   const renderBracket = (tournament: Tournament) => {
     if (!tournament.brackets) return null;
 
     return (
-      <div className="bracket bracket-march-madness">
-        <h4>{t('tournaments.bracket')}</h4>
-        <div className="bracket-rounds-grid">
+      <section className="tournament-detail__section">
+        <h3>{t('tournaments.bracket')}</h3>
+        <div className="bracket-rounds">
           {tournament.brackets.rounds.map((round) => (
-            <div key={round.roundNumber} className="bracket-round-column">
-              <h5>{t('tournaments.round')} {round.roundNumber}</h5>
-              <div className="bracket-matches">
-                {round.matches.map((match, idx) => (
-                  <div key={`round-${round.roundNumber}-match-${idx}`} className="bracket-match">
-                    <div className="bracket-participant">
-                      {match.participant1 ? getPlayerName(match.participant1) : t('common.tbd')}
-                      {match.winner === match.participant1 && <span className="winner-indicator">✓</span>}
-                    </div>
-                    <div className="vs">{t('common.vs')}</div>
-                    <div className="bracket-participant">
-                      {match.participant2 ? getPlayerName(match.participant2) : t('common.tbd')}
-                      {match.winner === match.participant2 && <span className="winner-indicator">✓</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div key={round.roundNumber} className="bracket-round">
+              <h4>{t('tournaments.round')} {round.roundNumber}</h4>
+              {round.matches.map((match, index) => (
+                <div key={`round-${round.roundNumber}-match-${index}`} className="bracket-match">
+                  {renderBracketParticipant(match.participant1, match.winner)}
+                  {renderBracketParticipant(match.participant2, match.winner)}
+                </div>
+              ))}
             </div>
           ))}
         </div>
-      </div>
+      </section>
     );
   };
 
+  const header = <PageHeader title={t('tournaments.title')} />;
+
   if (loading) {
-    return <Skeleton variant="cards" />;
+    return (
+      <div className="tournaments-page">
+        {header}
+        <Skeleton variant="block" count={3} />
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="error">
-        <p>{t('common.error')}: {error}</p>
-        <button onClick={loadData}>{t('common.retry')}</button>
+      <div className="tournaments-page">
+        {header}
+        <EmptyState
+          title={t('common.error')}
+          description={error}
+          actionLabel={t('common.retry')}
+          onAction={() => setReloadKey((key) => key + 1)}
+        />
       </div>
     );
   }
 
   if (tournaments.length === 0) {
     return (
-      <EmptyState
-        title={t('tournaments.title')}
-        description={t('tournaments.noTournaments')}
-      />
+      <div className="tournaments-page">
+        {header}
+        <EmptyState title={t('tournaments.noTournaments')} icon={<Trophy aria-hidden="true" size={32} />} />
+      </div>
     );
   }
 
   return (
-    <div className="tournaments-container">
-      <h2 className="page-title--mobile-hidden">{t('tournaments.title')}</h2>
+    <div className="tournaments-page">
+      {header}
 
       <div className="tournaments-grid">
         {tournaments.map((tournament) => (
-          <div key={tournament.tournamentId} className="tournament-card">
-            <div className="tournament-header">
-              <h3>{tournament.name}</h3>
-              {getStatusBadge(tournament.status)}
+          <Card key={tournament.tournamentId} className="tournament-card">
+            <div className="tournament-card__header">
+              <h2>{tournament.name}</h2>
+              {statusBadge(tournament.status)}
             </div>
-
-            <div className="tournament-info">
-              <p>
-                <strong>{t('tournaments.type')}:</strong>{' '}
-                {tournament.type === 'single-elimination' ? t('tournaments.singleElimination') : t('tournaments.roundRobin')}
+            <p className="tournament-card__meta">
+              {typeLabel(tournament)} · {tournament.participants.length} {t('tournaments.participants')}
+            </p>
+            {tournament.winner && (
+              <p className="tournament-card__winner">
+                <Trophy aria-hidden="true" size={16} />
+                <span className="sr-only">{t('tournaments.winner')}: </span>
+                <span>{getPlayerName(tournament.winner)}</span>
               </p>
-              <p>
-                <strong>{t('tournaments.participants')}:</strong> {tournament.participants.length}
-              </p>
-              {tournament.winner && (
-                <p className="tournament-winner">
-                  <strong>{t('tournaments.winner')}:</strong> {getPlayerName(tournament.winner)}
-                </p>
-              )}
-            </div>
-
-            <button
-              onClick={() => setSelectedTournament(tournament)}
-              className="view-details-btn"
-            >
+            )}
+            <Button variant="secondary" size="sm" onClick={() => setSelectedTournament(tournament)}>
               {t('tournaments.viewDetails')}
-            </button>
-          </div>
+            </Button>
+          </Card>
         ))}
       </div>
 
-      {selectedTournament && (
-        <div
-          className="tournament-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="tournament-modal-title"
-          onClick={() => setSelectedTournament(null)}
-        >
-          <div className="tournament-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 id="tournament-modal-title">{selectedTournament.name}</h3>
-              <button
-                onClick={() => setSelectedTournament(null)}
-                className="close-btn"
-                aria-label={t('common.closeModal') || 'Close modal'}
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="tournament-details">
-              <p>
-                <strong>{t('tournaments.type')}:</strong>{' '}
-                {selectedTournament.type === 'single-elimination' ? t('tournaments.singleElimination') : t('tournaments.roundRobin')}
-              </p>
-              <p>
-                <strong>{t('tournaments.status')}:</strong> {getStatusBadge(selectedTournament.status)}
-              </p>
-              <p>
-                <strong>{t('tournaments.participants')}:</strong>
-              </p>
-              <ul className="participants-list">
-                {selectedTournament.participants.map((playerId) => (
-                  <li key={playerId}>{getPlayerName(playerId)}</li>
-                ))}
-              </ul>
+      <Modal
+        open={!!selectedTournament}
+        onClose={() => setSelectedTournament(null)}
+        title={selectedTournament?.name ?? t('tournaments.title')}
+        size="lg"
+      >
+        {selectedTournament && (
+          <div className="tournament-detail">
+            <div className="tournament-detail__meta">
+              {statusBadge(selectedTournament.status)}
+              <span>{typeLabel(selectedTournament)}</span>
             </div>
 
             {selectedTournament.type === 'round-robin'
               ? renderRoundRobinStandings(selectedTournament)
               : renderBracket(selectedTournament)}
+
+            <section className="tournament-detail__section">
+              <h3>{t('tournaments.participants')}</h3>
+              <ul className="tournament-participants">
+                {selectedTournament.participants.map((playerId) => (
+                  <li key={playerId}>{getPlayerName(playerId)}</li>
+                ))}
+              </ul>
+            </section>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }

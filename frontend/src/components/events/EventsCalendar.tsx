@@ -1,40 +1,35 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { CalendarPlus, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { EventType, EventCalendarEntry } from '../../types/event';
-import type { Show } from '../../types';
+import type { Company, Show } from '../../types';
 import { eventsApi, showsApi, companiesApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { toCalendarDate, dateToCalendarDate } from '../../utils/dateUtils';
-import Skeleton from '../ui/Skeleton';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { toCalendarDate, dateToCalendarDate, formatCalendarDate } from '../../utils/dateUtils';
+import { dayOfWeekToNumber, getPlannedShows } from '../../utils/showSchedule';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Select from '../ui/Select';
+import Skeleton from '../ui/Skeleton';
+import Tabs from '../ui/Tabs';
+import CreateEventModal from './CreateEventModal';
+import type { CreateEventPreset } from './CreateEventModal';
 import EventCard from './EventCard';
+import { EVENT_STATUS_TONES, EVENT_TYPE_TONES } from './eventDisplay';
+import '../posterHero.css';
 import './EventsCalendar.css';
 
-const eventTypeColors: Record<string, string> = {
-  ppv: '#d4af37',
-  weekly: '#60a5fa',
-  special: '#a78bfa',
-  house: '#9ca3af',
-};
-
-const showColor = '#60a5fa';
-const ppvShowColor = '#d4af37';
+const EVENT_TYPES: EventType[] = ['ppv', 'weekly', 'special', 'house'];
+const PAST_PAGE_SIZE = 10;
+const PLANNED_SHOWN = 5;
 
 type FilterTab = 'all' | EventType;
-
-/** Map DayOfWeek string to JS getDay() number (0=Sun..6=Sat) */
-const dayOfWeekToNumber: Record<string, number> = {
-  sunday: 0,
-  monday: 1,
-  tuesday: 2,
-  wednesday: 3,
-  thursday: 4,
-  friday: 5,
-  saturday: 6,
-};
+type EventsView = 'upcoming' | 'past';
 
 interface ShowCalendarEntry {
   show: Show;
@@ -45,23 +40,27 @@ interface ShowCalendarEntry {
 
 export default function EventsCalendar() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { isAdminOrModerator } = useAuth();
   useDocumentTitle(t('events.title'));
+  const [searchParams, setSearchParams] = useSearchParams();
   const now = new Date();
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [calendarEntries, setCalendarEntries] = useState<EventCalendarEntry[]>([]);
-  const [shows, setShows] = useState<Show[]>([]);
-  const [companyNames, setCompanyNames] = useState<Record<string, string>>({});
+  const [allShows, setAllShows] = useState<Show[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [creatingEvent, setCreatingEvent] = useState<string | null>(null);
-  // Mobile app view (docs/design/mobile-app/league-szn-events): the calendar
-  // grid is swapped out for an Upcoming/Past segmented list of event cards.
-  const isMobile = useMediaQuery('(max-width: 768px)');
-  const [mobileEventsView, setMobileEventsView] = useState<'upcoming' | 'past'>('upcoming');
+  const [reloadKey, setReloadKey] = useState(0);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createPreset, setCreatePreset] = useState<CreateEventPreset | null>(null);
+  const [pastLimit, setPastLimit] = useState(PAST_PAGE_SIZE);
+  const isMobile = useIsMobile();
+  const [mobileEventsView, setMobileEventsView] = useState<EventsView>('upcoming');
+
+  // Other pages link here with ?create=1 to open the form directly.
+  const createRequested = searchParams.get('create') === '1';
 
   useEffect(() => {
     const controller = new AbortController();
@@ -85,13 +84,8 @@ export default function EventsCalendar() {
           showId: e.showId,
         }));
         setCalendarEntries(entries);
-        setShows(showsData.filter((s) =>
-          (s.schedule === 'weekly' && s.dayOfWeek) ||
-          (s.schedule === 'ppv' && s.ppvDate)
-        ));
-        const names: Record<string, string> = {};
-        companiesData.forEach((c) => { names[c.companyId] = c.name; });
-        setCompanyNames(names);
+        setAllShows(showsData);
+        setCompanies(companiesData);
         setError(null);
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
@@ -103,7 +97,21 @@ export default function EventsCalendar() {
     };
     loadData();
     return () => controller.abort();
-  }, []);
+  }, [reloadKey]);
+
+  const shows = useMemo(
+    () => allShows.filter((show) =>
+      (show.schedule === 'weekly' && show.dayOfWeek) ||
+      (show.schedule === 'ppv' && show.ppvDate)
+    ),
+    [allShows],
+  );
+
+  const companyNames = useMemo(() => {
+    const names: Record<string, string> = {};
+    companies.forEach((company) => { names[company.companyId] = company.name; });
+    return names;
+  }, [companies]);
 
   const monthNames = [
     t('events.calendar.months.january'),
@@ -242,13 +250,27 @@ export default function EventsCalendar() {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [filteredEntries]);
 
+  // The next open date of each scheduled show, matching the planned chips on the calendar.
+  const plannedShows = useMemo(() => {
+    const filteredShows = shows.filter((show) => activeFilter === 'all' || activeFilter === show.schedule);
+    return getPlannedShows(filteredShows, calendarEntries, new Date()).slice(0, PLANNED_SHOWN);
+  }, [shows, activeFilter, calendarEntries]);
+
   // Recent completed events
   const recentResults = useMemo(() => {
     return filteredEntries
       .filter((e) => e.status === 'completed')
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 10);
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [filteredEntries]);
+
+  // The one event the page leads with: whatever is live, otherwise the next show.
+  const heroEvent = useMemo(() => {
+    const byDate = (first: EventCalendarEntry, second: EventCalendarEntry) =>
+      new Date(first.date).getTime() - new Date(second.date).getTime();
+    const live = calendarEntries.filter((entry) => entry.status === 'in-progress').sort(byDate);
+    const upcoming = calendarEntries.filter((entry) => entry.status === 'upcoming').sort(byDate);
+    return live[0] ?? upcoming[0] ?? null;
+  }, [calendarEntries]);
 
   const goToPreviousMonth = () => {
     if (currentMonth === 0) {
@@ -268,48 +290,78 @@ export default function EventsCalendar() {
     }
   };
 
-  const handleShowClick = useCallback(async (entry: ShowCalendarEntry) => {
-    if (!isAdminOrModerator || creatingEvent) return;
-    const key = `${entry.show.showId}-${entry.date}`;
-    setCreatingEvent(key);
-    try {
-      const event = await eventsApi.create({
-        name: entry.show.name,
-        eventType: entry.eventType,
-        date: entry.date,
-        showId: entry.show.showId,
-        companyIds: [entry.show.companyId],
-        imageUrl: entry.show.imageUrl,
-      });
-      navigate(`/events/${event.eventId}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create event');
-      setCreatingEvent(null);
-    }
-  }, [isAdminOrModerator, creatingEvent, navigate]);
+  const openCreate = useCallback((preset: CreateEventPreset | null) => {
+    setCreatePreset(preset);
+    setCreateOpen(true);
+  }, []);
 
-  const filterTabs: { key: FilterTab; label: string }[] = [
-    { key: 'all', label: t('events.filters.all') },
-    { key: 'ppv', label: t('events.filters.ppv') },
-    { key: 'weekly', label: t('events.filters.weekly') },
-    { key: 'special', label: t('events.filters.special') },
-    { key: 'house', label: t('events.filters.house') },
+  const closeCreate = useCallback(() => {
+    setCreateOpen(false);
+    if (searchParams.has('create')) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('create');
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  const handleShowClick = useCallback((entry: ShowCalendarEntry) => {
+    openCreate({
+      name: entry.show.name,
+      eventType: entry.eventType,
+      date: entry.date,
+      showId: entry.show.showId,
+      companyId: entry.show.companyId,
+    });
+  }, [openCreate]);
+
+  const filterTabs: { value: FilterTab; label: string }[] = [
+    { value: 'all', label: t('events.filters.all') },
+    ...EVENT_TYPES.map((eventType) => ({ value: eventType, label: t(`events.filters.${eventType}`) })),
   ];
+
+  const createButton = isAdminOrModerator ? (
+    <Button icon={<CalendarPlus aria-hidden="true" size={18} />} onClick={() => openCreate(null)}>
+      {t('events.calendar.createEvent', 'Create Event')}
+    </Button>
+  ) : undefined;
+
+  const createModal = isAdminOrModerator ? (
+    <CreateEventModal
+      open={createOpen || createRequested}
+      onClose={closeCreate}
+      shows={allShows}
+      companies={companies}
+      preset={createPreset}
+    />
+  ) : null;
+
+  const pageHeader = (
+    <PageHeader
+      title={t('events.title')}
+      actions={createButton}
+      className={heroEvent ? 'page-header--plain' : undefined}
+    />
+  );
 
   if (loading) {
     return (
-      <div className="events-calendar-page">
-        <h2 className="events-title page-title--mobile-hidden">{t('events.title')}</h2>
-        <Skeleton variant="calendar" />
+      <div className="events-page">
+        {pageHeader}
+        <Skeleton variant={isMobile ? 'cards' : 'calendar'} count={3} />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="events-calendar-page">
-        <h2 className="events-title page-title--mobile-hidden">{t('events.title')}</h2>
-        <div className="error-message">{error}</div>
+      <div className="events-page">
+        {pageHeader}
+        <EmptyState
+          title={t('common.error')}
+          description={error}
+          actionLabel={t('common.retry')}
+          onAction={() => setReloadKey((key) => key + 1)}
+        />
       </div>
     );
   }
@@ -318,232 +370,247 @@ export default function EventsCalendar() {
 
   if (!hasContent) {
     return (
-      <div className="events-calendar-page">
-        <h2 className="events-title page-title--mobile-hidden">{t('events.title')}</h2>
+      <div className="events-page">
+        {pageHeader}
         <EmptyState
-          title={t('events.title')}
+          title={t('events.emptyTitle', 'No events yet')}
           description={t('emptyState.checkBackSoon')}
+          actionLabel={isAdminOrModerator ? t('events.calendar.createEvent', 'Create Event') : undefined}
+          onAction={isAdminOrModerator ? () => openCreate(null) : undefined}
         />
+        {createModal}
       </div>
     );
   }
 
+  const showUpcoming = !isMobile || mobileEventsView === 'upcoming';
+  const showPast = !isMobile || mobileEventsView === 'past';
+  const otherLiveEvents = inProgressEvents.filter((event) => event.eventId !== heroEvent?.eventId);
+  const otherUpcomingEvents = upcomingEvents.filter((event) => event.eventId !== heroEvent?.eventId);
+  const heroCoversUpcoming = upcomingEvents.length > 0;
+
   return (
-    <div className="events-calendar-page">
-      <div className="events-title-row">
-        <h2 className="events-title page-title--mobile-hidden">{t('events.title')}</h2>
-        {isAdminOrModerator && (
-          <button
-            className="create-event-calendar-btn"
-            onClick={() => navigate('/admin/events')}
-          >
-            + {t('events.calendar.createEvent', 'Create Event')}
-          </button>
-        )}
-      </div>
+    <div className="events-page">
+      {pageHeader}
 
-      {/* Mobile: Upcoming/Past segmented control replaces the calendar view */}
-      {isMobile && (
-        <div className="events-segmented-control" role="group" aria-label={t('events.title')}>
-          <button
-            type="button"
-            className={`events-segment ${mobileEventsView === 'upcoming' ? 'active' : ''}`}
-            aria-pressed={mobileEventsView === 'upcoming'}
-            onClick={() => setMobileEventsView('upcoming')}
-          >
-            {t('events.status.upcoming')}
-          </button>
-          <button
-            type="button"
-            className={`events-segment ${mobileEventsView === 'past' ? 'active' : ''}`}
-            aria-pressed={mobileEventsView === 'past'}
-            onClick={() => setMobileEventsView('past')}
-          >
-            {t('events.calendar.past', 'Past')}
-          </button>
-        </div>
+      {heroEvent && (
+        <section className="poster-hero events-hero" aria-label={t(`events.status.${heroEvent.status}`)}>
+          <div className="events-hero__content">
+            <div className="events-hero__badges">
+              <Badge tone={EVENT_STATUS_TONES[heroEvent.status]}>{t(`events.status.${heroEvent.status}`)}</Badge>
+              <Badge tone={EVENT_TYPE_TONES[heroEvent.eventType]}>{t(`events.types.${heroEvent.eventType}`)}</Badge>
+            </div>
+            <h2 className="events-hero__name">{heroEvent.name}</h2>
+            <p className="events-hero__date">
+              {formatCalendarDate(heroEvent.date, undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+            </p>
+            <Button variant="hero" to={`/events/${heroEvent.eventId}`}>{t('events.calendar.viewCard', 'View the card')}</Button>
+          </div>
+          {heroEvent.imageUrl && (
+            <div className="poster-hero__frame">
+              <img src={heroEvent.imageUrl} alt="" className="poster-hero__image" />
+            </div>
+          )}
+        </section>
       )}
 
-      {!isMobile && (
-      <>
-      {/* Filter Tabs */}
-      <div className="events-filter-tabs">
-        {filterTabs.map((tab) => (
-          <button
-            key={tab.key}
-            className={`events-filter-tab ${activeFilter === tab.key ? 'active' : ''}`}
-            onClick={() => setActiveFilter(tab.key)}
-            style={
-              activeFilter === tab.key && tab.key !== 'all'
-                ? { borderBottomColor: eventTypeColors[tab.key] }
-                : undefined
-            }
-          >
-            {tab.key !== 'all' && (
-              <span className="filter-dot" style={{ backgroundColor: eventTypeColors[tab.key] }} />
-            )}
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Calendar */}
-      <div className="calendar-container">
-        <div className="calendar-nav">
-          <button className="calendar-nav-btn" onClick={goToPreviousMonth}>&lt;</button>
-          <h3 className="calendar-month-label">{monthNames[currentMonth]} {currentYear}</h3>
-          <button className="calendar-nav-btn" onClick={goToNextMonth}>&gt;</button>
+      {isMobile ? (
+        <div className="events-toolbar">
+          <Tabs
+            label={t('events.title')}
+            value={mobileEventsView}
+            onValueChange={(value) => setMobileEventsView(value as EventsView)}
+            items={[
+              { value: 'upcoming', label: t('events.status.upcoming') },
+              { value: 'past', label: t('events.calendar.past', 'Past') },
+            ]}
+          />
+          <Select
+            className="events-toolbar__select"
+            label={t('events.calendar.typeFilter', 'Event type')}
+            value={activeFilter}
+            onValueChange={(value) => setActiveFilter(value as FilterTab)}
+            options={filterTabs}
+          />
         </div>
+      ) : (
+        <>
+          <Tabs
+            className="events-filter-tabs"
+            label={t('events.calendar.typeFilter', 'Event type')}
+            value={activeFilter}
+            onValueChange={(value) => setActiveFilter(value as FilterTab)}
+            items={filterTabs}
+          />
+        </>
+      )}
 
-        <div className="calendar-grid">
-          {dayNames.map((day) => (
-            <div key={day} className="calendar-day-header">{day}</div>
-          ))}
-
-          {calendarDays.map((day, idx) => {
-            const dayEvents = day !== null ? eventsByDay[day] : undefined;
-            const dayShows = day !== null ? showEntriesByDay[day] : undefined;
-            const hasItems = !!(dayEvents || dayShows);
-
-            return (
-              <div
-                key={idx}
-                className={`calendar-day-cell ${day === null ? 'empty' : ''} ${hasItems ? 'has-events' : ''}`}
-              >
-                {day !== null && (
-                  <>
-                    <span className="calendar-day-number">{day}</span>
-                    <div className="calendar-day-items">
-                      {dayEvents?.map((evt) => (
-                        <Link
-                          key={evt.eventId}
-                          to={`/events/${evt.eventId}`}
-                          className="calendar-item"
-                          title={evt.name}
-                          aria-label={evt.name}
-                        >
-                          {evt.imageUrl ? (
-                            <img src={evt.imageUrl} alt={evt.name} className="calendar-item-img" />
-                          ) : (
-                            <div className="calendar-item-bar" style={{ backgroundColor: eventTypeColors[evt.eventType] }}>
-                              <span className="calendar-item-label">{evt.name}</span>
-                            </div>
-                          )}
-                        </Link>
-                      ))}
-                      {dayShows?.map((entry) => {
-                        const barColor = entry.eventType === 'ppv' ? ppvShowColor : showColor;
-                        const itemKey = `show-${entry.show.showId}-${entry.date}`;
-                        return isAdminOrModerator ? (
-                          <button
-                            key={itemKey}
-                            className="calendar-item"
-                            title={`${entry.show.name} (${entry.companyName})`}
-                            aria-label={entry.show.name}
-                            disabled={creatingEvent === `${entry.show.showId}-${entry.date}`}
-                            onClick={() => handleShowClick(entry)}
-                          >
-                            {entry.show.imageUrl ? (
-                              <img src={entry.show.imageUrl} alt={entry.show.name} className="calendar-item-img" />
-                            ) : (
-                              <div className="calendar-item-bar" style={{ backgroundColor: barColor }}>
-                                <span className="calendar-item-label">{entry.show.name}</span>
-                              </div>
-                            )}
-                          </button>
-                        ) : (
-                          <div
-                            key={itemKey}
-                            className="calendar-item calendar-item-static"
-                            title={entry.show.name}
-                          >
-                            {entry.show.imageUrl ? (
-                              <img src={entry.show.imageUrl} alt={entry.show.name} className="calendar-item-img" />
-                            ) : (
-                              <div className="calendar-item-bar" style={{ backgroundColor: barColor }}>
-                                <span className="calendar-item-label">{entry.show.name}</span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
+      <div className="events-layout">
+        <div className="events-layout__lists">
+          {showUpcoming && otherLiveEvents.length > 0 && (
+            <section className="events-section">
+              <h2 className="events-section__title">{t('events.calendar.inProgress')}</h2>
+              <div className="events-list">
+                {otherLiveEvents.map((event) => (
+                  <EventCard key={event.eventId} event={event} showStatus={false} />
+                ))}
               </div>
-            );
-          })}
+            </section>
+          )}
+
+          {showUpcoming && (otherUpcomingEvents.length > 0 || plannedShows.length > 0 || !heroCoversUpcoming) && (
+            <section className="events-section">
+              <h2 className="events-section__title">{t('events.calendar.upcoming')}</h2>
+              {otherUpcomingEvents.length === 0 && plannedShows.length === 0 ? (
+                <p className="events-section__empty">{t('events.calendar.noUpcoming')}</p>
+              ) : (
+                <div className="events-list">
+                  {otherUpcomingEvents.map((event) => (
+                    <EventCard key={event.eventId} event={event} showStatus={false} />
+                  ))}
+                  {plannedShows.map(({ show, date }) => (
+                    <div key={`${show.showId}-${date}`} className="event-card event-card--planned">
+                      <span className="event-card__date" aria-hidden="true">
+                        <span className="event-card__month">{formatCalendarDate(date, undefined, { month: 'short' })}</span>
+                        <span className="event-card__day">{formatCalendarDate(date, undefined, { day: '2-digit' })}</span>
+                      </span>
+                      <span className="event-card__body">
+                        <span className="event-card__name">{show.name}</span>
+                        <span className="event-card__meta">
+                          <span className="sr-only">{formatCalendarDate(date)}</span>
+                          {t('events.calendar.plannedShow', 'Planned show, card to come')}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </div>
 
-        {/* Legend */}
-        <div className="calendar-legend">
-          <div className="legend-item">
-            <span className="legend-dot" style={{ backgroundColor: '#d4af37' }} />
-            <span>{t('events.types.ppv')}</span>
-          </div>
-          <div className="legend-item">
-            <span className="legend-dot" style={{ backgroundColor: '#60a5fa' }} />
-            <span>{t('events.types.weekly')}</span>
-          </div>
-          <div className="legend-item">
-            <span className="legend-dot" style={{ backgroundColor: '#a78bfa' }} />
-            <span>{t('events.types.special')}</span>
-          </div>
-          <div className="legend-item">
-            <span className="legend-dot" style={{ backgroundColor: '#9ca3af' }} />
-            <span>{t('events.types.house')}</span>
-          </div>
-        </div>
-      </div>
-      </>
-      )}
+        {!isMobile && (
+          <section className="calendar" aria-label={`${monthNames[currentMonth]} ${currentYear}`}>
+            <div className="calendar-nav">
+              <button
+                type="button"
+                className="calendar-nav-btn"
+                onClick={goToPreviousMonth}
+                aria-label={t('events.calendar.previousMonth', 'Previous month')}
+              >
+                <ChevronLeft aria-hidden="true" size={20} />
+              </button>
+              <h2 className="calendar-month-label">{monthNames[currentMonth]} {currentYear}</h2>
+              <button
+                type="button"
+                className="calendar-nav-btn"
+                onClick={goToNextMonth}
+                aria-label={t('events.calendar.nextMonth', 'Next month')}
+              >
+                <ChevronRight aria-hidden="true" size={20} />
+              </button>
+            </div>
 
-      {/* In-Progress Events */}
-      {(!isMobile || mobileEventsView === 'upcoming') && inProgressEvents.length > 0 && (
-        <div className="in-progress-events-section">
-          <h3 className="in-progress-events-title">
-            <span className="in-progress-live-dot" aria-hidden="true" />
-            {t('events.calendar.inProgress')}
-          </h3>
-          <div className="in-progress-events-list">
-            {inProgressEvents.map((event) => (
-              <EventCard key={event.eventId} event={event} />
-            ))}
-          </div>
-        </div>
-      )}
+            <div className="calendar-grid">
+              {dayNames.map((day) => (
+                <div key={day} className="calendar-day-header">{day}</div>
+              ))}
 
-      {/* Upcoming Events */}
-      {(!isMobile || mobileEventsView === 'upcoming') && (
-      <div className="upcoming-events-section">
-        <h3 className="upcoming-events-title">{t('events.calendar.upcoming')}</h3>
-        {upcomingEvents.length === 0 ? (
-          <p className="no-events-message">{t('events.calendar.noUpcoming')}</p>
-        ) : (
-          <div className="upcoming-events-list">
-            {upcomingEvents.map((event) => (
-              <EventCard key={event.eventId} event={event} />
-            ))}
-          </div>
+              {calendarDays.map((day, idx) => {
+                const dayEvents = day !== null ? eventsByDay[day] : undefined;
+                const dayShows = day !== null ? showEntriesByDay[day] : undefined;
+
+                return (
+                  <div key={idx} className={`calendar-day-cell${day === null ? ' calendar-day-cell--empty' : ''}`}>
+                    {day !== null && (
+                      <>
+                        <span className="calendar-day-number">{day}</span>
+                        {dayEvents?.map((evt) => {
+                          const itemLabel = `${evt.name} (${t(`events.status.${evt.status}`)})`;
+                          const cancelled = evt.status === 'cancelled' ? ' calendar-item--cancelled' : '';
+                          return (
+                            <Link
+                              key={evt.eventId}
+                              to={`/events/${evt.eventId}`}
+                              className={`calendar-item calendar-item--${evt.eventType}${cancelled}`}
+                              title={itemLabel}
+                              aria-label={itemLabel}
+                            >
+                              {evt.name}
+                            </Link>
+                          );
+                        })}
+                        {dayShows?.map((entry) => {
+                          const itemKey = `show-${entry.show.showId}-${entry.date}`;
+                          const itemClass = `calendar-item calendar-item--planned calendar-item--${entry.eventType}`;
+                          return isAdminOrModerator ? (
+                            <button
+                              key={itemKey}
+                              type="button"
+                              className={itemClass}
+                              title={`${entry.show.name} (${entry.companyName})`}
+                              onClick={() => handleShowClick(entry)}
+                            >
+                              {entry.show.name}
+                            </button>
+                          ) : (
+                            <span key={itemKey} className={itemClass} title={entry.show.name}>
+                              {entry.show.name}
+                            </span>
+                          );
+                        })}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="calendar-legend">
+              {EVENT_TYPES.map((eventType) => (
+                <div key={eventType} className="legend-item">
+                  <span className={`legend-dot legend-dot--${eventType}`} aria-hidden="true" />
+                  <span>{t(`events.types.${eventType}`)}</span>
+                </div>
+              ))}
+              <div className="legend-item">
+                <span className="legend-dot legend-dot--planned" aria-hidden="true" />
+                <span>{t('events.calendar.plannedLegend', 'Planned')}</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-dot legend-dot--cancelled" aria-hidden="true" />
+                <span>{t('events.status.cancelled')}</span>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {showPast && (
+          <section className="events-section">
+            <h2 className="events-section__title">{t('events.calendar.recentResults', 'Recent Results')}</h2>
+            {recentResults.length === 0 ? (
+              <p className="events-section__empty">{t('events.calendar.noResults', 'No completed events yet.')}</p>
+            ) : (
+              <div className="events-list">
+                {recentResults.slice(0, pastLimit).map((event) => (
+                  <EventCard key={event.eventId} event={event} showStatus={false} />
+                ))}
+              </div>
+            )}
+            {recentResults.length > pastLimit && (
+              <Button
+                className="events-section__more"
+                variant="secondary"
+                onClick={() => setPastLimit((limit) => limit + PAST_PAGE_SIZE)}
+              >
+                {t('events.calendar.showMore', 'Show more')}
+              </Button>
+            )}
+          </section>
         )}
       </div>
-      )}
 
-      {/* Recent Results */}
-      {(!isMobile || mobileEventsView === 'past') && (
-      <div className="recent-results-section">
-        <h3 className="recent-results-title">{t('events.calendar.recentResults', 'Recent Results')}</h3>
-        {recentResults.length === 0 ? (
-          <p className="no-events-message">{t('events.calendar.noResults', 'No completed events yet.')}</p>
-        ) : (
-          <div className="recent-results-list">
-            {recentResults.map((event) => (
-              <EventCard key={event.eventId} event={event} />
-            ))}
-          </div>
-        )}
-      </div>
-      )}
+      {createModal}
     </div>
   );
 }

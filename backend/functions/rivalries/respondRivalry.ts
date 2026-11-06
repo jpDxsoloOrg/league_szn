@@ -5,6 +5,7 @@ import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { createNotifications } from '../../lib/notifications';
+import { UNKNOWN_REVIEWER } from '../../lib/reviewerName';
 import type {
   Rivalry,
   RivalryMessage,
@@ -65,6 +66,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const now = new Date().toISOString();
     const auth = getAuthContext(event);
     const moderator = auth.username || auth.email || 'admin';
+    // moderatedBy is staff-only; the message and notification text are public.
+    const moderatorPlayer = auth.sub ? await players.findByUserId(auth.sub).catch(() => null) : null;
+    const moderatorName = moderatorPlayer?.name ?? UNKNOWN_REVIEWER;
 
     const patch: RivalryPatch = {
       status: transition.nextStatus,
@@ -78,7 +82,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       rivalryId,
       messageId: uuidv4(),
       authorPlayerId: 'system',
-      body: buildSystemMessage(action, moderator, message),
+      body: buildSystemMessage(action, moderatorName, message),
       // System status transitions are public — participants and observers
       // both need to see them so 'all' is correct.
       audience: 'all',
@@ -99,7 +103,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       .map((p) => ({
         userId: p.userId as string,
         type: 'rivalry_reviewed' as const,
-        message: buildNotificationMessage(action, rivalry, moderator),
+        message: buildNotificationMessage(action, rivalry, moderatorName),
         sourceId: rivalryId,
         sourceType: 'rivalry' as const,
       }));

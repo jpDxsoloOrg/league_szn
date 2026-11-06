@@ -315,6 +315,7 @@ components:
         responseMessage: { type: string }
         counteredChallengeId: { type: string }
         matchId: { type: string }
+        promoId: { type: string, description: The call-out promo this challenge came from }
         expiresAt: { type: string }
         createdAt: { type: string }
         updatedAt: { type: string }
@@ -343,6 +344,7 @@ components:
         stipulation: { type: string }
         championshipId: { type: string }
         message: { type: string }
+        promoId: { type: string, description: The caller's own call-out promo to link this challenge to }
 
     RespondChallengeInput:
       type: object
@@ -888,6 +890,16 @@ paths:
     get:
       tags: [Players]
       summary: List players
+      description: Public. Leaves out players with no real wrestler name unless a mode below applies.
+      parameters:
+        - name: includeHidden
+          in: query
+          description: 'When "true", includes hidden players. Honoured for an authenticated Admin or Moderator; ignored otherwise.'
+          schema: { type: string, enum: ['true'] }
+        - name: view
+          in: query
+          description: 'When "directory", returns only playerId, name and currentWrestler (null if unset) for all players.'
+          schema: { type: string, enum: [directory] }
       responses:
         '200': { description: List of players }
     post:
@@ -1660,6 +1672,14 @@ paths:
         - name: promoType
           in: query
           schema: { type: string }
+        - name: includeHidden
+          in: query
+          description: 'When "true", includes moderated promos and promos by hidden players. Honoured for an authenticated Admin or Moderator; ignored otherwise.'
+          schema: { type: string, enum: ['true'] }
+        - name: includeArchived
+          in: query
+          description: 'When "true", includes call-outs and responses past the archive window. Honoured for an authenticated Admin or Moderator; ignored otherwise.'
+          schema: { type: string, enum: ['true'] }
       responses:
         '200': { description: List of promos }
     post:
@@ -2481,10 +2501,11 @@ paths:
           in: query
           schema: { type: string }
       responses:
-        '200': { description: List of overrides with player info }
+        '200': { description: 'List of overrides with player info and currentRank, the stored position or null when the player is not on the list' }
     post:
       tags: [Contenders]
       summary: Set contender override
+      description: Saves the override, recalculates the title and reports where the player ended up.
       security: [{ BearerAuth: [] }]
       requestBody:
         content:
@@ -2499,7 +2520,8 @@ paths:
                 reason: { type: string }
                 expiresAt: { type: string, format: date-time }
       responses:
-        '201': { description: Override created }
+        '201':
+          description: Override created. placement.status is onList, notOnList, noActiveSeason or recalculationFailed, and placement.rank is set for onList.
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
@@ -3345,6 +3367,7 @@ paths:
         '200': { description: Transfer request created }
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not permitted, or the transfers feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /transfers/me:
     get:

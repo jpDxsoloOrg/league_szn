@@ -2,28 +2,32 @@ import { handler as getDivisionsHandler } from './getDivisions';
 import { handler as createDivisionHandler } from './createDivision';
 import { handler as updateDivisionHandler } from './updateDivision';
 import { handler as deleteDivisionHandler } from './deleteDivision';
-import { createRouter, RouteConfig } from '../../lib/router';
+import { createRouter, type RouteConfig, STAFF } from '../../lib/router';
 
-const routes: ReadonlyArray<RouteConfig> = [
+export const routes: ReadonlyArray<RouteConfig> = [
   {
     resource: '/divisions',
     method: 'GET',
     handler: getDivisionsHandler,
+    access: 'public',
   },
   {
     resource: '/divisions',
     method: 'POST',
     handler: createDivisionHandler,
+    access: STAFF,
   },
   {
     resource: '/divisions/{divisionId}',
     method: 'PUT',
     handler: updateDivisionHandler,
+    access: STAFF,
   },
   {
     resource: '/divisions/{divisionId}',
     method: 'DELETE',
     handler: deleteDivisionHandler,
+    access: STAFF,
   },
 ];
 

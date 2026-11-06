@@ -1,6 +1,7 @@
+import { matchWinners } from './matchResult';
 import type { Match } from './repositories/types';
 
-export type HeadToHeadMatch = Pick<Match, 'matchId' | 'date' | 'participants' | 'winners'>;
+export type HeadToHeadMatch = Pick<Match, 'matchId' | 'date' | 'participants' | 'winners' | 'isDraw'>;
 
 export interface HeadToHeadRecord {
   player1Id: string;
@@ -22,9 +23,25 @@ export interface HeadToHeadResult<T extends HeadToHeadMatch> extends HeadToHeadR
 }
 
 /**
+ * Which of the two players beat the other, if either did. A draw, a match won
+ * by a third wrestler, and a win shared by partners all leave the pair level,
+ * so the answer never depends on which player was passed first.
+ */
+export function pairWinnerId(
+  match: Pick<Match, 'winners' | 'isDraw'>,
+  player1Id: string,
+  player2Id: string,
+): string | undefined {
+  const winners = matchWinners(match);
+  const player1Won = winners.includes(player1Id);
+  if (player1Won === winners.includes(player2Id)) return undefined;
+  return player1Won ? player1Id : player2Id;
+}
+
+/**
  * Record between two players across the completed matches they both took
- * part in. A match neither of them won (a draw, or a multi-man won by a
- * third wrestler) counts as a draw *between the pair*. Shared by the
+ * part in. A match neither of them won outright (see `pairWinnerId`) counts
+ * as a draw *between the pair*. Shared by the
  * statistics head-to-head section and the event commentary view.
  */
 export function computeHeadToHead<T extends HeadToHeadMatch>(
@@ -40,13 +57,14 @@ export function computeHeadToHead<T extends HeadToHeadMatch>(
   let player2Wins = 0;
   let draws = 0;
   for (const match of shared) {
-    if (match.winners?.includes(player1Id)) player1Wins++;
-    else if (match.winners?.includes(player2Id)) player2Wins++;
+    const winnerId = pairWinnerId(match, player1Id, player2Id);
+    if (winnerId === player1Id) player1Wins++;
+    else if (winnerId === player2Id) player2Wins++;
     else draws++;
   }
 
   const last = shared[0];
-  const lastWinnerId = last?.winners?.find((id) => id === player1Id || id === player2Id);
+  const lastWinnerId = last ? pairWinnerId(last, player1Id, player2Id) : undefined;
 
   return {
     player1Id,

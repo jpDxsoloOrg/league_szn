@@ -1,32 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import type { SiteFeatures } from '../../../services/api';
 
-// --- Hoisted mocks ---
 const { mockUseAuth, mockUseSiteConfig } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
   mockUseSiteConfig: vi.fn(),
 }));
 
-vi.mock('../../../contexts/AuthContext', () => ({
-  useAuth: mockUseAuth,
-}));
-
-vi.mock('../../../contexts/SiteConfigContext', () => ({
-  useSiteConfig: mockUseSiteConfig,
-}));
-
+vi.mock('../../../contexts/AuthContext', () => ({ useAuth: mockUseAuth }));
+vi.mock('../../../contexts/SiteConfigContext', () => ({ useSiteConfig: mockUseSiteConfig }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock('../BottomTabBar.css', () => ({}));
-
 import BottomTabBar from '../BottomTabBar';
 
-// --- Helpers ---
 const ALL_FEATURES: SiteFeatures = {
   challenges: true,
   promos: true,
@@ -35,119 +24,75 @@ const ALL_FEATURES: SiteFeatures = {
   stables: true,
   notifications: true,
   rivalries: true,
+  transfers: true,
 };
 
-function baseAuth(overrides: Record<string, unknown> = {}) {
-  return {
-    isAuthenticated: false,
-    isAdminOrModerator: false,
-    isWrestler: false,
-    signOut: vi.fn(),
-    ...overrides,
-  };
-}
-
-function renderTabBar(
-  route = '/',
-  props: { onMoreClick?: () => void; isMoreOpen?: boolean } = {}
-) {
+function renderTabBar(route = '/') {
   return render(
     <MemoryRouter initialEntries={[route]}>
-      <BottomTabBar
-        onMoreClick={props.onMoreClick ?? vi.fn()}
-        isMoreOpen={props.isMoreOpen ?? false}
-      />
-    </MemoryRouter>
+      <BottomTabBar />
+    </MemoryRouter>,
   );
 }
 
 describe('BottomTabBar', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    mockUseSiteConfig.mockReturnValue({ features: ALL_FEATURES, isLoading: false });
-    mockUseAuth.mockReturnValue(baseAuth({ isAuthenticated: true }));
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isWrestler: true, isAdminOrModerator: false, isSuperAdmin: false });
+    mockUseSiteConfig.mockReturnValue({ features: ALL_FEATURES });
   });
 
-  it('renders five items with the expected labels', () => {
+  it('renders the five sections', () => {
     renderTabBar();
+    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual([
+      'nav.sections.home',
+      'nav.sections.events',
+      'nav.sections.rankings',
+      'nav.sections.storylines',
+      'nav.sections.me',
+    ]);
+  });
 
-    expect(screen.getByText('mobileNav.home')).toBeInTheDocument();
-    expect(screen.getByText('nav.standings')).toBeInTheDocument();
-    expect(screen.getByText('nav.rivalries')).toBeInTheDocument();
-    expect(screen.getByText('mobileNav.profile')).toBeInTheDocument();
-    expect(screen.getByText('mobileNav.more')).toBeInTheDocument();
+  it.each([
+    ['/', 'nav.sections.home'],
+    ['/activity', 'nav.sections.home'],
+    ['/events/abc/results', 'nav.sections.events'],
+    ['/matches', 'nav.sections.events'],
+    ['/stats/records', 'nav.sections.rankings'],
+    ['/player/p1', 'nav.sections.rankings'],
+    ['/promos/p1', 'nav.sections.storylines'],
+    ['/my-faction', 'nav.sections.me'],
+    ['/contenders/my-status', 'nav.sections.me'],
+    ['/admin/players', 'nav.sections.me'],
+  ])('highlights the section for %s', (route, label) => {
+    renderTabBar(route);
+    const current = screen.getAllByRole('link').filter((link) => link.getAttribute('aria-current') === 'page');
+    expect(current.map((link) => link.textContent)).toEqual([label]);
+  });
 
-    // Exactly 4 links + 1 More button
+  it('turns Me into a sign-in entry when signed out', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, isWrestler: false, isAdminOrModerator: false, isSuperAdmin: false });
+    renderTabBar();
+    expect(screen.getByRole('link', { name: 'common.signIn' })).toHaveAttribute('href', '/me');
+    expect(screen.queryByRole('link', { name: 'nav.sections.me' })).not.toBeInTheDocument();
+  });
+
+  it('does not light Sign In for a guest reading help', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, isWrestler: false, isAdminOrModerator: false, isSuperAdmin: false });
+    renderTabBar('/guide/wiki/league-rules');
+    const current = screen.getAllByRole('link').filter((link) => link.getAttribute('aria-current') === 'page');
+    expect(current).toEqual([]);
+  });
+
+  it('lands Storylines on the first enabled tab', () => {
+    mockUseSiteConfig.mockReturnValue({ features: { ...ALL_FEATURES, rivalries: false } });
+    renderTabBar();
+    expect(screen.getByRole('link', { name: 'nav.sections.storylines' })).toHaveAttribute('href', '/promos');
+  });
+
+  it('hides Storylines when all of its features are off', () => {
+    mockUseSiteConfig.mockReturnValue({ features: { ...ALL_FEATURES, rivalries: false, promos: false, stables: false } });
+    renderTabBar();
+    expect(screen.queryByRole('link', { name: 'nav.sections.storylines' })).not.toBeInTheDocument();
     expect(screen.getAllByRole('link')).toHaveLength(4);
-    expect(screen.getAllByRole('button')).toHaveLength(1);
-  });
-
-  it('marks the tab matching the current route as active', () => {
-    renderTabBar('/standings');
-
-    const standingsLink = screen.getByText('nav.standings').closest('a')!;
-    expect(standingsLink).toHaveAttribute('aria-current', 'page');
-    expect(standingsLink).toHaveClass('bottom-tab-bar__item--active');
-
-    // The other tabs are not active
-    const homeLink = screen.getByText('mobileNav.home').closest('a')!;
-    expect(homeLink).not.toHaveAttribute('aria-current');
-    expect(homeLink).not.toHaveClass('bottom-tab-bar__item--active');
-  });
-
-  it('marks Home active only on an exact "/" match', () => {
-    renderTabBar('/');
-
-    const homeLink = screen.getByText('mobileNav.home').closest('a')!;
-    expect(homeLink).toHaveAttribute('aria-current', 'page');
-  });
-
-  it('replaces the Rivalries tab with Championships when the rivalries feature is off', () => {
-    mockUseSiteConfig.mockReturnValue({
-      features: { ...ALL_FEATURES, rivalries: false },
-      isLoading: false,
-    });
-    renderTabBar();
-
-    expect(screen.queryByText('nav.rivalries')).not.toBeInTheDocument();
-    const championshipsLink = screen.getByText('nav.championships').closest('a')!;
-    expect(championshipsLink).toHaveAttribute('href', '/championships');
-  });
-
-  it('points the Profile tab at /login when signed out', () => {
-    mockUseAuth.mockReturnValue(baseAuth({ isAuthenticated: false }));
-    renderTabBar();
-
-    const profileLink = screen.getByText('mobileNav.profile').closest('a')!;
-    expect(profileLink).toHaveAttribute('href', '/login');
-  });
-
-  it('points the Profile tab at /profile when signed in', () => {
-    mockUseAuth.mockReturnValue(baseAuth({ isAuthenticated: true }));
-    renderTabBar();
-
-    const profileLink = screen.getByText('mobileNav.profile').closest('a')!;
-    expect(profileLink).toHaveAttribute('href', '/profile');
-  });
-
-  it('calls onMoreClick when the More button is tapped', async () => {
-    const user = userEvent.setup();
-    const onMoreClick = vi.fn();
-    renderTabBar('/', { onMoreClick });
-
-    await user.click(screen.getByText('mobileNav.more').closest('button')!);
-    expect(onMoreClick).toHaveBeenCalledTimes(1);
-  });
-
-  it('renders the More button active and suppresses tab highlight while the sheet is open', () => {
-    renderTabBar('/standings', { isMoreOpen: true });
-
-    const moreButton = screen.getByText('mobileNav.more').closest('button')!;
-    expect(moreButton).toHaveClass('bottom-tab-bar__item--active');
-    expect(moreButton).toHaveAttribute('aria-expanded', 'true');
-
-    // Route-matched tab is de-highlighted while the More sheet is open
-    const standingsLink = screen.getByText('nav.standings').closest('a')!;
-    expect(standingsLink).not.toHaveClass('bottom-tab-bar__item--active');
   });
 });

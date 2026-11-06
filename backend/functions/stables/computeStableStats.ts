@@ -1,4 +1,9 @@
 import { getRepositories } from '../../lib/repositories';
+import { computeRecentFormAndStreak, type FormAndStreak } from '../../lib/stats/recentFormAndStreak';
+import { tallyResults, type WinLossDrawRecord } from '../../lib/stats/record';
+import { isWithinLifetime } from '../../lib/stats/lifetime';
+
+export { computeWinPercentage } from '../../lib/stats/record';
 
 /** A completed match record from DynamoDB */
 export interface MatchRecord {
@@ -59,10 +64,8 @@ export interface MatchTypeRecord {
   draws: number;
 }
 
-export interface StableStandingsData {
+export interface StableStandingsData extends FormAndStreak {
   winPercentage: number;
-  recentForm: string[];
-  currentStreak: string;
 }
 
 /**
@@ -152,6 +155,24 @@ export function determineStableOutcome(
   return null;
 }
 
+/** The parts of a faction that decide which matches belong to it. */
+export type FactionLifetime = Pick<StableRecord, 'createdAt' | 'status' | 'disbandedAt'>;
+
+/**
+ * True when a match happened while the faction existed. Membership history is
+ * not stored, so a current member's matches from before they joined still count
+ * and a removed member's do not.
+ *
+ * Gates on status, never on disbandedAt alone: reactivateStable keeps the old
+ * date as history, so a reactivated faction would otherwise stop counting.
+ */
+export function isWithinFactionLifetime(matchDate: string, faction: FactionLifetime): boolean {
+  return isWithinLifetime(matchDate, {
+    createdAt: faction.createdAt,
+    endedAt: faction.status === 'disbanded' ? faction.disbandedAt : undefined,
+  });
+}
+
 /**
  * Computes match results for a single stable from all completed matches.
  * Returns results sorted by date descending.
@@ -165,6 +186,7 @@ export function computeStableMatchResults(
   const results: StableMatchResult[] = [];
 
   for (const match of matches) {
+    if (!isWithinFactionLifetime(match.date, stable)) continue;
     const outcome = determineStableOutcome(match, memberSet);
     if (outcome === null) continue;
 
@@ -200,24 +222,35 @@ export function computeStableMatchResults(
 export function computeFormAndStreak(
   results: StableMatchResult[],
   formCount: number = 10
-): { recentForm: string[]; currentStreak: string } {
-  const recentForm = results.slice(0, formCount).map((r) => r.outcome);
+): FormAndStreak {
+  return computeRecentFormAndStreak(results.map((r) => r.outcome), formCount);
+}
 
-  let currentStreak = '';
-  if (results.length > 0) {
-    const firstOutcome = results[0].outcome;
-    let streakCount = 0;
-    for (const result of results) {
-      if (result.outcome === firstOutcome) {
-        streakCount++;
-      } else {
-        break;
-      }
-    }
-    currentStreak = `${firstOutcome}${streakCount}`;
+/**
+ * Tallies W/L/D from match outcomes. Faction records always come from here, so
+ * the list, detail, standings and stats pages show the same numbers. The stored
+ * wins/losses/draws counters on a stable are not read for display.
+ */
+export function tallyRecord(results: ReadonlyArray<{ outcome: MatchOutcome }>): WinLossDrawRecord {
+  return tallyResults(results.map((r) => r.outcome));
+}
+
+/**
+ * A faction's record from completed matches, for callers that need only the
+ * totals and not the per-match results.
+ */
+export function computeStableRecord(
+  matches: ReadonlyArray<MatchRecord>,
+  stable: FactionLifetime & { memberIds?: ReadonlyArray<string> },
+): WinLossDrawRecord {
+  const memberSet = new Set(stable.memberIds ?? []);
+  const outcomes: MatchOutcome[] = [];
+  for (const match of matches) {
+    if (!isWithinFactionLifetime(match.date, stable)) continue;
+    const outcome = determineStableOutcome(match, memberSet);
+    if (outcome !== null) outcomes.push(outcome);
   }
-
-  return { recentForm, currentStreak };
+  return tallyResults(outcomes);
 }
 
 /**
@@ -283,12 +316,4 @@ export function computeMatchTypeRecords(results: StableMatchResult[]): MatchType
   }
 
   return records.sort((a, b) => (b.wins + b.losses + b.draws) - (a.wins + a.losses + a.draws));
-}
-
-/**
- * Computes win percentage from W/L/D counts.
- */
-export function computeWinPercentage(wins: number, losses: number, draws: number): number {
-  const total = wins + losses + draws;
-  return total > 0 ? Math.round((wins / total) * 1000) / 1000 : 0;
 }

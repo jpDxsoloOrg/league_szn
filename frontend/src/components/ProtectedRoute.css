@@ -1,0 +1,65 @@
+/* FeatureRoute and AdminPanel reuse these guard states, so they load with the app shell. */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 1rem;
+  color: var(--color-text-secondary);
+}
+
+.access-denied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 1rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.access-denied h2 {
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+}
+
+.protected-route__denied {
+  min-height: 60vh;
+  justify-content: center;
+}
+
+.protected-route__prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 36rem;
+  margin: 2rem auto;
+  padding: 2rem 1.5rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  text-align: center;
+}
+
+.protected-route__prompt-icon {
+  color: var(--section-accent);
+}
+
+.protected-route__prompt-title {
+  margin-bottom: 0;
+  font-size: 1.375rem;
+}
+
+.protected-route__prompt-text {
+  color: var(--color-text-secondary);
+}
+
+.protected-route__prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}

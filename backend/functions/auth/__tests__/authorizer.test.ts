@@ -36,6 +36,35 @@ describe('authorizer handler', () => {
     vi.clearAllMocks();
   });
 
+  it('never writes the bearer token or decoded claims to the logs', async () => {
+    const logged: unknown[][] = [];
+    const capture = (...args: unknown[]) => {
+      logged.push(args);
+    };
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(capture);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(capture);
+
+    mockVerify.mockResolvedValueOnce({ sub: 'user-sub-123', username: 'john' });
+    await handler(makeAuthorizerEvent('Bearer secret-jwt-value'), dummyContext, dummyCallback);
+
+    const verifyError = Object.assign(new Error('Token expired'), {
+      rawJwt: { payload: { email: 'private@example.com' } },
+    });
+    mockVerify.mockRejectedValueOnce(verifyError);
+    await expect(
+      handler(makeAuthorizerEvent('Bearer secret-jwt-value'), dummyContext, dummyCallback)
+    ).rejects.toThrow('Unauthorized');
+
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+
+    const output = logged.flat().map(String).join(' ');
+    expect(logged.length).toBeGreaterThan(0);
+    expect(output).not.toContain('secret-jwt-value');
+    expect(output).not.toContain('private@example.com');
+    expect(logged.flat()).not.toContain(verifyError);
+  });
+
   it('returns Allow policy with context for a valid Bearer token', async () => {
     mockVerify.mockResolvedValue({
       sub: 'user-sub-123',

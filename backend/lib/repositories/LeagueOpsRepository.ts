@@ -26,6 +26,11 @@ export interface EventCreateInput {
   showId?: string;
 }
 
+export interface EventUpdateOptions {
+  /** Refuse the write with a ConflictError unless the stored card still equals this list. */
+  expectedMatchCards?: EventPatch['matchCards'];
+}
+
 export interface EventPatch {
   name?: string;
   eventType?: 'ppv' | 'weekly' | 'special' | 'house';
@@ -186,7 +191,8 @@ export interface MatchmakingMethods {
 // ─── Aggregate interface ────────────────────────────────────────────
 
 export interface LeagueOpsRepository {
-  events: CrudRepository<LeagueEvent, EventCreateInput, EventPatch> & {
+  events: Omit<CrudRepository<LeagueEvent, EventCreateInput, EventPatch>, 'update'> & {
+    update(eventId: string, patch: EventPatch, options?: EventUpdateOptions): Promise<LeagueEvent>;
     listByStatus(status: EventStatus): Promise<LeagueEvent[]>;
     listBySeason(seasonId: string): Promise<LeagueEvent[]>;
     listByEventType(eventType: string): Promise<LeagueEvent[]>;

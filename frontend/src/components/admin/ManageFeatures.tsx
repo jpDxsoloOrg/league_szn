@@ -1,6 +1,11 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { siteConfigApi, type SiteFeatures } from '../../services/api';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import Card from '../ui/Card';
+import PageHeader from '../ui/PageHeader';
+import AdminNotice from './AdminNotice';
+import './adminContent.css';
 import './ManageFeatures.css';
 
 const FEATURE_LABELS: Record<keyof SiteFeatures, { name: string; description: string }> = {
@@ -32,9 +37,14 @@ const FEATURE_LABELS: Record<keyof SiteFeatures, { name: string; description: st
     name: 'Rivalries',
     description: 'Persistent rivalries hub, messaging threads, and admin moderation',
   },
+  transfers: {
+    name: 'Division Transfers',
+    description: 'Division transfer requests on player profiles and the admin Transfers page',
+  },
 };
 
 export default function ManageFeatures() {
+  const { t } = useTranslation();
   const { features, refreshConfig } = useSiteConfig();
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,47 +56,62 @@ export default function ManageFeatures() {
       await siteConfigApi.updateFeatures({ [feature]: !features[feature] });
       await refreshConfig();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update feature');
+      setError(err instanceof Error ? err.message : t('adminContent.features.updateFailed', 'Failed to update feature'));
     } finally {
       setSaving(null);
     }
   };
 
   return (
-    <div className="manage-features">
-      <h2>Feature Management</h2>
-      <p className="features-description">
-        Toggle site features on or off. Disabled features will be hidden from navigation
-        and inaccessible to users. Data continues to be collected while features are disabled.
-      </p>
+    <div className="ac-page">
+      <PageHeader
+        title={t('adminContent.features.title', 'Feature Management')}
+        subtitle={t(
+          'adminContent.features.subtitle',
+          'Toggle site features on or off. Disabled features will be hidden from navigation and inaccessible to users. Data continues to be collected while features are disabled.',
+        )}
+      />
 
-      {error && (
-        <div className="error-message" role="alert">
-          {error}
-          <button onClick={() => setError(null)} className="dismiss-btn">Dismiss</button>
-        </div>
-      )}
+      {error && <AdminNotice tone="error" onDismiss={() => setError(null)}>{error}</AdminNotice>}
 
-      <div className="features-list">
-        {(Object.keys(FEATURE_LABELS) as Array<keyof SiteFeatures>).map((key) => (
-          <div key={key} className="feature-card">
-            <div className="feature-info">
-              <h3>{FEATURE_LABELS[key].name}</h3>
-              <p>{FEATURE_LABELS[key].description}</p>
-            </div>
-            <div className="feature-toggle">
-              <button
-                className={`toggle-btn ${features[key] ? 'enabled' : 'disabled'}`}
-                onClick={() => handleToggle(key)}
-                disabled={saving === key}
-                aria-label={`${features[key] ? 'Disable' : 'Enable'} ${FEATURE_LABELS[key].name}`}
-              >
-                {saving === key ? 'Saving...' : features[key] ? 'Enabled' : 'Disabled'}
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+      <Card padding="none">
+        <ul className="features-list">
+          {(Object.keys(FEATURE_LABELS) as Array<keyof SiteFeatures>).map((key) => {
+            const name = t(`adminContent.features.${key}.name`, FEATURE_LABELS[key].name);
+            const enabled = features[key];
+            return (
+              <li key={key} className="features-list__row">
+                <div className="ac-cell__text">
+                  <h2 className="features-list__name">{name}</h2>
+                  <p className="ac-cell__sub features-list__description">
+                    {t(`adminContent.features.${key}.description`, FEATURE_LABELS[key].description)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={enabled}
+                  className={`feature-switch${enabled ? ' feature-switch--on' : ''}`}
+                  onClick={() => handleToggle(key)}
+                  disabled={saving === key}
+                  aria-label={enabled
+                    ? t('adminContent.features.disable', { name, defaultValue: `Disable ${name}` })
+                    : t('adminContent.features.enable', { name, defaultValue: `Enable ${name}` })}
+                >
+                  <span className="feature-switch__track" aria-hidden="true"><span className="feature-switch__thumb" /></span>
+                  <span className="feature-switch__label">
+                    {saving === key
+                      ? t('common.saving', 'Saving...')
+                      : enabled
+                        ? t('adminContent.features.enabled', 'Enabled')
+                        : t('adminContent.features.disabled', 'Disabled')}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </Card>
     </div>
   );
 }

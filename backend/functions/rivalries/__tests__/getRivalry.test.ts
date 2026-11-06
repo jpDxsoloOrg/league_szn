@@ -7,7 +7,7 @@ const mockNotes = { listByRivalry: vi.fn() };
 const mockMatches = { list: vi.fn() };
 const mockPromos = { listByPlayer: vi.fn() };
 const mockEvents = { listByStatus: vi.fn() };
-const mockPlayers = { findByUserId: vi.fn() };
+const mockPlayers = { findByUserId: vi.fn(), findById: vi.fn() };
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
@@ -54,6 +54,7 @@ describe('getRivalry (hydrated)', () => {
     mockPromos.listByPlayer.mockResolvedValue([]);
     mockEvents.listByStatus.mockResolvedValue([]);
     mockPlayers.findByUserId.mockResolvedValue(null);
+    mockPlayers.findById.mockResolvedValue(null);
   });
 
   it('returns 404 when the rivalry is missing', async () => {
@@ -79,6 +80,50 @@ describe('getRivalry (hydrated)', () => {
     expect(body.notes).toEqual([]);
   });
 
+  describe('account ids', () => {
+    const accountId = '11111111-2222-3333-4444-555555555555';
+    const anonymousRead = async () => {
+      const res = await getRivalry(
+        makeEvent({ httpMethod: 'GET', pathParameters: { rivalryId: 'r1' } }),
+        ctx,
+        cb,
+      );
+      return JSON.parse(res!.body);
+    };
+
+    it('leaves moderatedBy and an id-valued bookerName out of the public payload', async () => {
+      mockRivalries.get.mockResolvedValue({ ...rivalry, moderatedBy: accountId, bookerName: accountId });
+
+      const body = await anonymousRead();
+
+      expect(JSON.stringify(body)).not.toContain(accountId);
+    });
+
+    it('keeps a real booker name', async () => {
+      mockRivalries.get.mockResolvedValue({ ...rivalry, bookerName: 'Jane GM' });
+
+      expect((await anonymousRead()).rivalry.bookerName).toBe('Jane GM');
+    });
+
+    it('masks the moderator id in stored system messages', async () => {
+      mockMessages.list.mockResolvedValue({
+        items: [{
+          rivalryId: 'r1',
+          messageId: 'm1',
+          authorPlayerId: 'system',
+          body: `Rivalry approved by ${accountId}.`,
+          audience: 'all',
+          createdAt: '',
+        }],
+        nextCursor: undefined,
+      });
+
+      const body = await anonymousRead();
+
+      expect(body.recentMessages[0].body).toBe('Rivalry approved by League Staff.');
+    });
+  });
+
   it('filters notes by visibility for anonymous callers', async () => {
     mockNotes.listByRivalry.mockResolvedValue([
       { rivalryId: 'r1', noteId: 'n1', noteType: 'storyline', visibility: 'all', body: 'public', authorPlayerId: 'admin', createdAt: '', updatedAt: '' },
@@ -92,6 +137,26 @@ describe('getRivalry (hydrated)', () => {
     );
     const body = JSON.parse(res!.body);
     expect(body.notes.map((n: { noteId: string }) => n.noteId)).toEqual(['n1']);
+  });
+
+  it('counts a shared win or an outsider win as level, as the Stats head-to-head does', async () => {
+    mockMatches.list.mockResolvedValue([
+      { matchId: 'shared', date: '2026-04-01', status: 'completed', participants: ['p1', 'p2', 'p3', 'p4'], winners: ['p1', 'p2'], losers: ['p3', 'p4'] },
+      { matchId: 'outsider', date: '2026-04-02', status: 'completed', participants: ['p1', 'p2', 'p3'], winners: ['p3'], losers: ['p1', 'p2'] },
+      { matchId: 'clean', date: '2026-04-03', status: 'completed', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] },
+      { matchId: 'draw', date: '2026-04-04', status: 'completed', participants: ['p1', 'p2'], winners: ['p1', 'p2'], losers: [], isDraw: true },
+    ]);
+
+    const res = await getRivalry(
+      makeEvent({ httpMethod: 'GET', pathParameters: { rivalryId: 'r1' } }),
+      ctx,
+      cb,
+    );
+
+    const { headToHead } = JSON.parse(res!.body);
+    expect(headToHead.winsByParticipant).toEqual({ p1: 1, p2: 0 });
+    expect(headToHead.draws).toBe(3);
+    expect(headToHead.totalMatches).toBe(4);
   });
 
   it('computes head-to-head wins from completed matches', async () => {

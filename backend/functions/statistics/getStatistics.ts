@@ -1,8 +1,10 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import { computeHeadToHead } from '../../lib/headToHead';
+import { computeHeadToHead, pairWinnerId } from '../../lib/headToHead';
+import { matchWinners } from '../../lib/matchResult';
 import type { Match, Player, Championship, ChampionshipHistoryEntry } from '../../lib/repositories';
 import { success, badRequest, serverError } from '../../lib/response';
+import { isPlayerVisible } from '../../lib/needsWrestler';
 
 function normalizeMatchType(value?: string): string {
   const normalized = (value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -26,7 +28,7 @@ function categorizeMatch(match: Match): string {
 function computeStreaks(
   matches: Match[],
   playerId: string
-): { currentWinStreak: number; longestWinStreak: number; longestLossStreak: number } {
+): { currentWinStreak: number; longestWinStreak: number; longestLossStreak: number; longestUnbeatenStreak: number } {
   // Sort by date ascending
   const sorted = [...matches].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -37,10 +39,15 @@ function computeStreaks(
   let longestLossStreak = 0;
   let tempWinStreak = 0;
   let tempLossStreak = 0;
+  let longestUnbeatenStreak = 0;
+  let tempUnbeatenStreak = 0;
 
   for (const match of sorted) {
-    const isWin = match.winners?.includes(playerId);
+    const isWin = matchWinners(match).includes(playerId);
     const isLoss = match.losers?.includes(playerId);
+
+    tempUnbeatenStreak = isLoss && !isWin ? 0 : tempUnbeatenStreak + 1;
+    longestUnbeatenStreak = Math.max(longestUnbeatenStreak, tempUnbeatenStreak);
 
     if (isWin) {
       tempWinStreak++;
@@ -59,7 +66,7 @@ function computeStreaks(
 
   currentWinStreak = tempWinStreak;
 
-  return { currentWinStreak, longestWinStreak, longestLossStreak };
+  return { currentWinStreak, longestWinStreak, longestLossStreak, longestUnbeatenStreak };
 }
 
 function computePlayerStatistics(
@@ -75,6 +82,7 @@ function computePlayerStatistics(
   currentWinStreak: number;
   longestWinStreak: number;
   longestLossStreak: number;
+  longestUnbeatenStreak: number;
   firstMatchDate?: string;
   lastMatchDate?: string;
   championshipWins: number;
@@ -99,7 +107,7 @@ function computePlayerStatistics(
   let championshipLosses = 0;
 
   for (const match of completed) {
-    const isWin = match.winners?.includes(playerId);
+    const isWin = matchWinners(match).includes(playerId);
     const isLoss = match.losers?.includes(playerId);
 
     if (isWin) {
@@ -153,14 +161,23 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       matchesRepo.list(),
     ]);
 
-    // Only include players who have a wrestler assigned.
-    const players = allPlayers.filter((p) => p.currentWrestler);
+    // Only include players who have a real wrestler name.
+    const players = allPlayers.filter(isPlayerVisible);
+
+    // A hidden player's ID in the query reads as if nobody was selected.
+    const hiddenPlayerIds = new Set(
+      allPlayers.filter((p) => !isPlayerVisible(p)).map((p) => p.playerId),
+    );
+    const selectedPlayerId = (param: string): string | undefined => {
+      const requestedId = event.queryStringParameters?.[param];
+      return requestedId && !hiddenPlayerIds.has(requestedId) ? requestedId : undefined;
+    };
     const allCompletedMatches = allMatches.filter((m) => m.status === 'completed');
     const completedMatches = seasonId ? allCompletedMatches.filter((m) => m.seasonId === seasonId) : allCompletedMatches;
 
     switch (section) {
       case 'player-stats': {
-        const playerId = event.queryStringParameters?.playerId;
+        const playerId = selectedPlayerId('playerId');
 
         // Return player list for dropdowns + stats for specific player
         const playerList = players.map((p) => ({
@@ -259,8 +276,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
 
       case 'head-to-head': {
-        const player1Id = event.queryStringParameters?.player1Id;
-        const player2Id = event.queryStringParameters?.player2Id;
+        const player1Id = selectedPlayerId('player1Id');
+        const player2Id = selectedPlayerId('player2Id');
 
         const playerList = players.map((p) => ({
           playerId: p.playerId,
@@ -275,10 +292,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const h2h = computeHeadToHead(completedMatches, player1Id, player2Id);
         const championshipMatches = h2h.matches.filter((m) => m.isChampionship).length;
 
-        // Recent results (last 5)
+        // Recent results (last 5). Mirrors the record above: a match neither
+        // player won has no winner here, so it reads as a draw between the pair.
         const recentResults = h2h.matches.slice(0, 5).map((m) => ({
           matchId: m.matchId,
-          winnerId: m.winners?.[0] || '',
+          winnerId: pairWinnerId(m, player1Id, player2Id) ?? '',
           date: m.date,
         }));
 
@@ -495,8 +513,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const longestActiveStreakPlayer = [...allPlayerStats].sort((a, b) => b.currentWinStreak - a.currentWinStreak)[0];
         const longestLossStreakPlayer = [...allPlayerStats].sort((a, b) => b.longestLossStreak - a.longestLossStreak)[0];
 
-        // Unbeaten streak (wins + draws without a loss) - approximate with win streak for now
-        const longestUnbeatenPlayer = longestWinStreakPlayer;
+        const longestUnbeatenPlayer = [...allPlayerStats].sort((a, b) => b.longestUnbeatenStreak - a.longestUnbeatenStreak)[0];
 
         // Match type records
         const mostSinglesWins = [...allMatchTypeStats].filter((s) => s.matchType === 'singles').sort((a, b) => b.wins - a.wins)[0];
@@ -532,7 +549,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             makeRecord('Longest Win Streak', longestWinStreakPlayer, longestWinStreakPlayer?.longestWinStreak || 0, 'Most consecutive victories without a loss or draw'),
             makeRecord('Longest Active Win Streak', longestActiveStreakPlayer, longestActiveStreakPlayer?.currentWinStreak || 0, 'Current longest active winning streak'),
             makeRecord('Longest Loss Streak', longestLossStreakPlayer, longestLossStreakPlayer?.longestLossStreak || 0, 'Most consecutive losses (a record nobody wants)'),
-            makeRecord('Longest Unbeaten Streak', longestUnbeatenPlayer, longestUnbeatenPlayer?.longestWinStreak || 0, 'Most consecutive matches without a loss (wins + draws)'),
+            makeRecord('Longest Unbeaten Streak', longestUnbeatenPlayer, longestUnbeatenPlayer?.longestUnbeatenStreak || 0, 'Most consecutive matches without a loss (wins + draws)'),
           ],
           matchTypes: [
             makeRecord('Most Singles Wins', mostSinglesWins, mostSinglesWins?.wins || 0, 'Most victories in singles competition'),
@@ -584,7 +601,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
 
       case 'achievements': {
-        const playerId = event.queryStringParameters?.playerId;
+        const playerId = selectedPlayerId('playerId');
 
         const playerList = players.map((p) => ({
           playerId: p.playerId,
@@ -692,11 +709,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             playerRatingSums.set(pid, { sum: cur.sum + rating, count: cur.count + 1 });
           }
         }
-        const playerAverageRatings = Array.from(playerRatingSums.entries()).map(([playerId, { sum, count }]) => ({
-          playerId,
-          averageRating: Math.round((sum / count) * 10) / 10,
-          matchCount: count,
-        })).sort((a, b) => b.averageRating - a.averageRating);
+        const visiblePlayerIds = new Set(players.map((p) => p.playerId));
+        const playerAverageRatings = Array.from(playerRatingSums.entries())
+          .filter(([playerId]) => visiblePlayerIds.has(playerId))
+          .map(([playerId, { sum, count }]) => ({
+            playerId,
+            averageRating: Math.round((sum / count) * 10) / 10,
+            matchCount: count,
+          }))
+          .sort((a, b) => b.averageRating - a.averageRating);
 
         return success({
           highestRatedMatches,
@@ -892,7 +913,7 @@ function computeAchievements(
     for (const m of playerMatches) {
       if (m.losers?.includes(playerId)) {
         lossStreak++;
-      } else if (m.winners?.includes(playerId)) {
+      } else if (matchWinners(m).includes(playerId)) {
         if (lossStreak >= 4) hadComebackAfterFour = true;
         lossStreak = 0;
       } else {

@@ -57,6 +57,22 @@ describe('listMessages', () => {
     expect(mockMessages.list).not.toHaveBeenCalled();
   });
 
+  it('masks the moderator id in a stored system message only', async () => {
+    const accountId = '11111111-2222-3333-4444-555555555555';
+    mockMessages.list.mockResolvedValue({
+      items: [
+        { messageId: 'm1', authorPlayerId: 'system', body: `Rivalry approved by ${accountId}.`, audience: 'all' },
+        { messageId: 'm2', authorPlayerId: 'p1', body: `my id is ${accountId}`, audience: 'all' },
+      ],
+    });
+
+    const res = await listMessages(withAuth(listEvent(), 'Admin', 'gm-sub'), ctx, cb);
+
+    const { messages } = JSON.parse(res!.body);
+    expect(messages[0].body).toBe('Rivalry approved by League Staff.');
+    expect(messages[1].body).toContain(accountId);
+  });
+
   it('returns 404 when the rivalry does not exist', async () => {
     mockRivalries.get.mockResolvedValueOnce(undefined);
     mockPlayers.findByUserId.mockResolvedValue({ playerId: 'p1', userId: 'user-p1' });

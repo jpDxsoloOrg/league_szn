@@ -60,4 +60,12 @@ describe('parseBody', () => {
     expect(result.data?.email).toBe('a@b.com');
     expect(result.data?.age).toBe(30);
   });
+
+
+  it('returns a 400 for the JSON literal null', () => {
+    const result = parseBody(makeEvent('null'));
+
+    expect(result.data).toBeUndefined();
+    expect(result.error?.statusCode).toBe(400);
+  });
 });

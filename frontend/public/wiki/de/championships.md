@@ -1,18 +1,26 @@
-# Meisterschaften-Seite
+# Meisterschaften
 
-Alle Meisterschaften der Liga und ihre Historie anzeigen.
+Sieh dir alle Meisterschaften der Liga und ihre Historie an.
 
-## Meisterschaften anzeigen
+## Meisterschaften ansehen
 
-1. Gehen Sie in der Navigationsleiste zu **Meisterschaften**.
-2. Sie sehen alle aktiven Meisterschaften als Karten.
-3. Jede Meisterschafts-Karte zeigt:
-   - Meisterschaftsname und Gürtelbild
-   - Typ (Einzel oder Tag Team)
-   - Aktuellen Champion(s)
+1. Öffne **Ranglisten** und dann den Tab **Titel**.
+2. Grenze die Liste bei Bedarf mit dem Division-Filter ein.
+3. Jeder Titel zeigt:
+   - Name der Meisterschaft und Bild des Gürtels
+   - Den Hinweis Tag Team bei Tag-Team-Titeln
+   - Den oder die aktuellen Champions oder **Vakant**, wenn ihn niemand hält
 
-## Meisterschafts-Historie anzeigen
+Inaktive Titel stehen mit dem Badge **Inaktiv** hinter den aktiven, damit ihre Historie öffentlich bleibt.
 
-1. Klicken Sie auf eine Meisterschafts-Karte.
-2. Ein Fenster mit der vollständigen Historie wird angezeigt.
-3. Die Historie listet alle früheren Champions, Gewinn-/Verlustdaten und die gehaltene Dauer.
+## Historie ansehen
+
+1. Klicke irgendwo auf einen Titel.
+2. Ein Fenster mit der Historie öffnet sich.
+3. Es listet jeden Champion, die Daten für Gewinn und Verlust, die gehaltenen Tage und die Titelverteidigungen. Bei der laufenden Regentschaft steht **Aktuell** statt eines Verlustdatums.
+
+Regentschaften von inzwischen entfernten Spielern bleiben in der Historie. Sie zeigen den gespeicherten Namen oder **Ehemaliges Mitglied**, wenn sich kein Name finden lässt.
+
+## Titelkämpfe
+
+Der Titel wechselt, wenn der Herausforderer gewinnt. Gewinnt der Champion, zählt das als Titelverteidigung. Ein Unentschieden ändert nichts: Der Champion behält den Titel, und es wird keine Verteidigung gezählt.

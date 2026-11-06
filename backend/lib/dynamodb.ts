@@ -225,7 +225,8 @@ export function buildUpdateExpression(
   let hasChanges = false;
 
   for (const [field, value] of Object.entries(fields)) {
-    if (value === undefined) {
+    // DynamoDB rejects a path set twice, so the helper's own value wins.
+    if (value === undefined || (includeUpdatedAt && field === updatedAtFieldName)) {
       continue;
     }
 

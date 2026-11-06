@@ -10,6 +10,8 @@ import {
   serverError,
 } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
+import { isConcurrentWriteError } from '../../lib/repositories/errors';
+import { isPlayerVisible, realWrestlerName, SET_WRESTLER_NAME_MESSAGE } from '../../lib/needsWrestler';
 
 interface ClaimSlotBody {
   wrestlerChoice?: 'main' | 'alternate';
@@ -63,6 +65,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (!callerPlayer) {
       return forbidden('No player profile is linked to this account');
     }
+    if (!isPlayerVisible(callerPlayer)) {
+      return badRequest(SET_WRESTLER_NAME_MESSAGE);
+    }
     const callerPlayerId = callerPlayer.playerId;
 
     // MSL-03: resolve which wrestler the player is bringing.
@@ -82,10 +87,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     } else {
       wrestlerChoice = 'main';
     }
-    const wrestlerNameSnapshot =
+    const wrestlerNameSnapshot = realWrestlerName(
       wrestlerChoice === 'alternate' && callerPlayer.alternateWrestler
         ? callerPlayer.alternateWrestler
-        : callerPlayer.currentWrestler;
+        : callerPlayer.currentWrestler,
+    );
 
     const match = await matches.findByIdWithDate(matchId);
     if (!match) return notFound('Match not found');
@@ -198,13 +204,27 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Note: don't pass `updatedAt` in the patch — DynamoUnitOfWork.updateMatch
     // appends it automatically and DynamoDB rejects an UpdateExpression that
     // sets the same path twice with a ValidationException.
-    await runInTransaction(async (tx) => {
-      tx.updateMatch(matchId, match.date, {
-        slots: updatedSlots,
-        participants: updatedParticipants,
-        status: newStatus,
+    // The slots array is written whole, so the write is guarded on the version
+    // read above: a concurrent claim fails here instead of being overwritten.
+    try {
+      await runInTransaction(async (tx) => {
+        tx.updateMatch(
+          matchId,
+          match.date,
+          {
+            slots: updatedSlots,
+            participants: updatedParticipants,
+            status: newStatus,
+          },
+          { kind: 'unchangedSince', updatedAt: match.updatedAt },
+        );
       });
-    });
+    } catch (writeError: unknown) {
+      if (isConcurrentWriteError(writeError)) {
+        return conflict('This match changed while you were signing up. Refresh and try again.');
+      }
+      throw writeError;
+    }
 
     const updated: Match = {
       ...match,

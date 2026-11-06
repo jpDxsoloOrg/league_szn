@@ -1,6 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { findHiddenPlayerIds } from '../../lib/needsWrestler';
+import { isPromoArchived } from '../../lib/promoArchive';
 import type { Promo } from '../../lib/repositories/types';
 
 const DEFAULT_LIMIT = 30;
@@ -144,8 +146,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     });
 
-    // Drop hidden promos so the public feed can't be poisoned by moderated content.
-    const visible = matching.filter((p) => !p.isHidden);
+    // Drop moderated and archived promos, and promos by hidden players. This
+    // runs before pagination so a page never comes back short.
+    const now = Date.now();
+    const hiddenAuthorIds = await findHiddenPlayerIds(
+      matching.map((p) => p.playerId),
+      (playerId) => playersRepo.findById(playerId),
+    );
+    const visible = matching.filter(
+      (p) => !p.isHidden && !isPromoArchived(p, now) && !hiddenAuthorIds.has(p.playerId),
+    );
 
     visible.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 

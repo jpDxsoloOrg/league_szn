@@ -91,7 +91,7 @@ describe('matchmaking/createInvitation', () => {
     mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', ttl: futureTtl, lastSeenAt: 'x' } });
     // target player record
     mockGet.mockResolvedValueOnce({
-      Item: { playerId: 'p2', userId: 'user-sub-2', name: 'Target' },
+      Item: { playerId: 'p2', userId: 'user-sub-2', name: 'Target', currentWrestler: 'Target Wrestler' },
     });
     // target presence
     mockGet.mockResolvedValueOnce({ Item: { playerId: 'p2', ttl: futureTtl, lastSeenAt: 'x' } });
@@ -137,7 +137,7 @@ describe('matchmaking/createInvitation', () => {
     mockCallerPlayer();
     mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', ttl: futureTtl, lastSeenAt: 'x' } });
     mockGet.mockResolvedValueOnce({
-      Item: { playerId: 'p2', userId: 'user-sub-2', name: 'Target' },
+      Item: { playerId: 'p2', userId: 'user-sub-2', name: 'Target', currentWrestler: 'Target Wrestler' },
     });
     mockGet.mockResolvedValueOnce({ Item: undefined });
 
@@ -187,7 +187,7 @@ describe('matchmaking/createInvitation', () => {
     mockCallerPlayer();
     mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', ttl: futureTtl, lastSeenAt: 'x' } });
     mockGet.mockResolvedValueOnce({
-      Item: { playerId: 'p2', userId: 'user-sub-2', name: 'Target' },
+      Item: { playerId: 'p2', userId: 'user-sub-2', name: 'Target', currentWrestler: 'Target Wrestler' },
     });
     mockGet.mockResolvedValueOnce({ Item: { playerId: 'p2', ttl: futureTtl, lastSeenAt: 'x' } });
     mockQuery.mockResolvedValueOnce({

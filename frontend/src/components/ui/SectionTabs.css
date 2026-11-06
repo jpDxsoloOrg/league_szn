@@ -1,0 +1,78 @@
+.section-tabs__list {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  list-style: none;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.section-tabs__list::-webkit-scrollbar {
+  display: none;
+}
+
+.section-tabs__item {
+  flex: none;
+}
+
+.section-tabs__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: var(--touch-target);
+  padding: 0 0.875rem;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.section-tabs__link:hover {
+  color: var(--color-text);
+}
+
+.section-tabs__link--active {
+  border-bottom-color: var(--section-accent);
+  color: var(--color-text);
+}
+
+.section-tabs__link:focus-visible {
+  outline-offset: -2px;
+}
+
+.section-tabs__list[data-fade='end'] {
+  mask-image: var(--fade-mask-end);
+}
+
+.section-tabs__list[data-fade='start'] {
+  mask-image: var(--fade-mask-start);
+}
+
+.section-tabs__list[data-fade='both'] {
+  mask-image: var(--fade-mask-both);
+}
+
+/* Third-level row: the same pill as the in-page Tabs. */
+.section-tabs--compact .section-tabs__list {
+  padding-block: 0.25rem;
+}
+
+.section-tabs--compact .section-tabs__link {
+  border-bottom: none;
+  border-radius: var(--radius-pill);
+}
+
+.section-tabs--compact .section-tabs__link:hover:not(.section-tabs__link--active) {
+  background-color: var(--color-overlay-soft);
+}
+
+.section-tabs--compact .section-tabs__link--active,
+.section-tabs--compact .section-tabs__link--active:hover {
+  background-color: var(--color-selected);
+  color: var(--color-on-selected);
+}

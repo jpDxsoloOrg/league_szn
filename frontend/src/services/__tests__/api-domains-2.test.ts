@@ -111,23 +111,6 @@ describe('contendersApi', () => {
     );
     expect(result).toEqual(data);
   });
-
-  it('recalculate sends POST to /admin/contenders/recalculate with optional championshipId', async () => {
-    (global.fetch as ReturnType<typeof vi.fn>)
-      .mockResolvedValueOnce(mockResponse({ message: 'ok', summary: {} }))
-      .mockResolvedValueOnce(mockResponse({ message: 'ok', summary: {} }));
-
-    // Without championshipId
-    await contendersApi.recalculate();
-    let body = JSON.parse((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
-    expect(body).toEqual({});
-
-    // With championshipId
-    await contendersApi.recalculate('c1');
-    body = JSON.parse((global.fetch as ReturnType<typeof vi.fn>).mock.calls[1][1].body);
-    expect(body).toEqual({ championshipId: 'c1' });
-    expect((global.fetch as ReturnType<typeof vi.fn>).mock.calls[1][1].method).toBe('POST');
-  });
 });
 
 // ---------------------------------------------------------------------------

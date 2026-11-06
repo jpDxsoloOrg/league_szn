@@ -1,6 +1,10 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, notFound, badRequest, serverError } from '../../lib/response';
+import type { Promo } from '../../lib/repositories/types';
+import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
+import { FORMER_MEMBER, findHiddenPlayerIds, isPlayerVisible, resolveBilledName } from '../../lib/needsWrestler';
+import { loadChampionshipNames, withoutReactions } from '../../lib/publicPromo';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -9,37 +13,56 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('promoId is required');
     }
 
-    const { content: { promos }, roster: { players } } = getRepositories();
+    const { content: { promos }, roster: { players }, competition: { championships } } = getRepositories();
 
     const promo = await promos.findById(promoId);
     if (!promo) {
       return notFound('Promo not found');
     }
 
-    // Get responses to this promo
-    const responses = (await promos.listResponsesTo(promoId))
-      .filter((p) => !p.isHidden);
+    // A moderated promo, or one by a hidden player, stays readable by staff
+    // and by its author only.
+    const caller = await getVerifiedCaller(event);
+    const staff = isStaff(caller);
+    const callerPlayer = !staff && caller?.sub ? await players.findByUserId(caller.sub) : null;
+    const isOwnOrStaff = (p: Promo): boolean => staff || p.playerId === callerPlayer?.playerId;
 
-    // Collect player IDs
-    const playerIds = new Set<string>();
-    playerIds.add(promo.playerId);
-    if (promo.targetPlayerId) playerIds.add(promo.targetPlayerId);
-    for (const r of responses) {
-      playerIds.add(r.playerId);
-      if (r.targetPlayerId) playerIds.add(r.targetPlayerId);
+    const rootAuthor = await players.findById(promo.playerId);
+    if ((promo.isHidden || (rootAuthor && !isPlayerVisible(rootAuthor))) && !isOwnOrStaff(promo)) {
+      return notFound('Promo not found');
     }
 
-    const playerMap: Record<string, { name: string; currentWrestler: string; imageUrl?: string }> = {};
-    for (const pid of playerIds) {
-      const player = await players.findById(pid);
+    // Get responses to this promo
+    const visibleResponses = (await promos.listResponsesTo(promoId))
+      .filter((p) => !p.isHidden);
+    const hiddenAuthorIds = await findHiddenPlayerIds(
+      visibleResponses.map((p) => p.playerId),
+      (playerId) => players.findById(playerId),
+    );
+    const responses = visibleResponses.filter((p) => !hiddenAuthorIds.has(p.playerId) || isOwnOrStaff(p));
+
+    // Collect player IDs
+    const uniquePlayerIds = new Set<string>();
+    uniquePlayerIds.add(promo.playerId);
+    if (promo.targetPlayerId) uniquePlayerIds.add(promo.targetPlayerId);
+    for (const r of responses) {
+      uniquePlayerIds.add(r.playerId);
+      if (r.targetPlayerId) uniquePlayerIds.add(r.targetPlayerId);
+    }
+    const playerIds = [...uniquePlayerIds];
+    const fetchedPlayers = await Promise.all(playerIds.map((pid) => players.findByIdWithDeleted(pid)));
+
+    const playerMap: Record<string, { name: string; wrestlerName: string; imageUrl?: string }> = {};
+    playerIds.forEach((pid, index) => {
+      const player = fetchedPlayers[index];
       if (player) {
         playerMap[pid] = {
           name: player.name,
-          currentWrestler: player.currentWrestler,
+          wrestlerName: resolveBilledName(undefined, player, FORMER_MEMBER),
           imageUrl: player.imageUrl,
         };
       }
-    }
+    });
 
     const author = playerMap[promo.playerId];
     const target = promo.targetPlayerId ? playerMap[promo.targetPlayerId] : undefined;
@@ -48,7 +71,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     let targetPromo: Record<string, unknown> | undefined;
     if (promo.targetPromoId) {
       const tp = await promos.findById(promo.targetPromoId);
-      if (tp) {
+      const targetAuthor = tp ? await players.findById(tp.playerId) : null;
+      const targetHidden = tp?.isHidden || (targetAuthor && !isPlayerVisible(targetAuthor));
+      if (tp && (!targetHidden || isOwnOrStaff(tp))) {
         targetPromo = {
           promoId: tp.promoId,
           playerId: tp.playerId,
@@ -65,17 +90,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
+    const championshipNames = await loadChampionshipNames([promo, ...responses], (id) => championships.findById(id));
+    const championshipNameOf = (p: Promo) => (p.championshipId ? championshipNames.get(p.championshipId) : undefined);
+
     const enrichedResponses = responses
       .map((r) => {
         const rAuthor = playerMap[r.playerId];
         const rTarget = r.targetPlayerId ? playerMap[r.targetPlayerId] : undefined;
         return {
-          ...r,
-          playerName: rAuthor?.name || 'Unknown',
-          wrestlerName: rAuthor?.currentWrestler || 'Unknown',
+          ...withoutReactions(r),
+          playerName: rAuthor?.name || FORMER_MEMBER,
+          wrestlerName: rAuthor?.wrestlerName || FORMER_MEMBER,
           playerImageUrl: rAuthor?.imageUrl,
           targetPlayerName: rTarget?.name,
-          targetWrestlerName: rTarget?.currentWrestler,
+          targetWrestlerName: rTarget?.wrestlerName,
+          championshipName: championshipNameOf(r),
           responseCount: 0,
         };
       })
@@ -83,12 +112,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     return success({
       promo: {
-        ...promo,
-        playerName: author?.name || 'Unknown',
-        wrestlerName: author?.currentWrestler || 'Unknown',
+        ...withoutReactions(promo),
+        playerName: author?.name || FORMER_MEMBER,
+        wrestlerName: author?.wrestlerName || FORMER_MEMBER,
         playerImageUrl: author?.imageUrl,
         targetPlayerName: target?.name,
-        targetWrestlerName: target?.currentWrestler,
+        targetWrestlerName: target?.wrestlerName,
+        championshipName: championshipNameOf(promo),
         targetPromo,
         responseCount: responses.length,
       },

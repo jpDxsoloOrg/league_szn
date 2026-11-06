@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { eventsApi } from '../../services/api/events.api';
 import { divisionsApi } from '../../services/api/divisions.api';
 import type { Division } from '../../types';
+import Avatar from '../ui/Avatar';
+import Button from '../ui/Button';
+import Skeleton from '../ui/Skeleton';
 import type {
   EventCheckInRoster,
   EventCheckInPlayerSummary,
@@ -11,7 +14,6 @@ import './EventCheckInRosterPanel.css';
 
 interface EventCheckInRosterPanelProps {
   eventId: string;
-  compact?: boolean;
   bookedPlayerIds?: ReadonlySet<string>;
 }
 
@@ -23,9 +25,6 @@ const BUCKET_ORDER: BucketKey[] = [
   'unavailable',
   'noResponse',
 ];
-
-const FALLBACK_AVATAR =
-  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23444"/><text x="50%25" y="55%25" dominant-baseline="middle" text-anchor="middle" fill="%23fff" font-size="16" font-family="sans-serif">?</text></svg>';
 
 const UNASSIGNED_KEY = '__unassigned__';
 
@@ -48,14 +47,7 @@ function PlayerChip({
     <li
       className={`checkin-roster-chip${isBooked ? ' checkin-roster-chip--booked' : ''}`}
     >
-      <img
-        className="checkin-roster-chip-avatar"
-        src={player.imageUrl || FALLBACK_AVATAR}
-        alt=""
-        onError={(e) => {
-          (e.currentTarget as HTMLImageElement).src = FALLBACK_AVATAR;
-        }}
-      />
+      <Avatar src={player.imageUrl} name={player.name} size="sm" />
       <div className="checkin-roster-chip-text">
         <span className="checkin-roster-chip-name">{player.name}</span>
         <span className="checkin-roster-chip-wrestler">
@@ -77,7 +69,6 @@ function PlayerChip({
 
 export default function EventCheckInRosterPanel({
   eventId,
-  compact = false,
   bookedPlayerIds,
 }: EventCheckInRosterPanelProps) {
   const { t } = useTranslation();
@@ -195,9 +186,7 @@ export default function EventCheckInRosterPanel({
   if (loading && !roster) {
     return (
       <div className="checkin-roster-panel">
-        <p className="checkin-roster-loading">
-          {t('events.checkIn.roster.loading', { defaultValue: 'Loading...' })}
-        </p>
+        <Skeleton variant="block" count={2} />
       </div>
     );
   }
@@ -224,82 +213,23 @@ export default function EventCheckInRosterPanel({
     roster.unavailable.length === 0 &&
     roster.noResponse.length === 0;
 
-  if (compact) {
-    return (
-      <div className="checkin-roster-panel checkin-roster-panel--compact">
-        <h4 className="checkin-roster-compact-title">
-          {t('events.checkIn.roster.available', { defaultValue: 'Available' })}{' '}
-          ({roster.available.length})
-        </h4>
-        {roster.available.length === 0 ? (
-          <p className="checkin-roster-empty">
-            {t('events.checkIn.roster.empty', {
-              defaultValue: 'No check-ins yet.',
-            })}
-          </p>
-        ) : availableGroups ? (
-          <div className="checkin-roster-division-groups">
-            {availableGroups.map((group) => (
-              <div key={group.id} className="checkin-roster-division-group">
-                <h5 className="checkin-roster-division-title">
-                  {group.name} ({group.players.length})
-                </h5>
-                <ul className="checkin-roster-list">
-                  {group.players.map((player) => (
-                    <PlayerChip
-                      key={player.playerId}
-                      player={player}
-                      isBooked={bookedPlayerIds?.has(player.playerId)}
-                      bookedLabel={bookedLabel}
-                    />
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <ul className="checkin-roster-list">
-            {roster.available.map((player) => (
-              <PlayerChip
-                key={player.playerId}
-                player={player}
-                isBooked={bookedPlayerIds?.has(player.playerId)}
-                bookedLabel={bookedLabel}
-              />
-            ))}
-          </ul>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="checkin-roster-panel">
       <div className="checkin-roster-header">
-        <h3 className="checkin-roster-title">
+        <h2 className="checkin-roster-title">
           {t('events.checkIn.roster.title', {
             defaultValue: 'Check-in Roster',
           })}
-        </h3>
+        </h2>
         <div className="checkin-roster-actions">
-          <button
-            type="button"
-            className="checkin-roster-button"
-            onClick={() => void fetchRoster()}
-            disabled={loading}
-          >
+          <Button variant="secondary" size="sm" onClick={() => void fetchRoster()} disabled={loading}>
             {t('events.checkIn.roster.refresh', { defaultValue: 'Refresh' })}
-          </button>
-          <button
-            type="button"
-            className="checkin-roster-button"
-            onClick={() => void handleCopy()}
-            disabled={isEmpty}
-          >
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => void handleCopy()} disabled={isEmpty}>
             {t('events.checkIn.roster.copy', {
               defaultValue: 'Copy as text',
             })}
-          </button>
+          </Button>
           {copied && (
             <span className="checkin-roster-copied" role="status">
               {t('events.checkIn.roster.copySuccess', {

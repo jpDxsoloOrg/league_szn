@@ -6,21 +6,31 @@
   padding: 1rem 0;
 }
 
-.admin-onboarding-banner {
-  margin: 0 0 1rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid #444;
-  border-left: 3px solid #d4af37;
-  border-radius: 6px;
-  background: #1a1a1a;
+.admin-help {
+  margin: 1.5rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-hairline);
+  color: var(--color-text-muted);
+  font-size: var(--text-dense);
 }
 
-.admin-onboarding-banner p {
-  margin: 0;
-  color: #bbb;
-  font-size: 0.9rem;
+.admin-help a {
+  color: var(--color-primary);
 }
 
-.admin-onboarding-banner a {
-  color: #d4af37;
+.admin-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  align-items: start;
+  gap: 2rem;
+}
+
+.admin-layout__main {
+  min-width: 0;
+}
+
+.admin-breadcrumb {
+  margin-bottom: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-dense);
 }

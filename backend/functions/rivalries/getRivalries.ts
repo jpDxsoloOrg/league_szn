@@ -1,6 +1,9 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
+import { toPublicRivalry } from '../../lib/publicRivalry';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, serverError } from '../../lib/response';
+import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
+import { filterListedRivalries } from './rivalryVisibility';
 import type { Rivalry, RivalryStatus } from '../../lib/repositories';
 
 const VALID_STATUS: ReadonlyArray<RivalryStatus> = [
@@ -43,7 +46,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest(`status must be one of: ${VALID_STATUS.join(', ')}`);
     }
 
-    const { rivalries, competition: { matches } } = getRepositories();
+    const { rivalries, competition: { matches }, roster: { players } } = getRepositories();
 
     let primary: { items: Rivalry[]; nextCursor?: string };
     if (participantId) {
@@ -84,8 +87,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       });
     }
 
+    const caller = await getVerifiedCaller(event);
+    const callerPlayer = caller?.sub
+      ? await players.findByUserId(caller.sub).catch(() => null)
+      : null;
+    const listed = await filterListedRivalries(
+      items,
+      (playerId) => players.findById(playerId),
+      { canSeeAll: isStaff(caller), callerPlayerId: callerPlayer?.playerId },
+    );
+
     // Sensitive fields are filtered server-side per ticket note.
-    const sanitized = items.map(sanitizeRivalry);
+    const sanitized = listed.map(toPublicRivalry);
 
     return success({
       rivalries: sanitized,
@@ -96,14 +109,3 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return serverError('Failed to list rivalries');
   }
 };
-
-/**
- * Strip booker-only fields (moderationNote) from the public payload. The
- * authenticated detail handler (getRivalry) re-applies role-based gating
- * before returning the full record.
- */
-function sanitizeRivalry(r: Rivalry): Omit<Rivalry, 'moderationNote'> {
-  const { moderationNote, ...rest } = r;
-  void moderationNote;
-  return rest;
-}

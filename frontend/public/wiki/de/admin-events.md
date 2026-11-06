@@ -1,37 +1,54 @@
 # Events verwalten
 
-Die Seite **Events** ermöglicht das Anlegen und Verwalten von Events und PPVs, die deine Match-Karten strukturieren.
+Events und PPVs werden im Bereich **Events** erstellt und geführt, nicht im Admin-Bereich. Den alten Match Card Builder gibt es nicht mehr: Du baust die Kampfkarte auf der Seite des Events auf. Moderatoren und Admins sehen die hier beschriebenen Steuerelemente.
 
-## Event anlegen
+## Event erstellen
 
-1. Gehe zu **Events**
+1. Gehe zum Bereich **Events** und klicke auf **Event erstellen**
 2. Fülle die Angaben aus:
-   - **Eventname** — z. B. „WrestleMania 41“, „Monday Night Raw“
-   - **Event-Typ** — PPV, Wöchentlich, Special oder House Show
-   - **Datum & Uhrzeit** — Wann das Event stattfindet
-   - **Veranstaltungsort** (optional) — z. B. „Madison Square Garden“
-   - **Beschreibung** (optional) — Beschreibung des Events
-   - **Themenfarbe** (optional) — Eigene Farbe für die Event-Karte
-   - **Saison** (optional) — Event einer Saison zuordnen
-3. Klicke auf **Event speichern**, um es anzulegen
+   - **Veranstaltungstyp** — PPV, Wöchentlich, Spezial oder Hausshow
+   - **Veranstaltungsname** — z. B. „WrestleMania 41“, „Monday Night Raw“
+   - **Datum** — Der Tag, an dem das Event stattfindet
+   - **Veranstaltungsort** (optional) — z. B. „Madison Square Garden“. Lass das Feld leer, um zufällig einen gespeicherten Ort zu wählen
+   - **Show**, **Promotion** und **Saison** (optional) — Wählst du eine Show, werden ihr Name, ihre Promotion und ihr Typ übernommen
+   - **Beschreibung** (optional) — Eine Beschreibung des Events
+3. Klicke auf **Event erstellen**. Die Seite des neuen Events öffnet sich
 
-## Match-Card erstellen
+## Kampfkarte aufbauen
 
-Nach dem Anlegen eines Events nutze den **Match-Card-Builder**, um die Karte zusammenzustellen:
+Du baust die Karte auf der Seite des Events auf:
 
-1. Wähle das zu bearbeitende Event
-2. Im Abschnitt Match-Card-Builder nutze das Dropdown, um verfügbare Matches auszuwählen
-3. Klicke auf **Match hinzufügen**, um es zur Karte hinzuzufügen
-4. Nutze **Nach oben** / **Nach unten**, um die Reihenfolge der Matches zu ändern
-5. Nutze **Match entfernen**, um ein Match von der Karte zu nehmen
+1. Öffne das Event im Bereich **Events**
+2. Klicke auf **Match hinzufügen**, um ein Match direkt auf die Karte zu planen
+3. Klicke bei einem Match auf **Bearbeiten**, um es zu ändern, auch seine Position auf der Card (Vorshow, Eröffnung, Midcard, Co-Main Event, Main Event)
+4. Ändere die Reihenfolge mit den Pfeilen **nach oben** und **nach unten** am Match
+5. Klicke bei einem Match auf **Löschen**, um es zu entfernen
+6. Um ein bestehendes einzelnes Match auf eine Karte zu setzen, bearbeite es unter **Einzelne Matches** und wähle das Event
 
-Titelmatches werden auf der Karte mit einem besonderen Badge hervorgehoben.
+**Match hinzufügen** und die Pfeile erscheinen, solange das Event bevorsteht oder läuft. Jede Verschiebung wird sofort gespeichert, und schlägt das Speichern fehl, springt das Match an seinen alten Platz zurück. Matches der Vorshow und der Hauptkarte bewegen sich jeweils nur in ihrem eigenen Abschnitt. Das Verschieben ändert die Positionsbezeichnung nicht. Nutze dafür **Bearbeiten**, auch um ein Match in die Vorshow oder aus ihr heraus zu holen.
 
-## Event-Typen
+**Bearbeiten** gibt es nur bei Matches, die noch nicht gespielt wurden. Beim Löschen eines abgeschlossenen Matches werden seine Statistiken zurückgesetzt.
+
+Wurde ein Match der Karte gelöscht, zeigt sein Platz **Match noch offen**. Klicke auf **Von der Matchcard entfernen**, um diesen Platz zu räumen.
+
+Titelkämpfe werden auf der Karte mit einem eigenen Abzeichen hervorgehoben.
+
+## Event führen
+
+Oben auf der Event-Seite findet das Team außerdem diese Steuerelemente:
+
+- **Event-Status** — Bevorstehend, Laufend, Abgeschlossen oder Abgesagt. Beim Eintragen von Ergebnissen läuft das von selbst: Das erste Ergebnis setzt Laufend, das letzte Abgeschlossen
+- **Datum und Ort bearbeiten** — Ändere eines von beiden
+- **Anmeldung sperren** — Stoppt die Anmeldungen; **Anmeldung freigeben** öffnet sie wieder
+- **Löschen** — Entfernt das Event. Ein Event mit abgeschlossenen Matches kannst du nicht löschen. Seine ungespielten Matches bleiben und werden zu einzelnen Matches
+
+Ergebnisse trägst du mit **Ergebnis eintragen** am jeweiligen Match ein. Siehe [Ergebnisse eintragen](admin-record-results).
+
+## Event-Typen erklärt
 
 | Typ | Beschreibung |
 |-----|--------------|
 | **PPV** | Große Events wie WrestleMania, SummerSlam, Royal Rumble |
-| **Wöchentlich** | Reguläre wöchentliche Shows wie Raw, SmackDown, NXT |
-| **Special** | Einmalige Specials, Saturday Night's Main Event usw. |
-| **House Show** | Nicht übertragene Events für Training oder Vorführung |
+| **Wöchentlich** | Regelmäßige Wochenshows wie Raw, SmackDown, NXT |
+| **Spezial** | Einmalige Sonder-Events, Saturday Night's Main Event usw. |
+| **Hausshow** | Nicht im TV gezeigte Events zum Üben oder als Showkampf |

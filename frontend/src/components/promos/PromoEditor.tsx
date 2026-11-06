@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useSearchParams, useLocation } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
+import { ArrowLeft, Mic } from 'lucide-react';
 import { PromoType, PromoWithContext } from '../../types/promo';
 import { playersApi, promosApi, championshipsApi, matchesApi, challengesApi, stipulationsApi, matchTypesApi, tagTeamsApi } from '../../services/api';
 import { rivalriesApi } from '../../services/api/rivalries.api';
@@ -8,6 +9,13 @@ import type { Player, Match, Championship, Stipulation, MatchType } from '../../
 import type { TagTeam } from '../../types/tagTeam';
 import type { Rivalry } from '../../types/rivalry';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import { useIsHiddenPlayer } from '../../hooks/useIsHiddenPlayer';
+import HiddenPlayerNotice from '../profile/HiddenPlayerNotice';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import PageHeader from '../ui/PageHeader';
+import Select from '../ui/Select';
+import { getChallengeTitleOptions } from '../challenges/challengeUtils';
 import PromoCard from './PromoCard';
 import './PromoEditor.css';
 
@@ -91,6 +99,7 @@ export default function PromoEditor() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { features } = useSiteConfig();
+  const isHiddenPlayer = useIsHiddenPlayer();
 
   // Read pre-fill values from location state (preferred) or search params (fallback).
   // Using useState initializer callbacks so values are read exactly once on mount.
@@ -219,18 +228,39 @@ export default function PromoEditor() {
   const hasTargetPromo = !!targetPromoId;
   const needsRivalry = promoType === 'rivalry';
   const hasRivalry = !!rivalryId;
+  // A call-out always issues a challenge, which needs an opponent and a match type.
+  const needsChallenge = promoType === 'call-out' && features.challenges;
+  const hasChallengeDetails =
+    !!challengeMatchType && (challengeMode === 'tag_team' ? !!selectedTagTeamId : !!targetPlayerId);
+  const challengeTitles = useMemo(() => {
+    if (!needsChallenge) return [];
+    const toCandidates = (playerIds: string[]) =>
+      playerIds.map((playerId) => players.find((p) => p.playerId === playerId) ?? { playerId });
+    const opposingTeam = tagTeams.find((tt) => tt.tagTeamId === selectedTagTeamId);
+    const sides = challengeMode === 'tag_team'
+      ? [playerTagTeam, opposingTeam].flatMap((tt) => (tt ? [toCandidates([tt.player1Id, tt.player2Id])] : []))
+      : [currentPlayer?.playerId, targetPlayerId].flatMap((id) => (id ? [toCandidates([id])] : []));
+    return getChallengeTitleOptions(championships, { challengeMode, matchType: challengeMatchType, sides });
+  }, [needsChallenge, players, tagTeams, selectedTagTeamId, challengeMode, playerTagTeam, currentPlayer, targetPlayerId, championships, challengeMatchType]);
+  // A change of opponent or match type can rule out a title picked earlier.
+  const stakedChampionshipId = needsChallenge && !challengeTitles.some((c) => c.championshipId === championshipId)
+    ? ''
+    : championshipId;
   const canSubmit =
+    !isHiddenPlayer &&
     isContentValid &&
     promoType &&
     !submitting &&
     (!needsTargetPromo || hasTargetPromo) &&
-    (!needsRivalry || hasRivalry);
+    (!needsRivalry || hasRivalry) &&
+    (!needsChallenge || hasChallengeDetails);
 
   const previewPromo = useMemo((): PromoWithContext => {
+    const wrestlerNameFor = (id: string) => players.find((p) => p.playerId === id)?.currentWrestler ?? id;
     const targetPlayer = players.find((p) => p.playerId === targetPlayerId);
     const targetPromo = allPromos.find((p) => p.promoId === targetPromoId);
     const match = matches.find((m) => m.matchId === matchId);
-    const championship = championships.find((c) => c.championshipId === championshipId);
+    const championship = championships.find((c) => c.championshipId === stakedChampionshipId);
 
     return {
       promoId: 'preview',
@@ -241,7 +271,7 @@ export default function PromoEditor() {
       targetPlayerId: targetPlayerId || undefined,
       targetPromoId: targetPromoId || undefined,
       matchId: matchId || undefined,
-      championshipId: championshipId || undefined,
+      championshipId: stakedChampionshipId || undefined,
       reactions: {},
       reactionCounts: { fire: 0, mic: 0, trash: 0, 'mind-blown': 0, clap: 0 },
       isPinned: false,
@@ -267,11 +297,11 @@ export default function PromoEditor() {
             updatedAt: targetPromo.updatedAt,
           }
         : undefined,
-      matchName: match ? `${match.participants[0] ?? '?'} vs ${match.participants[1] ?? '?'}` : undefined,
+      matchName: match ? match.participants.slice(0, 2).map(wrestlerNameFor).join(' vs ') : undefined,
       championshipName: championship?.name,
       responseCount: 0,
     };
-  }, [promoType, title, content, targetPlayerId, targetPromoId, matchId, championshipId, t, players, allPromos, matches, championships, currentPlayer]);
+  }, [promoType, title, content, targetPlayerId, targetPromoId, matchId, stakedChampionshipId, t, players, allPromos, matches, championships, currentPlayer]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -282,14 +312,14 @@ export default function PromoEditor() {
     setChallengeWarning(null);
     try {
       const selectedTeam = tagTeams.find((tt) => tt.tagTeamId === selectedTagTeamId);
-      await promosApi.create({
+      const promo = await promosApi.create({
         promoType,
         title: title || undefined,
         content,
         targetPlayerId: targetPlayerId || undefined,
         targetPromoId: targetPromoId || undefined,
         matchId: matchId || undefined,
-        championshipId: championshipId || undefined,
+        championshipId: stakedChampionshipId || undefined,
         rivalryId: rivalryId || undefined,
         ...(promoType === 'call-out' && challengeMode === 'tag_team' && playerTagTeam && selectedTeam ? {
           challengeMode: 'tag_team',
@@ -299,36 +329,34 @@ export default function PromoEditor() {
       });
 
       // Auto-create challenge when submitting a call-out promo
-      if (promoType === 'call-out' && features.challenges) {
-        const shouldCreateChallenge = challengeMode === 'tag_team'
-          ? !!selectedTagTeamId
-          : !!targetPlayerId;
-
-        if (shouldCreateChallenge) {
-          try {
-            if (challengeMode === 'tag_team') {
-              await challengesApi.create({
-                challengedId: '',
-                challengeMode: 'tag_team',
-                challengedTagTeamId: selectedTagTeamId,
-                matchType: challengeMatchType,
-                stipulation: challengeStipulation || undefined,
-                message: (title || content.slice(0, 500)) || undefined,
-              });
-            } else {
-              await challengesApi.create({
-                challengedId: targetPlayerId,
-                matchType: challengeMatchType,
-                stipulation: challengeStipulation || undefined,
-                message: (title || content.slice(0, 500)) || undefined,
-              });
-            }
-            setChallengeCreated(true);
-          } catch {
-            setChallengeWarning(
-              t('promos.editor.challengeFailed', 'Promo published, but the challenge could not be created. You can issue it separately.')
-            );
+      if (needsChallenge) {
+        try {
+          if (challengeMode === 'tag_team') {
+            await challengesApi.create({
+              challengedId: '',
+              challengeMode: 'tag_team',
+              challengedTagTeamId: selectedTagTeamId,
+              matchType: challengeMatchType,
+              stipulation: challengeStipulation || undefined,
+              championshipId: stakedChampionshipId || undefined,
+              message: (title || content.slice(0, 500)) || undefined,
+              promoId: promo.promoId,
+            });
+          } else {
+            await challengesApi.create({
+              challengedId: targetPlayerId,
+              matchType: challengeMatchType,
+              stipulation: challengeStipulation || undefined,
+              championshipId: stakedChampionshipId || undefined,
+              message: (title || content.slice(0, 500)) || undefined,
+              promoId: promo.promoId,
+            });
           }
+          setChallengeCreated(true);
+        } catch {
+          setChallengeWarning(
+            t('promos.editor.challengeFailed', 'Promo published, but the challenge could not be created. You can issue it separately.')
+          );
         }
       }
 
@@ -340,81 +368,107 @@ export default function PromoEditor() {
     }
   };
 
+  const resetForm = () => {
+    setSubmitted(false);
+    setTitle('');
+    setContent('');
+    setTargetPlayerId('');
+    setTargetPromoId('');
+    setMatchId('');
+    setChampionshipId('');
+    setRivalryId('');
+    setChallengeMatchType('');
+    setChallengeStipulation('');
+    setChallengeCreated(false);
+    setChallengeWarning(null);
+    setChallengeMode('singles');
+    setSelectedTagTeamId('');
+    setError(null);
+  };
+
   if (submitted) {
     return (
       <div className="promo-editor">
-        <div className="promo-editor-success">
-          <div className="success-icon">{'\u{1F3A4}'}</div>
-          <h2>{t('promos.editor.successTitle', 'Promo Submitted!')}</h2>
+        <Card padding="lg" className="promo-editor__success">
+          <Mic aria-hidden="true" size={40} />
+          <h1>{t('promos.editor.successTitle', 'Promo Submitted!')}</h1>
           {challengeCreated ? (
             <p>{t('promos.editor.challengeCreated', 'Your call-out promo has been published and a challenge has been issued!')}</p>
           ) : challengeWarning ? (
-            <p className="challenge-warning">{challengeWarning}</p>
+            <p className="promo-editor__warning">{challengeWarning}</p>
           ) : (
             <p>{t('promos.editor.successMessage', 'Your promo has been published to the feed.')}</p>
           )}
-          <div className="success-actions">
-            <Link to="/promos" className="success-link">
-              {t('promos.editor.viewFeed', 'View Promo Feed')}
-            </Link>
-            <button
-              className="success-another"
-              onClick={() => {
-                setSubmitted(false);
-                setTitle('');
-                setContent('');
-                setTargetPlayerId('');
-                setTargetPromoId('');
-                setMatchId('');
-                setChampionshipId('');
-                setRivalryId('');
-                setChallengeMatchType('');
-                setChallengeStipulation('');
-                setChallengeCreated(false);
-                setChallengeWarning(null);
-                setChallengeMode('singles');
-                setSelectedTagTeamId('');
-                setError(null);
-              }}
-            >
+          <div className="promo-editor__success-actions">
+            <Button to="/promos">{t('promos.editor.viewFeed', 'View Promo Feed')}</Button>
+            <Button variant="secondary" onClick={resetForm}>
               {t('promos.editor.cutAnother', 'Cut Another Promo')}
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       </div>
     );
   }
 
+  const selectedType = PROMO_TYPES.find((pt) => pt.value === promoType);
+  const playerOptions = players.map((player) => ({
+    value: player.playerId,
+    label: `${player.currentWrestler} (${player.name})`,
+  }));
+  const tagTeamOptions = tagTeams
+    .filter((tt) => tt.tagTeamId !== playerTagTeam?.tagTeamId)
+    .map((tt) => {
+      const p1 = players.find((p) => p.playerId === tt.player1Id);
+      const p2 = players.find((p) => p.playerId === tt.player2Id);
+      const names = [p1?.currentWrestler || tt.player1Id, p2?.currentWrestler || tt.player2Id].join(' & ');
+      return { value: tt.tagTeamId, label: `${tt.name} (${names})` };
+    });
+  const rivalryOptions = myRivalries.map((r) => {
+    const opponents = r.participants
+      .filter((p) => p.playerId !== currentPlayer?.playerId)
+      .map((p) => {
+        const player = players.find((pl) => pl.playerId === p.playerId);
+        return player?.currentWrestler ?? player?.name ?? p.playerId;
+      })
+      .join(', ');
+    const label = r.title
+      ? r.title
+      : opponents
+        ? t('promos.editor.rivalryVs', 'vs {{opponents}}', { opponents })
+        : r.rivalryId;
+    return { value: r.rivalryId, label };
+  });
+
   return (
     <div className="promo-editor">
-      <div className="promo-editor-header">
-        <Link to="/promos" className="back-btn">
-          {'\u2190'} {t('promos.thread.backToFeed', 'Back to Promos')}
-        </Link>
-        <h2>{t('promos.editor.title', 'Cut a Promo')}</h2>
-        <p className="editor-subtitle">
-          {t('promos.editor.subtitle', 'Grab the mic and let the WWE Universe hear your voice.')}
-        </p>
-      </div>
+      <Button variant="ghost" size="sm" to="/promos" icon={<ArrowLeft aria-hidden="true" size={18} />}>
+        {t('promos.thread.backToFeed', 'Back to Promos')}
+      </Button>
 
-      {error && (
-        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem' }}>
-          {error}
-        </div>
+      <PageHeader
+        title={t('promos.editor.title', 'Cut a Promo')}
+        subtitle={t('promos.editor.subtitle', 'Grab the mic and let the WWE Universe hear your voice.')}
+      />
+
+      {isHiddenPlayer && (
+        <HiddenPlayerNotice title={t('me.setup.cannotCutPromoTitle')} body={t('me.setup.cannotCutPromoBody')} />
       )}
 
-      <form onSubmit={handleSubmit} className="promo-editor-form">
-        {/* Promo Type Selector */}
-        <div className="form-group">
-          <label className="form-label">
+      {error && <div className="promo-editor__error" role="alert">{error}</div>}
+
+      <form onSubmit={handleSubmit} className="promo-editor__form">
+        <div className="promo-editor__field">
+          <span className="promo-editor__label" id="promo-type-label">
             {t('promos.editor.promoType', 'Promo Type')}
-          </label>
-          <div className="promo-type-grid">
+          </span>
+          <div className="promo-editor__types" role="radiogroup" aria-labelledby="promo-type-label">
             {PROMO_TYPES.map((pt) => (
               <button
                 key={pt.value}
                 type="button"
-                className={`promo-type-option ${promoType === pt.value ? 'selected' : ''}`}
+                role="radio"
+                aria-checked={promoType === pt.value}
+                className={`promo-editor__type ${promoType === pt.value ? 'promo-editor__type--selected' : ''}`}
                 onClick={() => {
                   setPromoType(pt.value);
                   setTargetPlayerId('');
@@ -424,66 +478,20 @@ export default function PromoEditor() {
                   setRivalryId('');
                 }}
               >
-                <span className="type-name">{t(pt.labelKey, pt.fallback)}</span>
-                <span className="type-desc">{t(pt.descKey, pt.descFallback)}</span>
+                {t(pt.labelKey, pt.fallback)}
               </button>
             ))}
           </div>
+          {selectedType && (
+            <p className="promo-editor__hint">{t(selectedType.descKey, selectedType.descFallback)}</p>
+          )}
         </div>
 
-        {/* Title */}
-        <div className="form-group">
-          <label className="form-label" htmlFor="promo-title">
-            {t('promos.editor.promoTitle', 'Title')}
-            <span className="form-optional">({t('promos.editor.optional', 'optional')})</span>
-          </label>
-          <input
-            id="promo-title"
-            type="text"
-            className="form-input"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={t('promos.editor.titlePlaceholder', 'Give your promo a catchy title...')}
-            maxLength={100}
-          />
-        </div>
-
-        {/* Content */}
-        <div className="form-group">
-          <label className="form-label" htmlFor="promo-content">
-            {t('promos.editor.content', 'Content')}
-          </label>
-          <textarea
-            id="promo-content"
-            className={`form-textarea ${contentLength > 0 && !isContentValid ? 'invalid' : ''}`}
-            value={content}
-            onChange={(e) => setContent(e.target.value.slice(0, MAX_CONTENT))}
-            placeholder={t(
-              'promos.editor.contentPlaceholder',
-              'Drop your promo here... Use @WrestlerName to mention others.'
-            )}
-            rows={8}
-          />
-          <div className="char-counter">
-            <span className={contentLength < MIN_CONTENT ? 'under-min' : ''}>
-              {contentLength}/{MAX_CONTENT}
-            </span>
-            {contentLength < MIN_CONTENT && (
-              <span className="min-warning">
-                {t('promos.editor.minChars', 'Minimum {{min}} characters', { min: MIN_CONTENT })}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Challenge Mode Toggle (call-out only, when player has a tag team) */}
         {promoType === 'call-out' && playerTagTeam && (
-          <div className="form-group">
-            <label className="form-label">
-              {t('challenges.issue.challengeMode', 'Challenge Mode')}
-            </label>
-            <div className="challenge-mode-toggle">
-              <label className="challenge-mode-option">
+          <fieldset className="promo-editor__fieldset">
+            <legend className="promo-editor__label">{t('challenges.issue.challengeMode', 'Challenge Mode')}</legend>
+            <div className="promo-editor__modes">
+              <label className="promo-editor__mode">
                 <input
                   type="radio"
                   name="challengeMode"
@@ -493,7 +501,7 @@ export default function PromoEditor() {
                 />
                 {t('challenges.issue.singlesChallenge', 'Singles')}
               </label>
-              <label className="challenge-mode-option">
+              <label className="promo-editor__mode">
                 <input
                   type="radio"
                   name="challengeMode"
@@ -505,274 +513,260 @@ export default function PromoEditor() {
               </label>
             </div>
             {challengeMode === 'tag_team' && (
-              <div className="on-behalf-of">
+              <p className="promo-editor__hint">
                 {t('challenges.issue.onBehalfOf', 'On behalf of')}: <strong>{playerTagTeam.name}</strong>
-              </div>
+              </p>
             )}
-          </div>
+          </fieldset>
         )}
 
-        {/* Target Player (singles call-out or response promo) */}
         {showTargetPlayer && (promoType !== 'call-out' || challengeMode === 'singles') && (
-          <div className="form-group">
-            <label className="form-label" htmlFor="target-player">
+          <div className="promo-editor__field">
+            <label className="promo-editor__label" htmlFor="target-player">
               {t('promos.editor.targetPlayer', 'Target Wrestler')}
             </label>
-            <select
+            <Select
               id="target-player"
-              className="form-select"
+              label={t('promos.editor.targetPlayer', 'Target Wrestler')}
+              placeholder={t('promos.editor.selectPlayer', '-- Select a wrestler --')}
               value={targetPlayerId}
-              onChange={(e) => {
-                setTargetPlayerId(e.target.value);
+              onValueChange={(value) => {
+                setTargetPlayerId(value);
                 setTargetPromoId('');
               }}
-            >
-              <option value="">
-                {t('promos.editor.selectPlayer', '-- Select a wrestler --')}
-              </option>
-              {players.map((player) => (
-                <option key={player.playerId} value={player.playerId}>
-                  {player.currentWrestler} ({player.name})
-                </option>
-              ))}
-            </select>
+              options={playerOptions}
+            />
           </div>
         )}
 
-        {/* Target Tag Team (tag team mode) */}
         {promoType === 'call-out' && challengeMode === 'tag_team' && (
-          <div className="form-group">
-            <label className="form-label" htmlFor="target-tag-team">
+          <div className="promo-editor__field">
+            <label className="promo-editor__label" htmlFor="target-tag-team">
               {t('challenges.issue.selectOpponentTeam', 'Target Tag Team')}
             </label>
-            <select
+            <Select
               id="target-tag-team"
-              className="form-select"
+              label={t('challenges.issue.selectOpponentTeam', 'Target Tag Team')}
+              placeholder={t('challenges.issue.selectOpponentTeamPlaceholder', '-- Select a tag team --')}
               value={selectedTagTeamId}
-              onChange={(e) => setSelectedTagTeamId(e.target.value)}
-            >
-              <option value="">
-                {t('challenges.issue.selectOpponentTeamPlaceholder', '-- Select a tag team --')}
-              </option>
-              {tagTeams
-                .filter((tt) => tt.tagTeamId !== playerTagTeam?.tagTeamId)
-                .map((tt) => {
-                  const p1 = players.find((p) => p.playerId === tt.player1Id);
-                  const p2 = players.find((p) => p.playerId === tt.player2Id);
-                  const names = [p1?.currentWrestler || tt.player1Id, p2?.currentWrestler || tt.player2Id].join(' & ');
-                  return (
-                    <option key={tt.tagTeamId} value={tt.tagTeamId}>
-                      {tt.name} ({names})
-                    </option>
-                  );
-                })}
-            </select>
+              onValueChange={setSelectedTagTeamId}
+              options={tagTeamOptions}
+            />
           </div>
         )}
 
-        {/* Target Promo */}
         {showTargetPromo && (
-          <div className="form-group">
-            <label className="form-label" htmlFor="target-promo">
+          <div className="promo-editor__field">
+            <label className="promo-editor__label" htmlFor="target-promo">
               {t('promos.editor.targetPromo', 'Responding to Promo')}
-              <span className="form-required" aria-label="required"> *</span>
+              <span className="promo-editor__required" aria-hidden="true"> *</span>
             </label>
             {!targetPlayerId ? (
-              <p className="form-hint">
+              <p className="promo-editor__hint">
                 {t('promos.editor.selectPlayerFirst', 'Select a target wrestler above to see their promos.')}
               </p>
             ) : targetPromos.length === 0 ? (
-              <p className="form-hint">
+              <p className="promo-editor__hint">
                 {t('promos.editor.noTargetPromos', 'This wrestler has no promos yet. Pick a different wrestler or a different promo type.')}
               </p>
             ) : (
-              <select
+              <Select
                 id="target-promo"
-                className="form-select"
+                label={t('promos.editor.targetPromo', 'Responding to Promo')}
+                placeholder={t('promos.editor.selectPromo', '-- Select a promo --')}
                 value={targetPromoId}
-                onChange={(e) => setTargetPromoId(e.target.value)}
-                required
-              >
-                <option value="">
-                  {t('promos.editor.selectPromo', '-- Select a promo --')}
-                </option>
-                {targetPromos.map((promo) => (
-                  <option key={promo.promoId} value={promo.promoId}>
-                    {promo.title || promo.content.slice(0, 60) + '...'}
-                  </option>
-                ))}
-              </select>
+                onValueChange={setTargetPromoId}
+                options={targetPromos.map((promo) => ({
+                  value: promo.promoId,
+                  label: promo.title || promo.content.slice(0, 60) + '...',
+                }))}
+              />
             )}
           </div>
         )}
 
-        {/* Match */}
         {showMatch && (
-          <div className="form-group">
-            <label className="form-label" htmlFor="match-select">
+          <div className="promo-editor__field">
+            <label className="promo-editor__label" htmlFor="match-select">
               {t('promos.editor.match', 'Match')}
             </label>
-            <select
+            <Select
               id="match-select"
-              className="form-select"
+              label={t('promos.editor.match', 'Match')}
+              placeholder={t('promos.editor.selectMatch', '-- Select a match --')}
               value={matchId}
-              onChange={(e) => setMatchId(e.target.value)}
-            >
-              <option value="">
-                {t('promos.editor.selectMatch', '-- Select a match --')}
-              </option>
-              {matches.map((match) => (
-                <option key={match.matchId} value={match.matchId}>
-                  {match.matchFormat} - {match.date}
-                </option>
-              ))}
-            </select>
+              onValueChange={setMatchId}
+              options={matches.map((match) => ({
+                value: match.matchId,
+                label: `${match.matchFormat} - ${match.date}`,
+              }))}
+            />
           </div>
         )}
 
-        {/* Rivalry picker (rivalry promo type only) */}
         {showRivalryPicker && (
-          <div className="form-group">
-            <label className="form-label" htmlFor="rivalry-select">
+          <div className="promo-editor__field">
+            <label className="promo-editor__label" htmlFor="rivalry-select">
               {t('promos.editor.rivalry', 'Rivalry')}
-              <span className="form-required" aria-label="required"> *</span>
+              <span className="promo-editor__required" aria-hidden="true"> *</span>
             </label>
             {myRivalries.length === 0 ? (
-              <p className="form-hint">
+              <p className="promo-editor__hint">
                 {t(
                   'promos.editor.noRivalries',
                   "You're not in any rivalries yet. Have a GM start one, or pick a different promo type.",
                 )}
               </p>
             ) : (
-              <select
+              <Select
                 id="rivalry-select"
-                className="form-select"
+                label={t('promos.editor.rivalry', 'Rivalry')}
+                placeholder={t('promos.editor.selectRivalry', '-- Select a rivalry --')}
                 value={rivalryId}
-                onChange={(e) => setRivalryId(e.target.value)}
-                required
-              >
-                <option value="">
-                  {t('promos.editor.selectRivalry', '-- Select a rivalry --')}
-                </option>
-                {myRivalries.map((r) => {
-                  const opponents = r.participants
-                    .filter((p) => p.playerId !== currentPlayer?.playerId)
-                    .map((p) => {
-                      const player = players.find((pl) => pl.playerId === p.playerId);
-                      return player?.currentWrestler ?? player?.name ?? p.playerId;
-                    })
-                    .join(', ');
-                  const label = r.title
-                    ? r.title
-                    : opponents
-                      ? t('promos.editor.rivalryVs', 'vs {{opponents}}', { opponents })
-                      : r.rivalryId;
-                  return (
-                    <option key={r.rivalryId} value={r.rivalryId}>
-                      {label}
-                    </option>
-                  );
-                })}
-              </select>
+                onValueChange={setRivalryId}
+                options={rivalryOptions}
+              />
             )}
           </div>
         )}
 
-        {/* Championship */}
         {showChampionship && (
-          <div className="form-group">
-            <label className="form-label" htmlFor="championship-select">
+          <div className="promo-editor__field">
+            <label className="promo-editor__label" htmlFor="championship-select">
               {t('promos.editor.championship', 'Championship')}
             </label>
-            <select
+            <Select
               id="championship-select"
-              className="form-select"
+              label={t('promos.editor.championship', 'Championship')}
+              placeholder={t('promos.editor.selectChampionship', '-- Select a championship --')}
               value={championshipId}
-              onChange={(e) => setChampionshipId(e.target.value)}
-            >
-              <option value="">
-                {t('promos.editor.selectChampionship', '-- Select a championship --')}
-              </option>
-              {championships.map((champ) => (
-                <option key={champ.championshipId} value={champ.championshipId}>
-                  {champ.name}
-                </option>
-              ))}
-            </select>
+              onValueChange={setChampionshipId}
+              options={championships.map((champ) => ({ value: champ.championshipId, label: champ.name }))}
+            />
           </div>
         )}
 
-        {/* Challenge Match Type & Stipulation (call-out only) */}
         {promoType === 'call-out' && (
-          <>
-            <div className="form-group">
-              <label className="form-label" htmlFor="challenge-match-type">
+          <div className="promo-editor__row">
+            <div className="promo-editor__field">
+              <label className="promo-editor__label" htmlFor="challenge-match-type">
                 {t('promos.editor.matchType', 'Match Type')}
               </label>
-              <select
+              <Select
                 id="challenge-match-type"
-                className="form-select"
+                label={t('promos.editor.matchType', 'Match Type')}
+                placeholder={t('challenges.issue.selectMatchType', '-- Select match type --')}
                 value={challengeMatchType}
-                onChange={(e) => setChallengeMatchType(e.target.value)}
-              >
-                <option value="">{t('challenges.issue.selectMatchType', '-- Select match type --')}</option>
-                {matchTypes.map((mt) => (
-                  <option key={mt.matchTypeId} value={mt.name}>
-                    {mt.name}
-                  </option>
-                ))}
-              </select>
+                onValueChange={setChallengeMatchType}
+                options={matchTypes.map((mt) => ({ value: mt.name, label: mt.name }))}
+              />
             </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="challenge-stipulation">
+            <div className="promo-editor__field">
+              <label className="promo-editor__label" htmlFor="challenge-stipulation">
                 {t('promos.editor.stipulation', 'Stipulation')}
               </label>
-              <select
+              <Select
                 id="challenge-stipulation"
-                className="form-select"
+                label={t('promos.editor.stipulation', 'Stipulation')}
                 value={challengeStipulation}
-                onChange={(e) => setChallengeStipulation(e.target.value)}
-              >
-                <option value="">{t('common.none', 'None')}</option>
-                {stipulations.map((s) => (
-                  <option key={s.stipulationId} value={s.name}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+                onValueChange={setChallengeStipulation}
+                options={[
+                  { value: '', label: t('common.none', 'None') },
+                  ...stipulations.map((s) => ({ value: s.name, label: s.name })),
+                ]}
+              />
             </div>
-          </>
+          </div>
         )}
 
-        {/* Preview Toggle */}
-        <div className="form-group">
-          <button
-            type="button"
-            className="preview-toggle"
-            onClick={() => setShowPreview((prev) => !prev)}
-          >
+        {challengeTitles.length > 0 && (
+          <div className="promo-editor__field">
+            <label className="promo-editor__label" htmlFor="challenge-title">
+              {t('challenges.issue.titleOnTheLine', 'Title on the line')}
+            </label>
+            <Select
+              id="challenge-title"
+              label={t('challenges.issue.titleOnTheLine', 'Title on the line')}
+              value={stakedChampionshipId}
+              onValueChange={setChampionshipId}
+              options={[
+                { value: '', label: t('challenges.issue.noTitle', 'No title') },
+                ...challengeTitles.map((champ) => ({ value: champ.championshipId, label: champ.name })),
+              ]}
+            />
+            <p className="promo-editor__hint">
+              {t('challenges.issue.titleHint', 'Lists titles held by either side, and vacant titles.')}
+            </p>
+          </div>
+        )}
+
+        <div className="promo-editor__field">
+          <label className="promo-editor__label" htmlFor="promo-title">
+            {t('promos.editor.promoTitle', 'Title')}
+            <span className="promo-editor__optional">({t('promos.editor.optional', 'optional')})</span>
+          </label>
+          <input
+            id="promo-title"
+            type="text"
+            className="promo-editor__input"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={t('promos.editor.titlePlaceholder', 'Give your promo a catchy title...')}
+            maxLength={100}
+          />
+        </div>
+
+        <div className="promo-editor__field">
+          <label className="promo-editor__label" htmlFor="promo-content">
+            {t('promos.editor.content', 'Content')}
+          </label>
+          <textarea
+            id="promo-content"
+            className={`promo-editor__input promo-editor__textarea ${contentLength > 0 && !isContentValid ? 'promo-editor__input--invalid' : ''}`}
+            value={content}
+            onChange={(e) => setContent(e.target.value.slice(0, MAX_CONTENT))}
+            placeholder={t(
+              'promos.editor.contentPlaceholder',
+              'Drop your promo here... Use @WrestlerName to mention others.'
+            )}
+            rows={8}
+          />
+          <div className="promo-editor__counter">
+            <span>{contentLength}/{MAX_CONTENT}</span>
+            {contentLength < MIN_CONTENT && (
+              <span className="promo-editor__counter-warning">
+                {t('promos.editor.minChars', 'Minimum {{min}} characters', { min: MIN_CONTENT })}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <Button variant="ghost" size="sm" onClick={() => setShowPreview((prev) => !prev)}>
             {showPreview
               ? t('promos.editor.hidePreview', 'Hide Preview')
               : t('promos.editor.showPreview', 'Show Preview')}
-          </button>
+          </Button>
         </div>
 
         {showPreview && (
-          <div className="promo-preview-section">
-            <h3 className="preview-title">{t('promos.editor.preview', 'Preview')}</h3>
+          <section className="promo-editor__preview">
+            <h2 className="promo-editor__label">{t('promos.editor.preview', 'Preview')}</h2>
             <PromoCard promo={previewPromo} />
-          </div>
+          </section>
         )}
 
-        {/* Submit */}
-        <div className="form-actions">
-          <Link to="/promos" className="cancel-btn">
-            {t('common.cancel', 'Cancel')}
-          </Link>
-          <button type="submit" className="submit-btn" disabled={!canSubmit}>
-            {submitting ? 'Submitting...' : t('promos.editor.submit', 'Drop the Mic')}
-          </button>
+        {needsChallenge && !hasChallengeDetails && (
+          <p className="promo-editor__hint">
+            {t('promos.editor.challengeNeeds', 'Pick an opponent and a match type to issue the challenge.')}
+          </p>
+        )}
+
+        <div className="promo-editor__actions">
+          <Button variant="secondary" to="/promos">{t('common.cancel', 'Cancel')}</Button>
+          <Button type="submit" disabled={!canSubmit} loading={submitting}>
+            {submitting ? t('common.submitting', 'Submitting...') : t('promos.editor.submit', 'Drop the Mic')}
+          </Button>
         </div>
       </form>
     </div>

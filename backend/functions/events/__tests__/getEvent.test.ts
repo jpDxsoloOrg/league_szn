@@ -117,6 +117,22 @@ describe('getEvent', () => {
     expect(enrichedMatch.matchData.championshipName).toBe('World Championship');
   });
 
+  it('passes team sides through so a tag match can be grouped', async () => {
+    const match = await repos.competition.matches.create({
+      matchId: 'tag-1', date: '2024-01-01', matchFormat: 'tag-team',
+      participants: ['p1', 'p2', 'p3', 'p4'], teams: [['p1', 'p3'], ['p2', 'p4']],
+      isChampionship: false, status: 'scheduled', createdAt: new Date().toISOString(),
+    });
+    const eventItem = await repos.leagueOps.events.create({ name: 'Raw', eventType: 'weekly', date: '2024-01-01' });
+    await repos.leagueOps.events.update(eventItem.eventId, {
+      matchCards: [{ position: 1, matchId: match.matchId, designation: 'midcard' as const }],
+    });
+
+    const result = await getEvent(makeEvent({ pathParameters: { eventId: eventItem.eventId } }), ctx, cb);
+
+    expect(JSON.parse(result!.body).enrichedMatches[0].matchData.teams).toEqual([['p1', 'p3'], ['p2', 'p4']]);
+  });
+
   it('returns matchData null when matchId is missing from card', async () => {
     const eventItem = await repos.leagueOps.events.create({
       name: 'Raw', eventType: 'weekly', date: '2024-01-01',
@@ -151,7 +167,7 @@ describe('getEvent', () => {
     expect(body.enrichedMatches[0].matchId).toBe('m-gone');
   });
 
-  it('uses Unknown Player/Wrestler when player not found', async () => {
+  it('uses Former member when player not found', async () => {
     // Create a match with a non-existent player
     await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01', matchFormat: 'singles',
@@ -172,8 +188,8 @@ describe('getEvent', () => {
 
     expect(result!.statusCode).toBe(200);
     const participant = JSON.parse(result!.body).enrichedMatches[0].matchData.participants[0];
-    expect(participant.playerName).toBe('Unknown Player');
-    expect(participant.wrestlerName).toBe('Unknown Wrestler');
+    expect(participant.playerName).toBe('Former member');
+    expect(participant.wrestlerName).toBe('Former member');
   });
 
   it('omits championshipName when match is not a championship match', async () => {
@@ -221,11 +237,8 @@ describe('getEvent', () => {
     const result = await getEvent(event, ctx, cb);
 
     expect(result!.statusCode).toBe(500);
-    // The handler now appends the underlying error detail so the user (and
-    // their server log) can see what actually broke instead of a generic
-    // "Failed to fetch event" with no clue.
-    expect(JSON.parse(result!.body).message).toMatch(/^Failed to fetch event/);
-    expect(JSON.parse(result!.body).message).toContain('DB error');
+    // The underlying error goes to the server log, not the response.
+    expect(JSON.parse(result!.body).message).toBe('Failed to fetch event');
   });
 
   it('participants[].wrestlerName uses slot wrestlerNameSnapshot when present (MSL-03)', async () => {

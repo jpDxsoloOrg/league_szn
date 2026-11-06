@@ -2,15 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
+import { ApiError } from '../../../services/api/apiClient';
 import type { ChallengeWithPlayers } from '../../../types/challenge';
 
 // --- Hoisted mocks ---
-const { mockGetAll, mockRespond, mockCancelChallenge, mockGetMyProfile, mockNavigate } = vi.hoisted(() => ({
+const { mockGetAll, mockRespond, mockCancelChallenge, mockGetMyProfile, mockNavigate, mockIsHiddenPlayer } = vi.hoisted(() => ({
   mockGetAll: vi.fn(),
   mockRespond: vi.fn(),
   mockCancelChallenge: vi.fn(),
   mockGetMyProfile: vi.fn(),
   mockNavigate: vi.fn(),
+  mockIsHiddenPlayer: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -66,6 +68,10 @@ vi.mock('../../../contexts/SiteConfigContext', () => ({
   }),
 }));
 
+vi.mock('../../../hooks/useIsHiddenPlayer', () => ({
+  useIsHiddenPlayer: mockIsHiddenPlayer,
+}));
+
 vi.mock('../MyChallenges.css', () => ({}));
 
 import MyChallenges from '../MyChallenges';
@@ -99,7 +105,19 @@ function renderMyChallenges() {
 describe('MyChallenges', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockIsHiddenPlayer.mockReturnValue(false);
     mockGetMyProfile.mockResolvedValue({ playerId: currentPlayerId });
+  });
+
+  it('tells a player with no wrestler name why they cannot call anyone out', async () => {
+    mockIsHiddenPlayer.mockReturnValue(true);
+    mockGetMyProfile.mockResolvedValue({ playerId: currentPlayerId });
+    mockGetAll.mockResolvedValue([]);
+    renderMyChallenges();
+
+    expect(await screen.findByText('me.setup.cannotCallOutTitle')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'me.setup.enterName' })).toHaveAttribute('href', '/profile');
+    expect(screen.queryByRole('link', { name: /call-out/i })).not.toBeInTheDocument();
   });
 
   it('shows received and sent challenge tabs with counts', async () => {
@@ -124,8 +142,9 @@ describe('MyChallenges', () => {
     expect(screen.getByText('Sent')).toBeInTheDocument();
 
     // Received tab count (1) and Sent tab count (1)
-    const counts = screen.getAllByText('1');
-    expect(counts.length).toBeGreaterThanOrEqual(2);
+    await waitFor(() => {
+      expect(screen.getAllByText('1').length).toBeGreaterThanOrEqual(2);
+    });
   });
 
   it('shows action buttons based on status and direction', async () => {
@@ -173,5 +192,42 @@ describe('MyChallenges', () => {
     // Accept/Decline should NOT appear on sent challenges
     expect(screen.queryByText('Accept')).not.toBeInTheDocument();
     expect(screen.queryByText('Decline')).not.toBeInTheDocument();
+  });
+
+  it('shows an overdue pending challenge as expired with no actions', async () => {
+    mockGetAll.mockResolvedValue([
+      makeChallenge({
+        challengerId: 'p-2',
+        challengedId: currentPlayerId,
+        status: 'pending',
+        expiresAt: new Date(Date.now() - 1000).toISOString(),
+      }),
+    ]);
+
+    renderMyChallenges();
+
+    expect(await screen.findByText('challenges.status.expired')).toBeInTheDocument();
+    expect(screen.queryByText('Accept')).not.toBeInTheDocument();
+    expect(screen.queryByText('Decline')).not.toBeInTheDocument();
+  });
+
+  it('tells staff with no player why the page is empty, with no raw error or retry', async () => {
+    mockGetMyProfile.mockRejectedValue(new ApiError('No player profile found for this user', 404));
+    mockGetAll.mockResolvedValue([makeChallenge()]);
+    renderMyChallenges();
+
+    expect(await screen.findByText('challenges.my.noPlayerTitle')).toBeInTheDocument();
+    expect(screen.queryByText('No player profile found for this user')).not.toBeInTheDocument();
+    expect(screen.queryByText('common.retry')).not.toBeInTheDocument();
+    expect(screen.queryByText('promos.editor.cutCallOut')).not.toBeInTheDocument();
+  });
+
+  it('still reports other load failures with a retry', async () => {
+    mockGetMyProfile.mockRejectedValue(new ApiError('Service unavailable', 503));
+    mockGetAll.mockResolvedValue([]);
+    renderMyChallenges();
+
+    expect(await screen.findByText('Service unavailable')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'common.retry' })).toBeInTheDocument();
   });
 });

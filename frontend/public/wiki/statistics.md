@@ -1,35 +1,37 @@
 # Statistics
 
-The Statistics section gives you deeper views into league performance: leaderboards, records, rivalries, head-to-head comparison, achievements, and best matches.
+The Stats tab in the **Rankings** section gives you deeper views into league performance. It has its own row of tabs: Player, Head-to-Head, Leaderboards, Record Book, Best Matches, Achievements and Feud History. Your league may turn this feature off.
+
+## Player
+
+Pick a player, and a season if you want one, to see their record, streaks and results by match type.
+
+## Head-to-Head
+
+Pick two players to see their record against each other, their recent results and who has the statistical edge. The **Tale of the Tape** tab on this page gives the fuller side-by-side comparison.
 
 ## Leaderboards
 
-Leaderboards rank players by different stats (e.g. wins, win streak, championship reigns). Use them to see who leads in each category and how you compare. Filters (e.g. by division or season) may be available depending on your league setup.
+Leaderboards rank players by Most Wins, Win %, Streaks, Championships and Longest Reign. Use the season, match type and stipulation filters to narrow them. Choosing a match type or stipulation switches to the filtered board for that choice.
 
-## Records
+## Record Book
 
-Records highlight notable achievements: longest win streaks, most wins in a season, quickest title wins, and similar milestones. This page answers “who holds the record for…?” and celebrates league history.
-
-## Rivalries
-
-Rivalries show head-to-head history between two players: wins, losses, and draws against each other. Use it to see how two wrestlers have fared when facing one another and to follow ongoing feuds.
-
-## Tale of the Tape
-
-Tale of the Tape lets you compare two wrestlers side by side: records, streaks, championships, and other stats. Pick two players to see a direct comparison and decide who has the edge on paper.
-
-## Achievements
-
-Achievements track badges or milestones players have earned (e.g. first title, 10 wins, unbeaten streak). This page lists available achievements and who has unlocked them, adding goals and bragging rights to the league.
+The Record Book highlights league records, grouped into Overall, Championships, Streaks and Match Types. **Active Threats** shows records that are being challenged right now.
 
 ## Best Matches
 
-Best Matches highlights standout bouts—for example highest-rated, most significant, or most recent classic matches. Use it to relive the best action and see which matches the league or community has highlighted.
+Best Matches lists the highest-rated matches. Ratings come from members. See [Rate Matches](rate-matches).
 
-## Using Statistics
+## Achievements
 
-- Switch between sub-pages using the Statistics menu or tabs.
-- Apply filters (season, division, date range) when offered to narrow the view.
-- From Rivalries or Tale of the Tape, you can often click through to player profiles or match details for more context.
+Pick a player to see which achievements they've earned and which are still locked. Filter by All, Milestones, Records or Special.
+
+## Feud History
+
+Feud History shows pairs of players who have faced each other at least 3 times, with their series record. It's built from match results, so it isn't the same as the storyline [Rivalries](rivalries). Use **View Head-to-Head** for the full comparison.
+
+## How Draws Count
+
+A draw counts as a draw in every statistic, never as a win. It also ends a winning or losing streak.
 
 For rankings and current standings, see the [Standings](standings) page. For championship history, see [Championships](championships).

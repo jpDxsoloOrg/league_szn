@@ -9,7 +9,7 @@ const mockMessages = { list: vi.fn() };
 const mockNotes = { listByRivalry: vi.fn() };
 const mockMatches = { list: vi.fn() };
 const mockPromos = { listByPlayer: vi.fn() };
-const mockPlayers = { findByUserId: vi.fn() };
+const mockPlayers = { findByUserId: vi.fn(), findById: vi.fn() };
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
@@ -54,6 +54,7 @@ describe('getRivalryActivity', () => {
     mockMatches.list.mockResolvedValue([]);
     mockPromos.listByPlayer.mockResolvedValue([]);
     mockPlayers.findByUserId.mockResolvedValue(null);
+    mockPlayers.findById.mockResolvedValue(null);
   });
 
   it('returns an empty page when the caller has no visible rivalries', async () => {
@@ -63,6 +64,21 @@ describe('getRivalryActivity', () => {
     const body = JSON.parse(res!.body);
     expect(body.items).toEqual([]);
     expect(body.nextCursor).toBeNull();
+  });
+
+  it('gives a signed-in player with no rivalries the shared feed, not an empty one', async () => {
+    mockPlayers.findByUserId.mockResolvedValue({ playerId: 'p9' });
+    mockRivalries.listByStatus.mockResolvedValue({ items: [makeRivalry()], nextCursor: undefined });
+    const event = makeEvent({
+      httpMethod: 'GET',
+      requestContext: { authorizer: { principalId: 'user-9', username: 'member', email: '', groups: 'Wrestler' } },
+    } as unknown as Parameters<typeof makeEvent>[0]);
+
+    const res = await getRivalryActivity(event, ctx, cb);
+
+    expect(res!.statusCode).toBe(200);
+    expect(mockRivalries.listByParticipant).not.toHaveBeenCalled();
+    expect(mockRivalries.listByStatus).toHaveBeenCalled();
   });
 
   it('merges items from all sources and sorts them descending by occurredAt', async () => {
@@ -126,6 +142,26 @@ describe('getRivalryActivity', () => {
       'message',
       'note',
     ]);
+  });
+
+  it('masks the moderator id in a stored system message', async () => {
+    const accountId = '11111111-2222-3333-4444-555555555555';
+    mockRivalries.listByStatus.mockResolvedValue({ items: [makeRivalry()], nextCursor: undefined });
+    mockMessages.list.mockResolvedValue({
+      items: [{
+        rivalryId: 'r1',
+        messageId: 'msg-system',
+        authorPlayerId: 'system',
+        body: `Rivalry approved by ${accountId}.`,
+        audience: 'all',
+        createdAt: '2026-05-06T00:00:00.000Z',
+      }],
+      nextCursor: undefined,
+    });
+
+    const res = await getRivalryActivity(makeEvent({ httpMethod: 'GET' }), ctx, cb);
+
+    expect(res!.body).not.toContain(accountId);
   });
 
   it('hides admins-only messages from a non-participant anonymous caller', async () => {

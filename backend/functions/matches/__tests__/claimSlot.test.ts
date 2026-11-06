@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
+import { ConcurrencyError } from '../../../lib/repositories/errors';
 
 // ---- Mocks ----------------------------------------------------------------
 
@@ -116,6 +117,7 @@ describe('claimSlot', () => {
       'm1',
       '2024-06-01T00:00:00Z',
       expect.objectContaining({ status: 'open-signups' }),
+      { kind: 'unchangedSince', updatedAt: undefined },
     );
     // Regression: DynamoUnitOfWork.updateMatch appends updatedAt itself, so
     // including it in the patch would set the same path twice and DynamoDB
@@ -146,7 +148,41 @@ describe('claimSlot', () => {
       'm1',
       expect.any(String),
       expect.objectContaining({ status: 'scheduled' }),
+      expect.objectContaining({ kind: 'unchangedSince' }),
     );
+  });
+
+  it('guards the write on the updatedAt it read', async () => {
+    mockPlayersFindByUserId.mockResolvedValue({ playerId: 'p-caller', currentWrestler: 'Edge' });
+    mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch({ updatedAt: '2024-05-01T00:00:00Z' }));
+    const tx = captureTx();
+
+    await claimSlot(ev(), ctx, cb);
+
+    expect(tx.updateMatch.mock.calls[0][3]).toEqual({
+      kind: 'unchangedSince',
+      updatedAt: '2024-05-01T00:00:00Z',
+    });
+  });
+
+  it('returns 409 when another claim lands first', async () => {
+    mockPlayersFindByUserId.mockResolvedValue({ playerId: 'p-caller', currentWrestler: 'Edge' });
+    mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch());
+    mockRunInTransaction.mockRejectedValue(new ConcurrencyError('Match', 'm1'));
+
+    const r = await claimSlot(ev(), ctx, cb);
+
+    expect(r!.statusCode).toBe(409);
+  });
+
+  it('returns 500 for a write failure that is not a conflict', async () => {
+    mockPlayersFindByUserId.mockResolvedValue({ playerId: 'p-caller', currentWrestler: 'Edge' });
+    mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch());
+    mockRunInTransaction.mockRejectedValue(new Error('boom'));
+
+    const r = await claimSlot(ev(), ctx, cb);
+
+    expect(r!.statusCode).toBe(500);
   });
 
   it('idempotent re-claim by current occupant returns 200 without writing', async () => {

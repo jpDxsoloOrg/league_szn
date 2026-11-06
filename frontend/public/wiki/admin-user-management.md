@@ -1,20 +1,47 @@
 # User Management
 
-The **User Management** page allows you to manage user accounts and assign roles.
+The **User Management** page is where a full Admin manages accounts and roles. Moderators can't open it.
 
 ## User Roles
 
-| Role | Description |
-|------|-------------|
-| **Admin** | Full access to all management features, including the Danger Zone, public pages, and authenticated features |
-| **Moderator** | Access to all management features except the Danger Zone (no Generate Sample Data or Clear All Data). Can manage players, matches, championships, challenges, promos, and other day-to-day admin tasks. Assignable only by a Super Admin. |
-| **Wrestler** | Access to personal profile page with stats, contender status, challenges, and promos |
+| Role | What it gives |
+|------|---------------|
+| **Admin** | Everything, including the four Admin-only pages: User Management, Feature Management, Heat Tunables and the Danger Zone |
+| **Moderator** | Every other Admin page, such as players, matches, events, championships, seasons, promos and rivalries |
+| **Wrestler** | The personal pages under **Me**: profile, Find a Match, Call-outs, My Videos, and faction and tag team pages |
+
+A Moderator also can't do these jobs, which are for full Admins only:
+
+- Delete a tag team or faction
+- Dissolve a tag team or disband a faction from the Admin pages
+- Expire or delete a call-out, or use **Clear Resolved**
+
+Everyone gets the **Wrestler** role and a player record automatically when they sign up.
 
 ## Assigning Roles
 
-1. Navigate to **User Management**
-2. Find the user in the list
-3. Use the role dropdown to assign or change their role
-4. Changes take effect immediately
+1. Go to **User Management**
+2. Find the user. The tabs narrow the list to Wrestler Requests, Wrestlers, Admins or Disabled
+3. Click **Manage**
+4. Use the role buttons, such as **Make Moderator**, **Make Admin** or **Remove Wrestler**
+5. Changes save straight away
 
-**Note:** Users must have signed up with an account before you can assign them a role. They will see role-locked features as disabled in the sidebar until assigned the appropriate role.
+Users must have an account before you can give them a role. Removing the Wrestler role takes the player off the standings and dashboard.
+
+## Wrestler Requests
+
+If an account has a wrestler name but no Wrestler role, it shows under **Wrestler Requests** with an **Approve Wrestler** button. New sign-ups get the role by themselves, so this list is usually empty.
+
+## Wrestlers and Divisions
+
+Each row has an **Assigned Wrestler** and a **Division** dropdown, and both save as soon as you change them. A **Hidden** badge means the player has no wrestler name and is off the public pages. Assigning a wrestler brings them back.
+
+## Disabling and Deleting Accounts
+
+In the **Manage** dialog, **Disable** stops the account signing in. **Enable** reverses it.
+
+An account must be disabled before **Delete** appears. Deleting is permanent and removes the login only. The player record stays, so use [Manage Players](admin-manage-players) if you want the player removed too.
+
+## Sync Wrestler Roles
+
+**Sync Wrestler Roles** matches every player to their account's role, then reports how many were shown, hidden, unchanged or skipped. It is safe to run again. You only need it if the standings seem to disagree with who has the Wrestler role.

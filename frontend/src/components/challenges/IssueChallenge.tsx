@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { playersApi, challengesApi, profileApi, stipulationsApi, matchTypesApi, tagTeamsApi } from '../../services/api';
-import type { Player, Stipulation, MatchType } from '../../types';
+import { ArrowLeft } from 'lucide-react';
+import { playersApi, challengesApi, championshipsApi, profileApi, stipulationsApi, matchTypesApi, tagTeamsApi } from '../../services/api';
+import type { Championship, Player, Stipulation, MatchType } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
-import { getInitial } from './challengeUtils';
+import Avatar from '../ui/Avatar';
+import Button from '../ui/Button';
+import PageHeader from '../ui/PageHeader';
+import { getChallengeTitleOptions } from './challengeUtils';
 import './IssueChallenge.css';
 
 const MAX_MESSAGE_LENGTH = 500;
@@ -14,7 +17,7 @@ export default function IssueChallenge() {
   const [opponentId, setOpponentId] = useState('');
   const [matchType, setMatchType] = useState('');
   const [stipulation, setStipulation] = useState('');
-  const [isChampionship, setIsChampionship] = useState(false);
+  const [selectedChampionshipId, setSelectedChampionshipId] = useState('');
   const [message, setMessage] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -22,6 +25,7 @@ export default function IssueChallenge() {
   const [error, setError] = useState<string | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
+  const [championships, setChampionships] = useState<Championship[]>([]);
   const [stipulations, setStipulations] = useState<Stipulation[]>([]);
   const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
   const [challengeMode, setChallengeMode] = useState<'singles' | 'tag_team'>('singles');
@@ -37,11 +41,13 @@ export default function IssueChallenge() {
       stipulationsApi.getAll(controller.signal),
       matchTypesApi.getAll(controller.signal),
       tagTeamsApi.getAll({ status: 'active' }, controller.signal),
-    ]).then(([data, myProfile, stips, mTypes, fetchedTagTeams]) => {
+      championshipsApi.getAll(controller.signal),
+    ]).then(([data, myProfile, stips, mTypes, fetchedTagTeams, fetchedChampionships]) => {
       setPlayers(data);
       setCurrentPlayerId(myProfile.playerId);
       setStipulations(stips);
       setMatchTypes(mTypes);
+      setChampionships(fetchedChampionships);
       const myTeam = fetchedTagTeams.find(
         (tt) => tt.player1Id === myProfile.playerId || tt.player2Id === myProfile.playerId
       );
@@ -58,10 +64,24 @@ export default function IssueChallenge() {
 
   const currentPlayer = players.find((p) => p.playerId === currentPlayerId);
   const opponent = players.find((p) => p.playerId === opponentId);
-  // Only show players with linked accounts (userId) who can actually respond to challenges
-  const availableOpponents = players.filter((p) => p.playerId !== currentPlayerId && p.userId);
+  // Only show players with linked accounts who can actually respond to challenges
+  const availableOpponents = players.filter((p) => p.playerId !== currentPlayerId && p.hasLinkedAccount);
 
   const selectedTagTeam = tagTeams.find((tt) => tt.tagTeamId === selectedTagTeamId);
+
+  const teamSide = (tt: TagTeam) => [tt.player1Id, tt.player2Id].map(
+    (playerId) => players.find((p) => p.playerId === playerId) ?? { playerId },
+  );
+  const challengeSides = challengeMode === 'tag_team'
+    ? [playerTagTeam, selectedTagTeam].flatMap((tt) => (tt ? [teamSide(tt)] : []))
+    : [currentPlayer, opponent].flatMap((player) => (player ? [[player]] : []));
+  const availableTitles = getChallengeTitleOptions(championships, {
+    challengeMode,
+    matchType,
+    sides: challengeSides,
+  });
+  // A change of opponent or match type can rule out a title picked earlier.
+  const stakedTitle = availableTitles.find((c) => c.championshipId === selectedChampionshipId);
 
   const isFormValid = challengeMode === 'tag_team'
     ? selectedTagTeamId && matchType && message.length <= MAX_MESSAGE_LENGTH
@@ -85,6 +105,7 @@ export default function IssueChallenge() {
           challengedTagTeamId: selectedTagTeamId,
           matchType,
           stipulation: stipulation || undefined,
+          championshipId: stakedTitle?.championshipId,
           message: message || undefined,
         });
       } else {
@@ -92,7 +113,7 @@ export default function IssueChallenge() {
           challengedId: opponentId,
           matchType,
           stipulation: stipulation || undefined,
-          championshipId: isChampionship ? 'championship-match' : undefined,
+          championshipId: stakedTitle?.championshipId,
           message: message || undefined,
         });
       }
@@ -108,7 +129,7 @@ export default function IssueChallenge() {
     setOpponentId('');
     setMatchType('');
     setStipulation('');
-    setIsChampionship(false);
+    setSelectedChampionshipId('');
     setMessage('');
     setShowPreview(false);
     setSubmitted(false);
@@ -123,18 +144,8 @@ export default function IssueChallenge() {
         <div className="issue-success-message">
           <p>{t('challenges.issue.success')}</p>
           <div className="issue-success-actions">
-            <Link
-              to="/challenges"
-              className="issue-success-back-link"
-            >
-              {t('challenges.detail.backToBoard')}
-            </Link>
-            <button
-              onClick={handleReset}
-              className="issue-success-another-btn"
-            >
-              {t('challenges.issue.issueAnother')}
-            </button>
+            <Button to="/challenges">{t('challenges.detail.backToBoard')}</Button>
+            <Button variant="secondary" onClick={handleReset}>{t('challenges.issue.issueAnother')}</Button>
           </div>
         </div>
       </div>
@@ -156,14 +167,14 @@ export default function IssueChallenge() {
 
   return (
     <div className="issue-challenge">
-      <Link to="/challenges" className="issue-challenge-back">
-        &larr; {t('challenges.detail.backToBoard')}
-      </Link>
+      <Button variant="ghost" size="sm" to="/challenges" icon={<ArrowLeft aria-hidden="true" size={18} />}>
+        {t('challenges.detail.backToBoard')}
+      </Button>
 
-      <h2>{t('challenges.issue.title')}</h2>
+      <PageHeader title={t('challenges.issue.title')} />
 
       {error && (
-        <div className="issue-error-message">
+        <div className="issue-error-message" role="alert">
           {error}
         </div>
       )}
@@ -254,16 +265,23 @@ export default function IssueChallenge() {
           </select>
         </div>
 
-        <div className="issue-form-group">
-          <label className="issue-championship-check">
-            <input
-              type="checkbox"
-              checked={isChampionship}
-              onChange={(e) => setIsChampionship(e.target.checked)}
-            />
-            <span>{t('challenges.issue.championshipMatch')}</span>
-          </label>
-        </div>
+        {availableTitles.length > 0 && (
+          <div className="issue-form-group">
+            <label htmlFor="issue-title">{t('challenges.issue.titleOnTheLine')}</label>
+            <select
+              id="issue-title"
+              value={stakedTitle?.championshipId ?? ''}
+              onChange={(e) => setSelectedChampionshipId(e.target.value)}
+            >
+              <option value="">{t('challenges.issue.noTitle')}</option>
+              {availableTitles.map((c) => (
+                <option key={c.championshipId} value={c.championshipId}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="issue-form-group">
           <label>{t('challenges.issue.message')}</label>
@@ -282,23 +300,18 @@ export default function IssueChallenge() {
 
         {canShowPreview && (
           <div>
-            <button
-              className="issue-preview-toggle"
-              onClick={() => setShowPreview(!showPreview)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setShowPreview(!showPreview)}>
               {showPreview
                 ? t('challenges.issue.hidePreview')
                 : t('challenges.issue.showPreview')}
-            </button>
+            </Button>
 
             {showPreview && challengeMode === 'tag_team' && playerTagTeam && selectedTagTeam && (
               <div className="issue-preview">
                 <h3>{t('challenges.issue.preview')}</h3>
                 <div className="issue-preview-versus">
                   <div className="issue-preview-player">
-                    <div className="issue-preview-avatar">
-                      {getInitial(playerTagTeam.name)}
-                    </div>
+                    <Avatar name={playerTagTeam.name} />
                     <div className="issue-preview-wrestler">
                       {playerTagTeam.name}
                     </div>
@@ -308,9 +321,7 @@ export default function IssueChallenge() {
                   </div>
                   <span className="issue-preview-vs">{t('common.vs').toUpperCase()}</span>
                   <div className="issue-preview-player">
-                    <div className="issue-preview-avatar">
-                      {getInitial(selectedTagTeam.name)}
-                    </div>
+                    <Avatar name={selectedTagTeam.name} />
                     <div className="issue-preview-wrestler">
                       {selectedTagTeam.name}
                     </div>
@@ -324,10 +335,8 @@ export default function IssueChallenge() {
                   {stipulation && (
                     <span className="issue-preview-detail-tag">{stipulation}</span>
                   )}
-                  {isChampionship && (
-                    <span className="issue-preview-detail-tag">
-                      {t('challenges.board.titleMatch')}
-                    </span>
+                  {stakedTitle && (
+                    <span className="issue-preview-detail-tag">{stakedTitle.name}</span>
                   )}
                 </div>
                 {message && (
@@ -343,9 +352,7 @@ export default function IssueChallenge() {
                 <h3>{t('challenges.issue.preview')}</h3>
                 <div className="issue-preview-versus">
                   <div className="issue-preview-player">
-                    <div className="issue-preview-avatar">
-                      {getInitial(currentPlayer.currentWrestler)}
-                    </div>
+                    <Avatar name={currentPlayer.currentWrestler} />
                     <div className="issue-preview-wrestler">
                       {currentPlayer.currentWrestler}
                     </div>
@@ -353,9 +360,7 @@ export default function IssueChallenge() {
                   </div>
                   <span className="issue-preview-vs">{t('common.vs').toUpperCase()}</span>
                   <div className="issue-preview-player">
-                    <div className="issue-preview-avatar">
-                      {getInitial(opponent.currentWrestler)}
-                    </div>
+                    <Avatar name={opponent.currentWrestler} />
                     <div className="issue-preview-wrestler">{opponent.currentWrestler}</div>
                     <div className="issue-preview-name">{opponent.name}</div>
                   </div>
@@ -365,10 +370,8 @@ export default function IssueChallenge() {
                   {stipulation && (
                     <span className="issue-preview-detail-tag">{stipulation}</span>
                   )}
-                  {isChampionship && (
-                    <span className="issue-preview-detail-tag">
-                      {t('challenges.board.titleMatch')}
-                    </span>
+                  {stakedTitle && (
+                    <span className="issue-preview-detail-tag">{stakedTitle.name}</span>
                   )}
                 </div>
                 {message && (
@@ -382,16 +385,10 @@ export default function IssueChallenge() {
         )}
 
         <div className="issue-form-actions">
-          <Link to="/challenges" className="btn-cancel-form">
-            {t('common.cancel')}
-          </Link>
-          <button
-            className="btn-submit"
-            disabled={!isFormValid || submitting}
-            onClick={handleSubmit}
-          >
+          <Button variant="secondary" to="/challenges">{t('common.cancel')}</Button>
+          <Button disabled={!isFormValid || submitting} onClick={handleSubmit}>
             {submitting ? t('common.submitting') : t('challenges.issue.submit')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

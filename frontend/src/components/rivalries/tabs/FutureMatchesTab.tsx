@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ChevronRight } from 'lucide-react';
 import { matchesApi } from '../../../services/api';
 import type { Match, Player } from '../../../types';
 import type { HydratedRivalry } from '../../../types/rivalry';
+import { formatMatchDate } from '../../../utils/dateUtils';
+import { describeSides, groupMatchSides } from '../../../utils/matchDisplay';
+import Badge from '../../ui/Badge';
+import EmptyState from '../../ui/EmptyState';
+import Skeleton from '../../ui/Skeleton';
 import { resolvePlayerFullLabel } from '../rivalryUtils';
+import { missingPlayerLabel } from '../../../utils/playerName';
 
 interface TabProps {
   hydrated: HydratedRivalry;
@@ -28,6 +35,7 @@ export default function FutureMatchesTab({ hydrated, players }: TabProps) {
     [hydrated.rivalry.participants],
   );
   const lookup = useMemo(() => new Map(players.map((p) => [p.playerId, p] as const)), [players]);
+  const labelOf = (id: string) => resolvePlayerFullLabel(lookup.get(id), missingPlayerLabel(lookup, t));
 
   const withinWindow = (date: string): boolean => {
     if (startedAt && date < startedAt) return false;
@@ -80,30 +88,28 @@ export default function FutureMatchesTab({ hydrated, players }: TabProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rivalryId, participantSet, startedAt, endedAt]);
 
-  if (loading) return <div className="rivalry-tab__empty">…</div>;
-  if (matches.length === 0)
-    return <div className="rivalry-tab__empty">{t('rivalries.detail.noNextEvent')}</div>;
+  if (loading) return <Skeleton variant="block" count={3} />;
+  if (matches.length === 0) return <EmptyState title={t('rivalries.detail.noNextEvent')} />;
 
   return (
-    <div className="rivalry-tab">
-      <ul className="rivalry-detail-matches">
-        {matches.map((m) => (
-          <li key={m.matchId} className="rivalry-tab__card">
-            <span className="rivalry-detail-matches__date">
-              {new Date(m.date).toLocaleString()}
+    <ul className="rivalry-detail-matches">
+      {matches.map((m) => (
+        <li key={m.matchId}>
+          <Link to={`/matches?matchId=${m.matchId}`} className="rivalry-detail-matches__row">
+            <span className="rivalry-detail-matches__text">
+              <span className="rivalry-detail-matches__teams">
+                {describeSides(
+                  groupMatchSides(m.participants, (id) => id, m.teams, m.matchFormat).map((side) => side.map(labelOf)),
+                  t('common.vs'),
+                )}
+              </span>
+              <span className="rivalry-detail-matches__date">{formatMatchDate(m.date)}</span>
             </span>
-            <span className="rivalry-detail-matches__teams">
-              {m.participants.map((id) => resolvePlayerFullLabel(lookup.get(id), id)).join(' vs ')}
-            </span>
-            {m.isChampionship && (
-              <span className="rivalry-detail-matches__champ">★</span>
-            )}
-            <Link to={`/matches/${m.matchId}`} className="rivalry-detail-link">
-              →
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
+            {m.isChampionship && <Badge tone="warning">{t('challenges.board.titleMatch')}</Badge>}
+            <ChevronRight aria-hidden="true" size={20} />
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }

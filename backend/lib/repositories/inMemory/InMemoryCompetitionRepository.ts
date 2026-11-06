@@ -252,6 +252,14 @@ export class InMemoryCompetitionRepository implements CompetitionRepository {
       this.tournamentsStore.set(tournamentId, updated);
       return updated;
     },
+
+    removeWinner: async (tournamentId: string): Promise<void> => {
+      const existing = this.tournamentsStore.get(tournamentId);
+      if (!existing) throw new NotFoundError('Tournament', tournamentId);
+      const { winner: _removedWinner, ...rest } = existing;
+      void _removedWinner;
+      this.tournamentsStore.set(tournamentId, { ...rest, updatedAt: new Date().toISOString() });
+    },
   };
 
   // ─── contenders ─────────────────────────────────────────────────────
@@ -273,12 +281,8 @@ export class InMemoryCompetitionRepository implements CompetitionRepository {
       return items;
     },
 
-    deleteAllForChampionship: async (championshipId: string): Promise<void> => {
-      for (const [key, ranking] of this.rankingsStore) {
-        if (ranking.championshipId === championshipId) {
-          this.rankingsStore.delete(key);
-        }
-      }
+    deleteRanking: async (championshipId: string, playerId: string): Promise<void> => {
+      this.rankingsStore.delete(this.rankingKey(championshipId, playerId));
     },
 
     upsertRanking: async (input: ContenderRankingInput): Promise<ContenderRanking> => {
@@ -297,6 +301,7 @@ export class InMemoryCompetitionRepository implements CompetitionRepository {
         previousRank: input.previousRank ?? null,
         peakRank: input.peakRank,
         weeksAtTop: input.weeksAtTop,
+        ...(input.lastTopWeek ? { lastTopWeek: input.lastTopWeek } : {}),
         isOverridden: input.isOverridden || false,
         overrideType: input.overrideType || null,
         organicRank: input.organicRank || null,

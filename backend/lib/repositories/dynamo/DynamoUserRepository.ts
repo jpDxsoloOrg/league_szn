@@ -210,6 +210,23 @@ class ChallengesDelegate
     return items as unknown as Challenge[];
   }
 
+  async expireIfPending(challengeId: string): Promise<boolean> {
+    try {
+      await dynamoDb.update({
+        TableName: TableNames.CHALLENGES,
+        Key: { challengeId },
+        UpdateExpression: 'SET #s = :expired',
+        ConditionExpression: '#s = :pending',
+        ExpressionAttributeNames: { '#s': 'status' },
+        ExpressionAttributeValues: { ':expired': 'expired', ':pending': 'pending' },
+      });
+      return true;
+    } catch (err) {
+      if (err instanceof Error && err.name === 'ConditionalCheckFailedException') return false;
+      throw err;
+    }
+  }
+
   async listByPlayer(playerId: string): Promise<Challenge[]> {
     const [sent, received] = await Promise.all([
       this.listByChallenger(playerId),
@@ -246,6 +263,7 @@ class ChallengesDelegate
       ...(input.challengeMode !== undefined ? { challengeMode: input.challengeMode } : {}),
       ...(input.challengerTagTeamId !== undefined ? { challengerTagTeamId: input.challengerTagTeamId } : {}),
       ...(input.challengedTagTeamId !== undefined ? { challengedTagTeamId: input.challengedTagTeamId } : {}),
+      ...(input.promoId !== undefined ? { promoId: input.promoId } : {}),
       status: 'pending',
       expiresAt: input.expiresAt,
       createdAt: now,
@@ -452,7 +470,8 @@ class SiteConfigDelegate implements SiteConfigMethods {
     });
 
     if (result.Item?.features) {
-      return result.Item.features as FeatureFlags;
+      // A stored row predates any flag added since, so defaults fill the gaps.
+      return { ...DEFAULT_FEATURES, ...(result.Item.features as Partial<FeatureFlags>) };
     }
 
     return { ...DEFAULT_FEATURES };
@@ -513,6 +532,7 @@ export class DynamoUserRepository implements UserRepository {
     listByChallenger(playerId: string): Promise<Challenge[]>;
     listByChallenged(playerId: string): Promise<Challenge[]>;
     listByPlayer(playerId: string): Promise<Challenge[]>;
+    expireIfPending(challengeId: string): Promise<boolean>;
   } = new ChallengesDelegate();
   readonly fantasy: FantasyMethods = new FantasyDelegate();
   readonly siteConfig: SiteConfigMethods = new SiteConfigDelegate();

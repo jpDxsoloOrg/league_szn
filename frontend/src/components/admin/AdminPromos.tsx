@@ -1,13 +1,34 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { PromoType } from '../../types/promo';
+import { Mic } from 'lucide-react';
+import type { PromoType, PromoWithContext } from '../../types/promo';
 import { promosApi } from '../../services/api/promos.api';
-import type { PromoWithContext } from '../../types/promo';
-import './AdminPromos.css';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import DataTable from '../ui/DataTable';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Select from '../ui/Select';
+import Tabs from '../ui/Tabs';
+import { useToast } from '../ui/toastContext';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
+import HiddenBadge from './HiddenBadge';
+import AdminChallenges from './AdminChallenges';
+import AdminNotice from './AdminNotice';
+import useAdminConfirm from './useAdminConfirm';
+import './adminContent.css';
+
+/** Staff responses carry `isArchived`, which public responses leave out. */
+type AdminPromo = PromoWithContext & { isArchived?: boolean };
+
+type PromoStatusFilter = '' | 'pinned' | 'hidden' | 'archived';
+
+const PROMOS_VIEW = 'promos';
+const CALL_OUTS_VIEW = 'call-outs';
 
 const PROMO_TYPE_OPTIONS: { value: '' | PromoType; labelKey: string; fallback: string }[] = [
-  { value: '', labelKey: 'promos.admin.all', fallback: 'All' },
+  { value: '', labelKey: 'adminContent.promos.allTypes', fallback: 'All types' },
   { value: 'open-mic', labelKey: 'promos.types.open-mic', fallback: 'Open Mic' },
   { value: 'call-out', labelKey: 'promos.types.call-out', fallback: 'Call-Out' },
   { value: 'response', labelKey: 'promos.types.response', fallback: 'Response' },
@@ -15,292 +36,292 @@ const PROMO_TYPE_OPTIONS: { value: '' | PromoType; labelKey: string; fallback: s
   { value: 'post-match', labelKey: 'promos.types.post-match', fallback: 'Post-Match' },
   { value: 'championship', labelKey: 'promos.types.championship', fallback: 'Championship' },
   { value: 'return', labelKey: 'promos.types.return', fallback: 'Return' },
+  { value: 'rivalry', labelKey: 'promos.types.rivalry', fallback: 'Rivalry' },
 ];
 
 function getTotalReactions(promo: PromoWithContext): number {
   return Object.values(promo.reactionCounts).reduce((sum, count) => sum + count, 0);
 }
 
-function truncateContent(content: string, maxLength: number = 50): string {
-  if (content.length <= maxLength) return content;
-  return content.slice(0, maxLength) + '...';
+function truncateContent(content: string, maxLength: number = 80): string {
+  return content.length <= maxLength ? content : `${content.slice(0, maxLength)}...`;
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString();
+/** A tag call-out names no player: its teams live on its challenge. */
+function canSchedule(promo: AdminPromo): boolean {
+  if (promo.promoType !== 'call-out') return false;
+  return Boolean(promo.targetPlayerId) || (promo.challengeMode === 'tag_team' && Boolean(promo.challengeId));
 }
 
-export default function AdminPromos() {
+function matchesStatus(promo: AdminPromo, status: PromoStatusFilter): boolean {
+  if (status === 'pinned') return promo.isPinned;
+  if (status === 'hidden') return promo.isHidden;
+  if (status === 'archived') return promo.isArchived === true;
+  return true;
+}
+
+function PromoModeration() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [promos, setPromos] = useState<PromoWithContext[]>([]);
+  const { showToast } = useToast();
+  const { confirm, confirmDialog } = useAdminConfirm();
+  const [promos, setPromos] = useState<AdminPromo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<'' | PromoType>('');
+  const [filterStatus, setFilterStatus] = useState<PromoStatusFilter>('');
   const [submitting, setSubmitting] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const [showBulkClearModal, setShowBulkClearModal] = useState(false);
-  const [bulkClearing, setBulkClearing] = useState(false);
 
-  const loadPromos = useCallback(async () => {
+  const loadPromos = useCallback(async (signal?: AbortSignal) => {
     try {
       setError(null);
-      const data = await promosApi.getAll({ includeHidden: true });
+      const data = await promosApi.getAll({ includeHidden: true, includeArchived: true }, signal);
       setPromos(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load promos');
+      if (signal?.aborted) return;
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadPromos();
+    const controller = new AbortController();
+    void loadPromos(controller.signal);
+    return () => controller.abort();
   }, [loadPromos]);
 
-  const filteredPromos = useMemo(() => {
-    if (!filterType) return promos;
-    return promos.filter((p) => p.promoType === filterType);
-  }, [promos, filterType]);
+  const filteredPromos = useMemo(
+    () => promos.filter((promo) => (!filterType || promo.promoType === filterType) && matchesStatus(promo, filterStatus)),
+    [promos, filterType, filterStatus],
+  );
 
-  const showFeedback = (message: string, type: 'success' | 'error') => {
-    setFeedback({ message, type });
-    setTimeout(() => setFeedback(null), 3000);
-  };
-
-  const handleTogglePin = async (promo: PromoWithContext) => {
+  const handleTogglePin = async (promo: AdminPromo) => {
     setSubmitting(promo.promoId);
     try {
       const updated = await promosApi.adminUpdate(promo.promoId, { isPinned: !promo.isPinned });
-      setPromos((prev) =>
-        prev.map((p) => (p.promoId === promo.promoId ? { ...p, isPinned: updated.isPinned } : p))
-      );
-      showFeedback(
-        `${updated.isPinned ? 'Pinned' : 'Unpinned'}: ${promo.wrestlerName}'s promo`,
-        'success'
+      setPromos((previous) => previous.map((item) => (item.promoId === promo.promoId ? { ...item, isPinned: updated.isPinned } : item)));
+      showToast(
+        updated.isPinned
+          ? t('adminContent.promos.pinned', 'Pinned {{name}}\'s promo', { name: promo.wrestlerName })
+          : t('adminContent.promos.unpinned', 'Unpinned {{name}}\'s promo', { name: promo.wrestlerName }),
+        'success',
       );
     } catch (err) {
-      showFeedback(err instanceof Error ? err.message : 'Failed to update promo', 'error');
+      showToast(err instanceof Error ? err.message : t('adminContent.promos.updateFailed', 'Failed to update promo'), 'error');
     } finally {
       setSubmitting(null);
     }
   };
 
-  const handleToggleHide = async (promo: PromoWithContext) => {
+  const handleToggleHide = async (promo: AdminPromo) => {
     setSubmitting(promo.promoId);
     try {
       const updated = await promosApi.adminUpdate(promo.promoId, { isHidden: !promo.isHidden });
-      setPromos((prev) =>
-        prev.map((p) => (p.promoId === promo.promoId ? { ...p, isHidden: updated.isHidden } : p))
-      );
-      showFeedback(
-        `${updated.isHidden ? 'Hidden' : 'Unhidden'}: ${promo.wrestlerName}'s promo`,
-        'success'
+      setPromos((previous) => previous.map((item) => (item.promoId === promo.promoId ? { ...item, isHidden: updated.isHidden } : item)));
+      showToast(
+        updated.isHidden
+          ? t('adminContent.promos.hidden', 'Hid {{name}}\'s promo', { name: promo.wrestlerName })
+          : t('adminContent.promos.unhidden', 'Unhid {{name}}\'s promo', { name: promo.wrestlerName }),
+        'success',
       );
     } catch (err) {
-      showFeedback(err instanceof Error ? err.message : 'Failed to update promo', 'error');
+      showToast(err instanceof Error ? err.message : t('adminContent.promos.updateFailed', 'Failed to update promo'), 'error');
     } finally {
       setSubmitting(null);
     }
   };
 
-  const handleDelete = async (promo: PromoWithContext) => {
+  const handleDelete = async (promo: AdminPromo) => {
+    const confirmed = await confirm({
+      title: t('promos.admin.confirmDelete', 'Are you sure you want to delete this promo?'),
+      confirmLabel: t('promos.admin.delete', 'Delete'),
+    });
+    if (!confirmed) return;
+
     setSubmitting(promo.promoId);
     try {
       await promosApi.delete(promo.promoId);
-      showFeedback(t('promos.admin.deleted', 'Deleted') + `: ${promo.wrestlerName}'s promo`, 'success');
+      showToast(`${t('promos.admin.deleted', 'Deleted')}: ${promo.wrestlerName}`, 'success');
       await loadPromos();
     } catch (err) {
-      showFeedback(err instanceof Error ? err.message : 'Failed to delete promo', 'error');
+      showToast(err instanceof Error ? err.message : t('adminContent.promos.deleteFailed', 'Failed to delete promo'), 'error');
     } finally {
       setSubmitting(null);
     }
   };
 
   const handleBulkClearHidden = async () => {
-    setBulkClearing(true);
+    const confirmed = await confirm({
+      title: t('promos.admin.clearHidden', 'Clear hidden promos'),
+      description: t('promos.admin.clearHiddenConfirm', 'Are you sure you want to permanently delete all hidden promos?'),
+      confirmLabel: t('promos.admin.clearHidden', 'Clear hidden promos'),
+    });
+    if (!confirmed) return;
+
     try {
       const result = await promosApi.bulkDelete({ isHidden: true });
-      showFeedback(result.message, 'success');
-      setShowBulkClearModal(false);
+      showToast(result.message, 'success');
       await loadPromos();
     } catch (err) {
-      showFeedback(
-        err instanceof Error ? err.message : 'Failed to clear hidden promos',
-        'error'
-      );
-    } finally {
-      setBulkClearing(false);
+      showToast(err instanceof Error ? err.message : t('adminContent.promos.clearFailed', 'Failed to clear hidden promos'), 'error');
     }
   };
 
-  if (loading) {
-    return (
-      <div className="admin-promos">
-        <div className="admin-promos-header">
-          <h3>{t('promos.admin.title', 'Manage Promos')}</h3>
-        </div>
-        <p>Loading...</p>
-      </div>
-    );
-  }
-
   if (error) {
     return (
-      <div className="admin-promos">
-        <div className="admin-promos-header">
-          <h3>{t('promos.admin.title', 'Manage Promos')}</h3>
-        </div>
-        <div className="admin-promos-error">{error}</div>
-        <button onClick={loadPromos}>Retry</button>
-      </div>
+      <AdminNotice
+        tone="error"
+        action={<Button variant="ghost" size="sm" onClick={() => loadPromos()}>{t('common.retry', 'Retry')}</Button>}
+      >
+        {error}
+      </AdminNotice>
     );
   }
 
   return (
-    <div className="admin-promos">
-      <div className="admin-promos-header">
-        <h3>{t('promos.admin.title', 'Manage Promos')}</h3>
-        <div className="admin-promos-filter">
-          <label htmlFor="promo-type-filter">
-            {t('promos.admin.filterByType', 'Filter by Type')}
-          </label>
-          <select
-            id="promo-type-filter"
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value as '' | PromoType)}
-          >
-            {PROMO_TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {t(opt.labelKey, opt.fallback)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button
-          type="button"
-          className="admin-promos-btn-clear-hidden"
-          onClick={() => setShowBulkClearModal(true)}
-        >
+    <section className="ac-section">
+      <div className="ac-toolbar">
+        <Select
+          label={t('promos.admin.filterByType', 'Filter by Type')}
+          value={filterType}
+          onValueChange={(value) => setFilterType(value as '' | PromoType)}
+          options={PROMO_TYPE_OPTIONS.map((option) => ({ value: option.value, label: t(option.labelKey, option.fallback) }))}
+        />
+        <Select
+          label={t('adminContent.promos.filterByStatus', 'Filter by Status')}
+          value={filterStatus}
+          onValueChange={(value) => setFilterStatus(value as PromoStatusFilter)}
+          options={[
+            { value: '', label: t('adminContent.promos.anyStatus', 'Any status') },
+            { value: 'pinned', label: t('adminContent.promos.statusPinned', 'Pinned') },
+            { value: 'hidden', label: t('adminContent.promos.statusHidden', 'Hidden') },
+            { value: 'archived', label: t('adminContent.promos.statusArchived', 'Archived') },
+          ]}
+        />
+        <span className="ac-toolbar__spacer" />
+        <Button variant="secondary" onClick={handleBulkClearHidden}>
           {t('promos.admin.clearHidden', 'Clear hidden promos')}
-        </button>
+        </Button>
       </div>
 
-      {showBulkClearModal && (
-        <div className="admin-promos-modal-overlay" role="dialog" aria-modal="true">
-          <div className="admin-promos-modal">
-            <p>{t('promos.admin.clearHiddenConfirm', 'Are you sure you want to permanently delete all hidden promos?')}</p>
-            <div className="admin-promos-modal-actions">
-              <button
-                type="button"
-                className="admin-promos-btn-modal-cancel"
-                onClick={() => setShowBulkClearModal(false)}
-                disabled={bulkClearing}
-              >
-                {t('common.cancel', 'Cancel')}
-              </button>
-              <button
-                type="button"
-                className="admin-promos-btn-modal-confirm"
-                onClick={handleBulkClearHidden}
-                disabled={bulkClearing}
-              >
-                {bulkClearing ? t('common.loading', 'Clearing...') : t('promos.admin.clearHidden', 'Clear hidden promos')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {feedback && (
-        <div className={`admin-promos-feedback ${feedback.type}`}>
-          {feedback.message}
-        </div>
-      )}
-
-      <div className="admin-promos-table-wrapper">
-        <table className="admin-promos-table">
-          <thead>
-            <tr>
-              <th>{t('promos.admin.player', 'Player')}</th>
-              <th>{t('promos.admin.type', 'Type')}</th>
-              <th>{t('promos.admin.content', 'Content')}</th>
-              <th>{t('promos.admin.reactions', 'Reactions')}</th>
-              <th>{t('promos.admin.date', 'Date')}</th>
-              <th>{t('promos.admin.actions', 'Actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredPromos.map((promo) => (
-              <tr key={promo.promoId} className={promo.isHidden ? 'hidden-row' : ''}>
-                <td className="player-cell">
-                  <span className="wrestler-name">{promo.wrestlerName}</span>
-                  <span className="player-name">({promo.playerName})</span>
-                </td>
-                <td>
-                  <span className="type-badge">
-                    {t(`promos.types.${promo.promoType}`, promo.promoType)}
+      <DataTable
+        caption={t('promos.admin.title', 'Manage Promos')}
+        density="dense"
+        loading={loading}
+        rows={filteredPromos}
+        rowKey={(promo) => promo.promoId}
+        empty={(
+          <EmptyState
+            icon={<Mic aria-hidden="true" size={32} />}
+            title={t('adminContent.promos.emptyTitle', 'No promos to show')}
+            description={t('adminContent.promos.emptyText', 'Promos that match these filters will appear here.')}
+          />
+        )}
+        columns={[
+          {
+            key: 'player',
+            header: t('promos.admin.player', 'Player'),
+            render: (promo) => (
+              <span className="ac-cell__text">
+                {isNeedsWrestler(promo.wrestlerName)
+                  ? <HiddenBadge />
+                  : <span className="ac-cell__title">{promo.wrestlerName}</span>}
+                <span className="ac-cell__sub">{promo.playerName}</span>
+              </span>
+            ),
+            sortValue: (promo) => promo.wrestlerName,
+          },
+          {
+            key: 'type',
+            header: t('promos.admin.type', 'Type'),
+            render: (promo) => <Badge tone="violet">{t(`promos.types.${promo.promoType}`, promo.promoType)}</Badge>,
+          },
+          {
+            key: 'content',
+            header: t('promos.admin.content', 'Content'),
+            render: (promo) => (
+              <span className="ac-cell__text">
+                <span>{truncateContent(promo.title ? `${promo.title} - ${promo.content}` : promo.content)}</span>
+                {(promo.isPinned || promo.isHidden || promo.isArchived) && (
+                  <span className="ac-badges">
+                    {promo.isPinned && <Badge tone="primary">{t('adminContent.promos.statusPinned', 'Pinned')}</Badge>}
+                    {promo.isHidden && <Badge tone="warning">{t('adminContent.promos.statusHidden', 'Hidden')}</Badge>}
+                    {promo.isArchived && <Badge tone="neutral">{t('adminContent.promos.statusArchived', 'Archived')}</Badge>}
                   </span>
-                </td>
-                <td className="content-cell">
-                  {truncateContent(promo.title ? `${promo.title} - ${promo.content}` : promo.content)}
-                </td>
-                <td className="reactions-cell">{getTotalReactions(promo)}</td>
-                <td className="date-cell">{formatDate(promo.createdAt)}</td>
-                <td className="actions-cell">
-                  {promo.promoType === 'call-out' && promo.targetPlayerId && (
-                    <button
-                      type="button"
-                      className="action-btn schedule-btn"
-                      onClick={() =>
-                        navigate('/admin/schedule', {
-                          state: { fromPromo: promo },
-                        })
-                      }
-                      title={t('promos.admin.scheduleMatch', 'Schedule Match')}
-                    >
-                      {t('promos.admin.scheduleMatch', 'Schedule Match')}
-                    </button>
-                  )}
-                  <button
-                    className={`action-btn pin-btn ${promo.isPinned ? 'active' : ''}`}
-                    onClick={() => handleTogglePin(promo)}
-                    disabled={submitting === promo.promoId}
-                    title={promo.isPinned
-                      ? t('promos.admin.unpin', 'Unpin')
-                      : t('promos.admin.pin', 'Pin')}
+                )}
+              </span>
+            ),
+          },
+          {
+            key: 'reactions',
+            header: t('promos.admin.reactions', 'Reactions'),
+            align: 'end',
+            render: getTotalReactions,
+            sortValue: getTotalReactions,
+          },
+          {
+            key: 'date',
+            header: t('promos.admin.date', 'Date'),
+            render: (promo) => new Date(promo.createdAt).toLocaleDateString(),
+            sortValue: (promo) => promo.createdAt,
+          },
+          {
+            key: 'actions',
+            header: t('promos.admin.actions', 'Actions'),
+            align: 'end',
+            render: (promo) => (
+              <div className="ac-actions ac-actions--end">
+                {canSchedule(promo) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate('/admin/schedule', { state: { fromPromo: promo } })}
                   >
-                    {promo.isPinned
-                      ? t('promos.admin.unpin', 'Unpin')
-                      : t('promos.admin.pin', 'Pin')}
-                  </button>
-                  <button
-                    className={`action-btn hide-btn ${promo.isHidden ? 'active' : ''}`}
-                    onClick={() => handleToggleHide(promo)}
-                    disabled={submitting === promo.promoId}
-                    title={promo.isHidden
-                      ? t('promos.admin.unhide', 'Unhide')
-                      : t('promos.admin.hide', 'Hide')}
-                  >
-                    {promo.isHidden
-                      ? t('promos.admin.unhide', 'Unhide')
-                      : t('promos.admin.hide', 'Hide')}
-                  </button>
-                  <button
-                    type="button"
-                    className="action-btn delete-btn"
-                    onClick={() => handleDelete(promo)}
-                    disabled={submitting === promo.promoId}
-                    title={t('promos.admin.delete', 'Delete')}
-                  >
-                    {submitting === promo.promoId ? '...' : t('promos.admin.delete', 'Delete')}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                    {t('promos.admin.scheduleMatch', 'Schedule Match')}
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" disabled={submitting === promo.promoId} onClick={() => handleTogglePin(promo)}>
+                  {promo.isPinned ? t('promos.admin.unpin', 'Unpin') : t('promos.admin.pin', 'Pin')}
+                </Button>
+                <Button variant="ghost" size="sm" disabled={submitting === promo.promoId} onClick={() => handleToggleHide(promo)}>
+                  {promo.isHidden ? t('promos.admin.unhide', 'Unhide') : t('promos.admin.hide', 'Hide')}
+                </Button>
+                <Button variant="ghost" size="sm" disabled={submitting === promo.promoId} onClick={() => handleDelete(promo)}>
+                  {t('promos.admin.delete', 'Delete')}
+                </Button>
+              </div>
+            ),
+          },
+        ]}
+      />
+
+      {confirmDialog}
+    </section>
+  );
+}
+
+export default function AdminPromos() {
+  const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const view = searchParams.get('view') === CALL_OUTS_VIEW ? CALL_OUTS_VIEW : PROMOS_VIEW;
+
+  const handleViewChange = (nextView: string) => {
+    setSearchParams(nextView === CALL_OUTS_VIEW ? { view: CALL_OUTS_VIEW } : {}, { replace: true });
+  };
+
+  return (
+    <div className="ac-page">
+      <PageHeader title={t('promos.admin.title', 'Manage Promos')} />
+      <Tabs
+        label={t('promos.admin.title', 'Manage Promos')}
+        value={view}
+        onValueChange={handleViewChange}
+        items={[
+          { value: PROMOS_VIEW, label: t('nav.promos', 'Promos'), content: <PromoModeration /> },
+          { value: CALL_OUTS_VIEW, label: t('nav.tabs.callOuts', 'Call-outs'), content: <AdminChallenges /> },
+        ]}
+      />
     </div>
   );
 }

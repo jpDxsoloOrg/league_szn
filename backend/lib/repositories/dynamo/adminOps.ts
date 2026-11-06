@@ -1,4 +1,5 @@
 import { dynamoDb, TableNames } from '../../dynamodb';
+import type { ExportDatasetKey } from '../../../functions/admin/dataTransferConfig';
 
 interface TableConfig {
   key: string;
@@ -7,52 +8,52 @@ interface TableConfig {
   sortKey?: string;
 }
 
-const ALL_TABLES: TableConfig[] = [
-  { key: 'divisions', tableName: TableNames.DIVISIONS, partitionKey: 'divisionId' },
-  { key: 'players', tableName: TableNames.PLAYERS, partitionKey: 'playerId' },
-  { key: 'seasons', tableName: TableNames.SEASONS, partitionKey: 'seasonId' },
-  { key: 'seasonStandings', tableName: TableNames.SEASON_STANDINGS, partitionKey: 'seasonId', sortKey: 'playerId' },
-  { key: 'championships', tableName: TableNames.CHAMPIONSHIPS, partitionKey: 'championshipId' },
-  {
-    key: 'championshipHistory',
+// Type-only import, so nothing from functions/ is loaded at runtime. Keying this
+// map by ExportDatasetKey keeps it and the export list identical at compile time.
+const TABLE_DEFINITIONS: Record<ExportDatasetKey, Omit<TableConfig, 'key'>> = {
+  divisions: { tableName: TableNames.DIVISIONS, partitionKey: 'divisionId' },
+  players: { tableName: TableNames.PLAYERS, partitionKey: 'playerId' },
+  seasons: { tableName: TableNames.SEASONS, partitionKey: 'seasonId' },
+  seasonStandings: { tableName: TableNames.SEASON_STANDINGS, partitionKey: 'seasonId', sortKey: 'playerId' },
+  championships: { tableName: TableNames.CHAMPIONSHIPS, partitionKey: 'championshipId' },
+  championshipHistory: {
     tableName: TableNames.CHAMPIONSHIP_HISTORY,
     partitionKey: 'championshipId',
     sortKey: 'wonDate',
   },
-  { key: 'matches', tableName: TableNames.MATCHES, partitionKey: 'matchId', sortKey: 'date' },
-  { key: 'tournaments', tableName: TableNames.TOURNAMENTS, partitionKey: 'tournamentId' },
-  { key: 'events', tableName: TableNames.EVENTS, partitionKey: 'eventId' },
-  {
-    key: 'contenderRankings',
+  matches: { tableName: TableNames.MATCHES, partitionKey: 'matchId', sortKey: 'date' },
+  tournaments: { tableName: TableNames.TOURNAMENTS, partitionKey: 'tournamentId' },
+  events: { tableName: TableNames.EVENTS, partitionKey: 'eventId' },
+  contenderRankings: {
     tableName: TableNames.CONTENDER_RANKINGS,
     partitionKey: 'championshipId',
     sortKey: 'playerId',
   },
-  {
-    key: 'contenderOverrides',
+  contenderOverrides: {
     tableName: TableNames.CONTENDER_OVERRIDES,
     partitionKey: 'championshipId',
     sortKey: 'playerId',
   },
-  { key: 'rankingHistory', tableName: TableNames.RANKING_HISTORY, partitionKey: 'playerId', sortKey: 'weekKey' },
-  { key: 'fantasyConfig', tableName: TableNames.FANTASY_CONFIG, partitionKey: 'configKey' },
-  { key: 'wrestlerCosts', tableName: TableNames.WRESTLER_COSTS, partitionKey: 'playerId' },
-  { key: 'fantasyPicks', tableName: TableNames.FANTASY_PICKS, partitionKey: 'eventId', sortKey: 'fantasyUserId' },
-  { key: 'siteConfig', tableName: TableNames.SITE_CONFIG, partitionKey: 'configKey' },
-  { key: 'challenges', tableName: TableNames.CHALLENGES, partitionKey: 'challengeId' },
-  { key: 'promos', tableName: TableNames.PROMOS, partitionKey: 'promoId' },
-  { key: 'stipulations', tableName: TableNames.STIPULATIONS, partitionKey: 'stipulationId' },
-  { key: 'matchTypes', tableName: TableNames.MATCH_TYPES, partitionKey: 'matchTypeId' },
-  { key: 'seasonAwards', tableName: TableNames.SEASON_AWARDS, partitionKey: 'seasonId', sortKey: 'awardId' },
+  rankingHistory: { tableName: TableNames.RANKING_HISTORY, partitionKey: 'playerId', sortKey: 'weekKey' },
+  siteConfig: { tableName: TableNames.SITE_CONFIG, partitionKey: 'configKey' },
+  challenges: { tableName: TableNames.CHALLENGES, partitionKey: 'challengeId' },
+  promos: { tableName: TableNames.PROMOS, partitionKey: 'promoId' },
+  stipulations: { tableName: TableNames.STIPULATIONS, partitionKey: 'stipulationId' },
+  matchTypes: { tableName: TableNames.MATCH_TYPES, partitionKey: 'matchTypeId' },
+  seasonAwards: { tableName: TableNames.SEASON_AWARDS, partitionKey: 'seasonId', sortKey: 'awardId' },
   // Rivalries (RIV-01): META + PARTICIPANT rows sharing the same partition key.
-  { key: 'rivalries', tableName: TableNames.RIVALRIES, partitionKey: 'rivalryId', sortKey: 'recordType' },
-  { key: 'rivalryMessages', tableName: TableNames.RIVALRY_MESSAGES, partitionKey: 'rivalryId', sortKey: 'messageId' },
-  { key: 'rivalryNotes', tableName: TableNames.RIVALRY_NOTES, partitionKey: 'rivalryId', sortKey: 'noteId' },
+  rivalries: { tableName: TableNames.RIVALRIES, partitionKey: 'rivalryId', sortKey: 'recordType' },
+  rivalryMessages: { tableName: TableNames.RIVALRY_MESSAGES, partitionKey: 'rivalryId', sortKey: 'messageId' },
+  rivalryNotes: { tableName: TableNames.RIVALRY_NOTES, partitionKey: 'rivalryId', sortKey: 'noteId' },
   // MatchRatings (RIV-20): one row per (matchId, userId) — included here so
   // re-seeds clear stale ratings and the seed handler can ferry rows in via
   // importAllData. Aggregates live on the matches table (RIV-22).
-  { key: 'matchRatings', tableName: TableNames.MATCH_RATINGS, partitionKey: 'matchId', sortKey: 'userId' },
-];
+  matchRatings: { tableName: TableNames.MATCH_RATINGS, partitionKey: 'matchId', sortKey: 'userId' },
+};
+
+const ALL_TABLES: TableConfig[] = Object.entries(TABLE_DEFINITIONS).map(
+  ([key, definition]) => ({ key, ...definition }),
+);
 
 async function deleteAllItemsFromTable(
   table: TableConfig,
@@ -129,9 +130,15 @@ export async function dynamoExportAllData(): Promise<
   const data: Record<string, Record<string, unknown>[]> = {};
 
   for (const table of ALL_TABLES) {
-    data[table.key] = await dynamoDb.scanAll({
-      TableName: table.tableName,
-    });
+    // A table that cannot be read is left out, not exported as empty: import
+    // would treat an empty dataset as "clear this table".
+    try {
+      data[table.key] = await dynamoDb.scanAll({
+        TableName: table.tableName,
+      });
+    } catch (err) {
+      console.error(`Export failed for ${table.tableName}:`, err);
+    }
   }
 
   return data;
@@ -143,18 +150,18 @@ export async function dynamoImportAllData(
   const counts: Record<string, number> = {};
 
   for (const table of ALL_TABLES) {
+    // No dataset means nothing to restore, so the table keeps its rows.
+    const records = data[table.key];
+    if (records === undefined) {
+      continue;
+    }
+
     // Clear existing data first; per-table catch so a missing table
     // doesn't poison the rest of the import.
     try {
       await deleteAllItemsFromTable(table);
     } catch (err) {
       console.error(`Pre-import clear failed for ${table.tableName}:`, err);
-    }
-
-    const records = data[table.key];
-    if (!records || records.length === 0) {
-      counts[table.key] = 0;
-      continue;
     }
 
     let imported = 0;

@@ -95,6 +95,7 @@ type ChallengesCrudType = CrudRepository<Challenge, ChallengeCreateInput, Partia
   listByChallenger(playerId: string): Promise<Challenge[]>;
   listByChallenged(playerId: string): Promise<Challenge[]>;
   listByPlayer(playerId: string): Promise<Challenge[]>;
+  expireIfPending(challengeId: string): Promise<boolean>;
 };
 
 class ChallengesImpl implements ChallengesCrudType {
@@ -142,6 +143,13 @@ class ChallengesImpl implements ChallengesCrudType {
     return items;
   }
 
+  async expireIfPending(challengeId: string): Promise<boolean> {
+    const existing = this.store.get(challengeId);
+    if (existing?.status !== 'pending') return false;
+    this.store.set(challengeId, { ...existing, status: 'expired' });
+    return true;
+  }
+
   async create(input: ChallengeCreateInput): Promise<Challenge> {
     const now = new Date().toISOString();
     const item: Challenge = {
@@ -155,6 +163,7 @@ class ChallengesImpl implements ChallengesCrudType {
       ...(input.challengeMode !== undefined ? { challengeMode: input.challengeMode } : {}),
       ...(input.challengerTagTeamId !== undefined ? { challengerTagTeamId: input.challengerTagTeamId } : {}),
       ...(input.challengedTagTeamId !== undefined ? { challengedTagTeamId: input.challengedTagTeamId } : {}),
+      ...(input.promoId !== undefined ? { promoId: input.promoId } : {}),
       status: 'pending',
       expiresAt: input.expiresAt,
       createdAt: now,

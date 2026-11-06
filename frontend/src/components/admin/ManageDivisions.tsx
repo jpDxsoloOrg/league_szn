@@ -1,17 +1,31 @@
 import { useState, useEffect, FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Plus } from 'lucide-react';
 import { divisionsApi } from '../../services/api';
 import type { Division } from '../../types';
-import Skeleton from '../ui/Skeleton';
-import './ManageDivisions.css';
+import Button from '../ui/Button';
+import DataTable from '../ui/DataTable';
+import type { DataTableColumn } from '../ui/DataTable';
+import EmptyState from '../ui/EmptyState';
+import Modal from '../ui/Modal';
+import PageHeader from '../ui/PageHeader';
+import AdminNotice from './AdminNotice';
+import ConfirmModal from './ConfirmModal';
+import './adminRoster.css';
+
+const FORM_ID = 'division-form';
 
 export default function ManageDivisions() {
+  const { t } = useTranslation();
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [editingDivision, setEditingDivision] = useState<Division | null>(null);
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Division | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -20,6 +34,7 @@ export default function ManageDivisions() {
 
   useEffect(() => {
     loadDivisions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   }, []);
 
   const loadDivisions = async () => {
@@ -28,14 +43,22 @@ export default function ManageDivisions() {
       const data = await divisionsApi.getAll();
       setDivisions(data);
     } catch (_err) {
-      setError('Failed to load divisions');
+      setError(t('adminRoster.divisions.loadError', 'Failed to load divisions'));
     } finally {
       setLoading(false);
     }
   };
 
+  const closeForm = () => {
+    setFormData({ name: '', description: '' });
+    setFormError(null);
+    setShowForm(false);
+    setEditingDivision(null);
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     setError(null);
     setSuccess(null);
 
@@ -45,21 +68,19 @@ export default function ManageDivisions() {
           name: formData.name,
           description: formData.description || undefined,
         });
-        setSuccess('Division updated successfully!');
+        setSuccess(t('adminRoster.divisions.updated', 'Division updated successfully!'));
       } else {
         await divisionsApi.create({
           name: formData.name,
           description: formData.description || undefined,
         });
-        setSuccess('Division created successfully!');
+        setSuccess(t('adminRoster.divisions.created', 'Division created successfully!'));
       }
 
-      setFormData({ name: '', description: '' });
-      setShowAddForm(false);
-      setEditingDivision(null);
+      closeForm();
       await loadDivisions();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save division');
+      setFormError(err instanceof Error ? err.message : t('adminRoster.divisions.saveError', 'Failed to save division'));
     }
   };
 
@@ -69,124 +90,143 @@ export default function ManageDivisions() {
       name: division.name,
       description: division.description || '',
     });
-    setShowAddForm(true);
+    setShowForm(true);
   };
 
-  const handleDelete = async (divisionId: string) => {
-    if (!confirm('Are you sure you want to delete this division?')) {
-      return;
-    }
-
-    setDeleting(divisionId);
+  const handleDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
     setError(null);
     setSuccess(null);
 
     try {
-      await divisionsApi.delete(divisionId);
-      setSuccess('Division deleted successfully!');
+      await divisionsApi.delete(pendingDelete.divisionId);
+      setSuccess(t('adminRoster.divisions.deleted', 'Division deleted successfully!'));
       await loadDivisions();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete division');
+      setError(err instanceof Error ? err.message : t('adminRoster.divisions.deleteError', 'Failed to delete division'));
     } finally {
-      setDeleting(null);
+      setDeleting(false);
+      setPendingDelete(null);
     }
   };
 
-  const handleCancel = () => {
-    setFormData({ name: '', description: '' });
-    setShowAddForm(false);
-    setEditingDivision(null);
-  };
-
-  if (loading) {
-    return <Skeleton variant="block" count={4} />;
-  }
+  const columns: DataTableColumn<Division>[] = [
+    {
+      key: 'name',
+      header: t('adminRoster.divisions.nameColumn', 'Name'),
+      render: (division) => <span className="ar-strong">{division.name}</span>,
+      sortValue: (division) => division.name,
+    },
+    {
+      key: 'description',
+      header: t('adminRoster.divisions.descriptionColumn', 'Description'),
+      render: (division) => division.description || '—',
+    },
+    {
+      key: 'actions',
+      header: t('common.actions', 'Actions'),
+      align: 'end',
+      render: (division) => (
+        <div className="ar-row-actions">
+          <Button variant="secondary" size="sm" onClick={() => handleEdit(division)}>{t('common.edit', 'Edit')}</Button>
+          <Button variant="ghost" size="sm" onClick={() => setPendingDelete(division)}>{t('common.delete', 'Delete')}</Button>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div className="manage-divisions">
-      <div className="divisions-header">
-        <h2>Manage Divisions</h2>
-        {!showAddForm && (
-          <button onClick={() => setShowAddForm(true)} className="am-fab">
-            Create Division
-          </button>
+    <div className="ar-page manage-divisions">
+      <PageHeader
+        title={t('adminRoster.divisions.title', 'Manage Divisions')}
+        actions={(
+          <Button icon={<Plus aria-hidden="true" size={18} />} onClick={() => setShowForm(true)}>
+            {t('adminRoster.divisions.create', 'Create Division')}
+          </Button>
         )}
-      </div>
+      />
 
-      {error && <div className="error-message">{error}</div>}
-      {success && <div className="success-message">{success}</div>}
+      {error && <AdminNotice tone="error">{error}</AdminNotice>}
+      {success && <AdminNotice tone="success">{success}</AdminNotice>}
 
-      {showAddForm && (
-        <div className="division-form-container am-sheet">
-          <h3>{editingDivision ? 'Edit Division' : 'Create New Division'}</h3>
-          <form onSubmit={handleSubmit} className="division-form am-form">
-            <div className="form-group">
-              <label htmlFor="name">Division Name</label>
-              <input
-                type="text"
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                placeholder="e.g., Heavyweight, Cruiserweight, Main Event"
-              />
-            </div>
+      <h2 className="ar-section-title">
+        {t('adminRoster.divisions.all', 'All Divisions')} ({divisions.length})
+      </h2>
+      <DataTable
+        className="ar-table"
+        caption={t('adminRoster.divisions.all', 'All Divisions')}
+        density="dense"
+        columns={columns}
+        rows={divisions}
+        rowKey={(division) => division.divisionId}
+        loading={loading}
+        empty={(
+          <EmptyState
+            title={t('adminRoster.divisions.emptyTitle', 'No divisions yet')}
+            description={t('adminRoster.divisions.emptyBody', 'Create your first division to group players.')}
+          />
+        )}
+      />
 
-            <div className="form-group">
-              <label htmlFor="description">Description (Optional)</label>
-              <textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Brief description of this division"
-                rows={3}
-              />
-            </div>
-
-            <div className="form-actions am-actionbar">
-              <button type="submit">
-                {editingDivision ? 'Update Division' : 'Create Division'}
-              </button>
-              <button type="button" onClick={handleCancel} className="cancel-btn">
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      <div className="divisions-list">
-        <h3>All Divisions ({divisions.length})</h3>
-        {divisions.length === 0 ? (
-          <p>No divisions yet. Create your first division to group players!</p>
-        ) : (
-          <div className="divisions-grid">
-            {divisions.map(division => (
-              <div key={division.divisionId} className="division-card">
-                <h4>{division.name}</h4>
-                {division.description && (
-                  <p className="division-description">{division.description}</p>
-                )}
-                <div className="division-actions">
-                  <button
-                    onClick={() => handleEdit(division)}
-                    className="division-edit-btn"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(division.divisionId)}
-                    className="division-delete-btn"
-                    disabled={deleting === division.divisionId}
-                  >
-                    {deleting === division.divisionId ? 'Deleting...' : 'Delete'}
-                  </button>
-                </div>
-              </div>
-            ))}
+      <Modal
+        open={showForm}
+        onClose={closeForm}
+        title={editingDivision
+          ? t('adminRoster.divisions.editTitle', 'Edit Division')
+          : t('adminRoster.divisions.createTitle', 'Create New Division')}
+        footer={(
+          <>
+            <Button variant="ghost" onClick={closeForm}>{t('common.cancel', 'Cancel')}</Button>
+            <Button type="submit" form={FORM_ID}>
+              {editingDivision
+                ? t('adminRoster.divisions.update', 'Update Division')
+                : t('adminRoster.divisions.create', 'Create Division')}
+            </Button>
+          </>
+        )}
+      >
+        <form id={FORM_ID} onSubmit={handleSubmit} className="ar-form">
+          {formError && <AdminNotice tone="error">{formError}</AdminNotice>}
+          <div className="ar-field">
+            <label className="ar-field__label" htmlFor="division-name">
+              {t('adminRoster.divisions.nameLabel', 'Division Name')}
+            </label>
+            <input
+              className="ar-input"
+              type="text"
+              id="division-name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              placeholder={t('adminRoster.divisions.namePlaceholder', 'e.g., Heavyweight, Cruiserweight, Main Event')}
+            />
           </div>
-        )}
-      </div>
+          <div className="ar-field">
+            <label className="ar-field__label" htmlFor="division-description">
+              {t('adminRoster.divisions.descriptionLabel', 'Description (Optional)')}
+            </label>
+            <textarea
+              className="ar-input"
+              id="division-description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder={t('adminRoster.divisions.descriptionPlaceholder', 'Brief description of this division')}
+              rows={3}
+            />
+          </div>
+        </form>
+      </Modal>
+
+      <ConfirmModal
+        open={pendingDelete !== null}
+        title={t('adminRoster.divisions.deleteTitle', 'Delete division')}
+        message={t('adminRoster.divisions.deleteConfirm', 'Are you sure you want to delete this division?')}
+        confirmLabel={t('common.delete', 'Delete')}
+        busy={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

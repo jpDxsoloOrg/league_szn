@@ -9,6 +9,7 @@ export type OverrideType = 'bump_to_top' | 'send_to_bottom';
 export interface ActiveOverride {
   playerId: string;
   overrideType: OverrideType;
+  createdAt?: string;
 }
 
 export interface RankingWithOverride extends RankingResult {
@@ -21,70 +22,59 @@ export interface RankingWithOverride extends RankingResult {
 // Main function
 // ---------------------------------------------------------------------------
 
+/** Oldest first, with playerId settling ties so the order never depends on the read. */
+function byAge(first: ActiveOverride, second: ActiveOverride): number {
+  return (first.createdAt ?? '').localeCompare(second.createdAt ?? '')
+    || first.playerId.localeCompare(second.playerId);
+}
+
 /**
- * Apply manual overrides to an ordered list of contender rankings.
+ * Apply manual overrides to contender rankings, returning at most
+ * `maxContenders` rows numbered 1..N.
  *
- * `bump_to_top` overrides move the player to the top of the list (processed
- * in array order so the last bump ends up at rank #1).
- * `send_to_bottom` overrides move the player to the bottom of the list.
+ * `rankings` holds the organic list in order, plus a row for any bumped player
+ * who would not make it on merit. An override with no row is skipped: the
+ * calculator gives no row to a player who may not contend for the title, and
+ * a player sent to the bottom who isn't listed has nothing to move.
  *
- * Players present in overrides but absent from the rankings array are
- * silently skipped. The returned array has sequential rank numbers (1..N).
+ * Bumped players lead the list, newest override at #1. Players sent to the
+ * bottom close it, newest override last. Organic rows fill the places between,
+ * and the lowest of them make way when the list is over its limit. If overrides
+ * alone exceed it, the oldest are left off, sent-to-bottom players first.
  *
  * This is a pure function — the input arrays are not mutated.
  */
 export function applyOverrides(
   rankings: RankingResult[],
   overrides: ActiveOverride[],
+  maxContenders: number = rankings.length,
 ): RankingWithOverride[] {
   if (overrides.length === 0) {
     return rankings.map((r, i) => ({ ...r, rank: i + 1 }));
   }
 
-  // Clone rankings and record each player's organic rank
-  const result: RankingWithOverride[] = rankings.map((r, i) => ({
-    ...r,
-    organicRank: i + 1,
-  }));
+  const rowsByPlayer = new Map<string, RankingWithOverride>(
+    rankings.map((r) => [r.playerId, { ...r, organicRank: r.rank || undefined }]),
+  );
 
-  // Build a lookup of overrides by playerId
-  const bumpToTop: string[] = [];
-  const sendToBottom: string[] = [];
+  const placedRows = (overrideType: OverrideType): RankingWithOverride[] => overrides
+    .filter((override) => override.overrideType === overrideType && rowsByPlayer.has(override.playerId))
+    .sort(byAge)
+    .map((override) => ({ ...rowsByPlayer.get(override.playerId)!, isOverridden: true, overrideType }));
 
-  for (const override of overrides) {
-    if (override.overrideType === 'bump_to_top') {
-      bumpToTop.push(override.playerId);
-    } else {
-      sendToBottom.push(override.playerId);
-    }
-  }
+  const bumped = placedRows('bump_to_top').reverse().slice(0, maxContenders);
+  const sentToBottom = placedRows('send_to_bottom');
+  const bottomPlaces = Math.min(sentToBottom.length, maxContenders - bumped.length);
+  const bottom = sentToBottom.slice(sentToBottom.length - bottomPlaces);
 
-  // Process bump_to_top overrides (oldest first so last bump ends at #1)
-  for (const playerId of bumpToTop) {
-    const idx = result.findIndex((r) => r.playerId === playerId);
-    if (idx === -1) continue;
+  const overriddenIds = new Set(
+    overrides
+      .filter((override) => override.overrideType === 'bump_to_top' || override.overrideType === 'send_to_bottom')
+      .map((override) => override.playerId),
+  );
+  const organic = [...rowsByPlayer.values()]
+    .filter((row) => !overriddenIds.has(row.playerId))
+    .slice(0, maxContenders - bumped.length - bottom.length);
 
-    const [player] = result.splice(idx, 1);
-    player.isOverridden = true;
-    player.overrideType = 'bump_to_top';
-    result.unshift(player);
-  }
-
-  // Process send_to_bottom overrides
-  for (const playerId of sendToBottom) {
-    const idx = result.findIndex((r) => r.playerId === playerId);
-    if (idx === -1) continue;
-
-    const [player] = result.splice(idx, 1);
-    player.isOverridden = true;
-    player.overrideType = 'send_to_bottom';
-    result.push(player);
-  }
-
-  // Re-number ranks sequentially
-  for (let i = 0; i < result.length; i++) {
-    result[i].rank = i + 1;
-  }
-
-  return result;
+  return [...bumped, ...organic, ...bottom].map((row, i) => ({ ...row, rank: i + 1 }));
 }

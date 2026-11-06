@@ -1,0 +1,14 @@
+.faction-heat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  color: var(--color-text-muted);
+}
+
+.faction-heat__flame--lit {
+  color: var(--color-pink);
+}
+
+.faction-heat__flame--dim {
+  opacity: 0.4;
+}

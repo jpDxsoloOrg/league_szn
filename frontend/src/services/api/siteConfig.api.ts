@@ -8,6 +8,7 @@ export interface SiteFeatures {
   stables: boolean;
   notifications: boolean;
   rivalries: boolean;
+  transfers: boolean;
 }
 
 /**

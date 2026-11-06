@@ -1,249 +1,90 @@
-.profile-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+.profile-setup__form {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 1rem;
+  flex-direction: column;
 }
 
-.profile-modal {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 2rem;
-  width: 100%;
-  max-width: 560px;
-  max-height: calc(100vh - 2rem);
-  overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-}
-
-.profile-modal h2 {
-  margin: 0 0 0.5rem;
-  color: var(--color-text);
-  font-size: 1.4rem;
-}
-
-.profile-modal-subtitle {
-  color: var(--color-text-secondary);
-  margin: 0 0 1.5rem;
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.profile-modal-form .form-group {
-  margin-bottom: 1rem;
-}
-
-.profile-modal-form label {
-  display: block;
-  margin-bottom: 0.4rem;
-  color: var(--color-text-secondary);
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.profile-modal-form input {
-  width: 100%;
-  padding: 0.6rem 0.8rem;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: 0.9rem;
-  box-sizing: border-box;
-}
-
-.profile-modal-form input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
-}
-
-.profile-modal-form .error-message {
-  background: rgba(220, 53, 69, 0.1);
-  border: 1px solid rgba(220, 53, 69, 0.3);
-  color: var(--color-danger-alt);
-  padding: 0.6rem 0.8rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
-}
-
-.profile-modal-actions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-}
-
-.profile-modal-actions .btn-secondary {
-  flex: 1;
-  padding: 0.65rem;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.profile-modal-actions .btn-secondary:hover:not(:disabled) {
-  background: var(--color-surface-hover, rgba(255, 255, 255, 0.05));
-}
-
-.profile-modal-actions .btn-primary {
-  flex: 1;
-  padding: 0.65rem;
-  border: none;
-  border-radius: 6px;
-  background: var(--color-primary);
-  color: #000;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.profile-modal-actions .btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.profile-modal-actions .btn-primary:disabled,
-.profile-modal-actions .btn-secondary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Setup checklist (feat/profile-setup-gate) */
-.profile-modal h2:focus {
-  outline: none;
-}
-
-.profile-modal-checklist {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.75rem;
-}
-
-.profile-modal-item {
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 0.75rem 0.9rem;
-  margin: 0;
+.profile-setup__item {
   min-width: 0;
-  background: var(--color-bg);
+  margin: 0;
+  padding: 0 0 1rem;
+  border: 0;
 }
 
-.profile-modal-item-head {
+.profile-setup__item-head {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.625rem;
   padding: 0;
-  float: left;
-  width: 100%;
   color: var(--color-text);
   font-weight: 600;
-  font-size: 0.95rem;
 }
 
-.profile-modal-item-body {
-  clear: both;
+.profile-setup__item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
 }
 
-.profile-modal-status {
+.profile-setup__item-body .me-field {
+  margin-bottom: 0;
+}
+
+.profile-setup__status {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   width: 1.5rem;
   height: 1.5rem;
   border-radius: 50%;
-  font-size: 0.85rem;
-  font-weight: 700;
-  flex-shrink: 0;
 }
 
-.profile-modal-status--done {
-  background: rgba(40, 167, 69, 0.15);
-  color: #4ade80;
-  border: 1px solid rgba(40, 167, 69, 0.5);
+.profile-setup__status--done {
+  background-color: var(--tint-win);
+  color: var(--color-win);
 }
 
-.profile-modal-status--todo {
-  background: rgba(220, 53, 69, 0.12);
-  color: #f87171;
-  border: 1px solid rgba(220, 53, 69, 0.5);
+.profile-setup__status--todo {
+  background-color: var(--tint-warn);
+  color: var(--color-warn);
 }
 
-.profile-modal-item-body {
-  margin-top: 0.6rem;
-  padding-left: 2.1rem;
-}
-
-.profile-modal-hint {
-  margin: 0 0 0.5rem;
-  color: var(--color-danger-alt, #f87171);
-  font-size: 0.8rem;
-}
-
-.profile-modal-move-row {
+.profile-setup__moves {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
 }
 
-.profile-modal-form select {
-  width: 100%;
-  padding: 0.6rem 0.8rem;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: 0.9rem;
-  box-sizing: border-box;
-}
-
-.profile-modal-form--checklist .profile-modal-actions {
-  margin-top: 1.25rem;
-}
-
-.profile-modal-links {
+.profile-setup__actions {
+  position: sticky;
+  bottom: -1.25rem;
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
-  margin-top: 0.75rem;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: -1.25rem;
+  padding: 0.75rem 0 1.25rem;
+  border-top: 1px solid var(--color-hairline);
+  background-color: var(--color-surface);
 }
 
-.profile-modal-link {
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--color-primary);
-  font-size: 0.85rem;
-  cursor: pointer;
-  text-decoration: none;
+.profile-setup__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  color: var(--color-cyan);
+  font-size: 0.9375rem;
 }
 
-.profile-modal-link:hover {
-  text-decoration: underline;
-}
-
-.profile-modal-link--muted {
-  color: var(--color-text-secondary);
-}
-
-@media (max-width: 480px) {
-  .profile-modal-move-row {
+@media (max-width: 768px) {
+  .profile-setup__moves {
     grid-template-columns: 1fr;
   }
 
-  .profile-modal-item-body {
-    padding-left: 0;
+  /* Both buttons share the pinned row, so neither can sit below the fold. */
+  .profile-setup__actions .ui-btn {
+    flex: 1 1 auto;
   }
 }

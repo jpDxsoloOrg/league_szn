@@ -7,27 +7,68 @@
 .App {
   min-height: 100vh;
   background-color: var(--color-bg);
+  background-image: var(--section-wash);
+  background-repeat: no-repeat;
   color: var(--color-text);
 }
 
+/* The shell header is sticky, so main sits in normal flow beneath it. */
 main {
+  width: 100%;
+  max-width: var(--shell-max-width);
+  margin: 0 auto;
   padding: 2rem;
-  padding-top: calc(56px + 2rem);
-  margin-left: 260px;
-  transition: margin-left 0.2s ease;
+}
+
+main:focus {
+  outline: none;
+}
+
+.app-layout--mobile main {
+  padding: 1rem;
+  padding-bottom: calc(var(--shell-bottom-bar-height) + env(safe-area-inset-bottom) + 1rem);
+}
+
+.shell-top {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-shell);
+}
+
+.app-layout--wide main {
+  max-width: 1600px;
+}
+
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 1rem;
+  z-index: var(--z-toast);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-control);
+  background-color: var(--color-cyan);
+  color: var(--color-on-accent);
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  top: 0.5rem;
 }
 
 h2 {
-  color: var(--color-primary);
+  color: var(--color-text);
   margin-bottom: 1rem;
 }
 
-/* Button variant system: use .btn .btn-primary (or .btn-secondary, .btn-danger, .btn-ghost) on buttons */
+/* Button variant system: use .btn .btn-primary (or .btn-secondary, .btn-danger, .btn-ghost).
+   New code should use the Button component in components/ui. */
 .btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
+  min-height: var(--touch-target);
+  padding: 0.625rem 1.5rem;
+  border-radius: var(--radius-control);
+  font-family: var(--font-body);
   font-size: 1rem;
-  font-weight: bold;
+  font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s, border-color 0.2s, color 0.2s;
   border: none;
@@ -55,11 +96,11 @@ h2 {
 
 .btn-danger {
   background-color: var(--color-danger);
-  color: #fff;
+  color: var(--color-text);
 }
 
 .btn-danger:hover {
-  background-color: var(--color-danger-alt);
+  background-color: var(--color-danger-hover);
 }
 
 .btn-ghost {
@@ -73,40 +114,57 @@ h2 {
 
 /* Fallback for buttons without explicit variant (e.g. legacy markup in main content only) */
 /* :where() keeps this at element specificity (0,0,1) so ANY component class rule
-   (e.g. the mobile shell's .bottom-tab-bar__item, .more-sheet-row, chips, dots)
    overrides it without :not() additions or !important. The :not() list inside is
    kept for buttons whose own styles don't set background/color at all. */
 button:where(:not([class*="btn-"]):not(.sidebar-collapse-toggle):not(.nav-section-toggle):not(.nav-subgroup-toggle):not(.user-nav-toggle):not(.hamburger-btn):not(.language-switcher-btn):not(.promo-type-option):not(.preview-toggle):not(.cancel-btn):not(.filter-tab):not(.factions-toggle-btn):not(.tag-teams-list__toggle-btn):not(.tag-team-mode-btn):not(.remove-team-btn):not(.remove-member-btn):not(.add-team-btn):not(.delete-match-btn):not(.notification-bell-btn):not(.notification-mark-all-btn):not(.notification-item-content):not(.notification-delete-btn):not(.promo-read-more):not(.faction-members__menu-trigger):not(.faction-members__menu-item):not(.faction-messages__channel-pin):not(.faction-messages__thread-row):not(.faction-messages__new-dm-trigger):not(.faction-messages__new-dm-item):not(.rate-match-widget__half):not(.motn-toggle-button)) {
   background-color: var(--color-primary);
   color: var(--color-on-primary);
   border: none;
-  padding: 0.75rem 1.5rem;
+  min-height: var(--touch-target);
+  padding: 0.625rem 1.5rem;
+  font-family: var(--font-body);
   font-size: 1rem;
-  font-weight: bold;
-  border-radius: 4px;
+  font-weight: 600;
+  border-radius: var(--radius-control);
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.2s;
 }
 
-/* :hover is wrapped in :where() too — otherwise the pseudo-class raises this
+/* :hover is wrapped in :where() too, otherwise the pseudo-class raises this
    to (0,1,1), which beats component class rules (0,1,0) and repaints them
-   gold on hover, defeating the point of the :where() fallback above. */
+   on hover, defeating the point of the :where() fallback above. */
 button:where(:not([class*="btn-"]):not(.sidebar-collapse-toggle):not(.nav-section-toggle):not(.nav-subgroup-toggle):not(.user-nav-toggle):not(.hamburger-btn):not(.language-switcher-btn):not(.promo-type-option):not(.preview-toggle):not(.cancel-btn):not(.filter-tab):not(.factions-toggle-btn):not(.tag-teams-list__toggle-btn):not(.tag-team-mode-btn):not(.remove-team-btn):not(.remove-member-btn):not(.add-team-btn):not(.delete-match-btn):not(.notification-bell-btn):not(.notification-mark-all-btn):not(.notification-item-content):not(.notification-delete-btn):not(.faction-members__menu-trigger):not(.faction-members__menu-item):not(.faction-messages__channel-pin):not(.faction-messages__thread-row):not(.faction-messages__new-dm-trigger):not(.faction-messages__new-dm-item):not(.rate-match-widget__half):not(.motn-toggle-button)):where(:hover) {
   background-color: var(--color-primary-hover);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 input, select, textarea {
   background-color: var(--color-surface);
   color: var(--color-text);
   border: 1px solid var(--color-border);
-  padding: 0.5rem;
-  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-control);
+  font-family: var(--font-body);
   font-size: 1rem;
 }
 
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--color-primary);
+}
+
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 1px;
+}
+
+::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
 }
 
 table {
@@ -123,50 +181,28 @@ th, td {
 
 th {
   background-color: var(--color-surface);
-  color: var(--color-primary);
-  font-weight: bold;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 tr:hover {
   background-color: var(--color-surface);
 }
 
-
 @media (max-width: 768px) {
-  main {
-    margin-left: 0;
-    padding: 1rem;
-    padding-top: calc(56px + 1rem);
-  }
-
   th, td {
     padding: 0.5rem 0.375rem;
   }
 }
 
-/* Mobile app shell (MobileHeader + BottomTabBar replace Sidebar + TopBar).
-   Scoped to .app-layout--mobile so desktop rules are untouched. */
-.app-layout--mobile main {
-  margin-left: 0;
-  transition: none;
-  padding: 1rem;
-  padding-top: calc(56px + env(safe-area-inset-top) + 1rem);
-  padding-bottom: calc(72px + env(safe-area-inset-bottom));
-}
-
-/* In the mobile shell the MobileHeader already shows the screen title, so
-   in-page page-title headings tagged with this class are redundant there.
-   Desktop never renders .app-layout--mobile, so it is unaffected. */
-.app-layout--mobile .page-title--mobile-hidden {
-  display: none;
-}
-
 /* Print: hide app chrome and ensure readable contrast */
 @media print {
-  .sidebar,
-  .hamburger-btn,
-  .sidebar-overlay,
-  .top-bar {
+  .shell-top,
+  .section-nav,
+  .bottom-tab-bar {
     display: none !important;
   }
 
@@ -174,14 +210,13 @@ tr:hover {
   main,
   body {
     background: #fff !important;
+    background-image: none !important;
     color: #000 !important;
   }
 
   main {
-    margin-left: 0;
-    margin-right: 0;
+    margin: 0;
     padding: 0.5in;
-    padding-top: 0.5in;
     max-width: none;
   }
 

@@ -1,21 +1,37 @@
 import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult, Context } from "aws-lambda";
-import { methodNotAllowed, notFound, unauthorized } from "./response";
+import { badRequest, methodNotAllowed, notFound, unauthorized } from "./response";
 import { authenticate } from "./authenticate";
+import { requireRole, type UserRole } from "./auth";
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
-export type RouteConfig = {
+/**
+ * Who may reach a route. Enforced in dispatch before the handler runs.
+ *
+ * - 'public': no caller check. Allowed on GET routes only.
+ * - 'self-service': any verified caller. The handler applies its own role or
+ *   ownership rules, so it must be read before a route is given this value.
+ * - { roles }: a verified caller holding one of the roles.
+ */
+export type RouteAccess = 'public' | ProtectedAccess;
+type ProtectedAccess = 'self-service' | RoleAccess;
+type RoleAccess = { readonly roles: readonly UserRole[] };
+
+/** Admin and Moderator: the same audience as the admin panel. */
+export const STAFF: RoleAccess = { roles: ['Admin', 'Moderator'] };
+
+/** Full Admin only. Used where the handler already excludes Moderators. */
+export const ADMIN_ONLY: RoleAccess = { roles: ['Admin'] };
+
+type RouteBase = {
     resource: string;
-    method: HttpMethod;
     handler: APIGatewayProxyHandler;
-    /**
-     * When true, the router verifies the Cognito JWT from the Authorization
-     * header and populates event.requestContext.authorizer before dispatching.
-     * Further role checks (Admin / Moderator / Wrestler / Fantasy) remain the
-     * handler's responsibility via requireRole / requireSuperAdmin.
-     */
-    requireAuth?: boolean;
 };
+
+export type RouteConfig = RouteBase & (
+    | { method: 'GET'; access: RouteAccess }
+    | { method: Exclude<HttpMethod, 'GET'>; access: ProtectedAccess }
+);
 
 type CompiledRoute = RouteConfig & {
     regex: RegExp;
@@ -24,7 +40,23 @@ type CompiledRoute = RouteConfig & {
 
 const noopCallback = () => {};
 
+/**
+ * Longest path id we look up. Ids are UUIDs, and a key over DynamoDB's size
+ * limit makes the query itself fail, which would otherwise surface as a 500.
+ */
+const MAX_PATH_PARAM_BYTES = 256;
+
+/**
+ * Longest query value we pass on. Handlers use ids from the query as DynamoDB
+ * keys, which fail above their size limit (1024 bytes for a sort key). Paging
+ * cursors are the longest real values, at a few hundred bytes.
+ */
+const MAX_QUERY_VALUE_BYTES = 1024;
+
+const QUERY_VALUE_TOO_LONG = 'Query parameter value is too long';
+
 export function createRouter(routes: ReadonlyArray<RouteConfig>): APIGatewayProxyHandler {
+    routes.forEach(assertAccessDeclared);
     const compiled: ReadonlyArray<CompiledRoute> = routes.map((route) => {
         const { regex, paramNames } = compileResource(route.resource);
         return { ...route, regex, paramNames };
@@ -102,11 +134,58 @@ async function dispatch(
     context: Context,
     callback: Parameters<APIGatewayProxyHandler>[2]
 ): Promise<APIGatewayProxyResult> {
-    if (route.requireAuth) {
-        const authResult = await authenticate(event);
-        if (!authResult.ok) return unauthorized();
+    if (route.access !== 'public') {
+        // A gateway authorizer has already verified the token and set the
+        // caller's identity. Every other route verifies it here.
+        if (!event.requestContext.authorizer?.principalId) {
+            const authResult = await authenticate(event);
+            if (!authResult.ok) return unauthorized();
+        }
+        if (route.access !== 'self-service') {
+            const denied = requireRole(event, ...route.access.roles);
+            if (denied) return denied;
+        }
     }
+    if (hasOverlongPathParam(event)) return notFound();
+    if (hasOverlongQueryValue(event)) return badRequest(QUERY_VALUE_TOO_LONG);
     return (await route.handler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
+}
+
+/** The router's query limit, for a handler deployed without a router. */
+export function rejectOverlongQuery(handler: APIGatewayProxyHandler): APIGatewayProxyHandler {
+    return async (event, context, callback) => {
+        if (hasOverlongQueryValue(event)) return badRequest(QUERY_VALUE_TOO_LONG);
+        return (await handler(event, context, callback)) as APIGatewayProxyResult;
+    };
+}
+
+function hasOverlongQueryValue(event: APIGatewayProxyEvent): boolean {
+    return Object.values(event.queryStringParameters ?? {}).some(
+        (value) => value !== undefined && Buffer.byteLength(value) > MAX_QUERY_VALUE_BYTES
+    );
+}
+
+function hasOverlongPathParam(event: APIGatewayProxyEvent): boolean {
+    return Object.entries(event.pathParameters ?? {}).some(
+        // `proxy` is the whole path; the ids inside it are checked by name.
+        ([name, value]) => name !== 'proxy' && value !== undefined
+            && Buffer.byteLength(value) > MAX_PATH_PARAM_BYTES
+    );
+}
+
+/** Fails at load time so that a route can never ship without a declaration. */
+function assertAccessDeclared(route: RouteConfig): void {
+    const access: RouteAccess | undefined = route.access;
+    const label = `${route.method} ${route.resource}`;
+    if (access === undefined) {
+        throw new Error(`Route ${label} has no access declaration`);
+    }
+    if (access === 'public' && route.method !== 'GET') {
+        throw new Error(`Route ${label} cannot be public: only GET routes can`);
+    }
+    if (typeof access === 'object' && access.roles.length === 0) {
+        throw new Error(`Route ${label} declares an empty role list`);
+    }
 }
 
 function compileResource(resource: string): { regex: RegExp; paramNames: string[] } {

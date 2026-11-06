@@ -35,10 +35,16 @@
  * root slot, but a stack holds roughly 80-100 endpoints' worth of resources
  * so rollovers are rare.
  *
+ * Deployed permissions stay in the Permissions stack (see above); only new
+ * ones follow their function into Overflow. scripts/check-stack-cycles.js
+ * fails the deploy workflows on any cycle in the generated root template, and
+ * needs that generated output because this map alone cannot show one.
+ *
  * CAUTION:
  *   - Root sits just under the 500 limit. A new resource type not covered
  *     here or by the plugin defaults (a new S3 bucket, Cognito group, etc.
- *     added under `resources:`) lands in root and may fail the deploy —
+ *     added under `resources:`, or a new event source on a function) lands
+ *     in root and may fail the deploy —
  *     add a route for it here BEFORE deploying.
  *   - Never change routes in a way that would move already-deployed
  *     resources, and never use `force: true`: moving a deployed resource
@@ -60,6 +66,13 @@ const ROUTES = {
   'AWS::Logs::LogGroup': OVERFLOW,
   // Safe for NEW tables only — existing tables are never moved (see above).
   'AWS::DynamoDB::Table': OVERFLOW,
+  // Every `schedule:` event creates one of these. Without this route the rule
+  // lands in root and fails the deploy at the 500-resource limit.
+  'AWS::Events::Rule': OVERFLOW,
+  // A new function lives in Overflow, so its permission must too. Left to the
+  // plugin default it lands in Permissions, which then needs an Overflow output
+  // while Overflow already waits on Permissions: a stack dependency cycle.
+  'AWS::Lambda::Permission': OVERFLOW,
 };
 
 module.exports = (resource) => {

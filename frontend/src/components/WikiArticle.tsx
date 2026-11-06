@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { Components } from 'react-markdown';
+import { ChevronDown, ShieldAlert } from 'lucide-react';
+import EmptyState from './ui/EmptyState';
 import Skeleton from './ui/Skeleton';
 import './Wiki.css';
 
@@ -64,33 +64,10 @@ function parseHeadings(markdown: string): TocItem[] {
   return items;
 }
 
-const baseMarkdownComponents: Components = {
-  code({ className, children, ...props }) {
-    const match = /language-(\w+)/.exec(className ?? '');
-    if (match) {
-      return (
-        <SyntaxHighlighter
-          style={oneDark}
-          language={match[1]}
-          PreTag="div"
-          customStyle={{ margin: '0.75rem 0', borderRadius: '6px' }}
-          codeTagProps={{ style: { fontFamily: 'inherit' } }}
-        >
-          {String(children).replace(/\n$/, '')}
-        </SyntaxHighlighter>
-      );
-    }
-    return (
-      <code className={className} {...props}>
-        {children}
-      </code>
-    );
-  },
-};
-
 export default function WikiArticle() {
   const { slug } = useParams<{ slug: string }>();
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const locale = i18n.language?.startsWith('de') ? 'de' : 'en';
   const { hasRole, isAuthenticated, isAdminOrModerator, isLoading: authLoading } = useAuth();
   const [content, setContent] = useState<string | null>(null);
@@ -106,7 +83,6 @@ export default function WikiArticle() {
   if (content) headingIndexRef.current = 0;
   const wikiMarkdownComponents = useMemo(
     (): Components => ({
-      ...baseMarkdownComponents,
       h2: ({ children }) => {
         const id = tocItems[headingIndexRef.current]?.id ?? slugify(String(children));
         headingIndexRef.current += 1;
@@ -234,19 +210,33 @@ export default function WikiArticle() {
   }
   if (accessDenied || (entry?.adminOnly && !isAdminOrModerator)) {
     return (
-      <div className="access-denied">
-        <h2>{t('common.accessDenied', 'Access Denied')}</h2>
-        <p>{t('wiki.adminOnlyArticle', 'You don\'t have permission to view this article.')}</p>
-      </div>
+      <EmptyState
+        icon={<ShieldAlert aria-hidden="true" size={32} />}
+        title={t('common.accessDenied')}
+        description={t('wiki.adminOnlyArticle')}
+      />
+    );
+  }
+  if (!entry && !content) {
+    return (
+      <EmptyState
+        title={t('wiki.articleNotFound')}
+        description={t('wiki.articleNotFoundHint')}
+        actionLabel={t('wiki.browseArticles')}
+        onAction={() => navigate('/guide/wiki')}
+      />
     );
   }
   if (error || !content) {
     return <p className="wiki-error">{t('common.error')}: {error ?? 'No content'}</p>;
   }
 
-  const currentIndex = articles.findIndex((a) => a.slug === slug);
-  const prevEntry = currentIndex > 0 ? articles[currentIndex - 1] : null;
-  const nextEntry = currentIndex >= 0 && currentIndex < articles.length - 1 ? articles[currentIndex + 1] : null;
+  // Previous and next skip staff-only articles for readers who cannot open them.
+  const readableArticles = articles.filter((a) => !a.adminOnly || isAdminOrModerator);
+  const currentIndex = readableArticles.findIndex((a) => a.slug === slug);
+  const prevEntry = currentIndex > 0 ? readableArticles[currentIndex - 1] : null;
+  const nextEntry =
+    currentIndex >= 0 && currentIndex < readableArticles.length - 1 ? readableArticles[currentIndex + 1] : null;
 
   const repo = import.meta.env['VITE_GITHUB_REPO'] as string | undefined;
   const branch = (import.meta.env['VITE_GITHUB_BRANCH'] as string | undefined) ?? 'main';
@@ -277,6 +267,7 @@ export default function WikiArticle() {
             aria-expanded={tocOpen}
           >
             {t('wiki.onThisPage')}
+            <ChevronDown aria-hidden="true" size={18} className="wiki-toc-chevron" />
           </button>
           <div className={`wiki-toc-list-wrap ${tocOpen ? 'wiki-toc-open' : ''}`}>
             <ul className="wiki-toc-list">

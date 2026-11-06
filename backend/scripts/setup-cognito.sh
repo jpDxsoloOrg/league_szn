@@ -36,11 +36,22 @@ echo ""
 
 # Step 1: Add custom attribute
 echo "Step 1: Adding custom:wrestler_name attribute..."
-aws cognito-idp add-custom-attributes \
+EXISTING_ATTRIBUTE=$(aws cognito-idp describe-user-pool \
   --user-pool-id "$USER_POOL_ID" \
-  --custom-attributes \
-    'Name=wrestler_name,AttributeDataType=String,Mutable=true,StringAttributeConstraints={MinLength=0,MaxLength=100}' \
-  2>/dev/null && echo "  Added custom:wrestler_name" || echo "  Already exists (skipping)"
+  --query "UserPool.SchemaAttributes[?Name=='custom:wrestler_name'].Name" \
+  --output text \
+  --region "$REGION")
+
+if [ -n "$EXISTING_ATTRIBUTE" ]; then
+  echo "  Already exists (skipping)"
+else
+  aws cognito-idp add-custom-attributes \
+    --user-pool-id "$USER_POOL_ID" \
+    --custom-attributes \
+      'Name=wrestler_name,AttributeDataType=String,Mutable=true,StringAttributeConstraints={MinLength=0,MaxLength=100}' \
+    --region "$REGION"
+  echo "  Added custom:wrestler_name"
+fi
 
 # Step 2: Attach PostConfirmation trigger
 echo ""
@@ -51,7 +62,7 @@ LAMBDA_ARN=$(aws lambda get-function \
   --function-name "${SERVICE_NAME}-${STAGE}-postConfirmation" \
   --query 'Configuration.FunctionArn' \
   --output text \
-  --region "$REGION" 2>/dev/null)
+  --region "$REGION") || LAMBDA_ARN=""
 
 if [ -z "$LAMBDA_ARN" ] || [ "$LAMBDA_ARN" = "None" ]; then
   echo "  ERROR: PostConfirmation Lambda not found. Deploy the stack first."
@@ -65,7 +76,7 @@ PRESIGNUP_LAMBDA_ARN=$(aws lambda get-function \
   --function-name "${SERVICE_NAME}-${STAGE}-preSignUp" \
   --query 'Configuration.FunctionArn' \
   --output text \
-  --region "$REGION" 2>/dev/null)
+  --region "$REGION") || PRESIGNUP_LAMBDA_ARN=""
 
 if [ -z "$PRESIGNUP_LAMBDA_ARN" ] || [ "$PRESIGNUP_LAMBDA_ARN" = "None" ]; then
   echo "  ERROR: PreSignUp Lambda not found. Deploy the stack first."
@@ -76,24 +87,33 @@ echo "  PreSignUp Lambda ARN: $PRESIGNUP_LAMBDA_ARN"
 
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
-# Add Lambda permission for Cognito to invoke it
-aws lambda add-permission \
-  --function-name "${SERVICE_NAME}-${STAGE}-postConfirmation" \
-  --statement-id "CognitoPostConfirmation" \
-  --action "lambda:InvokeFunction" \
-  --principal "cognito-idp.amazonaws.com" \
-  --source-arn "arn:aws:cognito-idp:${REGION}:${ACCOUNT_ID}:userpool/${USER_POOL_ID}" \
-  --region "$REGION" \
-  2>/dev/null && echo "  Lambda permission added" || echo "  Permission already exists (skipping)"
+# Add a Lambda permission for Cognito to invoke a trigger. A statement that
+# already exists is the normal case on redeploys; any other error stops the run.
+add_cognito_invoke_permission() {
+  local function_name=$1
+  local statement_id=$2
+  local error_output
 
-aws lambda add-permission \
-  --function-name "${SERVICE_NAME}-${STAGE}-preSignUp" \
-  --statement-id "CognitoPreSignUp" \
-  --action "lambda:InvokeFunction" \
-  --principal "cognito-idp.amazonaws.com" \
-  --source-arn "arn:aws:cognito-idp:${REGION}:${ACCOUNT_ID}:userpool/${USER_POOL_ID}" \
-  --region "$REGION" \
-  2>/dev/null && echo "  PreSignUp Lambda permission added" || echo "  Permission already exists (skipping)"
+  if error_output=$(aws lambda add-permission \
+    --function-name "$function_name" \
+    --statement-id "$statement_id" \
+    --action "lambda:InvokeFunction" \
+    --principal "cognito-idp.amazonaws.com" \
+    --source-arn "arn:aws:cognito-idp:${REGION}:${ACCOUNT_ID}:userpool/${USER_POOL_ID}" \
+    --region "$REGION" \
+    2>&1 >/dev/null); then
+    echo "  Lambda permission added: ${statement_id}"
+  elif echo "$error_output" | grep -q "ResourceConflictException"; then
+    echo "  Permission already exists: ${statement_id} (skipping)"
+  else
+    echo "  ERROR: could not add Lambda permission ${statement_id}:" >&2
+    echo "$error_output" >&2
+    exit 1
+  fi
+}
+
+add_cognito_invoke_permission "${SERVICE_NAME}-${STAGE}-postConfirmation" "CognitoPostConfirmation"
+add_cognito_invoke_permission "${SERVICE_NAME}-${STAGE}-preSignUp" "CognitoPreSignUp"
 
 # Update the User Pool to use the PostConfirmation trigger.
 #
@@ -118,7 +138,7 @@ UPDATE_PAYLOAD=$(echo "$CURRENT_POOL" | jq \
   '{
     UserPoolId: $userPoolId,
     Policies: .UserPool.Policies,
-    DeletionProtection: .UserPool.DeletionProtection,
+    DeletionProtection: "ACTIVE",
     LambdaConfig: ((.UserPool.LambdaConfig // {}) | .PostConfirmation = $lambdaArn | .PreSignUp = $preSignUpArn),
     AutoVerifiedAttributes: .UserPool.AutoVerifiedAttributes,
     SmsVerificationMessage: .UserPool.SmsVerificationMessage,

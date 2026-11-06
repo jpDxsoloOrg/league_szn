@@ -1,9 +1,16 @@
 import { useState, useEffect, useCallback, useRef, FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Clapperboard, Play } from 'lucide-react';
 import { videosApi, imagesApi, profileApi } from '../../services/api';
 import type { Player, Video, VideoCategory } from '../../types';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
-import '../admin/ManageVideos.css';
+import '../MeForms.css';
+import './MyVideos.css';
 
 const CATEGORY_OPTIONS: VideoCategory[] = ['match', 'highlight', 'promo', 'other'];
 
@@ -36,11 +43,11 @@ export default function MyVideos() {
       setProfile(me);
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
-      setError(err instanceof Error ? err.message : 'Failed to load profile');
+      setError(err instanceof Error ? err.message : t('me.profile.loadFailed'));
     } finally {
       setProfileLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const loadVideos = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -121,7 +128,7 @@ export default function MyVideos() {
         isPublished: false,
       });
 
-      setSuccessMsg('Video submitted! An admin will review it before publishing.');
+      setSuccessMsg(t('me.videos.submitted'));
       setFormData(DEFAULT_FORM);
       setShowForm(false);
       if (videoInputRef.current) videoInputRef.current.value = '';
@@ -143,42 +150,42 @@ export default function MyVideos() {
   };
 
   if (profileLoading) {
-    return <Skeleton variant="block" count={2} />;
+    return (
+      <div className="my-videos">
+        <Skeleton variant="block" count={2} />
+      </div>
+    );
   }
 
   if (!profile?.canUploadVideos) {
     return (
-      <div className="manage-videos">
-        <h2>My Videos</h2>
-        <div className="empty-state">
-          <p>
-            Your account isn't permitted to upload videos. Ask an admin to
-            enable video uploads on your wrestler profile.
-          </p>
-        </div>
+      <div className="my-videos">
+        <PageHeader title={t('me.videos.title')} />
+        {error && <p className="me-alert me-alert--error" role="alert">{error}</p>}
+        <EmptyState
+          icon={<Clapperboard aria-hidden="true" size={32} />}
+          title={t('me.videos.notPermittedTitle')}
+          description={t('me.videos.notPermitted')}
+        />
       </div>
     );
   }
 
   return (
-    <div className="manage-videos">
-      <div className="videos-header">
-        <h2>My Videos</h2>
-        {!showForm && (
-          <button onClick={() => setShowForm(true)}>
-            {t('videos.upload')}
-          </button>
-        )}
-      </div>
+    <div className="my-videos">
+      <PageHeader
+        title={t('me.videos.title')}
+        actions={!showForm && <Button onClick={() => setShowForm(true)}>{t('videos.upload')}</Button>}
+      />
 
-      {error && <div className="error-message">{error}</div>}
-      {successMsg && <div className="success-message">{successMsg}</div>}
+      {error && <p className="me-alert me-alert--error" role="alert">{error}</p>}
+      {successMsg && <p className="me-alert me-alert--success" role="status">{successMsg}</p>}
 
       {showForm && (
-        <div className="video-form-container">
-          <h3>{t('videos.upload')}</h3>
-          <form onSubmit={handleSubmit} className="video-form">
-            <div className="form-group">
+        <Card className="my-videos__form">
+          <h2 className="my-videos__heading">{t('videos.upload')}</h2>
+          <form onSubmit={handleSubmit}>
+            <div className="me-field">
               <label htmlFor="my-video-title">{t('videos.fields.title')}</label>
               <input
                 type="text"
@@ -189,7 +196,7 @@ export default function MyVideos() {
               />
             </div>
 
-            <div className="form-group">
+            <div className="me-field">
               <label htmlFor="my-video-description">{t('videos.fields.description')}</label>
               <textarea
                 id="my-video-description"
@@ -199,7 +206,7 @@ export default function MyVideos() {
               />
             </div>
 
-            <div className="form-group">
+            <div className="me-field">
               <label htmlFor="my-video-file">{t('videos.fields.videoFile')}</label>
               <input
                 type="file"
@@ -210,7 +217,7 @@ export default function MyVideos() {
               />
             </div>
 
-            <div className="form-group">
+            <div className="me-field">
               <label htmlFor="my-video-thumbnail">{t('videos.fields.thumbnail')}</label>
               <input
                 type="file"
@@ -220,8 +227,8 @@ export default function MyVideos() {
               />
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
+            <div className="my-videos__pair">
+              <div className="me-field">
                 <label htmlFor="my-video-category">{t('videos.fields.category')}</label>
                 <select
                   id="my-video-category"
@@ -236,7 +243,7 @@ export default function MyVideos() {
                 </select>
               </div>
 
-              <div className="form-group">
+              <div className="me-field">
                 <label htmlFor="my-video-tags">{t('videos.fields.tags')}</label>
                 <input
                   type="text"
@@ -248,63 +255,57 @@ export default function MyVideos() {
               </div>
             </div>
 
-            {uploadProgress && <div className="upload-progress">{uploadProgress}</div>}
+            {uploadProgress && <p className="me-alert" role="status">{uploadProgress}</p>}
 
-            <div className="form-actions">
-              <button type="submit" disabled={submitting}>
+            <div className="my-videos__actions">
+              <Button type="submit" loading={submitting}>
                 {submitting ? t('common.saving') : t('videos.upload')}
-              </button>
-              <button type="button" onClick={handleCancel} className="cancel-btn">
+              </Button>
+              <Button variant="secondary" onClick={handleCancel} disabled={submitting}>
                 {t('common.cancel')}
-              </button>
+              </Button>
             </div>
           </form>
-        </div>
+        </Card>
       )}
 
-      <div className="videos-list">
-        <h3>My Submissions ({videos.length})</h3>
-        {loading ? (
-          <Skeleton variant="block" count={2} />
-        ) : videos.length === 0 ? (
-          <div className="empty-state">
-            <p>You haven't submitted any videos yet.</p>
-          </div>
-        ) : (
-          <div className="videos-grid">
-            {videos.map((video) => (
-              <div key={video.videoId} className="video-card">
-                <div className="video-card-preview">
-                  {video.thumbnailUrl ? (
-                    <img src={video.thumbnailUrl} alt={video.title} className="video-thumbnail" />
-                  ) : (
-                    <div className="video-placeholder">
-                      <span>&#9654;</span>
-                    </div>
-                  )}
-                </div>
-                <div className="video-card-info">
-                  <h4>{video.title}</h4>
-                  <div className="video-meta">
-                    <span className={`category-badge category-${video.category}`}>
-                      {t(`videos.categories.${video.category}`)}
-                    </span>
-                    <span className={`status-badge ${video.isPublished ? 'active' : 'inactive'}`}>
-                      {video.isPublished ? t('videos.published') : t('videos.draft')}
-                    </span>
-                    <span className="video-date">
-                      {new Date(video.createdAt).toLocaleDateString()}
-                    </span>
+      <h2 className="my-videos__heading">{t('me.videos.submissions', { count: videos.length })}</h2>
+      {loading ? (
+        <Skeleton variant="block" count={2} />
+      ) : videos.length === 0 ? (
+        <EmptyState
+          icon={<Clapperboard aria-hidden="true" size={32} />}
+          title={t('me.videos.emptyTitle')}
+          description={t('me.videos.emptyBody')}
+        />
+      ) : (
+        <ul className="my-videos__grid">
+          {videos.map((video) => (
+            <li key={video.videoId}>
+              <Card padding="none" className="my-videos__card">
+                {video.thumbnailUrl ? (
+                  <img src={video.thumbnailUrl} alt={video.title} className="my-videos__thumb" loading="lazy" />
+                ) : (
+                  <div className="my-videos__thumb my-videos__thumb--empty">
+                    <Play aria-hidden="true" size={28} />
                   </div>
-                  {video.description && (
-                    <p className="video-description">{video.description}</p>
-                  )}
+                )}
+                <div className="my-videos__info">
+                  <h3 className="my-videos__title">{video.title}</h3>
+                  <div className="my-videos__meta">
+                    <Badge tone="violet">{t(`videos.categories.${video.category}`)}</Badge>
+                    <Badge tone={video.isPublished ? 'win' : 'neutral'}>
+                      {video.isPublished ? t('videos.published') : t('videos.draft')}
+                    </Badge>
+                    <span className="me-hint">{new Date(video.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  {video.description && <p className="my-videos__description">{video.description}</p>}
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              </Card>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

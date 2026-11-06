@@ -4,56 +4,45 @@
 
 .move-list-title {
   margin: 0 0 0.5rem;
-  color: #d4af37;
-  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  letter-spacing: 1px;
 }
 
 .move-list-items {
-  list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  gap: 0.5rem;
+  list-style: none;
 }
 
 .move-list-item {
   display: flex;
   flex-direction: column;
-  padding: 0.5rem 0.75rem;
-  background-color: #1a1a1a;
-  border: 1px solid #2c2c2c;
-  border-left: 3px solid #d4af37;
-  border-radius: 6px;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.move-list-item:first-child {
+  padding-top: 0;
+  border-top: 0;
 }
 
 .move-list-name {
-  color: #f0f0f0;
+  color: var(--color-text);
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .move-list-game {
-  color: #888;
-  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
 }
 
 .move-list-empty {
   margin: 0;
-  color: #666;
-  font-size: 0.85rem;
-  font-style: italic;
-}
-
-.moveset-columns {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.5rem;
-}
-
-.profile-bio {
-  margin: 0 0 1.5rem;
-  color: #ccc;
-  line-height: 1.5;
-  white-space: pre-line;
+  color: var(--color-text-muted);
 }

@@ -3,30 +3,16 @@ import { getRepositories } from '../../lib/repositories';
 import { NotFoundError } from '../../lib/repositories/errors';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
-import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
+import { NEEDS_WRESTLER, isNeedsWrestler } from '../../lib/needsWrestler';
 import { requireRole } from '../../lib/auth';
 import { applyMovesetFields } from './movesetFields';
 import type { PlayerPatch } from '../../lib/repositories';
 import {
   filterExistingWrestlerIds,
+  parseSlotChange,
   rejectDuplicateSlotAssignment,
   resolveWrestlerForAssignment,
 } from './wrestlerAssignment';
-
-/**
- * Request shape for FK transitions on the two slots. `undefined` = no change,
- * `null` = clear the assignment, string = set to that wrestlerId.
- */
-type SlotChange = { present: false } | { present: true; newId: string | null };
-
-function parseSlotChange(value: unknown): SlotChange {
-  if (value === undefined) return { present: false };
-  if (value === null || value === '') return { present: true, newId: null };
-  if (typeof value === 'string' && value.length > 0) {
-    return { present: true, newId: value };
-  }
-  return { present: false };
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   // Any signed-in user could previously hit this route; with free-text bio
@@ -49,15 +35,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     let hasChanges = false;
 
     if (body.name !== undefined) {
-      patch.name = body.name as string;
+      if (typeof body.name !== 'string' || body.name.trim().length === 0) {
+        return badRequest('Player name cannot be blank');
+      }
+      patch.name = body.name;
       hasChanges = true;
     }
     if (body.imageUrl !== undefined) {
-      patch.imageUrl = body.imageUrl as string;
+      patch.imageUrl = body.imageUrl === '' || body.imageUrl === null
+        ? undefined
+        : (body.imageUrl as string);
       hasChanges = true;
     }
     if (body.psnId !== undefined) {
-      patch.psnId = body.psnId as string;
+      patch.psnId = body.psnId === '' || body.psnId === null
+        ? undefined
+        : (body.psnId as string);
       hasChanges = true;
     }
 
@@ -103,19 +96,31 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
+    const clearCurrent = body.clearCurrentWrestler === true;
+    const clearAlternate = body.clearAlternateWrestler === true;
+    const currentChange = parseSlotChange(
+      body.currentWrestlerId,
+      player.currentWrestlerId,
+      clearCurrent,
+    );
+    const alternateChange = parseSlotChange(
+      body.alternateWrestlerId,
+      player.alternateWrestlerId,
+      clearAlternate,
+    );
+
     // Legacy free-text field: still accepted but only when the FK field is
     // not being changed on the same slot. The FK path always wins.
-    if (
-      body.currentWrestler !== undefined &&
-      body.currentWrestlerId === undefined
-    ) {
-      patch.currentWrestler = body.currentWrestler as string;
+    if (body.currentWrestler !== undefined && !currentChange.present) {
+      // A blank wrestler name falls back to the placeholder, never '' or spaces.
+      const legacyName = body.currentWrestler;
+      patch.currentWrestler =
+        typeof legacyName === 'string' && !isNeedsWrestler(legacyName)
+          ? legacyName
+          : NEEDS_WRESTLER;
       hasChanges = true;
     }
-    if (
-      body.alternateWrestler !== undefined &&
-      body.alternateWrestlerId === undefined
-    ) {
+    if (body.alternateWrestler !== undefined && !alternateChange.present) {
       if (body.alternateWrestler === '' || body.alternateWrestler === null) {
         patch.alternateWrestler = undefined;
       } else {
@@ -123,9 +128,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
       hasChanges = true;
     }
-
-    const currentChange = parseSlotChange(body.currentWrestlerId);
-    const alternateChange = parseSlotChange(body.alternateWrestlerId);
 
     if (currentChange.present || alternateChange.present) {
       // Guard against picking the same wrestler for both slots, accounting
@@ -200,7 +202,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // If any FK transition happened, stage the player update + wrestler
     // release/assign atomically. Otherwise fall through to the simple update.
-    if (toRelease.length > 0 || toAssign.length > 0) {
+    // A clear also goes this way even with nothing to release: only the staged
+    // write removes an attribute, and the simple update skips undefined values.
+    const removesAttribute = Object.values(patch).some(
+      (value) => value === undefined || value === null,
+    );
+    if (toRelease.length > 0 || toAssign.length > 0 || removesAttribute) {
       const releasable = await filterExistingWrestlerIds(toRelease);
       await runInTransaction(async (tx) => {
         for (const wrestlerId of releasable) {

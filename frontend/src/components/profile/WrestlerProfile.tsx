@@ -1,1261 +1,224 @@
-import { useState, useEffect, FormEvent, ChangeEvent, useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { profileApi, imagesApi, overallsApi, transfersApi, divisionsApi, storylineRequestsApi, playersApi, wrestlersApi } from '../../services/api';
+import { Pencil, UserRound } from 'lucide-react';
+import { divisionsApi, isApiError, overallsApi, profileApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { sanitizeName } from '../../utils/sanitize';
-import { isNeedsWrestler, NEEDS_WRESTLER } from '../../utils/needsWrestler';
-import { compactMoves, movesEqual, padMoves } from '../../utils/movesets';
-import MovesetEditor from './MovesetEditor';
-import MoveList from './MoveList';
-import { WRESTLER_NAME_ENTRY_MODE } from '../../config/wrestlerNameEntry';
-import { logger } from '../../utils/logger';
-import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
-import {
-  DEFAULT_WRESTLER_IMAGE,
-  applyImageFallback,
-  resolveImageSrc,
-} from '../../constants/imageFallbacks';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
-import   EmbeddedPlayerStats   from "../statistics/EmbeddedPlayerStats";
-import type { Player, WrestlerOverall, TransferRequestWithDetails, Division, MyStorylineRequest, StorylineRequestType, Wrestler, WrestlerPromotion, WrestlerMove } from '../../types';
-import { MAX_BIO_LENGTH } from '../../types';
-import './WrestlerProfile.css';
-
-type WrestlerSlotOptions = ReadonlyArray<{
-  promotion: WrestlerPromotion;
-  wrestlers: Wrestler[];
-}>;
-
-/**
- * Build `<optgroup>`s for a wrestler dropdown. Mirrors the same helper in
- * ManagePlayers: the user's current pick is always shown even if marked
- * in-use, the other slot's pick is excluded so a user can't double-claim,
- * and remaining options are filtered to wrestlers that aren't in use.
- */
-function buildWrestlerOptionGroups(
-  allWrestlers: Wrestler[],
-  selectedWrestlerId: string | undefined,
-  excludeWrestlerId: string | undefined,
-): WrestlerSlotOptions {
-  const visible = allWrestlers.filter((w) => {
-    // Ghost roster rows (e.g. from a release against a deleted wrestlerId)
-    // lack name/promotion — drop them rather than crash the sorts below.
-    if (typeof w.name !== 'string' || typeof w.promotion !== 'string') return false;
-    if (w.wrestlerId === excludeWrestlerId) return false;
-    if (!w.isInUse) return true;
-    return w.wrestlerId === selectedWrestlerId;
-  });
-
-  const byPromotion = new Map<WrestlerPromotion, Wrestler[]>();
-  for (const w of visible) {
-    const bucket = byPromotion.get(w.promotion) ?? [];
-    bucket.push(w);
-    byPromotion.set(w.promotion, bucket);
-  }
-
-  return Array.from(byPromotion.entries())
-    .map(([promotion, wrestlers]) => ({
-      promotion,
-      wrestlers: wrestlers.sort((a, b) => a.name.localeCompare(b.name)),
-    }))
-    .sort((a, b) => a.promotion.localeCompare(b.promotion));
-}
-
-interface SeasonRecord {
-  seasonId: string;
-  seasonName: string;
-  seasonStatus: string;
-  wins: number;
-  losses: number;
-  draws: number;
-}
+import { WRESTLER_NAME_ENTRY_MODE } from '../../config/wrestlerNameEntry';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
+import EmbeddedPlayerStats from '../statistics/EmbeddedPlayerStats';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import EmptyState from '../ui/EmptyState';
+import Skeleton from '../ui/Skeleton';
+import Tabs from '../ui/Tabs';
+import type { Division, Player, WrestlerOverall } from '../../types';
+import MovesetSection from './MovesetSection';
+import ProfileEditForm from './ProfileEditForm';
+import ProfileHero from './ProfileHero';
+import ProfileRequests from './ProfileRequests';
+import RecordSummary from './RecordSummary';
+import SeasonRecords from './SeasonRecords';
+import type { SeasonRecord } from './profileRecord';
+import '../MeForms.css';
+import './Profile.css';
 
 interface PlayerProfile extends Player {
   seasonRecords?: SeasonRecord[];
 }
 
+type ProfileTab = 'overview' | 'requests' | 'stats';
+
 export default function WrestlerProfile() {
   const { t } = useTranslation();
   const { refreshProfile } = useAuth();
+  const { features } = useSiteConfig();
+  const location = useLocation();
+  const navigate = useNavigate();
+  // Set by the links that promise the form, so one tap gets there.
+  const editorRequested = (location.state as { editProfile?: boolean } | null)?.editProfile === true;
+  const openEditorOnLoad = useRef(editorRequested);
   const [player, setPlayer] = useState<PlayerProfile | null>(null);
+  const [overall, setOverall] = useState<WrestlerOverall | null>(null);
+  const [divisions, setDivisions] = useState<Division[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [noPlayerRecord, setNoPlayerRecord] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const { features } = useSiteConfig();
-  // Matches the mobile app shell breakpoint (MobileHeader + BottomTabBar).
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const [tab, setTab] = useState<ProfileTab>('overview');
 
-  // Overalls state
-  const [overall, setOverall] = useState<WrestlerOverall | null>(null);
-  const [overallForm, setOverallForm] = useState({ mainOverall: '', alternateOverall: '' });
-
-  // Transfer state
-  const [transferRequests, setTransferRequests] = useState<TransferRequestWithDetails[]>([]);
-  const [divisions, setDivisions] = useState<Division[]>([]);
-  const [transferForm, setTransferForm] = useState({ toDivisionId: '', reason: '' });
-  const [transferSubmitting, setTransferSubmitting] = useState(false);
-  const [transferError, setTransferError] = useState<string | null>(null);
-  const [transferSuccess, setTransferSuccess] = useState<string | null>(null);
-
-  // Storyline request state
-  const [storylineRequests, setStorylineRequests] = useState<MyStorylineRequest[]>([]);
-  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
-  const [storylineForm, setStorylineForm] = useState<{
-    requestType: StorylineRequestType;
-    targetPlayerIds: string[];
-    description: string;
-  }>({ requestType: 'storyline', targetPlayerIds: [], description: '' });
-  const [storylineSubmitting, setStorylineSubmitting] = useState(false);
-  const [storylineError, setStorylineError] = useState<string | null>(null);
-  const [storylineSuccess, setStorylineSuccess] = useState<string | null>(null);
-
-  // Form state — FK-backed (P2 of #294). The legacy `currentWrestler` /
-  // `alternateWrestler` strings remain as the display cache; the wrestler
-  // is picked from the curated roster and the backend denormalizes the
-  // name from the selected row.
-  const [formData, setFormData] = useState({
-    name: '',
-    currentWrestlerId: '',
-    alternateWrestlerId: '',
-    // Free-text names, used when WRESTLER_NAME_ENTRY_MODE is 'text'. Kept in
-    // form state alongside the FK fields so switching the mode back needs no
-    // other change here.
-    currentWrestler: '',
-    alternateWrestler: '',
-    imageUrl: '',
-    psnId: '',
-    alignment: '' as '' | 'face' | 'heel' | 'neutral',
-    bio: '',
-    signatures: padMoves(undefined),
-    finishers: padMoves(undefined),
-  });
-
-  const textWrestlerEntry = WRESTLER_NAME_ENTRY_MODE === 'text';
-
-  // Roster (for the wrestler dropdowns).
-  const [wrestlers, setWrestlers] = useState<Wrestler[]>([]);
-
-  // Image upload state
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  // The request is used up once read. Left in history it would reopen the form
+  // on reload, and any later navigation here would change it and reset the page.
+  useEffect(() => {
+    if (editorRequested) navigate(location.pathname + location.search, { replace: true, state: null });
+  }, [editorRequested, location.pathname, location.search, navigate]);
 
   useEffect(() => {
-    loadProfile();
-    loadOverall();
-    loadTransfers();
-    loadDivisions();
-    loadStorylineRequests();
-    loadAllPlayers();
-    loadWrestlers();
+    const loadOverall = async () => {
+      try {
+        setOverall(await overallsApi.getMyOverall());
+      } catch {
+        // A 404 means no overall has been submitted yet.
+      }
+    };
+    const loadProfile = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        setPlayer(await profileApi.getMyProfile());
+      } catch (err) {
+        if (isApiError(err, 404)) {
+          setNoPlayerRecord(true);
+        } else {
+          setError(err instanceof Error ? err.message : null);
+        }
+        return;
+      } finally {
+        setLoading(false);
+      }
+      // After the profile: an account with no player has no overall to fetch,
+      // and the form reads the overall when it opens.
+      await loadOverall();
+      if (openEditorOnLoad.current) setEditing(true);
+    };
+    const loadDivisions = async () => {
+      try {
+        setDivisions(await divisionsApi.getAll());
+      } catch {
+        // The division line and transfer choices stay empty.
+      }
+    };
+    void loadProfile();
+    void loadDivisions();
   }, []);
 
-  const loadProfile = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const profile = await profileApi.getMyProfile();
-      setPlayer(profile);
-      setFormData({
-        name: profile.name,
-        currentWrestlerId: profile.currentWrestlerId || '',
-        alternateWrestlerId: profile.alternateWrestlerId || '',
-        currentWrestler: isNeedsWrestler(profile.currentWrestler) ? '' : profile.currentWrestler,
-        alternateWrestler: profile.alternateWrestler || '',
-        imageUrl: profile.imageUrl || '',
-        psnId: profile.psnId || '',
-        alignment: profile.alignment || '',
-        bio: profile.bio || '',
-        signatures: padMoves(profile.signatures),
-        finishers: padMoves(profile.finishers),
-      });
-    } catch (err) {
-      if (err instanceof Error && err.message.includes('404')) {
-        setError('No player profile found. An admin needs to approve your wrestler request first.');
-      } else {
-        setError(err instanceof Error ? err.message : 'Failed to load profile');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadWrestlers = async () => {
-    try {
-      const data = await wrestlersApi.getAll();
-      setWrestlers(data);
-    } catch {
-      // Roster is optional — without it the dropdowns will just be empty
-      // and the user sees the "no wrestlers in roster yet" hint.
-    }
-  };
-
-  const loadOverall = async () => {
-    try {
-      const data = await overallsApi.getMyOverall();
-      setOverall(data);
-      setOverallForm({
-        mainOverall: String(data.mainOverall),
-        alternateOverall: data.alternateOverall !== undefined ? String(data.alternateOverall) : '',
-      });
-    } catch {
-      // 404 means no overall submitted yet — that's fine
-    }
-  };
-
-  const loadTransfers = async () => {
-    try {
-      const data = await transfersApi.getMyRequests();
-      setTransferRequests(data);
-    } catch {
-      // Not a critical failure — silently ignore
-    }
-  };
-
-  const loadDivisions = async () => {
-    try {
-      const data = await divisionsApi.getAll();
-      setDivisions(data);
-    } catch {
-      // Silently ignore
-    }
-  };
-
-  const loadStorylineRequests = async () => {
-    try {
-      const data = await storylineRequestsApi.getMine();
-      setStorylineRequests(data);
-    } catch {
-      // Silently ignore
-    }
-  };
-
-  const loadAllPlayers = async () => {
-    try {
-      const data = await playersApi.getAll();
-      setAllPlayers(data);
-    } catch {
-      // Silently ignore
-    }
-  };
-
-  const handleStorylineSubmit = async () => {
-    if (
-      storylineForm.targetPlayerIds.length === 0 ||
-      !storylineForm.description.trim()
-    ) {
-      return;
-    }
-    try {
-      setStorylineSubmitting(true);
-      setStorylineError(null);
-      setStorylineSuccess(null);
-      await storylineRequestsApi.create({
-        requestType: storylineForm.requestType,
-        targetPlayerIds: storylineForm.targetPlayerIds,
-        description: storylineForm.description.trim(),
-      });
-      setStorylineForm({ requestType: 'storyline', targetPlayerIds: [], description: '' });
-      setStorylineSuccess('Storyline request submitted successfully.');
-      await loadStorylineRequests();
-    } catch (err) {
-      setStorylineError(err instanceof Error ? err.message : 'Failed to submit storyline request');
-    } finally {
-      setStorylineSubmitting(false);
-    }
-  };
-
-  const handleTransferSubmit = async () => {
-    if (!transferForm.toDivisionId || !transferForm.reason.trim()) return;
-    try {
-      setTransferSubmitting(true);
-      setTransferError(null);
-      setTransferSuccess(null);
-      await transfersApi.createRequest({
-        toDivisionId: transferForm.toDivisionId,
-        reason: transferForm.reason.trim(),
-      });
-      setTransferForm({ toDivisionId: '', reason: '' });
-      setTransferSuccess('Transfer request submitted successfully.');
-      await loadTransfers();
-    } catch (err) {
-      setTransferError(err instanceof Error ? err.message : 'Failed to submit transfer request');
-    } finally {
-      setTransferSubmitting(false);
-    }
-  };
-
-
-  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!FILE_UPLOAD_LIMITS.ALLOWED_TYPES.includes(file.type as typeof FILE_UPLOAD_LIMITS.ALLOWED_TYPES[number])) {
-        setError(`Invalid file type. Only ${FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS} images are allowed.`);
-        return;
-      }
-
-      if (file.size > FILE_UPLOAD_LIMITS.MAX_SIZE) {
-        setError(`File too large. Maximum size is ${FILE_UPLOAD_LIMITS.MAX_SIZE_MB}MB.`);
-        return;
-      }
-
-      setSelectedFile(file);
-      setError(null);
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const clearImage = () => {
-    setSelectedFile(null);
-    setImagePreview(null);
-    setFormData(prev => ({ ...prev, imageUrl: '' }));
-  };
-
-  const uploadImage = async (): Promise<string | null> => {
-    if (!selectedFile) return formData.imageUrl || null;
-
-    try {
-      setUploading(true);
-
-      let uploadUrl: string;
-      let imageUrl: string;
-      try {
-        const response = await imagesApi.generateUploadUrl(
-          selectedFile.name,
-          selectedFile.type,
-          'wrestlers'
-        );
-        uploadUrl = response.uploadUrl;
-        imageUrl = response.imageUrl;
-      } catch (err) {
-        logger.error('Failed to get upload URL for profile image');
-        if (err instanceof Error && err.message.includes('401')) {
-          throw new Error('Session expired. Please log in again to upload images.');
-        }
-        throw new Error('Unable to prepare image upload. Please check your connection and try again.');
-      }
-
-      try {
-        await imagesApi.uploadToS3(uploadUrl, selectedFile);
-      } catch (err) {
-        logger.error('Failed to upload profile image to storage');
-        if (err instanceof TypeError && err.message.includes('network')) {
-          throw new Error('Network error during upload. Please check your internet connection and try again.');
-        }
-        throw new Error('Failed to upload image to storage. Please try again or use a different image.');
-      }
-
-      return imageUrl;
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const currentWrestlerOptions = useMemo(
-    () =>
-      buildWrestlerOptionGroups(
-        wrestlers,
-        formData.currentWrestlerId || undefined,
-        formData.alternateWrestlerId || undefined,
-      ),
-    [wrestlers, formData.currentWrestlerId, formData.alternateWrestlerId],
-  );
-
-  const alternateWrestlerOptions = useMemo(
-    () =>
-      buildWrestlerOptionGroups(
-        wrestlers,
-        formData.alternateWrestlerId || undefined,
-        formData.currentWrestlerId || undefined,
-      ),
-    [wrestlers, formData.currentWrestlerId, formData.alternateWrestlerId],
-  );
-
-  const renderWrestlerOptions = (groups: WrestlerSlotOptions) =>
-    groups.map((group) => (
-      <optgroup key={group.promotion} label={group.promotion}>
-        {group.wrestlers.map((w) => (
-          <option key={w.wrestlerId} value={w.wrestlerId}>
-            {w.name} — OVR {w.overallCap}
-          </option>
-        ))}
-      </optgroup>
-    ));
-
-  const rosterEmpty = wrestlers.length === 0;
-
-  const handleEdit = () => {
-    if (player) {
-      setFormData({
-        name: player.name,
-        currentWrestlerId: player.currentWrestlerId || '',
-        alternateWrestlerId: player.alternateWrestlerId || '',
-        currentWrestler: isNeedsWrestler(player.currentWrestler) ? '' : player.currentWrestler,
-        alternateWrestler: player.alternateWrestler || '',
-        imageUrl: player.imageUrl || '',
-        psnId: player.psnId || '',
-        alignment: player.alignment || '',
-        bio: player.bio || '',
-        signatures: padMoves(player.signatures),
-        finishers: padMoves(player.finishers),
-      });
-      setImagePreview(player.imageUrl || null);
-      setSelectedFile(null);
-    }
+  const startEditing = () => {
     setEditing(true);
     setError(null);
     setSuccess(null);
   };
 
-  const handleCancel = () => {
+  const handleSaved = async (updated: Player, savedOverall: WrestlerOverall | null) => {
+    const becameVisible =
+      Boolean(player) && isNeedsWrestler(player?.currentWrestler) && !isNeedsWrestler(updated.currentWrestler);
+    // The save response has no season records, so keep the ones already loaded.
+    setPlayer((prev) => ({ ...updated, seasonRecords: prev?.seasonRecords }));
+    setOverall(savedOverall);
     setEditing(false);
-    setSelectedFile(null);
-    setImagePreview(null);
-    setError(null);
-    if (player) {
-      setFormData({
-        name: player.name,
-        currentWrestlerId: player.currentWrestlerId || '',
-        alternateWrestlerId: player.alternateWrestlerId || '',
-        currentWrestler: isNeedsWrestler(player.currentWrestler) ? '' : player.currentWrestler,
-        alternateWrestler: player.alternateWrestler || '',
-        imageUrl: player.imageUrl || '',
-        psnId: player.psnId || '',
-        alignment: player.alignment || '',
-        bio: player.bio || '',
-        signatures: padMoves(player.signatures),
-        finishers: padMoves(player.finishers),
-      });
-    }
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (submitting || uploading) return;
-
-    setError(null);
-    setSuccess(null);
-    setSubmitting(true);
-
-    try {
-      const imageUrl = await uploadImage();
-
-      const sanitizedName = sanitizeName(formData.name, VALIDATION.MAX_NAME_LENGTH);
-
-      if (!sanitizedName) {
-        setError('Player name cannot be empty');
-        return;
-      }
-      // A wrestler is not required — a player with none stays on the
-      // "Needs Wrestler" placeholder and can still edit the rest of their
-      // profile.
-      const updates: {
-        name?: string;
-        currentWrestler?: string;
-        alternateWrestler?: string;
-        currentWrestlerId?: string;
-        alternateWrestlerId?: string;
-        imageUrl?: string;
-        psnId?: string;
-        alignment?: 'face' | 'heel' | 'neutral' | '';
-        bio?: string;
-        signatures?: WrestlerMove[];
-        finishers?: WrestlerMove[];
-      } = { name: sanitizedName };
-
-      if (textWrestlerEntry) {
-        // Send only the names. The FK fields are deliberately omitted: the
-        // backend lets an FK on a slot win over the text, and omitting them
-        // also leaves any existing roster assignment untouched rather than
-        // releasing it.
-        // Blank falls back to the placeholder rather than '': GET /players
-        // drops players with no currentWrestler, and clearing the FK
-        // server-side stamps the same placeholder.
-        updates.currentWrestler = formData.currentWrestler.trim() || NEEDS_WRESTLER;
-        updates.alternateWrestler = formData.alternateWrestler.trim();
-      } else {
-        updates.currentWrestlerId = formData.currentWrestlerId;
-        // Empty string clears the FK server-side (matches the
-        // ManagePlayers contract).
-        updates.alternateWrestlerId = formData.alternateWrestlerId || '';
-      }
-
-      if (imageUrl) {
-        updates.imageUrl = imageUrl;
-      }
-
-      if (formData.psnId.trim()) {
-        updates.psnId = formData.psnId.trim();
-      }
-
-      updates.alignment = formData.alignment || '';
-
-      // Moveset fields go only when changed so an untouched save stays a
-      // no-op for them (and never resets what an admin may have entered).
-      const bio = formData.bio.trim();
-      if (bio !== (player?.bio ?? '')) {
-        updates.bio = bio;
-      }
-      if (!movesEqual(formData.signatures, player?.signatures)) {
-        updates.signatures = compactMoves(formData.signatures);
-      }
-      if (!movesEqual(formData.finishers, player?.finishers)) {
-        updates.finishers = compactMoves(formData.finishers);
-      }
-
-      const updated = await profileApi.updateMyProfile(updates);
-      setPlayer(updated);
-
-      // Save overalls if main overall is provided
-      if (overallForm.mainOverall) {
-        const main = parseInt(overallForm.mainOverall, 10);
-        const alt = overallForm.alternateOverall ? parseInt(overallForm.alternateOverall, 10) : undefined;
-        if (!isNaN(main) && main >= 60 && main <= 99) {
-          if (alt === undefined || (!isNaN(alt) && alt >= 60 && alt <= 99)) {
-            const saved = await overallsApi.submitOverall({ mainOverall: main, alternateOverall: alt });
-            setOverall(saved);
-          }
-        }
-      }
-
-      setEditing(false);
-      setSelectedFile(null);
-      setImagePreview(null);
-      setSuccess('Profile updated successfully!');
-      await refreshProfile();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update profile');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const getWinPercentage = (wins: number, losses: number, draws: number): string => {
-    const total = wins + losses + draws;
-    if (total === 0) return '0';
-    return ((wins / total) * 100).toFixed(1);
-  };
-
-  const getWinPercentageClass = (wins: number, losses: number, draws: number): string => {
-    const total = wins + losses + draws;
-    if (total === 0) return '';
-    const pct = (wins / total) * 100;
-    if (pct >= 60) return 'win-high';
-    if (pct >= 40) return 'win-medium';
-    return 'win-low';
+    setSuccess(becameVisible ? t('me.setup.nowVisible') : t('me.profile.updated'));
+    await refreshProfile();
   };
 
   if (loading) {
     return (
-      <div className="wrestler-profile">
-        <div className="loading-state">
-          <div className="loading-spinner" role="status" aria-label="Loading profile"></div>
-          <p className="loading-text">Loading Profile</p>
-        </div>
+      <div className="profile-page">
+        <Skeleton variant="block" count={4} />
       </div>
     );
   }
 
   if (!player) {
     return (
-      <div className="wrestler-profile">
-        {error && <div className="error-message">{error}</div>}
-        <div className="empty-state">
-          <h3>No Profile Found</h3>
-          <p>Your player profile has not been created yet. Contact an admin to get set up as a wrestler.</p>
-        </div>
+      <div className="profile-page">
+        <p className="me-alert me-alert--error" role="alert">
+          {noPlayerRecord ? t('me.profile.noPlayerRecord') : error ?? t('me.profile.loadFailed')}
+        </p>
+        <EmptyState
+          icon={<UserRound aria-hidden="true" size={32} />}
+          title={t('me.profile.noProfileTitle')}
+          description={t('me.profile.noProfileBody')}
+        />
       </div>
     );
   }
 
-  // In text mode there is no FK to key off, so the banner follows the name.
-  const needsWrestlerPick = textWrestlerEntry
+  // In text mode there is no FK to key off, so the prompt follows the name.
+  const needsWrestlerName = WRESTLER_NAME_ENTRY_MODE === 'text'
     ? isNeedsWrestler(player.currentWrestler)
     : !player.currentWrestlerId;
-  const pendingTransfer = transferRequests.find((req) => req.status === 'pending');
-  const currentDivisionName = divisions.find((d) => d.divisionId === player.divisionId)?.name;
+  const divisionName = divisions.find((division) => division.divisionId === player.divisionId)?.name;
+  const statisticsTab = Boolean(features.statistics && player.playerId);
 
   return (
-    <div className={`wrestler-profile ${editing ? 'edit-mode' : 'view-mode'}`}>
-      {error && <div className="error-message">{error}</div>}
-      {success && <div className="success-message">{success}</div>}
-      {needsWrestlerPick && !editing && (
-        <div className="needs-wrestler-banner" role="status">
-          <strong>{t('auth.needsWrestlerBannerTitle')}</strong>
-          <p>{t('auth.needsWrestlerBannerBody')}</p>
+    <div className="profile-page">
+      {error && <p className="me-alert me-alert--error" role="alert">{error}</p>}
+      {success && <p className="me-alert me-alert--success" role="status">{success}</p>}
+
+      {needsWrestlerName && !editing && (
+        <div className="me-alert me-alert--warn profile-hidden-notice" role="status">
+          <div>
+            <strong>{t('me.setup.hiddenTitle')}</strong>
+            <p>{t('me.setup.hiddenNotice')}</p>
+          </div>
+          <Button onClick={startEditing}>{t('me.setup.enterName')}</Button>
         </div>
       )}
 
-      {/* Profile Header */}
-      <div className="profile-header">
-        <div className="profile-image-wrapper">
-          <img
-            src={resolveImageSrc(player.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-            onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-            alt={player.name}
-            className="profile-image"
-          />
-        </div>
-        <div className="profile-header-info">
-          <h1 className="profile-name">{player.name}</h1>
-          {!isNeedsWrestler(player.currentWrestler) && (
-            <p className="profile-wrestler-name">
-              {isMobile ? player.currentWrestler : `Playing as ${player.currentWrestler}`}
-            </p>
-          )}
-          {player.alternateWrestler && (
-            <p className="profile-alternate-wrestler">
-              {isMobile ? `Alt: ${player.alternateWrestler}` : `Alternate: ${player.alternateWrestler}`}
-            </p>
-          )}
-          {player.psnId && (
-            <p className="profile-psn-id">
-              PSN: {player.psnId}
-            </p>
-          )}
-          {player.alignment && (
-            <span className={`alignment-badge profile-alignment alignment-${player.alignment}`}>
-              {player.alignment === 'face' && '😇 Face'}
-              {player.alignment === 'neutral' && '⚖️ Neutral'}
-              {player.alignment === 'heel' && '😈 Heel'}
-            </span>
-          )}
-        </div>
-        {!editing && (
-          <button
-            className="edit-icon-btn"
-            onClick={handleEdit}
-            aria-label="Edit profile"
-            title="Edit profile"
-          >
-&#9998;
-          </button>
+      <ProfileHero
+        player={player}
+        details={divisionName ? [{ label: t('publicProfile.division'), value: divisionName }] : []}
+        actions={!editing && (
+          <Button variant="secondary" icon={<Pencil aria-hidden="true" size={16} />} onClick={startEditing}>
+            {t('me.profile.edit')}
+          </Button>
         )}
-      </div>
-      {/* Edit Form (edit mode only) */}
-      {editing && (
-        <div className="profile-edit-section">
-          <h3>Edit Profile</h3>
-          <form onSubmit={handleSubmit} className="profile-form">
-            <div className="form-group">
-              <label htmlFor="profile-name">Player Name</label>
-              <input
-                type="text"
-                id="profile-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                placeholder="Your player name"
-              />
-            </div>
+      />
 
-            {textWrestlerEntry ? (
-              <>
-                <div className="form-group">
-                  <label htmlFor="profile-wrestler-name">Current Wrestler</label>
-                  <input
-                    type="text"
-                    id="profile-wrestler-name"
-                    value={formData.currentWrestler}
-                    onChange={(e) => setFormData({ ...formData, currentWrestler: e.target.value })}
-                    maxLength={100}
-                    placeholder="e.g., Stone Cold Steve Austin"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="profile-alternate-wrestler-name">Alternate Wrestler</label>
-                  <input
-                    type="text"
-                    id="profile-alternate-wrestler-name"
-                    value={formData.alternateWrestler}
-                    onChange={(e) => setFormData({ ...formData, alternateWrestler: e.target.value })}
-                    maxLength={100}
-                    placeholder="Optional"
-                  />
-                </div>
-              </>
-            ) : (
-              <>
-                {rosterEmpty && (
-                  <div className="roster-empty-notice">
-                    The wrestler roster is empty — you can still save the rest of your
-                    profile. An admin can add wrestlers and set yours.
-                  </div>
-                )}
-
-                <div className="form-group">
-                  <label htmlFor="profile-wrestler">Current Wrestler</label>
-                  <select
-                    id="profile-wrestler"
-                    value={formData.currentWrestlerId}
-                    onChange={(e) => setFormData({ ...formData, currentWrestlerId: e.target.value })}
-                    disabled={rosterEmpty}
-                  >
-                    <option value="">Needs Wrestler — none picked</option>
-                    {renderWrestlerOptions(currentWrestlerOptions)}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="profile-alternate-wrestler">Alternate Wrestler</label>
-                  <select
-                    id="profile-alternate-wrestler"
-                    value={formData.alternateWrestlerId}
-                    onChange={(e) => setFormData({ ...formData, alternateWrestlerId: e.target.value })}
-                    disabled={rosterEmpty}
-                  >
-                    <option value="">None</option>
-                    {renderWrestlerOptions(alternateWrestlerOptions)}
-                  </select>
-                </div>
-              </>
-            )}
-
-            <div className="form-group">
-              <label htmlFor="profile-psn">PSN ID</label>
-              <input
-                type="text"
-                id="profile-psn"
-                value={formData.psnId}
-                onChange={(e) => setFormData({ ...formData, psnId: e.target.value })}
-                placeholder="Your PlayStation Network ID"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Alignment</label>
-              <div className="alignment-radio-group">
-                {([
-                  { value: '', label: 'Not Set' },
-                  { value: 'face', label: '😇 Face' },
-                  { value: 'neutral', label: '⚖️ Neutral' },
-                  { value: 'heel', label: '😈 Heel' },
-                ] as const).map(({ value, label }) => (
-                  <label key={value} className={`alignment-radio-label alignment-radio-${value || 'unset'}`}>
-                    <input
-                      type="radio"
-                      name="alignment"
-                      value={value}
-                      checked={formData.alignment === value}
-                      onChange={() => setFormData({ ...formData, alignment: value })}
-                    />
-                    {label}
-                  </label>
-                ))}
-              </div>
-              <p className="alignment-hint">Helps GMs with booking and other players with promos. Doesn't affect matchups.</p>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="profile-bio">{t('profile.bio.label', 'Bio')}</label>
-              <textarea
-                id="profile-bio"
-                className="profile-bio-input"
-                value={formData.bio}
-                maxLength={MAX_BIO_LENGTH}
-                rows={4}
-                placeholder={t('profile.bio.placeholder', 'Tell the league who you are…')}
-                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              />
-              <p className="profile-bio-counter">
-                {t('profile.bio.counter', { count: formData.bio.length, max: MAX_BIO_LENGTH, defaultValue: `${formData.bio.length} / ${MAX_BIO_LENGTH}` })}
-              </p>
-            </div>
-
-            <div className="form-group">
-              <MovesetEditor
-                label={t('profile.moves.signatures', 'Signature Moves')}
-                helperText={t('profile.moves.helperSignature', 'Up to 5. Add at least one so commentary can call your matches.')}
-                idPrefix="profile-signature"
-                value={formData.signatures}
-                onChange={(signatures) => setFormData({ ...formData, signatures })}
-              />
-            </div>
-
-            <div className="form-group">
-              <MovesetEditor
-                label={t('profile.moves.finishers', 'Finishers')}
-                helperText={t('profile.moves.helperFinisher', 'Up to 5. Add at least one so commentary can call your matches.')}
-                idPrefix="profile-finisher"
-                value={formData.finishers}
-                onChange={(finishers) => setFormData({ ...formData, finishers })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="main-overall">{t('overalls.profile.mainOverall')}</label>
-              <input
-                type="number"
-                id="main-overall"
-                min={60}
-                max={99}
-                value={overallForm.mainOverall}
-                onChange={e => setOverallForm({ ...overallForm, mainOverall: e.target.value })}
-                placeholder="60–99"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="alt-overall">{t('overalls.profile.altOverall')}</label>
-              <input
-                type="number"
-                id="alt-overall"
-                min={60}
-                max={99}
-                value={overallForm.alternateOverall}
-                onChange={e => setOverallForm({ ...overallForm, alternateOverall: e.target.value })}
-                placeholder="60–99"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="profile-image">Wrestler Image</label>
-              <div className="profile-image-upload">
-                {imagePreview ? (
-                  <div className="profile-image-preview">
-                    <img src={imagePreview} alt="Preview" />
-                    <button type="button" onClick={clearImage} className="remove-image-btn">
-                      Remove Image
-                    </button>
-                  </div>
-                ) : (
-                  <div className="profile-image-upload-box">
-                    <input
-                      type="file"
-                      id="profile-image"
-                      accept="image/jpeg,image/png,image/gif,image/webp"
-                      onChange={handleFileSelect}
-                      className="file-input"
-                    />
-                    <label htmlFor="profile-image" className="file-input-label">
-                      Click to upload image
-                    </label>
-                    <p className="upload-hint">{FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS} (max {FILE_UPLOAD_LIMITS.MAX_SIZE_MB}MB)</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {player.divisionId && (
-              <div className="form-group transfer-form-group">
-                <label className="form-section-label">Division Transfer</label>
-                {(() => {
-                  const pending = transferRequests.find((r) => r.status === 'pending');
-                  if (pending) {
-                    return (
-                      <div className="transfer-status-card">
-                        <p className="transfer-status-msg">
-                          Request pending — moving to <strong>{pending.toDivisionName}</strong>
-                        </p>
-                        <p className="transfer-status-sub">Submitted {new Date(pending.createdAt).toLocaleDateString()}</p>
-                      </div>
-                    );
-                  }
-                  const availableDivisions = divisions.filter((d) => d.divisionId !== player.divisionId);
-                  return (
-                    <>
-                      {transferError && <div className="error-message">{transferError}</div>}
-                      {transferSuccess && <div className="success-message">{transferSuccess}</div>}
-                      <select
-                        id="transfer-division"
-                        value={transferForm.toDivisionId}
-                        onChange={(e) => setTransferForm({ ...transferForm, toDivisionId: e.target.value })}
-                      >
-                        <option value="">Request a division move...</option>
-                        {availableDivisions.map((d) => (
-                          <option key={d.divisionId} value={d.divisionId}>{d.name}</option>
-                        ))}
-                      </select>
-                      {transferForm.toDivisionId && (
-                        <>
-                          <textarea
-                            id="transfer-reason"
-                            value={transferForm.reason}
-                            onChange={(e) => setTransferForm({ ...transferForm, reason: e.target.value })}
-                            placeholder="Why do you want to transfer divisions?"
-                            rows={3}
-                            style={{ marginTop: '0.5rem' }}
-                          />
-                          <button
-                            type="button"
-                            className="save-btn"
-                            style={{ marginTop: '0.5rem' }}
-                            onClick={handleTransferSubmit}
-                            disabled={transferSubmitting || !transferForm.reason.trim()}
-                          >
-                            {transferSubmitting ? 'Submitting...' : 'Submit Transfer Request'}
-                          </button>
-                        </>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-
-            <div className="form-actions">
-              <button
-                type="submit"
-                className="save-btn"
-                disabled={submitting || uploading}
-              >
-                {submitting ? 'Saving...' : uploading ? 'Uploading...' : 'Save Profile'}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="cancel-btn"
-                disabled={submitting || uploading}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* All-Time Stats — mobile gets the app-style 3-up stat strip, desktop
-          keeps the two-card record layout. Same data, different markup. */}
-      {isMobile ? (
-        <div className="mobile-stats-card">
-          <div className="mobile-stat">
-            <span className="mobile-stat-value wins">{player.wins}</span>
-            <span className="mobile-stat-label">{t('standings.table.wins', 'Wins')}</span>
-          </div>
-          <div className="mobile-stat">
-            <span className="mobile-stat-value losses">{player.losses}</span>
-            <span className="mobile-stat-label">{t('standings.table.losses', 'Losses')}</span>
-          </div>
-          <div className="mobile-stat">
-            <span className={`mobile-stat-value ${getWinPercentageClass(player.wins, player.losses, player.draws)}`}>
-              {Math.round(Number(getWinPercentage(player.wins, player.losses, player.draws)))}%
-            </span>
-            <span className="mobile-stat-label">{t('standings.table.winPercent', 'Win %')}</span>
-          </div>
-        </div>
+      {editing ? (
+        <ProfileEditForm
+          player={player}
+          overall={overall}
+          onCancel={() => setEditing(false)}
+          onSaved={handleSaved}
+        />
       ) : (
-        <div className="stats-section">
-          <h3 className="stats-section-title">All-Time Record</h3>
-          <div className="profile-stats">
-            <div className="stat-card">
-              <span className="stat-label">Record</span>
-              <span className="stat-value record">
-                {player.wins}-{player.losses}-{player.draws}
-              </span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-label">Win %</span>
-              <span className={`stat-value percentage ${getWinPercentageClass(player.wins, player.losses, player.draws)}`}>
-                {getWinPercentage(player.wins, player.losses, player.draws)}%
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bio + moveset (view mode only; the edit form has its own inputs). */}
-      {!editing && (
-        <div className="stats-section profile-moveset-section">
-          <h3 className="stats-section-title">{t('profile.moves.sectionTitle', 'Moveset')}</h3>
-          {player.bio ? (
-            <p className="profile-bio">{player.bio}</p>
-          ) : (
-            <p className="profile-bio profile-bio-empty">{t('profile.bio.empty', 'No bio yet.')}</p>
-          )}
-          <div className="moveset-columns">
-            <MoveList
-              title={t('profile.moves.signatures', 'Signature Moves')}
-              moves={player.signatures}
-              emptyText={t('profile.moves.noSignatures', 'No signatures entered yet.')}
-            />
-            <MoveList
-              title={t('profile.moves.finishers', 'Finishers')}
-              moves={player.finishers}
-              emptyText={t('profile.moves.noFinishers', 'No finishers entered yet.')}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Mobile app-style grouped cards (view mode only). Every row/pill is a
-          shortcut into the existing edit form — no new submission flows. */}
-      {isMobile && !editing && (
         <>
-          <div className="mobile-profile-card mobile-details-card">
-            <h3 className="mobile-card-title">{t('profile.mobile.details', 'Details')}</h3>
-            <div className="mobile-detail-rows">
-              <button type="button" className="mobile-detail-row" onClick={handleEdit}>
-                <span className="mobile-detail-label">{t('profile.mobile.displayName', 'Display Name')}</span>
-                <span className="mobile-detail-value">{player.name}</span>
-                <span className="mobile-detail-chevron" aria-hidden="true">&#8250;</span>
-              </button>
-              <button type="button" className="mobile-detail-row" onClick={handleEdit}>
-                <span className="mobile-detail-label">{t('standings.table.wrestler', 'Wrestler')}</span>
-                <span className={`mobile-detail-value ${player.currentWrestler ? '' : 'placeholder'}`}>
-                  {player.currentWrestler || t('profile.mobile.notSet', 'Not set')}
-                </span>
-                <span className="mobile-detail-chevron" aria-hidden="true">&#8250;</span>
-              </button>
-              <button type="button" className="mobile-detail-row" onClick={handleEdit}>
-                <span className="mobile-detail-label">{t('profile.alternateWrestler', 'Alternate Wrestler')}</span>
-                <span className={`mobile-detail-value ${player.alternateWrestler ? '' : 'placeholder'}`}>
-                  {player.alternateWrestler || t('profile.mobile.notSet', 'Not set')}
-                </span>
-                <span className="mobile-detail-chevron" aria-hidden="true">&#8250;</span>
-              </button>
-              <button type="button" className="mobile-detail-row" onClick={handleEdit}>
-                <span className="mobile-detail-label">{t('auth.psnId', 'PSN ID')}</span>
-                <span className={`mobile-detail-value ${player.psnId ? '' : 'placeholder'}`}>
-                  {player.psnId || t('profile.mobile.notSet', 'Not set')}
-                </span>
-                <span className="mobile-detail-chevron" aria-hidden="true">&#8250;</span>
-              </button>
-            </div>
+          <Tabs
+            label={t('me.profile.tabsLabel')}
+            value={tab}
+            onValueChange={(value) => setTab(value as ProfileTab)}
+            items={[
+              { value: 'overview', label: t('me.profile.tabOverview') },
+              { value: 'requests', label: t('me.profile.tabRequests') },
+              ...(statisticsTab ? [{ value: 'stats', label: t('me.profile.tabStats') }] : []),
+            ]}
+          />
+
+          <div hidden={tab !== 'overview'}>
+            <RecordSummary record={player} />
+            <MovesetSection player={player} showEmpty />
+            {overall && (
+              <section className="profile-section" aria-labelledby="profile-overalls-title">
+                <h2 className="profile-section__title" id="profile-overalls-title">{t('overalls.profile.title')}</h2>
+                <Card>
+                  <dl className="profile-figures">
+                    <div>
+                      <dt>{t('overalls.admin.mainOverall')}</dt>
+                      <dd>{overall.mainOverall}</dd>
+                    </div>
+                    {overall.alternateOverall !== undefined && (
+                      <div>
+                        <dt>{t('overalls.admin.altOverall')}</dt>
+                        <dd>{overall.alternateOverall}</dd>
+                      </div>
+                    )}
+                  </dl>
+                </Card>
+              </section>
+            )}
+            <SeasonRecords seasons={player.seasonRecords ?? []} />
           </div>
 
-          <div className="mobile-profile-card mobile-alignment-card">
-            <h3 className="mobile-card-title">{t('profile.mobile.alignment', 'Alignment')}</h3>
-            <div className="mobile-alignment-pills">
-              {([
-                { value: 'face', label: t('profile.mobile.face', 'Face') },
-                { value: 'heel', label: t('profile.mobile.heel', 'Heel') },
-                { value: 'neutral', label: t('profile.mobile.neutral', 'Neutral') },
-              ] as const).map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={`mobile-alignment-pill pill-${value} ${player.alignment === value ? 'selected' : ''}`}
-                  aria-pressed={player.alignment === value}
-                  onClick={handleEdit}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <p className="mobile-alignment-hint">
-              Helps GMs with booking and other players with promos. Doesn't affect matchups.
-            </p>
+          {/* Stays mounted so a half-written request survives a tab switch. */}
+          <div hidden={tab !== 'requests'}>
+            <ProfileRequests player={player} divisions={divisions} />
           </div>
 
-          {player.divisionId && (
-            <div className="mobile-profile-card mobile-division-card">
-              <div className="mobile-division-header">
-                <h3 className="mobile-card-title">{t('publicProfile.division', 'Division')}</h3>
-                {pendingTransfer && (
-                  <span className="mobile-transfer-pending-badge">
-                    {t('profile.mobile.transferPending', 'Transfer pending')}
-                  </span>
-                )}
-              </div>
-              <p className="mobile-division-name">{currentDivisionName || '—'}</p>
-              {!pendingTransfer && (
-                <button type="button" className="mobile-transfer-btn" onClick={handleEdit}>
-                  {t('profile.mobile.requestTransfer', 'Request Transfer')}
-                </button>
-              )}
-            </div>
-          )}
+          {statisticsTab && tab === 'stats' && <EmbeddedPlayerStats playerId={player.playerId} imageUrl={player.imageUrl} />}
         </>
       )}
-
-      {/* Wrestler Overalls */}
-      {overall && (
-        <div className="stats-section">
-          <h3 className="stats-section-title">{t('overalls.profile.title')}</h3>
-          <div className="profile-stats">
-            <div className="stat-card">
-              <span className="stat-label">{t('overalls.admin.mainOverall')}</span>
-              <span className="stat-value">{overall.mainOverall}</span>
-            </div>
-            {overall.alternateOverall !== undefined && (
-              <div className="stat-card">
-                <span className="stat-label">{t('overalls.admin.altOverall')}</span>
-                <span className="stat-value">{overall.alternateOverall}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Transfer request history (view mode) */}
-      {transferRequests.length > 0 && (
-        <div className="stats-section">
-          <h3 className="stats-section-title">Division Transfer History</h3>
-          <div className="transfer-history-list">
-            {transferRequests.map((req) => (
-              <div key={req.requestId} className={`transfer-history-item transfer-history-${req.status}`}>
-                <div className="transfer-history-row">
-                  <span className="transfer-history-divisions">
-                    {req.fromDivisionName} → {req.toDivisionName}
-                  </span>
-                  <span className={`transfer-badge ${req.status}`}>{req.status}</span>
-                  <span className="transfer-history-date">{new Date(req.updatedAt).toLocaleDateString()}</span>
-                </div>
-                {req.status === 'rejected' && req.reviewNote && (
-                  <p className="transfer-history-note">Reason: {req.reviewNote}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Storyline Requests */}
-      {player.playerId && (
-        <div className="stats-section storyline-request-section">
-          <h3 className="stats-section-title">Request a Storyline</h3>
-          <p className="storyline-request-hint">
-            Pitch a storyline, backstage attack, or rivalry idea to the GMs.
-          </p>
-          {storylineError && <div className="error-message">{storylineError}</div>}
-          {storylineSuccess && <div className="success-message">{storylineSuccess}</div>}
-          <div className="storyline-request-form">
-            <div className="storyline-request-field">
-              <label htmlFor="storyline-type">Request type</label>
-              <select
-                id="storyline-type"
-                value={storylineForm.requestType}
-                onChange={(e) =>
-                  setStorylineForm({
-                    ...storylineForm,
-                    requestType: e.target.value as StorylineRequestType,
-                  })
-                }
-              >
-                <option value="storyline">Storyline</option>
-                <option value="backstage_attack">Backstage Attack</option>
-                <option value="rivalry">Rivalry</option>
-              </select>
-            </div>
-            <div className="storyline-request-field">
-              <label htmlFor="storyline-targets">Target player(s)</label>
-              <select
-                id="storyline-targets"
-                multiple
-                value={storylineForm.targetPlayerIds}
-                onChange={(e) => {
-                  const selected = Array.from(e.target.selectedOptions).map((o) => o.value);
-                  setStorylineForm({ ...storylineForm, targetPlayerIds: selected });
-                }}
-                size={Math.min(6, Math.max(3, allPlayers.length))}
-              >
-                {allPlayers
-                  .filter((p) => p.playerId !== player.playerId)
-                  .map((p) => (
-                    <option key={p.playerId} value={p.playerId}>
-                      {p.name} ({p.currentWrestler})
-                    </option>
-                  ))}
-              </select>
-              <small className="storyline-request-hint-inline">Hold Ctrl/Cmd to select multiple</small>
-            </div>
-            <div className="storyline-request-field">
-              <label htmlFor="storyline-description">Description</label>
-              <textarea
-                id="storyline-description"
-                value={storylineForm.description}
-                onChange={(e) =>
-                  setStorylineForm({ ...storylineForm, description: e.target.value })
-                }
-                placeholder="Describe your idea..."
-                rows={4}
-                maxLength={500}
-              />
-              <small className="storyline-request-hint-inline">
-                {storylineForm.description.length}/500
-              </small>
-            </div>
-            <button
-              type="button"
-              className="save-btn"
-              onClick={handleStorylineSubmit}
-              disabled={
-                storylineSubmitting ||
-                storylineForm.targetPlayerIds.length === 0 ||
-                !storylineForm.description.trim()
-              }
-            >
-              {storylineSubmitting ? 'Submitting...' : 'Submit Request'}
-            </button>
-          </div>
-
-          {storylineRequests.length > 0 && (
-            <div className="storyline-request-history">
-              <h4 className="storyline-request-history-title">My Requests</h4>
-              <div className="storyline-request-list">
-                {storylineRequests.map((req) => (
-                  <div
-                    key={req.requestId}
-                    className={`storyline-history-item storyline-history-${req.status}`}
-                  >
-                    <div className="storyline-history-row">
-                      <span className="storyline-history-type">
-                        {req.requestType === 'backstage_attack'
-                          ? 'Backstage Attack'
-                          : req.requestType === 'rivalry'
-                          ? 'Rivalry'
-                          : 'Storyline'}
-                      </span>
-                      <span className={`storyline-badge ${req.status}`}>{req.status}</span>
-                      <span className="storyline-history-date">
-                        {new Date(req.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="storyline-history-targets">
-                      vs. {req.targetPlayerNames.join(', ')}
-                    </div>
-                    <p className="storyline-history-description">{req.description}</p>
-                    {req.status === 'declined' && req.gmNote && (
-                      <p className="storyline-history-note">GM note: {req.gmNote}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Season Records */}
-      {player.seasonRecords && player.seasonRecords.length > 0 && (
-        <div className="stats-section">
-          <h3 className="stats-section-title">Season Records</h3>
-          <div className="season-records">
-            {player.seasonRecords.map((season) => (
-              <div key={season.seasonId} className="season-record-card">
-                <div className="season-record-header">
-                  <span className="season-record-name">{season.seasonName}</span>
-                  {season.seasonStatus === 'active' && (
-                    <span className="season-active-badge">Active</span>
-                  )}
-                </div>
-                <div className="season-record-stats">
-                  <span className="season-record-value">
-                    {season.wins}-{season.losses}-{season.draws}
-                  </span>
-                  <span className={`season-record-pct ${getWinPercentageClass(season.wins, season.losses, season.draws)}`}>
-                    {getWinPercentage(season.wins, season.losses, season.draws)}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {features.statistics && player.playerId && (
-        <EmbeddedPlayerStats playerId={player.playerId} />
-      )}
-
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
 const { mockGetRecords } = vi.hoisted(() => ({
@@ -89,9 +89,9 @@ const mockRecordsData = {
 
 function renderComponent() {
   return render(
-    <BrowserRouter>
+    <MemoryRouter>
       <RecordBook />
-    </BrowserRouter>
+    </MemoryRouter>
   );
 }
 
@@ -105,9 +105,8 @@ describe('RecordBook', () => {
 
     renderComponent();
 
-    await waitFor(() => {
-      expect(screen.getByText('Record Book')).toBeInTheDocument();
-    });
+    await screen.findByRole('heading', { level: 1, name: 'Record Book' });
+    await screen.findByText('Highest Win Percentage');
 
     // Record names displayed (Most Career Wins appears in both records and threats)
     expect(screen.getAllByText('Most Career Wins').length).toBeGreaterThanOrEqual(1);
@@ -128,8 +127,25 @@ describe('RecordBook', () => {
     // Descriptions
     expect(screen.getByText('Most wins in league history')).toBeInTheDocument();
 
-    // Dates
-    expect(screen.getByText(/Set on 2024-06-01/)).toBeInTheDocument();
+    // The API stamps record dates at request time, so they are not displayed
+    expect(screen.queryByText(/Set on/)).not.toBeInTheDocument();
+  });
+
+  it('shows a record nobody qualifies for as an empty state, not "0 / N/A"', async () => {
+    mockGetRecords.mockResolvedValue({
+      records: {
+        overall: [{ recordName: 'Fewest Losses', holderName: 'N/A', wrestlerName: 'N/A', value: 0, description: 'Min 10 matches' }],
+        championships: [],
+        streaks: [],
+        matchTypes: [],
+      },
+      activeThreats: [],
+    });
+    renderComponent();
+
+    expect(await screen.findByText('Fewest Losses')).toBeInTheDocument();
+    expect(screen.queryByText(/N\/A/)).not.toBeInTheDocument();
+    expect(screen.getByText('statistics.recordBook.unclaimed')).toBeInTheDocument();
   });
 
   it('displays active threats section showing challenger info', async () => {
@@ -153,9 +169,7 @@ describe('RecordBook', () => {
 
     renderComponent();
 
-    await waitFor(() => {
-      expect(screen.getByText('Record Book')).toBeInTheDocument();
-    });
+    await screen.findByText('Highest Win Percentage');
 
     // Switch to Championships tab
     await user.click(screen.getByText('Championships'));
@@ -171,5 +185,14 @@ describe('RecordBook', () => {
     await waitFor(() => {
       expect(screen.getByText('No records available yet.')).toBeInTheDocument();
     });
+  });
+
+  it('shows a loading state, then a retry when the request fails', async () => {
+    mockGetRecords.mockRejectedValueOnce(new Error('Network error'));
+
+    renderComponent();
+
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'common.retry' })).toBeInTheDocument();
   });
 });

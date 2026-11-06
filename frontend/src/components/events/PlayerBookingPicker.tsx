@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Check, ChevronDown } from 'lucide-react';
 import type { Player, PlayerBookingInfo } from '../../types';
 import {
   compareByBookingRecency,
@@ -13,6 +14,8 @@ import {
   CHECK_IN_STATUS_ORDER,
   isBookable,
 } from '../../utils/checkInStatus';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
+import { nameOrUnnamed } from '../../utils/playerName';
 import './PlayerBookingPicker.css';
 
 /** @deprecated Use CheckInStatus from utils/checkInStatus. Kept for callers. */
@@ -50,6 +53,12 @@ export interface PlayerBookingPickerProps {
 interface PickerGroup {
   status: CheckInStatus;
   players: Player[];
+}
+
+/** A hidden player kept on an old booking has no wrestler, so the name stands alone. */
+function playerLabel(player: Player, unnamedLabel: string): string {
+  const name = nameOrUnnamed(player.name, unnamedLabel);
+  return isNeedsWrestler(player.currentWrestler) ? name : `${player.currentWrestler} (${name})`;
 }
 
 export default function PlayerBookingPicker({
@@ -96,6 +105,8 @@ export default function PlayerBookingPicker({
   // empty the list, so fall back to showing everyone.
   const hasCheckInData = (checkInStatusByPlayerId?.size ?? 0) > 0;
 
+  const unnamedLabel = t('common.unnamedPlayer', 'Unnamed player');
+
   const groups = useMemo<PickerGroup[]>(() => {
     const term = search.trim().toLowerCase();
     const buckets = new Map<CheckInStatus, Player[]>();
@@ -114,8 +125,7 @@ export default function PlayerBookingPicker({
         continue;
       }
       if (term) {
-        const haystack = `${player.name} ${player.currentWrestler ?? ''}`.toLowerCase();
-        if (!haystack.includes(term)) continue;
+        if (!playerLabel(player, unnamedLabel).toLowerCase().includes(term)) continue;
       }
       const list = buckets.get(status);
       if (list) list.push(player);
@@ -131,7 +141,7 @@ export default function PlayerBookingPicker({
       }
     }
     return ordered;
-  }, [players, search, showAll, statusOf, isSelected, hasCheckInData, bookingInfoByPlayerId]);
+  }, [players, search, showAll, statusOf, isSelected, hasCheckInData, bookingInfoByPlayerId, unnamedLabel]);
 
   const renderBookingMeta = (playerId: string) => {
     const info = bookingInfoByPlayerId?.get(playerId);
@@ -192,15 +202,20 @@ export default function PlayerBookingPicker({
       }
     };
     // Multi mode has no confirm button — the menu stays open across picks —
-    // so Escape is the way out without reaching for the mouse.
+    // so Escape is the way out without reaching for the mouse. Inside a Radix
+    // dialog the same key would also close the dialog and lose its edits. Radix
+    // listens on document in the capture phase, so this listens earlier, on
+    // window, and only while the menu is open: a second Escape reaches the dialog.
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close();
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      close();
     };
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown, true);
     };
   }, [open]);
 
@@ -257,14 +272,14 @@ export default function PlayerBookingPicker({
               className={`booking-picker-dot booking-picker-dot--${statusOf(selectedPlayer.playerId)}`}
               aria-hidden="true"
             />
-            {selectedPlayer.currentWrestler} ({selectedPlayer.name})
+            {playerLabel(selectedPlayer, unnamedLabel)}
           </span>
         ) : (
           <span className="booking-picker-trigger-text booking-picker-trigger-text--empty">
             {placeholder ?? openLabel}
           </span>
         )}
-        <span className="booking-picker-caret" aria-hidden="true">▾</span>
+        <ChevronDown className="booking-picker-caret" aria-hidden="true" size={18} />
       </button>
 
       {open && (
@@ -306,9 +321,12 @@ export default function PlayerBookingPicker({
           {groups.map((group) => (
             <div key={group.status} className="booking-picker-group">
               <div
-                className={`booking-picker-group-title booking-picker-group-title--${group.status}`}
+                className={`booking-picker-group-title booking-picker-group-title--${hasCheckInData ? group.status : 'noResponse'}`}
               >
-                {statusLabel(group.status)} ({group.players.length})
+                {hasCheckInData
+                  ? statusLabel(group.status)
+                  : t('matches.slots.picker.allPlayers', { defaultValue: 'All players' })}{' '}
+                ({group.players.length})
               </div>
               {group.players.map((player) => {
                 const isBooked = bookedPlayerIds?.has(player.playerId) ?? false;
@@ -330,10 +348,10 @@ export default function PlayerBookingPicker({
                       aria-hidden="true"
                     />
                     <span className="booking-picker-option-text">
-                      {player.currentWrestler} ({player.name})
+                      {playerLabel(player, unnamedLabel)}
                     </span>
                     {multi && isSelected(player.playerId) && (
-                      <span className="booking-picker-check" aria-hidden="true">✓</span>
+                      <Check className="booking-picker-check" aria-hidden="true" size={16} />
                     )}
                     {isBooked && (
                       <span className="booking-picker-booked-badge">

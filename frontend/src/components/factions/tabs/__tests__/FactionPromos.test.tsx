@@ -120,9 +120,8 @@ describe('FactionPromos tab (FAC-14)', () => {
     renderTab();
     await screen.findByText('Promo headline');
 
-    const sortSelect = screen.getByLabelText('Sort promos');
-    expect(within(sortSelect).queryByText('Most Viewed')).not.toBeInTheDocument();
-    expect(within(sortSelect).queryByText('Highest Heat')).not.toBeInTheDocument();
+    // Newest would be the only option, so there is nothing to choose.
+    expect(screen.queryByLabelText('Sort promos')).not.toBeInTheDocument();
   });
 
   it('exposes view/heat sort options when items carry those fields', async () => {
@@ -136,15 +135,14 @@ describe('FactionPromos tab (FAC-14)', () => {
     renderTab();
     await screen.findByText('First promo');
 
-    const sortSelect = screen.getByLabelText('Sort promos') as HTMLSelectElement;
-    expect(within(sortSelect).getByText('Most Viewed')).toBeInTheDocument();
-
     // Switching to Most Viewed reorders p2 (300 views) before p1.
-    await userEvent.selectOptions(sortSelect, 'viewed');
+    await userEvent.click(screen.getByLabelText('Sort promos'));
+    expect(await screen.findByRole('option', { name: 'Highest Heat' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('option', { name: 'Most Viewed' }));
 
     const cards = screen.getAllByRole('article');
     expect(cards).toHaveLength(2);
-    expect(within(cards[0]).getByText(/👁/).textContent).toContain('300');
+    expect(within(cards[0]).getByLabelText('300 views')).toBeInTheDocument();
   });
 
   it('appends the next page when Load more is clicked', async () => {

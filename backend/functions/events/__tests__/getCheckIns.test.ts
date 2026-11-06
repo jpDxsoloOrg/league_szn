@@ -3,14 +3,15 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockQueryAll, mockScan } = vi.hoisted(() => ({
+const { mockGet, mockQueryAll, mockScan } = vi.hoisted(() => ({
+  mockGet: vi.fn(),
   mockQueryAll: vi.fn(),
   mockScan: vi.fn(),
 }));
 
 vi.mock('../../../lib/dynamodb', () => ({
   dynamoDb: {
-    get: vi.fn(),
+    get: mockGet,
     put: vi.fn(),
     query: vi.fn(),
     scan: mockScan,
@@ -20,6 +21,7 @@ vi.mock('../../../lib/dynamodb', () => ({
     scanAll: vi.fn(),
   },
   TableNames: {
+    EVENTS: 'Events',
     EVENT_CHECK_INS: 'EventCheckIns',
     PLAYERS: 'Players',
   },
@@ -76,7 +78,10 @@ const roster = [
 // ─── Tests ───────────────────────────────────────────────────────────
 
 describe('getCheckIns', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGet.mockResolvedValue({ Item: { eventId: 'evt-1' } });
+  });
 
   it('returns grouped roster with all four buckets for an admin call', async () => {
     mockQueryAll.mockResolvedValue([
@@ -101,6 +106,38 @@ describe('getCheckIns', () => {
     expect(body.noResponse[0].playerId).toBe('p4');
   });
 
+  it('leaves out hidden players who did not answer, whatever their stored placeholder', async () => {
+    mockQueryAll.mockResolvedValue([]);
+    mockScan.mockResolvedValue({
+      Items: [
+        { playerId: 'p1', name: 'Alice', currentWrestler: 'Stone Cold' },
+        { playerId: 'p6', name: 'Frank', currentWrestler: 'Needs Wrestler' },
+        { playerId: 'p7', name: 'Grace', currentWrestler: '   ' },
+      ],
+    });
+
+    const result = await getCheckIns(withAuth(makeEvent({ pathParameters: { eventId: 'evt-1' } }), 'Admin'), ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    expect(body.noResponse.map((p: { playerId: string }) => p.playerId)).toEqual(['p1']);
+  });
+
+  it('keeps a real check-in from a hidden player', async () => {
+    mockQueryAll.mockResolvedValue([
+      { eventId: 'evt-1', playerId: 'p6', status: 'available' },
+      { eventId: 'evt-1', playerId: 'p5', status: 'unavailable' },
+    ]);
+    mockScan.mockResolvedValue({
+      Items: [...roster, { playerId: 'p6', name: 'Frank', currentWrestler: 'Needs Wrestler' }],
+    });
+
+    const result = await getCheckIns(withAuth(makeEvent({ pathParameters: { eventId: 'evt-1' } }), 'Admin'), ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    expect(body.available.map((p: { playerId: string }) => p.playerId)).toEqual(['p6']);
+    expect(body.unavailable.map((p: { playerId: string }) => p.playerId)).toEqual(['p5']);
+  });
+
   it('returns 403 for a non-admin (Wrestler) caller', async () => {
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'evt-1' } }), 'Wrestler');
     const result = await getCheckIns(event, ctx, cb);
@@ -110,6 +147,18 @@ describe('getCheckIns', () => {
       'Only admins and moderators can view event check-ins',
     );
     expect(mockQueryAll).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 for an event that does not exist', async () => {
+    mockGet.mockResolvedValue({ Item: undefined });
+
+    const event = withAuth(makeEvent({ pathParameters: { eventId: 'missing' } }), 'Moderator');
+    const result = await getCheckIns(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(404);
+    expect(JSON.parse(result!.body).message).toBe('Event not found');
+    expect(mockQueryAll).not.toHaveBeenCalled();
+    expect(mockScan).not.toHaveBeenCalled();
   });
 
   it('returns all wrestlers in noResponse when the event has no check-ins', async () => {

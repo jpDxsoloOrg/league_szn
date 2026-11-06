@@ -2,7 +2,15 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { overallsApi } from '../../services/api';
 import type { WrestlerOverallWithPlayer } from '../../types';
-import './ManageOveralls.css';
+import DataTable from '../ui/DataTable';
+import type { DataTableColumn } from '../ui/DataTable';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Badge from '../ui/Badge';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
+import HiddenBadge from './HiddenBadge';
+import AdminNotice from './AdminNotice';
+import './adminRoster.css';
 
 export default function ManageOveralls() {
   const { t } = useTranslation();
@@ -12,6 +20,7 @@ export default function ManageOveralls() {
 
   useEffect(() => {
     loadOveralls();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   }, []);
 
   const loadOveralls = async () => {
@@ -21,55 +30,60 @@ export default function ManageOveralls() {
       const data = await overallsApi.getAllOveralls();
       setOveralls(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load overalls');
+      setError(err instanceof Error ? err.message : t('adminRoster.overalls.loadError', 'Failed to load overalls'));
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <div className="loading">{t('common.loading')}</div>;
+  const columns: DataTableColumn<WrestlerOverallWithPlayer>[] = [
+    {
+      key: 'player',
+      header: t('overalls.admin.player'),
+      render: (entry) => <span className="ar-strong">{entry.playerName}</span>,
+      sortValue: (entry) => entry.playerName,
+    },
+    {
+      key: 'wrestler',
+      header: t('overalls.admin.wrestler'),
+      render: (entry) => (isNeedsWrestler(entry.wrestlerName) ? <HiddenBadge /> : entry.wrestlerName),
+      sortValue: (entry) => entry.wrestlerName,
+    },
+    {
+      key: 'main',
+      header: t('overalls.admin.mainOverall'),
+      align: 'end',
+      render: (entry) => <Badge tone="primary">{entry.mainOverall}</Badge>,
+      sortValue: (entry) => entry.mainOverall,
+    },
+    {
+      key: 'alternate',
+      header: t('overalls.admin.altOverall'),
+      align: 'end',
+      render: (entry) => (entry.alternateOverall !== undefined ? <Badge>{entry.alternateOverall}</Badge> : '—'),
+      sortValue: (entry) => entry.alternateOverall ?? -1,
+    },
+    {
+      key: 'submitted',
+      header: t('overalls.admin.submittedAt'),
+      render: (entry) => new Date(entry.submittedAt).toLocaleDateString(),
+      sortValue: (entry) => entry.submittedAt,
+    },
+  ];
 
   return (
-    <div className="manage-overalls">
-      <h2>{t('overalls.admin.title')}</h2>
-      <p className="overalls-subtitle">{t('overalls.admin.subtitle')}</p>
-
-      {error && <div className="error-message">{error}</div>}
-
-      {overalls.length === 0 ? (
-        <p className="no-data">{t('overalls.admin.noData')}</p>
-      ) : (
-        <table className="overalls-table">
-          <thead>
-            <tr>
-              <th>{t('overalls.admin.player')}</th>
-              <th>{t('overalls.admin.wrestler')}</th>
-              <th>{t('overalls.admin.mainOverall')}</th>
-              <th>{t('overalls.admin.altOverall')}</th>
-              <th>{t('overalls.admin.submittedAt')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {overalls.map(entry => (
-              <tr key={entry.playerId}>
-                <td>{entry.playerName}</td>
-                <td>{entry.wrestlerName}</td>
-                <td>
-                  <span className="overall-badge main-overall">{entry.mainOverall}</span>
-                </td>
-                <td>
-                  {entry.alternateOverall !== undefined ? (
-                    <span className="overall-badge alt-overall">{entry.alternateOverall}</span>
-                  ) : (
-                    <span className="no-alt">—</span>
-                  )}
-                </td>
-                <td>{new Date(entry.submittedAt).toLocaleDateString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+    <div className="ar-page manage-overalls">
+      <PageHeader title={t('overalls.admin.title')} subtitle={t('overalls.admin.subtitle')} />
+      {error && <AdminNotice tone="error">{error}</AdminNotice>}
+      <DataTable
+        caption={t('overalls.admin.title')}
+        density="dense"
+        columns={columns}
+        rows={overalls}
+        rowKey={(entry) => entry.playerId}
+        loading={loading}
+        empty={<EmptyState title={t('overalls.admin.noData')} />}
+      />
     </div>
   );
 }

@@ -14,56 +14,66 @@ import { createRouter, type RouteConfig } from '../../lib/router';
  * Single Lambda for matchmaking: routes by HTTP method and resource.
  * Handles presence, queue, and invitation endpoints.
  */
-const routes: ReadonlyArray<RouteConfig> = [
+export const routes: ReadonlyArray<RouteConfig> = [
   {
     resource: '/matchmaking/heartbeat',
     method: 'POST',
     handler: heartbeatHandler,
+    access: 'self-service',
   },
   {
     resource: '/matchmaking/presence',
     method: 'DELETE',
     handler: leavePresenceHandler,
+    access: 'self-service',
   },
   {
     resource: '/matchmaking/queue/join',
     method: 'POST',
     handler: joinQueueHandler,
+    access: 'self-service',
   },
   {
     resource: '/matchmaking/queue/leave',
     method: 'POST',
     handler: leaveQueueHandler,
+    access: 'self-service',
   },
   {
     resource: '/matchmaking/queue',
     method: 'GET',
     handler: getQueueHandler,
+    access: 'self-service',
   },
   {
     resource: '/matchmaking/online',
     method: 'GET',
     handler: getOnlineHandler,
+    access: 'self-service',
   },
   {
     resource: '/matchmaking/invite',
     method: 'POST',
     handler: createInvitationHandler,
+    access: 'self-service',
   },
   {
     resource: '/matchmaking/invitations',
     method: 'GET',
     handler: getInvitationsHandler,
+    access: 'self-service',
   },
   {
     resource: '/matchmaking/invitations/{invitationId}/accept',
     method: 'POST',
     handler: acceptInvitationHandler,
+    access: 'self-service',
   },
   {
     resource: '/matchmaking/invitations/{invitationId}/decline',
     method: 'POST',
     handler: declineInvitationHandler,
+    access: 'self-service',
   },
 ];
 

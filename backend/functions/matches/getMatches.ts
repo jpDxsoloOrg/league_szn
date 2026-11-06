@@ -122,7 +122,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const { roster: { players } } = getRepositories();
       const fetched = await Promise.all(
         [...allSlotPlayerIds].map(async (id) => {
-          const p = await players.findById(id);
+          const p = await players.findByIdWithDeleted(id);
           return p ? ([id, p] as const) : null;
         }),
       );
@@ -188,6 +188,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
     const stack = err instanceof Error ? err.stack : undefined;
     console.error('Error fetching matches:', detail, stack);
-    return serverError(`Failed to fetch matches: ${detail}`);
+    return serverError('Failed to fetch matches');
   }
 };

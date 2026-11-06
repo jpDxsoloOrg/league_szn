@@ -9,7 +9,7 @@ import type {
   EventCheckInRoster,
   EventCommentary,
 } from '../../types/event';
-import { API_BASE_URL, fetchWithAuth, getAuthToken } from './apiClient';
+import { API_BASE_URL, fetchWithAuth, isApiError } from './apiClient';
 
 export const eventsApi = {
   getAll: async (filters?: { eventType?: string; status?: string; seasonId?: string }, signal?: AbortSignal): Promise<LeagueEvent[]> => {
@@ -57,33 +57,13 @@ export const eventsApi = {
   },
 
   getMyCheckIn: async (eventId: string, signal?: AbortSignal): Promise<EventCheckIn | null> => {
-    const token = getAuthToken();
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    try {
+      const checkIn: EventCheckIn | undefined = await fetchWithAuth(`${API_BASE_URL}/events/${eventId}/check-in/me`, {}, signal);
+      return checkIn ?? null;
+    } catch (err) {
+      if (isApiError(err, 404)) return null;
+      throw err;
     }
-
-    const response = await fetch(`${API_BASE_URL}/events/${eventId}/check-in/me`, {
-      headers,
-      signal,
-    });
-
-    if (response.status === 404) {
-      return null;
-    }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Request failed' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
-    }
-
-    if (response.status === 204) {
-      return null;
-    }
-
-    return response.json();
   },
 
   deleteCheckIn: async (eventId: string): Promise<void> => {

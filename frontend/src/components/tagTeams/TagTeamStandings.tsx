@@ -4,15 +4,29 @@ import { useTranslation } from 'react-i18next';
 import { tagTeamsApi } from '../../services/api';
 import { logger } from '../../utils/logger';
 import type { TagTeamStanding } from '../../types/tagTeam';
-import Skeleton from '../ui/Skeleton';
+import Avatar from '../ui/Avatar';
+import DataTable from '../ui/DataTable';
+import type { DataTableColumn } from '../ui/DataTable';
 import EmptyState from '../ui/EmptyState';
-import './TagTeamStandings.css';
+import Podium from '../ui/Podium';
+import Skeleton from '../ui/Skeleton';
+import GroupFormCell from '../factions/GroupFormCell';
+import { formatRecord } from '../factions/factionFormat';
+import '../rankPodium.css';
+import '../factions/groupUi.css';
+
+const PODIUM_SIZE = 3;
+
+interface RankedTeam extends TagTeamStanding {
+  rank: number;
+}
 
 export default function TagTeamStandings() {
   const { t } = useTranslation();
   const [standings, setStandings] = useState<TagTeamStanding[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -22,119 +36,112 @@ export default function TagTeamStandings() {
         setLoading(true);
         setError(null);
         const data = await tagTeamsApi.getStandings(abortController.signal);
-        if (!abortController.signal.aborted) {
-          setStandings(data);
-        }
+        if (!abortController.signal.aborted) setStandings(data);
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
           logger.error('Failed to load tag team standings');
-          setError(err.message || t('tagTeams.standings.error', 'Failed to load standings'));
+          setError(err.message || t('tagTeams.standingsTable.error', 'Failed to load standings'));
         }
       } finally {
-        if (!abortController.signal.aborted) {
-          setLoading(false);
-        }
+        if (!abortController.signal.aborted) setLoading(false);
       }
     };
 
     fetchStandings();
     return () => abortController.abort();
-  }, [t]);
+  }, [t, reloadKey]);
 
-  if (loading) {
-    return <Skeleton variant="table" className="tag-team-standings-skeleton" />;
-  }
+  if (loading) return <Skeleton variant="table" />;
 
   if (error) {
     return (
-      <div className="error">
-        <p>{t('common.error', 'Error')}: {error}</p>
-      </div>
+      <EmptyState
+        title={t('common.error', 'Error')}
+        description={error}
+        actionLabel={t('common.retry', 'Retry')}
+        onAction={() => setReloadKey((key) => key + 1)}
+      />
     );
   }
 
   if (standings.length === 0) {
     return (
       <EmptyState
-        title={t('tagTeams.standings.title', 'Tag Team Standings')}
-        description={t('tagTeams.standings.empty', 'No tag team standings available yet.')}
+        title={t('tagTeams.standings', 'Tag Team Standings')}
+        description={t('tagTeams.standingsTable.empty', 'No tag team standings available yet.')}
       />
     );
   }
 
+  const ranked: RankedTeam[] = standings.map((team, index) => ({ ...team, rank: index + 1 }));
+  const showPodium = ranked.length >= PODIUM_SIZE;
+  const tableRows = showPodium ? ranked.slice(PODIUM_SIZE) : ranked;
+
+  const columns: DataTableColumn<RankedTeam>[] = [
+    { key: 'rank', header: t('tagTeams.rank', 'Rank'), render: (team) => team.rank, sortValue: (team) => team.rank },
+    {
+      key: 'name',
+      header: t('tagTeams.standingsTable.name', 'Name'),
+      render: (team) => (
+        <Link to={`/tag-teams/${team.tagTeamId}`} className="group-table-name">
+          <Avatar src={team.imageUrl} name={team.name} size="sm" />
+          {team.name}
+        </Link>
+      ),
+      sortValue: (team) => team.name,
+    },
+    {
+      key: 'players',
+      header: t('tagTeams.standingsTable.players', 'Players'),
+      render: (team) => `${team.player1Name} & ${team.player2Name}`,
+      hideOnMobile: true,
+    },
+    {
+      key: 'record',
+      header: t('tagTeams.standingsTable.record', 'W-L-D'),
+      render: (team) => formatRecord(team.wins, team.losses, team.draws),
+      sortValue: (team) => team.wins,
+      align: 'end',
+    },
+    {
+      key: 'winRate',
+      header: t('tagTeams.winPct', 'Win%'),
+      render: (team) => `${team.winPercentage.toFixed(1)}%`,
+      sortValue: (team) => team.winPercentage,
+      align: 'end',
+    },
+    {
+      key: 'form',
+      header: t('tagTeams.form', 'Form'),
+      render: (team) => <GroupFormCell recentForm={team.recentForm} currentStreak={team.currentStreak} />,
+    },
+  ];
+
   return (
-    <div className="tag-team-standings">
-      <div className="tag-team-standings__table-wrapper">
-        <table className="tag-team-standings__table">
-          <thead>
-            <tr>
-              <th>{t('tagTeams.standings.rank', 'Rank')}</th>
-              <th className="tag-team-standings__name-header">
-                {t('tagTeams.standings.name', 'Name')}
-              </th>
-              <th>{t('tagTeams.standings.players', 'Players')}</th>
-              <th>{t('tagTeams.standings.wins', 'W')}</th>
-              <th>{t('tagTeams.standings.losses', 'L')}</th>
-              <th>{t('tagTeams.standings.draws', 'D')}</th>
-              <th>{t('tagTeams.standings.winPercent', 'Win%')}</th>
-              <th>{t('tagTeams.standings.form', 'Form')}</th>
-              <th>{t('tagTeams.standings.streak', 'Streak')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {standings.map((team, index) => (
-              <tr key={team.tagTeamId} className="tag-team-standings__row">
-                <td className="rank">{index + 1}</td>
-                <td className="tag-team-standings__name-cell">
-                  <Link to={`/tag-teams/${team.tagTeamId}`} className="tag-team-standings__name-link">
-                    {team.name}
-                  </Link>
-                </td>
-                <td className="tag-team-standings__players-cell">
-                  {team.player1Name} &amp; {team.player2Name}
-                </td>
-                <td className="wins">{team.wins}</td>
-                <td className="losses">{team.losses}</td>
-                <td className="draws">{team.draws}</td>
-                <td className="win-percentage">{team.winPercentage.toFixed(1)}%</td>
-                <td className="form-cell">
-                  {team.recentForm && team.recentForm.length > 0 ? (
-                    <span className="form-dots" aria-label={team.recentForm.join(', ')}>
-                      {team.recentForm.map((result, i) => (
-                        <span
-                          key={i}
-                          className={`form-dot ${result === 'W' ? 'win' : result === 'L' ? 'loss' : 'draw'}`}
-                          title={result === 'W' ? 'Win' : result === 'L' ? 'Loss' : 'Draw'}
-                        />
-                      ))}
-                    </span>
-                  ) : (
-                    <span className="form-empty">-</span>
-                  )}
-                </td>
-                <td className="streak-cell">
-                  {team.currentStreak && team.currentStreak.count >= 3 ? (
-                    <span
-                      className={`streak-badge ${
-                        team.currentStreak.type === 'W'
-                          ? 'hot'
-                          : team.currentStreak.type === 'L'
-                            ? 'cold'
-                            : 'neutral'
-                      }`}
-                    >
-                      {team.currentStreak.count}
-                      {team.currentStreak.type === 'W' ? 'W' : team.currentStreak.type === 'L' ? 'L' : 'D'}
-                    </span>
-                  ) : (
-                    <span className="streak-empty">-</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="group-page">
+      {showPodium && (
+        <Podium
+          className="rank-podium"
+          label={t('tagTeams.standings', 'Tag Team Standings')}
+          entries={ranked.slice(0, PODIUM_SIZE).map((team) => ({
+            id: team.tagTeamId,
+            name: team.name,
+            imageUrl: team.imageUrl,
+            subtitle: `${team.player1Name} & ${team.player2Name}`,
+            record: formatRecord(team.wins, team.losses, team.draws),
+            to: `/tag-teams/${team.tagTeamId}`,
+            stats: [{ label: t('tagTeams.winPct', 'Win%'), value: `${team.winPercentage.toFixed(1)}%` }],
+          }))}
+        />
+      )}
+      {tableRows.length > 0 && (
+        <DataTable
+          caption={t('tagTeams.standings', 'Tag Team Standings')}
+          columns={columns}
+          rows={tableRows}
+          rowKey={(team) => team.tagTeamId}
+        />
+      )}
     </div>
   );
 }

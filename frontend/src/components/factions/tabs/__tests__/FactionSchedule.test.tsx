@@ -114,11 +114,11 @@ describe('FactionSchedule tab (FAC-14)', () => {
 
     await waitFor(() => expect(mockGetSchedule).toHaveBeenCalled());
     const rows = await screen.findAllByRole('listitem');
-    const matchRows = rows.filter((r) => r.classList.contains('faction-schedule__row'));
+    const matchRows = rows.filter((r) => r.querySelector('.faction-schedule__row'));
     expect(matchRows).toHaveLength(2);
     // The backend already sorts ascending — assert the order surfaces as-is.
-    expect(within(matchRows[0]).getByText(/SINGLES/)).toBeInTheDocument();
-    expect(within(matchRows[1]).getByText(/TAG/)).toBeInTheDocument();
+    expect(within(matchRows[0]).getByText(/Singles/)).toBeInTheDocument();
+    expect(within(matchRows[1]).getByText(/Tag Team/)).toBeInTheDocument();
   });
 
   it('filters the visible matches when a member chip is toggled off', async () => {
@@ -149,7 +149,7 @@ describe('FactionSchedule tab (FAC-14)', () => {
 
     await waitFor(() => {
       const rows = screen.getAllByRole('listitem').filter((r) =>
-        r.classList.contains('faction-schedule__row'),
+        r.querySelector('.faction-schedule__row'),
       );
       expect(rows).toHaveLength(1);
     });

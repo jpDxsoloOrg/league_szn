@@ -4,8 +4,12 @@ Use **Match Config** to control the match options available when scheduling matc
 
 ## What you can manage
 
+The page has two tabs:
+
 - **Match Types**: base formats (Singles, Tag Team, Triple Threat, etc.)
 - **Stipulations**: modifiers and special rules (Ladder, Cage, No DQ, etc.)
+
+Each entry has a name and an optional description, and can be edited or deleted.
 
 ## Recommended workflow
 
@@ -17,4 +21,5 @@ Use **Match Config** to control the match options available when scheduling matc
 
 - Keep names short and consistent.
 - Avoid duplicate or near-duplicate entries.
-- Add descriptions for non-obvious terms so other admins understand intent.
+- Include "tag" in the name of tag team formats. That word is what makes Schedule Match ask for teams.
+- Add descriptions for non-obvious terms so other staff understand intent.

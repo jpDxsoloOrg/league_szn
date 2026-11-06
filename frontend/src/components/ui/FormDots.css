@@ -1,0 +1,23 @@
+.ui-form-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+}
+
+.ui-form-dots__dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+}
+
+.ui-form-dots__dot--w {
+  background-color: var(--color-win);
+}
+
+.ui-form-dots__dot--l {
+  background-color: var(--color-loss);
+}
+
+.ui-form-dots__dot--d {
+  background-color: var(--color-draw);
+}

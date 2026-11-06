@@ -2,18 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-// --- Hoisted mocks ---
 const { mockChangeLanguage, mockI18n } = vi.hoisted(() => {
   const mockChangeLanguage = vi.fn();
-  const mockI18n = {
-    language: 'en',
-    changeLanguage: mockChangeLanguage,
-  };
-  return { mockChangeLanguage, mockI18n };
+  return { mockChangeLanguage, mockI18n: { language: 'en', changeLanguage: mockChangeLanguage } };
 });
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ i18n: mockI18n }),
+  useTranslation: () => ({ t: (key: string) => key, i18n: mockI18n }),
 }));
 
 import LanguageSwitcher from '../LanguageSwitcher';
@@ -24,50 +19,45 @@ describe('LanguageSwitcher', () => {
     mockI18n.language = 'en';
   });
 
-  it('renders toggle button and opens dropdown with language options on click', async () => {
+  it('opens a menu with the current language checked', async () => {
     const user = userEvent.setup();
     render(<LanguageSwitcher />);
 
-    // Button exists with collapsed state
-    const toggleBtn = screen.getByRole('button', { expanded: false });
-    expect(toggleBtn).toBeInTheDocument();
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'languageSwitcher.label' }));
 
-    // Dropdown not visible initially
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-
-    // Open dropdown
-    await user.click(toggleBtn);
-
-    // Dropdown visible with language options
-    const listbox = screen.getByRole('listbox');
-    expect(listbox).toBeInTheDocument();
-
-    // Both language options visible
-    expect(screen.getByText('English')).toBeInTheDocument();
-    expect(screen.getByText('Deutsch')).toBeInTheDocument();
-
-    // English should be active (aria-selected)
-    const enOption = screen.getByText('English').closest('[role="option"]');
-    expect(enOption).toHaveAttribute('aria-selected', 'true');
-    const deOption = screen.getByText('Deutsch').closest('[role="option"]');
-    expect(deOption).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('menuitemradio', { name: 'English' })).toBeChecked();
+    expect(screen.getByRole('menuitemradio', { name: 'Deutsch' })).not.toBeChecked();
   });
 
-  it('calls i18n.changeLanguage when selecting a different language', async () => {
+  it('treats a regional language as its base language', async () => {
+    const user = userEvent.setup();
+    mockI18n.language = 'de-DE';
+    render(<LanguageSwitcher />);
+
+    await user.click(screen.getByRole('button', { name: 'languageSwitcher.label' }));
+
+    expect(screen.getByRole('menuitemradio', { name: 'Deutsch' })).toBeChecked();
+  });
+
+  it('changes language and closes the menu', async () => {
     const user = userEvent.setup();
     render(<LanguageSwitcher />);
 
-    // Open dropdown
-    const toggleBtn = screen.getByRole('button');
-    await user.click(toggleBtn);
-
-    // Select Deutsch
-    const deOption = screen.getByText('Deutsch');
-    await user.click(deOption);
+    await user.click(screen.getByRole('button', { name: 'languageSwitcher.label' }));
+    await user.click(screen.getByRole('menuitemradio', { name: 'Deutsch' }));
 
     expect(mockChangeLanguage).toHaveBeenCalledWith('de');
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
 
-    // Dropdown should close after selection
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  it('opens from the keyboard', async () => {
+    const user = userEvent.setup();
+    render(<LanguageSwitcher />);
+
+    await user.tab();
+    await user.keyboard('{Enter}');
+
+    expect(screen.getByRole('menu')).toBeInTheDocument();
   });
 });

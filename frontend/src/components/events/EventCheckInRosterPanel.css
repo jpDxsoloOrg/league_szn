@@ -1,206 +1,141 @@
 .checkin-roster-panel {
-  background: #1b1b1f;
-  border: 1px solid #2e2e36;
-  border-radius: 8px;
-  padding: 16px;
-  color: #e6e6e6;
+  padding: 1.25rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  background-color: var(--color-surface);
 }
 
 .checkin-roster-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .checkin-roster-title {
-  font-size: 1.05rem;
-  font-weight: 600;
-  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 700;
 }
 
 .checkin-roster-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-}
-
-.checkin-roster-button {
-  background: #2a2a33;
-  color: #e6e6e6;
-  border: 1px solid #3a3a44;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.checkin-roster-button:hover:not(:disabled) {
-  background: #34343f;
-}
-
-.checkin-roster-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  gap: 0.5rem;
 }
 
 .checkin-roster-copied {
-  font-size: 0.85rem;
-  color: #4ade80;
+  color: var(--color-win);
+  font-size: 0.875rem;
 }
 
 .checkin-roster-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-
-@media (max-width: 900px) {
-  .checkin-roster-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 560px) {
-  .checkin-roster-grid {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
 }
 
 .checkin-roster-column {
-  background: #15151a;
-  border: 1px solid #26262d;
-  border-radius: 6px;
-  padding: 10px;
-  min-height: 120px;
+  min-width: 0;
 }
 
 .checkin-roster-column-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin: 0 0 8px 0;
-  color: #cfcfd6;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.checkin-roster-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 700;
 }
 
 .checkin-roster-division-groups {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-.checkin-roster-division-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  gap: 0.75rem;
 }
 
 .checkin-roster-division-title {
-  font-size: 0.75rem;
-  font-weight: 600;
-  margin: 0;
-  color: #9a9aa3;
+  margin-bottom: 0.25rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #26262d;
+}
+
+.checkin-roster-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .checkin-roster-chip {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px;
-  background: #1f1f26;
-  border-radius: 6px;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.25rem 0;
 }
 
-.checkin-roster-chip--booked {
-  background: #1d2a1f;
-  border: 1px solid #2f6b3a;
-}
-
-.checkin-roster-chip-booked {
-  margin-left: auto;
-  flex-shrink: 0;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #052e0d;
-  background: #4ade80;
-  padding: 2px 6px;
-  border-radius: 999px;
-}
-
-.checkin-roster-chip-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-  background: #2a2a33;
+.checkin-roster-chip--booked .checkin-roster-chip-name {
+  color: var(--color-text-muted);
 }
 
 .checkin-roster-chip-text {
   display: flex;
+  flex: 1;
   flex-direction: column;
   min-width: 0;
 }
 
-.checkin-roster-chip-name {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #e6e6e6;
-  white-space: nowrap;
+.checkin-roster-chip-name,
+.checkin-roster-chip-wrestler {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkin-roster-chip-name {
+  font-size: var(--text-dense);
+  font-weight: 600;
 }
 
 .checkin-roster-chip-wrestler {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.checkin-roster-chip-booked {
+  flex: none;
+  padding: 0.0625rem 0.5rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--tint-win);
+  color: var(--color-win);
   font-size: 0.75rem;
-  color: #9a9aa3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.checkin-roster-empty,
-.checkin-roster-loading,
-.checkin-roster-error {
-  font-size: 0.9rem;
-  color: #9a9aa3;
-  margin: 0;
-  padding: 8px 0;
-}
-
-.checkin-roster-error {
-  color: #f87171;
-}
-
-/* Compact mode */
-.checkin-roster-panel--compact {
-  padding: 12px;
-}
-
-.checkin-roster-compact-title {
-  font-size: 0.9rem;
   font-weight: 600;
-  margin: 0 0 8px 0;
-  color: #cfcfd6;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+}
+
+.checkin-roster-empty {
+  color: var(--color-text-muted);
+}
+
+.checkin-roster-error {
+  color: var(--color-loss);
+}
+
+@media (max-width: 900px) {
+  .checkin-roster-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .checkin-roster-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

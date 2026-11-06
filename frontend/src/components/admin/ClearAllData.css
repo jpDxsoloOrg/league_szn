@@ -1,418 +1,60 @@
-.clear-all-data {
-  padding: 20px;
-}
-
-.clear-all-header {
-  margin-bottom: 20px;
-}
-
-.clear-all-header h2 {
+.data-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.25rem 1.5rem;
   margin: 0;
-  color: #d4af37;
-}
-
-/* Seed Data Section */
-.seed-banner {
-  background-color: #1a2a1a;
-  border: 2px solid #4ade80;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-.seed-banner h3 {
-  color: #4ade80;
-  margin-top: 0;
-  margin-bottom: 15px;
-}
-
-.seed-banner p {
-  margin: 10px 0;
-  color: #ccc;
-}
-
-/* Seed options (pick-and-choose modules) */
-.seed-options {
-  background-color: #252525;
-  border-radius: 4px;
-  padding: 15px;
-  margin: 15px 0;
-}
-
-.seed-options h4 {
-  color: #4ade80;
-  margin: 0 0 8px 0;
-  font-size: 14px;
-}
-
-.seed-options-note {
-  margin: 0 0 10px 0;
-  font-size: 13px;
-  color: #aaa;
-}
-
-.seed-options-actions {
-  margin-bottom: 12px;
-}
-
-.seed-option-link {
-  background: none;
-  border: none;
-  color: #4ade80;
-  cursor: pointer;
-  font-size: 13px;
   padding: 0;
-  text-decoration: underline;
-}
-
-.seed-option-link:hover {
-  color: #86efac;
-}
-
-.seed-options-sep {
-  margin: 0 8px;
-  color: #666;
-  font-size: 13px;
-}
-
-.seed-options-list {
+  color: var(--color-text-secondary);
   list-style: none;
+}
+
+.data-modules {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
   margin: 0;
   padding: 0;
+  border: 0;
 }
 
-.seed-option {
-  margin: 6px 0;
+.data-modules__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 0 1.5rem;
 }
 
-.seed-option label {
+.data-details {
+  color: var(--color-text-secondary);
+}
+
+.data-details summary {
+  min-height: var(--touch-target);
+  padding: 0.625rem 0;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.data-details summary:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.data-details ul,
+.data-danger__list {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--color-text-secondary);
+}
+
+.data-danger {
+  border-color: var(--color-loss);
+}
+
+.data-danger__title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #ccc;
-}
-
-.seed-option input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: #4ade80;
-}
-
-.seed-details {
-  background-color: #252525;
-  border-radius: 4px;
-  padding: 15px;
-  margin: 15px 0;
-}
-
-.seed-details h4 {
-  color: #4ade80;
-  margin: 0 0 10px 0;
-  font-size: 14px;
-}
-
-.seed-details ul {
-  margin: 0;
-  padding-left: 20px;
-  color: #ccc;
-}
-
-.seed-details li {
-  margin: 8px 0;
-  font-size: 14px;
-}
-
-.seed-details li strong {
-  color: #fff;
-}
-
-.seed-btn {
-  background-color: #166534;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  margin-top: 10px;
-}
-
-.seed-btn:hover:not(:disabled) {
-  background-color: #15803d;
-}
-
-.seed-btn:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-/* Warning/Danger Section */
-.warning-banner {
-  background-color: #2a1a1a;
-  border: 2px solid #dc3545;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-.warning-banner h3 {
-  color: #dc3545;
-  margin-top: 0;
-  margin-bottom: 15px;
-}
-
-.warning-banner p {
-  margin: 10px 0;
-  color: #ccc;
-}
-
-.warning-banner ul {
-  margin: 10px 0;
-  padding-left: 25px;
-  color: #ccc;
-}
-
-.warning-banner li {
-  margin: 5px 0;
-}
-
-.warning-banner .warning-text {
-  font-weight: 600;
-  margin-top: 15px;
-  color: #f87171;
-}
-
-.confirmation-section {
-  background-color: #252525;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 20px;
-  margin-top: 20px;
-}
-
-.confirmation-section label {
-  display: block;
-  margin-bottom: 10px;
-  font-size: 14px;
-  color: #ccc;
-}
-
-.confirmation-section label strong {
-  color: #dc3545;
-}
-
-.confirm-input {
-  width: 100%;
-  max-width: 300px;
-  padding: 10px 12px;
-  border: 2px solid #dc3545;
-  border-radius: 4px;
-  font-size: 14px;
-  margin-bottom: 15px;
-  display: block;
-  background-color: #1a1a1a;
-  color: #fff;
-}
-
-.confirm-input:focus {
-  outline: none;
-  border-color: #ff6b6b;
-  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.25);
-}
-
-.confirm-input:disabled {
-  background-color: #333;
-  cursor: not-allowed;
-  color: #666;
-}
-
-.confirm-input::placeholder {
-  color: #666;
-}
-
-.clear-all-btn {
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.clear-all-btn:hover:not(:disabled) {
-  background-color: #c82333;
-}
-
-.clear-all-btn:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-.error-message {
-  background-color: #2a1a1a;
-  color: #f87171;
-  padding: 12px 15px;
-  border-radius: 4px;
-  margin-bottom: 15px;
-  border: 1px solid #dc3545;
-}
-
-.success-message {
-  background-color: #1a2a1a;
-  color: #4ade80;
-  padding: 12px 15px;
-  border-radius: 4px;
-  margin-bottom: 15px;
-  border: 1px solid #4ade80;
-}
-
-.result-counts {
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px solid #4ade80;
-}
-
-.result-counts h4 {
-  margin: 0 0 10px 0;
-  font-size: 14px;
-  color: #fff;
-}
-
-.result-counts ul {
-  margin: 0;
-  padding-left: 20px;
-}
-
-.result-counts li {
-  margin: 5px 0;
-  font-size: 13px;
-}
-
-@media (max-width: 768px) {
-  .clear-all-data {
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* Keep the section heading first, then hoist the red warning banner to the
-     top of the page (visual order only — DOM order is unchanged). */
-  .clear-all-header {
-    order: -3;
-  }
-
-  .clear-all-header h2 {
-    font-size: 1.25rem;
-  }
-
-  /* ── Red warning banner at the top ─────────────────────────────────────── */
-
-  .warning-banner {
-    order: -2;
-    background: linear-gradient(180deg, rgba(220, 53, 69, 0.18) 0%, rgba(220, 53, 69, 0.08) 100%);
-    border: 1px solid var(--color-danger);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 16px;
-  }
-
-  .warning-banner h3 {
-    font-size: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 10px;
-  }
-
-  .warning-banner p {
-    font-size: 0.85rem;
-  }
-
-  .warning-banner ul {
-    padding-left: 18px;
-    font-size: 0.85rem;
-  }
-
-  .warning-banner .warning-text {
-    color: var(--color-danger-alt);
-  }
-
-  /* ── Seed (constructive) card ──────────────────────────────────────────── */
-
-  .seed-banner {
-    padding: 16px;
-    border-width: 1px;
-    border-radius: 12px;
-  }
-
-  .seed-details,
-  .seed-options {
-    padding: 12px;
-    border-radius: 8px;
-  }
-
-  .seed-details ul {
-    padding-left: 16px;
-  }
-
-  .seed-btn {
-    width: 100%;
-    padding: 13px 16px;
-    border-radius: 8px;
-  }
-
-  /* ── Destructive action card (red-tinted, most prominent) ──────────────── */
-
-  .confirmation-section {
-    background: var(--color-surface);
-    border: 1px solid rgba(220, 53, 69, 0.5);
-    border-radius: 12px;
-    padding: 18px 16px;
-    text-align: center;
-  }
-
-  .confirmation-section label {
-    font-size: 0.85rem;
-    color: var(--color-text-secondary);
-  }
-
-  .confirm-input {
-    max-width: 100%;
-    background-color: #000;
-    border: 1px solid var(--color-border);
-    border-radius: 10px;
-    padding: 14px 16px;
-    text-align: center;
-    font-size: 0.95rem;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    color: var(--color-danger-alt);
-  }
-
-  .confirm-input:focus {
-    border-color: var(--color-danger);
-    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.25);
-  }
-
-  .clear-all-btn {
-    width: 100%;
-    padding: 14px 16px;
-    border-radius: 10px;
-    font-size: 0.95rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-
-  .error-message,
-  .success-message {
-    border-radius: 10px;
-  }
+  gap: 0.5rem;
+  color: var(--color-loss);
 }

@@ -14,6 +14,7 @@ import {
   formatDate,
   formatDateTime,
   formatTime,
+  formatMatchDate,
   formatRelativeTime,
 } from '../dateUtils';
 
@@ -155,5 +156,26 @@ describe('formatRelativeTime', () => {
     const result = formatRelativeTime(invalid);
 
     expect(result).toBe(invalid);
+  });
+});
+
+describe('formatMatchDate', () => {
+  it('keeps a date-only value on its calendar day in every timezone', () => {
+    const original = process.env.TZ;
+    process.env.TZ = 'America/New_York';
+    try {
+      expect(formatMatchDate('2026-09-01', 'en-US')).toBe('Sep 1, 2026');
+    } finally {
+      process.env.TZ = original;
+    }
+  });
+
+  it('shows a timestamp on the viewer local day', () => {
+    const value = '2026-04-13T02:30:00.000Z';
+    expect(formatMatchDate(value, 'en-US')).toBe(new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }));
+  });
+
+  it('returns anything unreadable as it came', () => {
+    expect(formatMatchDate('soon')).toBe('soon');
   });
 });

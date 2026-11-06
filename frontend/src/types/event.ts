@@ -46,6 +46,8 @@ export interface EnrichedMatchData {
     playerName: string;
     wrestlerName: string;
   }[];
+  /** Sides of a team match, as lists of playerIds. */
+  teams?: string[][];
   winners?: string[];
   losers?: string[];
   isChampionship: boolean;
@@ -64,7 +66,8 @@ export interface EnrichedMatchData {
 
 export interface EventWithMatches extends LeagueEvent {
   enrichedMatches: (MatchCardEntry & {
-    matchData: EnrichedMatchData;
+    /** Null when the card still points at a match that has been deleted. */
+    matchData: EnrichedMatchData | null;
   })[];
 }
 
@@ -100,6 +103,8 @@ export interface UpdateEventInput extends Partial<CreateEventInput> {
   eventId: string;
   status?: EventStatus;
   matchCards?: MatchCardEntry[];
+  /** The list the edit started from. The server refuses the write with a 409 if it has changed. */
+  expectedMatchCards?: MatchCardEntry[];
   attendance?: number;
   rating?: number;
   companyIds?: string[];

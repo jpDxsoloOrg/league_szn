@@ -18,7 +18,6 @@ vi.mock('../../../contexts/SiteConfigContext', () => ({
   useSiteConfig: mockUseSiteConfig,
 }));
 
-vi.mock('../ManageFeatures.css', () => ({}));
 
 import ManageFeatures from '../ManageFeatures';
 
@@ -55,6 +54,23 @@ describe('ManageFeatures', () => {
     // Promos is disabled, rest are enabled
     expect(screen.getByLabelText('Enable Promos')).toHaveTextContent('Disabled');
     expect(screen.getByLabelText('Disable Challenges')).toHaveTextContent('Enabled');
+  });
+
+  it('lets an Admin turn division transfers back on', async () => {
+    mockUseSiteConfig.mockReturnValue({
+      features: { ...ALL_FEATURES, transfers: false },
+      refreshConfig: vi.fn().mockResolvedValue(undefined),
+    });
+    mockSiteConfigApi.updateFeatures.mockResolvedValue(undefined);
+
+    const user = userEvent.setup();
+    render(<ManageFeatures />);
+
+    await user.click(screen.getByLabelText('Enable Division Transfers'));
+
+    await waitFor(() => {
+      expect(mockSiteConfigApi.updateFeatures).toHaveBeenCalledWith({ transfers: true });
+    });
   });
 
   it('toggles a feature flag and calls API then refreshes config', async () => {

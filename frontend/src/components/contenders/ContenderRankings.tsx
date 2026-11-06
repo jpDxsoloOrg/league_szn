@@ -1,266 +1,214 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Crown } from 'lucide-react';
 import { championshipsApi, contendersApi, divisionsApi } from '../../services/api';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import type { Championship, Division } from '../../types';
 import type { ChampionshipContenders } from '../../types/contender';
-import Skeleton from '../ui/Skeleton';
+import Avatar from '../ui/Avatar';
 import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Select from '../ui/Select';
+import Skeleton from '../ui/Skeleton';
 import ContenderCard from './ContenderCard';
-import {
-  DEFAULT_WRESTLER_IMAGE,
-  applyImageFallback,
-  resolveImageSrc,
-} from '../../constants/imageFallbacks';
 import './ContenderRankings.css';
 
+const MIN_MATCHES_HINT = 3;
+
 export default function ContenderRankings() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  useDocumentTitle(t('contenders.title'));
   const [championships, setChampionships] = useState<Championship[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
-  const [selectedChampionshipId, setSelectedChampionshipId] = useState<string | null>(null);
+  const [selectedChampionshipId, setSelectedChampionshipId] = useState('');
   const [contenderData, setContenderData] = useState<ChampionshipContenders | null>(null);
   const [loading, setLoading] = useState(true);
   const [contendersLoading, setContendersLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [contendersFailed, setContendersFailed] = useState(false);
+  const [reloadCount, setReloadCount] = useState(0);
 
-  // Group championships by division for display
-  const championshipsByDivision = useMemo(() => {
-    const groups: { divisionName: string; divisionId: string | null; championships: Championship[] }[] = [];
-    const divisionMap = new Map<string, string>();
-    for (const d of divisions) {
-      divisionMap.set(d.divisionId, d.name);
-    }
+  // Division titles first, sorted by division name, then open titles. The
+  // division prefix only matters when there is more than one group.
+  const championshipOptions = useMemo(() => {
+    const divisionNames = new Map(divisions.map((division) => [division.divisionId, division.name]));
+    const getGroupName = (championship: Championship) => {
+      if (!championship.divisionId) return t('contenders.openDivision');
+      return divisionNames.get(championship.divisionId) ?? t('contenders.unknownDivision');
+    };
 
-    // Group by divisionId
-    const grouped = new Map<string | null, Championship[]>();
-    for (const champ of championships) {
-      const key = champ.divisionId || null;
-      if (!grouped.has(key)) {
-        grouped.set(key, []);
-      }
-      grouped.get(key)!.push(champ);
-    }
+    const sorted = [...championships].sort((first, second) => {
+      if (!first.divisionId !== !second.divisionId) return first.divisionId ? -1 : 1;
+      return getGroupName(first).localeCompare(getGroupName(second));
+    });
+    const hasGroups = new Set(sorted.map(getGroupName)).size > 1;
 
-    // Division-locked championships first (sorted by division name)
-    const divisionEntries = Array.from(grouped.entries())
-      .filter(([key]) => key !== null)
-      .sort(([a], [b]) => {
-        const nameA = divisionMap.get(a!) || '';
-        const nameB = divisionMap.get(b!) || '';
-        return nameA.localeCompare(nameB);
-      });
+    return sorted.map((championship) => ({
+      value: championship.championshipId,
+      label: hasGroups ? `${getGroupName(championship)}: ${championship.name}` : championship.name,
+    }));
+  }, [championships, divisions, t]);
 
-    for (const [divId, champs] of divisionEntries) {
-      groups.push({
-        divisionName: divisionMap.get(divId!) || 'Unknown Division',
-        divisionId: divId,
-        championships: champs,
-      });
-    }
-
-    // Then open championships (no division)
-    const openChamps = grouped.get(null);
-    if (openChamps && openChamps.length > 0) {
-      groups.push({
-        divisionName: 'Open',
-        divisionId: null,
-        championships: openChamps,
-      });
-    }
-
-    return groups;
-  }, [championships, divisions]);
-
-  // Load championships and divisions on mount
   useEffect(() => {
     const controller = new AbortController();
+
     const loadData = async () => {
       try {
         setLoading(true);
+        setError(null);
         const [champsData, divisionsData] = await Promise.all([
           championshipsApi.getAll(controller.signal),
           divisionsApi.getAll(controller.signal),
         ]);
-        const activeChamps = champsData.filter((c) => c.isActive);
+        if (controller.signal.aborted) return;
+        const activeChamps = champsData.filter((championship) => championship.isActive);
         setChampionships(activeChamps);
         setDivisions(divisionsData);
-        if (activeChamps.length > 0 && activeChamps[0]) {
-          setSelectedChampionshipId(activeChamps[0].championshipId);
-        }
-        setError(null);
+        setSelectedChampionshipId(activeChamps[0]?.championshipId ?? '');
       } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          setError(err instanceof Error ? err.message : 'Failed to load championships');
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setError(err.message);
         }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
+
     loadData();
     return () => controller.abort();
-  }, []);
+  }, [reloadCount]);
 
-  // Load contenders when selected championship changes
   useEffect(() => {
     if (!selectedChampionshipId) return;
     const controller = new AbortController();
+
     const loadContenders = async () => {
       try {
         setContendersLoading(true);
+        setContendersFailed(false);
         const data = await contendersApi.getForChampionship(selectedChampionshipId, controller.signal);
-        setContenderData(data);
+        if (!controller.signal.aborted) setContenderData(data);
       } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
+        if (err instanceof Error && err.name !== 'AbortError') {
           setContenderData(null);
+          setContendersFailed(true);
         }
       } finally {
-        setContendersLoading(false);
+        if (!controller.signal.aborted) setContendersLoading(false);
       }
     };
+
     loadContenders();
     return () => controller.abort();
-  }, [selectedChampionshipId]);
+  }, [selectedChampionshipId, reloadCount]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+  const formatCalculatedAt = (dateString: string) =>
+    new Date(dateString).toLocaleDateString(i18n.language, {
       month: 'long',
       day: 'numeric',
       year: 'numeric',
       hour: 'numeric',
       minute: 'numeric',
     });
+
+  const noContenders = (
+    <EmptyState
+      title={t('contenders.noContenders')}
+      description={t('contenders.noContendersHint', { minMatches: MIN_MATCHES_HINT })}
+    />
+  );
+
+  const renderRankings = () => {
+    if (contendersLoading) return <Skeleton variant="block" count={3} />;
+
+    if (contendersFailed) {
+      return (
+        <EmptyState
+          title={t('common.error')}
+          description={t('contenders.rankingsLoadFailed')}
+          actionLabel={t('common.retry')}
+          onAction={() => setReloadCount((count) => count + 1)}
+        />
+      );
+    }
+
+    if (!contenderData) return noContenders;
+
+    const champion = contenderData.currentChampion;
+
+    return (
+      <>
+        {champion && (
+          <section className="contender-champion" aria-labelledby="contender-champion-title">
+            <Avatar src={champion.imageUrl} name={champion.wrestlerName} size="lg" ring="gold" />
+            <div className="contender-champion__text">
+              <h2 id="contender-champion-title" className="contender-champion__label">
+                <Crown aria-hidden="true" size={16} />
+                {t('contenders.currentChampion')}
+              </h2>
+              <p className="contender-champion__wrestler">{champion.wrestlerName}</p>
+              <p className="contender-champion__player">{champion.playerName}</p>
+            </div>
+          </section>
+        )}
+
+        <section>
+          <h2 className="contender-rankings__heading">{t('contenders.rankings')}</h2>
+          {contenderData.contenders.length === 0 ? noContenders : (
+            <ol className="contender-rankings__list">
+              {contenderData.contenders.map((contender) => (
+                <ContenderCard key={contender.playerId} contender={contender} />
+              ))}
+            </ol>
+          )}
+        </section>
+
+        {contenderData.calculatedAt && (
+          <p className="contender-rankings__footer">
+            {t('contenders.lastCalculated')}: {formatCalculatedAt(contenderData.calculatedAt)}
+          </p>
+        )}
+      </>
+    );
   };
 
-  if (loading) {
-    return (
-      <div className="contender-rankings">
-        <Skeleton variant="cards" count={4} />
-      </div>
-    );
-  }
+  const renderContent = () => {
+    if (loading) return <Skeleton variant="cards" count={4} />;
 
-  if (error) {
-    return (
-      <div className="contender-rankings">
-        <div className="error-message">{error}</div>
-      </div>
-    );
-  }
-
-  if (championships.length === 0) {
-    return (
-      <div className="contender-rankings">
-        <header className="rankings-header">
-          <h2 className="page-title--mobile-hidden">{t('contenders.title')}</h2>
-          <p className="subtitle">{t('contenders.subtitle')}</p>
-        </header>
+    if (error !== null) {
+      return (
         <EmptyState
-          title={t('contenders.title')}
-          description={t('contenders.noData')}
+          title={t('common.error')}
+          description={error || t('contenders.loadFailed')}
+          actionLabel={t('common.retry')}
+          onAction={() => setReloadCount((count) => count + 1)}
         />
-      </div>
-    );
-  }
+      );
+    }
+
+    if (championships.length === 0) {
+      return <EmptyState title={t('contenders.emptyTitle')} description={t('contenders.noData')} />;
+    }
+
+    return renderRankings();
+  };
 
   return (
     <div className="contender-rankings">
-      <header className="rankings-header">
-        <h2 className="page-title--mobile-hidden">{t('contenders.title')}</h2>
-        <p className="subtitle">{t('contenders.subtitle')}</p>
-      </header>
-
-      {/* Championship Selector — grouped by division */}
-      <div className="championship-selector">
-        {championshipsByDivision.map((group) => (
-          <div key={group.divisionId || 'open'} className="division-group">
-            {championshipsByDivision.length > 1 && (
-              <span className="division-label">{group.divisionName}</span>
-            )}
-            <div className="division-buttons">
-              {group.championships.map((championship) => (
-                <button
-                  key={championship.championshipId}
-                  className={`tab ${
-                    selectedChampionshipId === championship.championshipId ? 'active' : ''
-                  }`}
-                  onClick={() => setSelectedChampionshipId(championship.championshipId)}
-                >
-                  {championship.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {contendersLoading ? (
-        <Skeleton variant="block" count={3} />
-      ) : contenderData ? (
-        <>
-          {/* Current Champion Section */}
-          {contenderData.currentChampion && (
-            <section className="current-champion-section">
-              <h3>{t('contenders.currentChampion')}</h3>
-              <div className="champion-card">
-                <div className="champion-badge">
-                  <span className="trophy-icon">&#127942;</span>
-                </div>
-                <div className="champion-image">
-                  <img
-                    src={resolveImageSrc(contenderData.currentChampion.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-                    onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-                    alt={contenderData.currentChampion.wrestlerName}
-                  />
-                </div>
-                <div className="champion-info">
-                  <h4 className="champion-wrestler-name">
-                    {contenderData.currentChampion.wrestlerName}
-                  </h4>
-                  <p className="champion-player-name">
-                    {contenderData.currentChampion.playerName}
-                  </p>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Contenders List */}
-          <section className="contenders-section">
-            <h3>{t('contenders.rankings')}</h3>
-            <div className="contenders-list">
-              {contenderData.contenders.length === 0 ? (
-                <div className="empty-state">
-                  <p>{t('contenders.noContenders')}</p>
-                  <span className="hint">
-                    {t('contenders.noContendersHint', { minMatches: 3 })}
-                  </span>
-                </div>
-              ) : (
-                contenderData.contenders.map((contender) => (
-                  <ContenderCard key={contender.playerId} contender={contender} />
-                ))
-              )}
-            </div>
-          </section>
-
-          {/* Last Calculated */}
-          {contenderData.calculatedAt && (
-            <footer className="rankings-footer">
-              <p className="last-calculated">
-                {t('contenders.lastCalculated')}: {formatDate(contenderData.calculatedAt)}
-              </p>
-            </footer>
-          )}
-        </>
-      ) : (
-        <div className="empty-state">
-          <p>{t('contenders.noContenders')}</p>
-          <span className="hint">
-            {t('contenders.noContendersHint', { minMatches: 3 })}
-          </span>
-        </div>
-      )}
+      <PageHeader
+        title={t('contenders.title')}
+        subtitle={t('contenders.subtitle')}
+        actions={championshipOptions.length > 0 ? (
+          <Select
+            className="contender-rankings__select"
+            label={t('contenders.selectChampionship')}
+            value={selectedChampionshipId}
+            onValueChange={setSelectedChampionshipId}
+            options={championshipOptions}
+          />
+        ) : undefined}
+      />
+      {renderContent()}
     </div>
   );
 }

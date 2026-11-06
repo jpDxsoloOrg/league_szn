@@ -1,22 +1,232 @@
+/*
+ * Main Event Arena design tokens (docs/design/site-redesign/DESIGN.md).
+ * This is the only stylesheet that should contain raw colour values.
+ *
+ * Section 1 holds the design tokens. Section 2 maps every legacy variable
+ * name onto them, so pages that have not been restyled still pick up the theme.
+ */
 :root {
-  --color-primary: #d4af37;
-  --color-primary-hover: #b8941f;
-  /* Canonical "text on gold" — use this anywhere `background: var(--color-primary)` is set so the
-     default `--color-text: #fff` doesn't inherit through and render unreadable white-on-gold.
-     Value is intentionally near-black to clear WCAG AA contrast at every realistic weight. */
-  --color-on-primary: #1a1a1a;
-  --color-bg: #0f0f0f;
-  --color-surface: #1a1a1a;
-  --color-surface-hover: #252525;
-  --color-border: #333;
-  --color-text: #fff;
-  --color-text-secondary: #bbb;
-  --color-text-muted: #666;
-  --color-success: #4ade80;
-  --color-danger: #dc3545;
-  --color-danger-alt: #f87171;
-  --color-warning: #fbbf24;
-  --color-info: #0ea5e9;
-  --color-neutral: #6b7280;
-  --color-neutral-light: #9ca3af;
+  color-scheme: dark;
+
+  /* 1. Design tokens ------------------------------------------------------ */
+
+  /* Surfaces */
+  --color-bg: #0d0a1a;
+  --color-surface: #17112b;
+  --color-surface-raised: #211939;
+  --color-hairline: rgba(255, 255, 255, 0.1);
+  --color-scrim: rgba(7, 5, 15, 0.72);
+  --color-overlay-soft: rgba(255, 255, 255, 0.06);
+
+  /* Text */
+  --color-text: #f6f3ff;
+  --color-text-secondary: #c9c2dc;
+  --color-text-muted: #a49cbb;
+
+  /* Brand */
+  --color-violet: #7c3aed;
+  --color-magenta: #d946ef;
+  --color-pink: #ff2e63;
+  --color-cyan: #22d3ee;
+  --color-cyan-bright: #67e8f9;
+  --color-on-accent: #0d0a1a;
+  --gradient-hero: linear-gradient(120deg, #7c3aed, #d946ef);
+  --gradient-wordmark: linear-gradient(90deg, #ff2e63, #d946ef 45%, #22d3ee);
+  --gradient-tile-scrim: linear-gradient(180deg, rgba(13, 10, 26, 0) 35%, rgba(13, 10, 26, 0.92) 100%);
+  --gradient-tile-scrim-strong: linear-gradient(180deg, rgba(13, 10, 26, 0) 25%, rgba(13, 10, 26, 0.88) 62%, rgba(13, 10, 26, 0.96) 100%);
+  --gradient-podium-first: linear-gradient(160deg, #7c3aed, #a21caf);
+  --color-violet-bright: #a78bfa;
+  --color-pink-bright: #ff6b92;
+  /* Pink text on a tint: the tint lifts the background, so it needs a lighter pink for 4.5:1. */
+  --color-pink-on-tint: #ff8fab;
+  --color-magenta-bright: #f472b6;
+
+  /* Section identity: one colour per section, picked by data-section below.
+     Every band stop keeps --color-text and --color-on-band-secondary at 4.5:1 or better. */
+  --band-home: linear-gradient(115deg, #3b1590, #5b21b6 55%, #7c3aed);
+  --band-events: linear-gradient(115deg, #7a0f3f, #a8124f 55%, #c2134d);
+  --band-rankings: linear-gradient(115deg, #0b6478, #2a4a9e 55%, #5b21b6);
+  --band-storylines: linear-gradient(115deg, #b5124c, #8a1a8f 55%, #4c1d95);
+  --band-me: linear-gradient(115deg, #1e1b4b, #4c1d95 55%, #6d28d9);
+  --color-on-band-secondary: #ece7fb;
+  --color-on-band-hairline: rgba(255, 255, 255, 0.35);
+
+  /* Photo tile fallbacks: deep at the foot, so the caption stays readable. */
+  --tile-wash-none: linear-gradient(165deg, #7c3aed, #be185d 70%);
+  --tile-wash-world: linear-gradient(165deg, #d97706, #92400e 70%);
+  --tile-wash-us: linear-gradient(165deg, #0891b2, #1e3a8a 70%);
+  --tile-wash-ic: linear-gradient(165deg, #059669, #065f46 70%);
+  --tile-wash-tag: linear-gradient(165deg, #c026d3, #581c87 70%);
+
+  /* Status */
+  --color-win: #34d399;
+  --color-loss: #fb7185;
+  --color-draw: #a49cbb;
+  --color-warn: #fbbf24;
+
+  /* Title rim lights */
+  --rim-world: #fbbf24;
+  --rim-us: #22d3ee;
+  --rim-ic: #34d399;
+  --rim-tag: #e879f9;
+
+  /* Tints for badges and selected states */
+  --tint-violet: rgba(124, 58, 237, 0.22);
+  --tint-pink: rgba(255, 46, 99, 0.16);
+  --tint-cyan: rgba(34, 211, 238, 0.14);
+  --tint-win: rgba(52, 211, 153, 0.14);
+  --tint-loss: rgba(251, 113, 133, 0.14);
+  --tint-warn: rgba(251, 191, 36, 0.14);
+
+  /* Selected pills and in-page tabs. Section tabs use an underline instead. */
+  --color-selected: #6d28d9;
+  --color-on-selected: var(--color-text);
+
+  /* Edge fades for tab rows that scroll sideways. */
+  --fade-mask-end: linear-gradient(to right, black calc(100% - 2.5rem), transparent);
+  --fade-mask-start: linear-gradient(to left, black calc(100% - 2.5rem), transparent);
+  --fade-mask-both: linear-gradient(to right, transparent, black 2.5rem, black calc(100% - 2.5rem), transparent);
+
+  /* Glow: live and active items only */
+  --glow-pink: 0 0 18px rgba(255, 46, 99, 0.45);
+  --glow-cyan: 0 0 18px rgba(34, 211, 238, 0.4);
+  --shadow-overlay: 0 18px 48px rgba(0, 0, 0, 0.55);
+
+  /* Shape */
+  --radius-card: 12px;
+  --radius-control: 10px;
+  --radius-pill: 999px;
+
+  /* Type */
+  --font-heading: 'Sora Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Inter Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --text-body: 1rem;
+  --text-dense: 0.9375rem;
+
+  /* Layout */
+  --touch-target: 44px;
+  --shell-max-width: 1280px;
+  --shell-header-height: 64px;
+  --shell-bottom-bar-height: 64px;
+  --section-tabs-height: 46px;
+  --focus-ring: 2px solid var(--color-cyan);
+
+  /* Stacking */
+  --z-sticky: 50;
+  --z-shell: 100;
+  --z-dropdown: 200;
+  --z-modal: 1000;
+  --z-toast: 1100;
+
+  /* Defaults for anything outside a section, such as dialogs. */
+  --section-band: var(--band-home);
+  --section-accent: var(--color-violet-bright);
+  --section-tint: rgba(124, 58, 237, 0.1);
+  --section-wash: radial-gradient(ellipse 75% 360px at 50% 100px, rgba(124, 58, 237, 0.2), transparent 72%);
+  --page-header-padding: 1.25rem 1.5rem;
+
+  /* 2. Legacy names --------------------------------------------------------- */
+
+  --color-primary: var(--color-cyan);
+  --color-primary-hover: var(--color-cyan-bright);
+  --color-on-primary: var(--color-on-accent);
+  --color-surface-hover: var(--color-surface-raised);
+  --color-border: var(--color-hairline);
+  --color-success: var(--color-win);
+  --color-danger: #d3123f;
+  --color-danger-hover: #be123c;
+  --color-danger-alt: var(--color-loss);
+  --color-warning: var(--color-warn);
+  --color-info: var(--color-cyan);
+  --color-neutral: var(--color-draw);
+  --color-neutral-light: var(--color-text-secondary);
+
+  /* Names pages reference without a definition; they used per-page fallbacks. */
+  --color-accent-gold: var(--color-cyan);
+  --color-bg-elevated: var(--color-surface-raised);
+  --color-background: var(--color-bg);
+  --color-surface-2: var(--color-surface-raised);
+  --color-warning-bg: var(--tint-warn);
+  --color-warning-text: var(--color-warn);
+  --text-primary: var(--color-text);
+  --text-secondary: var(--color-text-secondary);
+  --text-muted: var(--color-text-muted);
+  --border-color: var(--color-hairline);
+  --card-bg: var(--color-surface);
+  --bg-color: var(--color-bg);
+  --bg-muted: var(--color-surface-raised);
+  --header-bg: var(--color-surface);
+  --input-bg: var(--color-surface);
+  --input-focus: var(--color-cyan);
+  --input-out-of-focus: var(--color-hairline);
+  --primary: var(--color-cyan);
+  --primary-dark: var(--color-cyan-bright);
+  --accent-color: var(--color-cyan);
+  --accent-bg: var(--tint-cyan);
+  --main-color: var(--color-cyan);
+  --link-color: var(--color-cyan);
+  --gold: var(--rim-world);
+  --info-color: var(--color-cyan);
+  --info-bg: var(--tint-cyan);
+}
+
+/* Section themes, set on .App from the current route. The legacy surface names
+   are repeated here so they follow the section's --color-surface. */
+[data-section] {
+  --color-surface-hover: var(--color-surface-raised);
+  --color-bg-elevated: var(--color-surface-raised);
+  --color-surface-2: var(--color-surface-raised);
+  --bg-muted: var(--color-surface-raised);
+  --card-bg: var(--color-surface);
+  --header-bg: var(--color-surface);
+  --input-bg: var(--color-surface);
+}
+
+[data-section='home'] {
+  --color-surface: #1d1337;
+  --color-surface-raised: #261b44;
+}
+
+[data-section='events'] {
+  --color-surface: #27132f;
+  --color-surface-raised: #311a3c;
+  --section-band: var(--band-events);
+  --section-accent: var(--color-pink-bright);
+  --section-tint: rgba(255, 46, 99, 0.1);
+  --section-wash: radial-gradient(ellipse 75% 360px at 50% 100px, rgba(255, 46, 99, 0.16), transparent 72%);
+}
+
+[data-section='rankings'] {
+  --color-surface: #181d37;
+  --color-surface-raised: #212444;
+  --section-band: var(--band-rankings);
+  --section-accent: var(--color-cyan);
+  --section-tint: rgba(34, 211, 238, 0.08);
+  --section-wash: radial-gradient(ellipse 75% 360px at 50% 100px, rgba(34, 211, 238, 0.13), transparent 72%);
+}
+
+[data-section='storylines'] {
+  --color-surface: #251539;
+  --color-surface-raised: #2e1c46;
+  --section-band: var(--band-storylines);
+  --section-accent: var(--color-magenta-bright);
+  --section-tint: rgba(217, 70, 239, 0.1);
+  --section-wash: radial-gradient(ellipse 75% 360px at 50% 100px, rgba(217, 70, 239, 0.16), transparent 72%);
+}
+
+[data-section='me'] {
+  --color-surface: #1b1333;
+  --color-surface-raised: #251a40;
+  --section-band: var(--band-me);
+}
+
+/* Admin stays plain: dense tools, no page band. */
+[data-section='admin'] {
+  --section-band: none;
+  --section-wash: none;
+  --page-header-padding: 0;
+  --page-header-padding-phone: 0;
+  --color-on-band-secondary: var(--color-text-secondary);
+  --color-on-band-hairline: var(--color-hairline);
 }

@@ -1,6 +1,6 @@
 import { TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
 import { dynamoDb, TableNames } from '../../dynamodb';
-import type { UnitOfWork, RecordDelta } from '../unitOfWork';
+import type { UnitOfWork, RecordDelta, MatchWriteCondition } from '../unitOfWork';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
 import {
   participantSk,
@@ -12,6 +12,7 @@ import {
   type RivalryPatch,
 } from '../rivalries';
 import { RatingAlreadyExistsError } from '../matchRatings';
+import { ConcurrencyError } from '../errors';
 
 interface TransactWriteItem {
   Put?: { TableName: string; Item: Record<string, unknown>; ConditionExpression?: string };
@@ -26,13 +27,22 @@ interface TransactWriteItem {
   Delete?: { TableName: string; Key: Record<string, unknown> };
 }
 
+type StagedMeta =
+  | { kind: 'matchRating'; matchId: string; userId: string }
+  | { kind: 'guarded'; entityName: string; id: string };
+
 export class DynamoUnitOfWork implements UnitOfWork {
   private staged: TransactWriteItem[] = [];
   // Sidecar metadata mirroring `staged`. Lets us map a generic
   // ConditionalCheckFailed (which DynamoDB does NOT tag with the failing
   // table) back to a typed domain error like `RatingAlreadyExistsError`.
-  private stagedMeta: Array<{ kind?: 'matchRating'; matchId?: string; userId?: string } | undefined> = [];
+  private stagedMeta: Array<StagedMeta | undefined> = [];
   private committed = false;
+
+  /** Attach metadata to the item most recently pushed onto `staged`. */
+  private tagLastStaged(meta: StagedMeta): void {
+    this.stagedMeta[this.staged.length - 1] = meta;
+  }
 
   // ── Players ──────────────────────────────────────────────────────
   updatePlayer(playerId: string, patch: Record<string, unknown>): void {
@@ -91,11 +101,15 @@ export class DynamoUnitOfWork implements UnitOfWork {
       if (!values[':zero']) values[':zero'] = 0;
     }
     parts.push('updatedAt = :timestamp');
+    // Updates are upserts: without this condition a stale playerId creates a
+    // nameless Player row holding only the record fields. A soft-deleted row
+    // counts as stale too.
     this.staged.push({
       Update: {
         TableName: TableNames.PLAYERS,
         Key: { playerId },
         UpdateExpression: `SET ${parts.join(', ')}`,
+        ConditionExpression: 'attribute_exists(playerId) AND attribute_not_exists(deletedAt)',
         ExpressionAttributeValues: values,
       },
     });
@@ -313,6 +327,11 @@ export class DynamoUnitOfWork implements UnitOfWork {
   // (resolveWrestlerForAssignment / filterExistingWrestlerIds); the condition
   // turns the remaining delete race into a failed transaction instead of a
   // silent ghost.
+  //
+  // Assign also requires the wrestler to be free or already held by this
+  // player, so two requests that both saw it as free cannot both take it.
+  // Rows that predate `isInUse` read back as free, so a missing attribute
+  // counts as free here too.
   assignWrestlerToPlayer(params: {
     wrestlerId: string;
     playerId: string;
@@ -323,35 +342,50 @@ export class DynamoUnitOfWork implements UnitOfWork {
       Update: {
         TableName: TableNames.WRESTLERS,
         Key: { wrestlerId: params.wrestlerId },
-        ConditionExpression: 'attribute_exists(wrestlerId)',
+        ConditionExpression:
+          'attribute_exists(wrestlerId) AND (attribute_not_exists(isInUse) OR isInUse = :notInUse OR assignedPlayerId = :playerId)',
         UpdateExpression:
           'SET isInUse = :isInUse, assignedPlayerId = :playerId, assignedSlot = :slot, updatedAt = :now',
         ExpressionAttributeValues: {
           ':isInUse': 'true',
+          ':notInUse': 'false',
           ':playerId': params.playerId,
           ':slot': params.slot,
           ':now': now,
         },
       },
     });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'Wrestler', id: params.wrestlerId });
   }
 
-  releaseWrestlerFromPlayer(params: { wrestlerId: string }): void {
+  releaseWrestlerFromPlayer(params: { wrestlerId: string; expectedPlayerId?: string }): void {
     const now = new Date().toISOString();
+    const values: Record<string, unknown> = { ':isInUse': 'false', ':now': now };
+    let conditionExpression = 'attribute_exists(wrestlerId)';
+    if (params.expectedPlayerId !== undefined) {
+      conditionExpression += ' AND assignedPlayerId = :expectedPlayerId';
+      values[':expectedPlayerId'] = params.expectedPlayerId;
+    }
     this.staged.push({
       Update: {
         TableName: TableNames.WRESTLERS,
         Key: { wrestlerId: params.wrestlerId },
-        ConditionExpression: 'attribute_exists(wrestlerId)',
+        ConditionExpression: conditionExpression,
         UpdateExpression:
           'SET isInUse = :isInUse, updatedAt = :now REMOVE assignedPlayerId, assignedSlot',
-        ExpressionAttributeValues: { ':isInUse': 'false', ':now': now },
+        ExpressionAttributeValues: values,
       },
     });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'Wrestler', id: params.wrestlerId });
   }
 
   // ── Matches ──────────────────────────────────────────────────────
-  updateMatch(matchId: string, date: string, patch: Record<string, unknown>): void {
+  updateMatch(
+    matchId: string,
+    date: string,
+    patch: Record<string, unknown>,
+    condition?: MatchWriteCondition,
+  ): void {
     const now = new Date().toISOString();
     const sets: string[] = [];
     const names: Record<string, string> = {};
@@ -370,9 +404,25 @@ export class DynamoUnitOfWork implements UnitOfWork {
       }
       i++;
     }
-    names[`#f${i}`] = 'updatedAt';
+    const updatedAtName = `#f${i}`;
+    names[updatedAtName] = 'updatedAt';
     values[`:v${i}`] = now;
-    sets.push(`#f${i} = :v${i}`);
+    sets.push(`${updatedAtName} = :v${i}`);
+
+    let conditionExpression: string | undefined;
+    if (condition?.kind === 'notCompleted') {
+      names['#s'] = 'status';
+      values[':completedStatus'] = 'completed';
+      conditionExpression = 'attribute_exists(matchId) AND #s <> :completedStatus';
+    } else if (condition?.kind === 'unchangedSince') {
+      if (condition.updatedAt === undefined) {
+        conditionExpression = `attribute_exists(matchId) AND attribute_not_exists(${updatedAtName})`;
+      } else {
+        values[':expectedUpdatedAt'] = condition.updatedAt;
+        conditionExpression = `attribute_exists(matchId) AND ${updatedAtName} = :expectedUpdatedAt`;
+      }
+    }
+
     this.staged.push({
       Update: {
         TableName: TableNames.MATCHES,
@@ -380,8 +430,12 @@ export class DynamoUnitOfWork implements UnitOfWork {
         UpdateExpression: `SET ${sets.join(', ')}`,
         ExpressionAttributeNames: names,
         ExpressionAttributeValues: values,
+        ...(conditionExpression && { ConditionExpression: conditionExpression }),
       },
     });
+    if (conditionExpression) {
+      this.tagLastStaged({ kind: 'guarded', entityName: 'Match', id: matchId });
+    }
   }
 
   // ── Faction messaging ────────────────────────────────────────────
@@ -590,7 +644,7 @@ export class DynamoUnitOfWork implements UnitOfWork {
         ConditionExpression: 'attribute_not_exists(matchId)',
       },
     });
-    this.stagedMeta.push({
+    this.tagLastStaged({
       kind: 'matchRating',
       matchId: input.matchId,
       userId: input.userId,
@@ -604,21 +658,21 @@ export class DynamoUnitOfWork implements UnitOfWork {
 
     if (this.staged.length === 0) return;
 
-    // Pad stagedMeta so it stays index-aligned with staged. Helpers above
-    // only push meta on the createMatchRating path; everything else needs
-    // an `undefined` placeholder.
+    // Pad stagedMeta so it stays index-aligned with staged. Only guarded
+    // items and ratings carry meta; everything else needs an `undefined`
+    // placeholder.
     while (this.stagedMeta.length < this.staged.length) {
       this.stagedMeta.push(undefined);
     }
 
     // Chunk into ≤100-item batches (DynamoDB TransactWriteItems limit)
     const CHUNK_SIZE = 100;
+    if (this.staged.length > CHUNK_SIZE) {
+      console.warn(`UoW: chunking ${this.staged.length} items into ${Math.ceil(this.staged.length / CHUNK_SIZE)} transactions — NOT globally atomic`);
+    }
     for (let i = 0; i < this.staged.length; i += CHUNK_SIZE) {
       const chunk = this.staged.slice(i, i + CHUNK_SIZE);
       const chunkMeta = this.stagedMeta.slice(i, i + CHUNK_SIZE);
-      if (chunk.length > CHUNK_SIZE) {
-        console.warn(`UoW: chunking ${this.staged.length} items into ${Math.ceil(this.staged.length / CHUNK_SIZE)} transactions — NOT globally atomic`);
-      }
       try {
         await dynamoDb.transactWrite({ TransactItems: chunk } as TransactWriteCommandInput);
       } catch (err: unknown) {
@@ -628,8 +682,11 @@ export class DynamoUnitOfWork implements UnitOfWork {
         const failedIdx = extractConditionalFailureIndex(err);
         if (failedIdx >= 0) {
           const meta = chunkMeta[failedIdx];
-          if (meta?.kind === 'matchRating' && meta.matchId && meta.userId) {
+          if (meta?.kind === 'matchRating') {
             throw new RatingAlreadyExistsError(meta.matchId, meta.userId);
+          }
+          if (meta?.kind === 'guarded') {
+            throw new ConcurrencyError(meta.entityName, meta.id);
           }
         }
         throw err;

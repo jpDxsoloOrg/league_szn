@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { X } from 'lucide-react';
 import { playersApi, rivalriesApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Player } from '../../types';
 import type { RivalryHeat, WrestlerVariant } from '../../types/rivalry';
+import Button from '../ui/Button';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
 import './RequestRivalry.css';
 
 interface PlanDraft {
@@ -168,35 +172,30 @@ export default function RequestRivalry() {
   if (!isAdminOrModerator) {
     return (
       <div className="request-rivalry">
-        <header className="request-rivalry__header">
-          <h1>{t('rivalries.request.heading')}</h1>
-        </header>
-        <p>{t('rivalries.request.adminOnly', {
-          defaultValue: 'Only GMs can open a new rivalry.',
-        })}</p>
-        <Link to="/rivalries" className="request-rivalry__cancel">
-          {t('rivalries.detail.backToHub')}
-        </Link>
+        <EmptyState
+          title={t('rivalries.request.heading')}
+          description={t('rivalries.request.adminOnly', { defaultValue: 'Only GMs can open a new rivalry.' })}
+          actionLabel={t('rivalries.detail.backToHub')}
+          onAction={() => navigate('/rivalries')}
+        />
       </div>
     );
   }
 
   return (
     <div className="request-rivalry">
-      <header className="request-rivalry__header">
-        <h1>{t('rivalries.request.heading')}</h1>
-        <ol className="request-rivalry__steps">
-          <li className={step === 1 ? 'is-active' : 'is-complete'}>
-            1. {t('rivalries.request.step1')}
-          </li>
-          <li className={step === 2 ? 'is-active' : ''}>
-            2. {t('rivalries.request.step2')}
-          </li>
-        </ol>
-      </header>
+      <PageHeader title={t('rivalries.request.heading')} />
+      <ol className="request-rivalry__steps">
+        <li className={step === 1 ? 'is-active' : ''} aria-current={step === 1 ? 'step' : undefined}>
+          1. {t('rivalries.request.step1')}
+        </li>
+        <li className={step === 2 ? 'is-active' : ''} aria-current={step === 2 ? 'step' : undefined}>
+          2. {t('rivalries.request.step2')}
+        </li>
+      </ol>
 
       {error && (
-        <div className="request-rivalry__error">
+        <div className="request-rivalry__error" role="alert">
           <strong>{t('rivalries.request.errorTitle')}:</strong> {error}
         </div>
       )}
@@ -262,7 +261,7 @@ export default function RequestRivalry() {
                         checked={pick.variant === 'primary'}
                         onChange={() => updatePick(idx, { variant: 'primary' })}
                       />
-                      <span>{chosen.currentWrestler} (primary)</span>
+                      <span>{chosen.currentWrestler} ({t('rivalries.request.primary', { defaultValue: 'primary' })})</span>
                     </label>
                     <label>
                       <input
@@ -271,7 +270,7 @@ export default function RequestRivalry() {
                         checked={pick.variant === 'alternate'}
                         onChange={() => updatePick(idx, { variant: 'alternate' })}
                       />
-                      <span>{chosen.alternateWrestler} (alternate)</span>
+                      <span>{chosen.alternateWrestler} ({t('rivalries.request.alternate', { defaultValue: 'alternate' })})</span>
                     </label>
                   </fieldset>
                 )}
@@ -286,7 +285,7 @@ export default function RequestRivalry() {
               maxLength={MAX_TITLE}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Bloodline Civil War"
+              placeholder={t('rivalries.request.titlePlaceholder', { defaultValue: 'Name this rivalry' })}
             />
             <span className="request-rivalry__count">
               {title.length}/{MAX_TITLE}
@@ -304,7 +303,7 @@ export default function RequestRivalry() {
                   checked={heat === h}
                   onChange={() => setHeat(h)}
                 />
-                <span>{t(`rivalries.hub.chips.${h}`)}</span>
+                <span>{t(`rivalry.heat.${h}`)}</span>
               </label>
             ))}
           </fieldset>
@@ -323,12 +322,8 @@ export default function RequestRivalry() {
           </label>
 
           <footer className="request-rivalry__actions">
-            <Link to="/rivalries" className="request-rivalry__cancel">
-              {t('rivalries.request.cancel')}
-            </Link>
-            <button type="submit" disabled={!step1Valid}>
-              {t('rivalries.request.submit')}
-            </button>
+            <Button variant="secondary" to="/rivalries">{t('rivalries.request.cancel')}</Button>
+            <Button type="submit" disabled={!step1Valid}>{t('rivalries.request.next', { defaultValue: 'Next' })}</Button>
           </footer>
         </form>
       )}
@@ -379,40 +374,32 @@ export default function RequestRivalry() {
                 />
                 <button
                   type="button"
+                  className="request-rivalry__plan-remove"
+                  aria-label={t('rivalries.request.removePlan', { defaultValue: 'Remove plan' })}
                   onClick={() => setPlans(plans.filter((_, j) => j !== i))}
                 >
-                  ×
+                  <X aria-hidden="true" size={18} />
                 </button>
               </div>
             ))}
             {plans.length < MAX_PLANS && (
-              <button
-                type="button"
-                className="request-rivalry__plan-add"
-                onClick={() => setPlans([...plans, { content: '', scheduledFor: '' }])}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setPlans([...plans, { content: '', scheduledFor: '' }])}>
                 {t('rivalries.request2.addPlan')}
-              </button>
+              </Button>
             )}
           </fieldset>
 
           {planFailures > 0 && (
-            <div className="request-rivalry__warn">
-              Some plans failed to save — edit later in the rivalry detail.
+            <div className="request-rivalry__warn" role="status">
+              {t('rivalries.request.planFailures', { defaultValue: 'Some plans failed to save. You can add them on the rivalry page.' })}
             </div>
           )}
 
           <footer className="request-rivalry__actions">
-            <button
-              type="button"
-              className="request-rivalry__back"
-              onClick={() => setStep(1)}
-            >
-              {t('rivalries.request2.back')}
-            </button>
-            <button type="submit" disabled={!step2Valid || submitting}>
+            <Button variant="secondary" onClick={() => setStep(1)}>{t('rivalries.request2.back')}</Button>
+            <Button type="submit" disabled={!step2Valid} loading={submitting}>
               {t('rivalries.request.submit')}
-            </button>
+            </Button>
           </footer>
         </form>
       )}

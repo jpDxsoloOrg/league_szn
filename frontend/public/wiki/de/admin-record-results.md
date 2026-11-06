@@ -1,22 +1,44 @@
 # Ergebnisse eintragen
 
-Die Seite **Ergebnisse eintragen** ermöglicht das Erfassen von Match-Ergebnissen.
+Eine eigene Ergebnisseite gibt es nicht mehr. Du trägst das Ergebnis direkt beim Match ein:
+
+- **Matches auf einer Kampfkarte**: Öffne das Event im Bereich **Events** und klicke beim Match auf **Ergebnis eintragen**
+- **Einzelne Matches**: Gehe zu **Admin → Einzelne Matches** und klicke dort auf **Ergebnis eintragen**
 
 ## Ergebnis eintragen
 
-1. Gehe zu **Ergebnisse eintragen**
-2. Optional: Nach Event filtern, um die Match-Liste einzugrenzen
-3. Wähle ein geplantes Match aus dem Dropdown
-4. Ordne jedem Teilnehmer zu:
-   - **Sieger** — Hat das Match gewonnen
-   - **Verlierer** — Hat das Match verloren
-   - **Unentschieden** — Match endete unentschieden (falls zutreffend)
-5. Klicke auf **Ergebnis eintragen**, um zu speichern
+1. Klicke bei einem geplanten Match auf **Ergebnis eintragen**
+2. Wähle den Ausgang:
+   - **Tag-Team-Matches** — Wähle das Sieger-Team
+   - **Andere Matches** — Wähle den oder die Sieger; alle anderen verlieren
+   - **Unentschieden** — Setze das Häkchen bei **Unentschieden**, dann erhalten alle Teilnehmer ein Unentschieden
+3. Klicke zum Speichern auf **Ergebnis eintragen**
 
 ## Was beim Eintragen passiert
 
-- Die Sieg-/Niederlagen-/Unentschieden-Bilanz der Spieler wird automatisch aktualisiert (sowohl gesamt als auch saisonbezogen)
-- Die Liga-Tabelle wird neu berechnet
-- Bei einem Titelmatch wechselt der Titel an den Sieger
-- Bei einem Turnier-Match werden Brackets/Standings aktualisiert
-- Die Herausforderer-Ranglisten können sich durch die neuen Ergebnisse verschieben
+- Die Bilanzen der Spieler werden aktualisiert, sowohl für die ewige Wertung als auch für die Saison des Matches
+- Die Tabelle wird aktualisiert
+- Bei einem Titelkampf geht der Titel an den Sieger, oder die Zahl der Verteidigungen steigt, wenn der Champion gewinnt
+- Bei einem Turnier-Match werden Turnierbaum oder Punktestand aktualisiert
+- Das erste Ergebnis setzt ein Event auf **Laufend**, das letzte auf **Abgeschlossen**
+- Die Herausforderer-Ranglisten werden im Hintergrund neu berechnet
+
+## Unentschieden
+
+- Ein Unentschieden zählt für jeden Teilnehmer als ein Unentschieden
+- Ein Unentschieden ändert nie etwas an einem Titel, der Champion bleibt Champion
+- In einem Jeder-gegen-jeden-Turnier bekommt jeder Spieler 1 Punkt
+- Ein K.-o.-Match kann nicht unentschieden enden; die Seite lehnt das ab
+
+## Wenn ein Ergebnis abgelehnt wird
+
+- **Die Saison des Matches ist beendet.** Beendete Saisons sind endgültig. Bearbeite das Match zuerst und wähle eine andere Saison.
+- **Ein Teilnehmer wurde entfernt.** Bearbeite zuerst die Teilnehmer des Matches.
+- **Das Match hat noch offene Plätze.** Besetze zuerst alle Plätze.
+- **Der Champion ist nicht mehr Teil eines Titelkampfs, der aus einer Ansage oder Herausforderung gebucht wurde.** Der Titel hat nach der Buchung den Besitzer gewechselt. Bearbeite das Match oder mache daraus einen Kampf ohne Titel und trage dann das Ergebnis ein. Ein Unentschieden wird weiter angenommen. Ein Titelkampf, den du selbst gebucht hast, wird nicht abgelehnt, prüfe also vorher, wer den Titel hält.
+
+## Fehler korrigieren
+
+Ergebnisse lassen sich nicht bearbeiten. **Lösche** das abgeschlossene Match auf der Event-Seite; seine Statistiken, ein Titelwechsel oder ein Turnierfortschritt werden zurückgesetzt. Plane das Match dann neu und trage das richtige Ergebnis ein. Die Seite sagt dir, wenn etwas Späteres in der Titelhistorie oder im Turnierbaum das Zurücksetzen verhindert.
+
+Abgeschlossene einzelne Matches stehen nicht mehr unter **Einzelne Matches** und lassen sich dort deshalb nicht löschen.

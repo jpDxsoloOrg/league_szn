@@ -112,13 +112,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Pick the recorded requester: the GM's linked player if they have
-    // one, otherwise the first participant. The bookerName field will
-    // hold the GM's display identity separately.
+    // one, otherwise the first participant. bookerName is printed on the
+    // public page, so it is the linked player's name or nothing: never the
+    // Cognito username or email.
     const callerPlayer = auth.sub
       ? await players.findByUserId(auth.sub).catch(() => null)
       : null;
     const requestedBy = callerPlayer?.playerId ?? normalizedParticipants[0].playerId;
-    const bookerName = auth.username || auth.email?.split('@')[0] || '';
+    const bookerName = callerPlayer?.name;
 
     const rivalry = await rivalries.create({
       title: title.trim(),
@@ -140,8 +141,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const activated = await rivalries.update(rivalry.rivalryId, {
           status: 'active',
           startedAt: new Date().toISOString(),
-          moderatedBy: bookerName || 'admin',
-          bookerName: bookerName || undefined,
+          moderatedBy: auth.username || auth.sub || 'admin',
+          bookerName,
         });
         return created(activated);
       } catch {

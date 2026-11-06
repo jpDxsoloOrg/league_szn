@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { notificationsApi } from '../services/api/notifications.api';
+import { waitForPageRequests } from '../utils/deferShellRequest';
 import type { AppNotification } from '../types';
 import './NotificationBell.css';
 
@@ -31,7 +32,13 @@ function formatRelativeTime(dateStr: string, t: (key: string, opts?: Record<stri
 function sourceTypeLabel(sourceType: AppNotification['sourceType']): string {
   switch (sourceType) {
     case 'promo': return 'notifications.typePromo';
-    case 'match': return 'notifications.typeMatch';
+    case 'challenge': return 'notifications.typeChallenge';
+    case 'rivalry': return 'notifications.typeRivalry';
+    case 'match':
+    case 'match_invitation':
+    case 'match_invitation_declined':
+      return 'notifications.typeMatch';
+    case 'storyline_request': return 'notifications.typeStoryline';
     case 'announcement': return 'notifications.typeAnnouncement';
     case 'stable': return 'notifications.typeStable';
     case 'tag_team': return 'notifications.typeTagTeam';
@@ -40,9 +47,14 @@ function sourceTypeLabel(sourceType: AppNotification['sourceType']): string {
   }
 }
 
-function getNavigationPath(notification: AppNotification, playerId: string | null): string {
+function getNavigationPath(notification: AppNotification, playerId: string | null, transfersEnabled: boolean): string {
   switch (notification.sourceType) {
-    case 'promo': return '/promos';
+    case 'promo':
+      return notification.sourceId ? `/promos/${notification.sourceId}` : '/promos';
+    case 'challenge':
+      return notification.sourceId ? `/challenges/${notification.sourceId}` : '/challenges';
+    case 'rivalry':
+      return notification.sourceId ? `/rivalries/${notification.sourceId}` : '/rivalries';
     case 'match': {
       const params = new URLSearchParams({ status: 'scheduled' });
       if (playerId) params.set('playerId', playerId);
@@ -53,7 +65,8 @@ function getNavigationPath(notification: AppNotification, playerId: string | nul
     case 'match_invitation': return '/';
     case 'match_invitation_declined': return '/';
     case 'announcement': return '/';
-    case 'transfer': return '/profile';
+    case 'transfer': return transfersEnabled ? '/profile' : '/';
+    case 'storyline_request': return '/profile';
     default: return '/';
   }
 }
@@ -100,7 +113,11 @@ export default function NotificationBell() {
     if (!shouldShow) return;
 
     const controller = new AbortController();
-    fetchUnreadCount(controller.signal);
+    const fetchFirstCount = async () => {
+      await waitForPageRequests(controller.signal);
+      if (!controller.signal.aborted) await fetchUnreadCount(controller.signal);
+    };
+    void fetchFirstCount();
 
     intervalRef.current = setInterval(() => {
       fetchUnreadCount();
@@ -171,8 +188,8 @@ export default function NotificationBell() {
     }
 
     setIsOpen(false);
-    navigate(getNavigationPath(notification, playerId));
-  }, [navigate, playerId]);
+    navigate(getNavigationPath(notification, playerId, features.transfers));
+  }, [navigate, playerId, features.transfers]);
 
   const handleDeleteNotification = useCallback(async (e: React.MouseEvent, notification: AppNotification) => {
     e.stopPropagation();

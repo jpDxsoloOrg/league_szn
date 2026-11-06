@@ -245,4 +245,49 @@ describe('updateEvent', () => {
     expect(result!.statusCode).toBe(500);
     expect(JSON.parse(result!.body).message).toBe('Failed to update event');
   });
+
+  describe('expectedMatchCards', () => {
+    const cards = [{ position: 1, matchId: 'm1', designation: 'opener' }];
+    const reordered = [{ position: 1, matchId: 'm2', designation: 'opener' }];
+    const putCards = (body: Record<string, unknown>) => makeEvent({
+      pathParameters: { eventId: 'e1' },
+      body: JSON.stringify(body),
+    });
+
+    beforeEach(() => mockGet.mockResolvedValue({ Item: { eventId: 'e1', matchCards: cards } }));
+
+    it('makes the write conditional on the list the client edited', async () => {
+      mockUpdate.mockResolvedValue({ Attributes: { eventId: 'e1', matchCards: reordered } });
+
+      const result = await updateEvent(putCards({ matchCards: reordered, expectedMatchCards: cards }), ctx, cb);
+
+      expect(result!.statusCode).toBe(200);
+      const params = mockUpdate.mock.calls[0][0];
+      expect(params.ConditionExpression).toBe('attribute_exists(eventId) AND matchCards = :expectedMatchCards');
+      expect(params.ExpressionAttributeValues[':expectedMatchCards']).toEqual(cards);
+    });
+
+    it('returns 409 when the stored list has changed', async () => {
+      mockUpdate.mockRejectedValue(Object.assign(new Error('failed'), { name: 'ConditionalCheckFailedException' }));
+
+      const result = await updateEvent(putCards({ matchCards: reordered, expectedMatchCards: cards }), ctx, cb);
+
+      expect(result!.statusCode).toBe(409);
+    });
+
+    it('still returns 404 for a failed condition on an unconditional write', async () => {
+      mockUpdate.mockRejectedValue(Object.assign(new Error('failed'), { name: 'ConditionalCheckFailedException' }));
+
+      const result = await updateEvent(putCards({ matchCards: reordered }), ctx, cb);
+
+      expect(result!.statusCode).toBe(404);
+    });
+
+    it('rejects an expected list that is not an array', async () => {
+      const result = await updateEvent(putCards({ matchCards: reordered, expectedMatchCards: 'x' }), ctx, cb);
+
+      expect(result!.statusCode).toBe(400);
+      expect(mockUpdate).not.toHaveBeenCalled();
+    });
+  });
 });

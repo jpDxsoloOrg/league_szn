@@ -24,8 +24,12 @@ vi.mock('react-i18next', () => ({
         'recordResult.selectWinner': 'Please select at least one winner',
         'recordResult.selectWinningTeam': 'Please select the winning team',
         'recordResult.error': 'Failed to record result',
-        'match.starRating': 'Star Rating',
-        'match.clearRating': 'Clear',
+        'recordResult.championNotInMatch': 'Translated: champion not in match',
+        'recordResult.recordResult': 'Record Result',
+        'recordResult.matchType': 'Match Type',
+        'recordResult.date': 'Date',
+        'events.forms.draw': 'Draw',
+        'common.cancel': 'Cancel',
         'common.unknown': 'Unknown',
       };
       return translations[key] || key;
@@ -194,6 +198,112 @@ describe('MatchResultForm', () => {
     // First team label "John Cena & The Rock"
     expect(screen.getByText('John Cena & The Rock')).toBeInTheDocument();
     expect(screen.getByText('Undertaker & Triple H')).toBeInTheDocument();
+  });
+
+  it('participants are real toggle buttons a keyboard user can press', async () => {
+    const user = userEvent.setup();
+    render(
+      <MatchResultForm
+        match={singlesMatch}
+        players={mockPlayers}
+        tagTeams={[]}
+        onSuccess={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+
+    const cena = screen.getByRole('button', { name: 'John Cena (John Cena)' });
+    expect(cena).toHaveAttribute('aria-pressed', 'false');
+    cena.focus();
+    await user.keyboard('{Enter}');
+    expect(cena).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('winning team buttons report their pressed state', async () => {
+    const user = userEvent.setup();
+    render(
+      <MatchResultForm
+        match={tagMatch}
+        players={mockPlayers}
+        tagTeams={[]}
+        onSuccess={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+
+    const team = screen.getByRole('button', { name: /^John Cena & The Rock/ });
+    await user.click(team);
+    expect(team).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('does not offer a star rating, since ratings come from viewers', () => {
+    render(
+      <MatchResultForm
+        match={singlesMatch}
+        players={mockPlayers}
+        tagTeams={[]}
+        onSuccess={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByRole('group', { name: /rating/i })).not.toBeInTheDocument();
+  });
+
+  it('shows the name alone for a hidden player with no wrestler', () => {
+    render(
+      <MatchResultForm
+        match={singlesMatch}
+        players={[{ ...mockPlayers[0]!, currentWrestler: '' }, mockPlayers[1]!]}
+        tagTeams={[]}
+        onSuccess={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'John Cena' })).toBeInTheDocument();
+  });
+
+  it('shows the translated refusal when the champion is no longer in a title match', async () => {
+    const user = userEvent.setup();
+    const onSuccess = vi.fn();
+    mockRecordResult.mockRejectedValue(new Error(
+      'The current champion is no longer in this title match. Edit the match, or make it a non-title match, then record the result.'
+    ));
+    render(
+      <MatchResultForm
+        match={singlesMatch}
+        players={mockPlayers}
+        tagTeams={[]}
+        onSuccess={onSuccess}
+        onCancel={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /John Cena/ }));
+    await user.click(screen.getByRole('button', { name: 'Record Result' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Translated: champion not in match');
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it('shows any other refusal as the API worded it', async () => {
+    const user = userEvent.setup();
+    mockRecordResult.mockRejectedValue(new Error('Match has already been completed'));
+    render(
+      <MatchResultForm
+        match={singlesMatch}
+        players={mockPlayers}
+        tagTeams={[]}
+        onSuccess={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /John Cena/ }));
+    await user.click(screen.getByRole('button', { name: 'Record Result' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Match has already been completed');
   });
 
   it('cancel button calls onCancel', async () => {

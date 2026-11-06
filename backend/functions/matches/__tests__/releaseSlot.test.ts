@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
+import { ConcurrencyError } from '../../../lib/repositories/errors';
 
 // ---- Mocks ----------------------------------------------------------------
 
@@ -104,7 +105,17 @@ describe('releaseSlot', () => {
       'm1',
       '2024-06-01T00:00:00Z',
       expect.objectContaining({ status: 'open-signups' }),
+      { kind: 'unchangedSince', updatedAt: undefined },
     );
+  });
+
+  it('returns 409 when the match changed after it was read', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch());
+    mockRunInTransaction.mockRejectedValue(new ConcurrencyError('Match', 'm1'));
+
+    const r = await releaseSlot(ev(), ctx, cb);
+
+    expect(r!.statusCode).toBe(409);
   });
 
   it('preserves slot lockedByAdmin flag and teamLabel after release', async () => {

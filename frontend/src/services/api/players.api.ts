@@ -1,9 +1,34 @@
 import type { Player, PlayerBookingInfo } from '../../types';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
+/** Public name lookup row. `currentWrestler` is null for a player with no wrestler. */
+export interface PlayerDirectoryEntry {
+  playerId: string;
+  name: string;
+  currentWrestler: string | null;
+}
+
+/** Staff edit of a player. The clear flags empty a slot, including one held by name alone. */
+export type PlayerUpdate = Omit<Partial<Player>, 'alignment'> & {
+  alignment?: 'face' | 'heel' | 'neutral' | '';
+  clearCurrentWrestler?: boolean;
+  clearAlternateWrestler?: boolean;
+};
+
 export const playersApi = {
+  /** Players with a wrestler. Hidden players are left out. */
   getAll: async (signal?: AbortSignal): Promise<Player[]> => {
     return fetchWithAuth(`${API_BASE_URL}/players`, {}, signal);
+  },
+
+  /** Staff only: every player, including hidden ones. Others get the public list. */
+  getAllIncludingHidden: async (signal?: AbortSignal): Promise<Player[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/players?includeHidden=true`, {}, signal);
+  },
+
+  /** Public name lookup covering all players, so old matches can resolve names. */
+  getDirectory: async (signal?: AbortSignal): Promise<PlayerDirectoryEntry[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/players?view=directory`, {}, signal);
   },
 
   /** Staff only. Keyed by playerId. */
@@ -18,7 +43,7 @@ export const playersApi = {
     });
   },
 
-  update: async (playerId: string, updates: Omit<Partial<Player>, 'alignment'> & { alignment?: 'face' | 'heel' | 'neutral' | '' }): Promise<Player> => {
+  update: async (playerId: string, updates: PlayerUpdate): Promise<Player> => {
     return fetchWithAuth(`${API_BASE_URL}/players/${playerId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { ApiError } from '../../../services/api/apiClient';
 
 const {
   mockGetMyProfile,
@@ -71,7 +72,7 @@ function renderRoute(initialEntries: string[] = ['/my-faction']) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockUseAuth.mockReturnValue({ isAuthenticated: true });
+  mockUseAuth.mockReturnValue({ isAuthenticated: true, hasRole: () => true });
   mockFactionsGetAll.mockResolvedValue([]);
   mockFactionsGetInvitations.mockResolvedValue([]);
 });
@@ -134,7 +135,7 @@ describe('MyFaction redirect (FAC-10 follow-up)', () => {
   });
 
   it('keeps the route mounted for unauthenticated callers (login prompt)', async () => {
-    mockUseAuth.mockReturnValue({ isAuthenticated: false });
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, hasRole: () => false });
 
     renderRoute();
 
@@ -142,5 +143,63 @@ describe('MyFaction redirect (FAC-10 follow-up)', () => {
       await screen.findByText('Please log in to manage your faction.'),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('redirect-target')).not.toBeInTheDocument();
+  });
+
+  const noFactionProfile = {
+    playerId: 'p1',
+    name: 'Player',
+    currentWrestler: 'Wrestler',
+    wins: 0,
+    losses: 0,
+    draws: 0,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+
+  it('tells staff with no player why there is nothing here, with no raw error or retry', async () => {
+    mockGetMyProfile.mockRejectedValueOnce(new ApiError('No player profile found for this user', 404));
+
+    renderRoute();
+
+    expect(await screen.findByText('No player profile on this account')).toBeInTheDocument();
+    expect(screen.queryByText('No player profile found for this user')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Create a Faction' })).not.toBeInTheDocument();
+  });
+
+  it('still shows other load failures with a retry', async () => {
+    mockGetMyProfile.mockRejectedValueOnce(new ApiError('Service unavailable', 503));
+
+    renderRoute();
+
+    expect(await screen.findByText('Service unavailable')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+  });
+
+  it('shows a pending request in place of the create offer', async () => {
+    mockGetMyProfile.mockResolvedValueOnce(noFactionProfile);
+    mockFactionsGetAll.mockResolvedValueOnce([
+      { stableId: 'fac-2', name: 'The Brood', leaderId: 'p1', memberIds: ['p1'], status: 'pending' },
+    ]);
+
+    renderRoute();
+
+    expect(await screen.findByText('Your faction request is pending')).toBeInTheDocument();
+    expect(screen.getByText('The Brood is waiting for an admin to approve it.')).toBeInTheDocument();
+    expect(screen.queryByText('You are not in a faction')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Create a Faction' })).not.toBeInTheDocument();
+  });
+
+  it('ignores a pending faction led by someone else and a rejected request', async () => {
+    mockGetMyProfile.mockResolvedValueOnce(noFactionProfile);
+    mockFactionsGetAll.mockResolvedValueOnce([
+      { stableId: 'fac-2', name: 'The Brood', leaderId: 'p2', memberIds: ['p2'], status: 'pending' },
+      { stableId: 'fac-3', name: 'Rejected', leaderId: 'p1', memberIds: ['p1'], status: 'disbanded' },
+    ]);
+
+    renderRoute();
+
+    expect(await screen.findByRole('button', { name: 'Create a Faction' })).toBeInTheDocument();
+    expect(screen.queryByText('Your faction request is pending')).not.toBeInTheDocument();
   });
 });

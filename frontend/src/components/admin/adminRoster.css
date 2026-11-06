@@ -1,0 +1,293 @@
+/*
+ * Shared layout for the Match Day and Roster admin pages: page rhythm, toolbars,
+ * notices, form fields, pick lists and hairline row lists. Tokens only.
+ */
+.ar-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.ar-page--narrow {
+  max-width: 820px;
+}
+
+.ar-nowrap {
+  white-space: nowrap;
+}
+
+.ar-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ar-toolbar__filters {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.ar-section-title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.ar-count {
+  color: var(--color-text-muted);
+  font-size: var(--text-dense);
+}
+
+/* Notice body lists */
+.ar-notice__list {
+  margin: 0.25rem 0 0;
+  padding-left: 1.25rem;
+}
+
+/* Form fields */
+.ar-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.ar-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.ar-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ar-field__label {
+  padding: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.ar-hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.ar-input {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0.5rem 0.75rem;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-dense);
+}
+
+.ar-input--search {
+  flex: 1 1 14rem;
+  width: auto;
+  max-width: 22rem;
+}
+
+.ar-check {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: var(--touch-target);
+  color: var(--color-text);
+  font-size: var(--text-dense);
+  cursor: pointer;
+}
+
+.ar-check input {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  accent-color: var(--color-cyan);
+}
+
+/* Table cell content */
+.ar-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.ar-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.ar-strong {
+  color: var(--color-text);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.ar-sub {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.ar-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.ar-numeric {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ar-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.375rem;
+}
+
+/* Pick lists: real toggle buttons, one per player. */
+.ar-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.5rem;
+  max-height: 22rem;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0.125rem;
+}
+
+.ar-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0.5rem 0.75rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-dense);
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ar-pick:hover {
+  background-color: var(--color-surface-raised);
+}
+
+.ar-pick[aria-pressed='true'] {
+  background-color: var(--tint-cyan);
+  border-color: var(--color-cyan);
+}
+
+/* Row list: one surface, rows split by hairlines. */
+.ar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+}
+
+.ar-list__row {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.ar-list__row:last-child {
+  border-bottom: none;
+}
+
+.ar-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-dense);
+}
+
+/* File picker: the label is the visible control, the input stays focusable. */
+.ar-file__label {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  padding: 0.5rem 1rem;
+  border: 1px dashed var(--color-hairline);
+  border-radius: var(--radius-control);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.ar-file__input:focus-visible + .ar-file__label {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .ar-toolbar__filters > *,
+  .ar-input--search {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  .ar-form__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ar-input,
+  .ar-pick {
+    font-size: var(--text-body);
+  }
+
+  .ar-pick-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* The action cell needs the full card width, not a label beside it. */
+  .ar-table .ui-table td:last-child {
+    justify-content: flex-end;
+  }
+
+  .ar-table .ui-table td:last-child::before {
+    display: none;
+  }
+
+  .ar-table .ar-stack {
+    align-items: flex-end;
+  }
+
+  .ar-table .ar-badges {
+    justify-content: flex-end;
+  }
+}

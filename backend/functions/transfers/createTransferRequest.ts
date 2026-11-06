@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { success, badRequest, forbidden, notFound, serverError } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 
@@ -14,6 +14,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   if (denied) return denied;
 
   try {
+    const features = await getRepositories().user.siteConfig.getFeatures();
+    if (!features.transfers) {
+      return forbidden('Division transfer requests are currently turned off');
+    }
+
     const { sub } = getAuthContext(event);
 
     // Look up the player by userId

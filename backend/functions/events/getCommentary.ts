@@ -1,8 +1,10 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
+import { isPlayerVisible, resolveBilledName } from '../../lib/needsWrestler';
 import { getRepositories } from '../../lib/repositories';
 import type { Match, MatchSlot, Player, WrestlerMove } from '../../lib/repositories/types';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { computeHeadToHead, pairwise } from '../../lib/headToHead';
+import { matchWinners } from '../../lib/matchResult';
 
 interface Record3 {
   wins: number;
@@ -72,10 +74,11 @@ function multiManRecord(playerId: string, completed: Match[]): Record3 {
   for (const m of completed) {
     const ids = participantIdsOf(m);
     if (ids.length < 3 || !ids.includes(playerId)) continue;
-    if (m.winners?.includes(playerId)) rec.wins++;
+    const winners = matchWinners(m);
+    if (winners.includes(playerId)) rec.wins++;
     // A draw, or a no-contest with nobody declared the winner, is not a loss
     // — same reading computeHeadToHead uses for a pair.
-    else if (m.isDraw || !m.winners?.length) rec.draws++;
+    else if (winners.length === 0) rec.draws++;
     else rec.losses++;
   }
   return rec;
@@ -159,16 +162,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       if (!p) return null;
       const slot = (match.slots as MatchSlot[] | undefined)?.find((s) => s.playerId === playerId);
       const standing = standingByPlayer.get(playerId);
+      // A hidden player stays named on a card, but their profile stays private.
+      const profile = isPlayerVisible(p)
+        ? { imageUrl: p.imageUrl, alignment: p.alignment, bio: p.bio, signatures: p.signatures ?? [], finishers: p.finishers ?? [] }
+        : { signatures: [], finishers: [] };
       return {
         playerId,
         playerName: p.name,
-        wrestlerName: slot?.wrestlerNameSnapshot ?? p.currentWrestler,
-        imageUrl: p.imageUrl,
-        alignment: p.alignment,
+        wrestlerName: resolveBilledName(slot?.wrestlerNameSnapshot, p, p.playerId),
+        ...profile,
         divisionName: p.divisionId ? divisionNameById.get(p.divisionId) : undefined,
-        bio: p.bio,
-        signatures: p.signatures ?? [],
-        finishers: p.finishers ?? [],
         seasonRecord: season
           ? { wins: standing?.wins ?? 0, losses: standing?.losses ?? 0, draws: standing?.draws ?? 0 }
           : null,

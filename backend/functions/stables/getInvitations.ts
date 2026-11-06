@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import { success, badRequest, serverError } from '../../lib/response';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -17,17 +17,30 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const { roster: { stables: stablesRepo, players: playersRepo } } = getRepositories();
 
-    // Verify caller is the stable leader
-    const callerPlayer = await playersRepo.findByUserId(auth.sub);
-    if (!callerPlayer) {
-      return badRequest('Player not found');
+    const stable = await stablesRepo.findById(stableId);
+    if (!stable) {
+      return notFound('Stable not found');
+    }
+
+    // Invitations carry private messages. The stable's leader and staff read
+    // them all; anyone else, members included, sees only the ones addressed to
+    // them, which is how an invited player finds an invitation to accept.
+    let visibleToPlayerId: string | null = null;
+    if (!hasRole(auth, 'Admin', 'Moderator')) {
+      const callerPlayer = await playersRepo.findByUserId(auth.sub);
+      if (!callerPlayer) {
+        return success([]);
+      }
+      if (stable.leaderId !== callerPlayer.playerId) {
+        visibleToPlayerId = callerPlayer.playerId;
+      }
     }
 
     // Query invitations for this stable
-    const invitations = await stablesRepo.listInvitationsByStable(stableId);
-
-    // Enrich with player names and stable name
-    const stable = await stablesRepo.findById(stableId);
+    const allInvitations = await stablesRepo.listInvitationsByStable(stableId);
+    const invitations = visibleToPlayerId === null
+      ? allInvitations
+      : allInvitations.filter((inv) => inv.invitedPlayerId === visibleToPlayerId);
 
     const enriched = await Promise.all(
       invitations.map(async (inv) => {
@@ -58,9 +71,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }
 
         // Add stable name
-        if (stable) {
-          enrichedInv.stableName = stable.name;
-        }
+        enrichedInv.stableName = stable.name;
 
         return enrichedInv;
       })

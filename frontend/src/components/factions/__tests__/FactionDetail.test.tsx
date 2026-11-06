@@ -7,11 +7,17 @@ const {
   mockFactionsGetById,
   mockFactionsGetPromos,
   mockFactionsGetSchedule,
+  mockGetDirectory,
+  authState,
 } = vi.hoisted(() => ({
   mockFactionsGetById: vi.fn(),
   mockFactionsGetPromos: vi.fn(),
   mockFactionsGetSchedule: vi.fn(),
+  mockGetDirectory: vi.fn(),
+  authState: { playerId: null as string | null, isAdminOrModerator: false, isSuperAdmin: false },
 }));
+
+vi.mock('../../../contexts/AuthContext', () => ({ useAuth: () => authState }));
 
 vi.mock('../../../services/api', () => ({
   factionsApi: {
@@ -19,6 +25,7 @@ vi.mock('../../../services/api', () => ({
     getPromos: mockFactionsGetPromos,
     getSchedule: mockFactionsGetSchedule,
   },
+  playersApi: { getDirectory: mockGetDirectory },
 }));
 
 const interpolatingT = (_key: string, fallback?: string, options?: Record<string, unknown>) => {
@@ -142,14 +149,14 @@ beforeEach(() => {
   mockFactionsGetById.mockResolvedValue(baseFaction());
   mockFactionsGetPromos.mockResolvedValue({ items: [] });
   mockFactionsGetSchedule.mockResolvedValue({ items: [] });
+  mockGetDirectory.mockResolvedValue([]);
+  Object.assign(authState, { playerId: null, isAdminOrModerator: false, isSuperAdmin: false });
 });
 
 describe('FactionDetail shell (FAC-11)', () => {
   it('renders the hero with name, status, leader, record, and heat label', async () => {
-    // FAC-22: when a custom imageUrl is set, the <h1> is intentionally
-    // suppressed (banner art carries the brand). Wait on the record value
-    // as the "got past loading" signal instead. Also verify the banner
-    // image alt still announces the faction name for screen readers.
+    // Wait on the record value as the "got past loading" signal, and verify
+    // the banner image alt announces the faction name.
     renderShell();
     expect(await screen.findByText('12-4-1')).toBeInTheDocument();
     expect(screen.getByAltText('The Brood faction banner')).toBeInTheDocument();
@@ -158,28 +165,77 @@ describe('FactionDetail shell (FAC-11)', () => {
     expect(screen.getByLabelText('Heat: 3 of 5')).toBeInTheDocument();
   });
 
-  it('renders all seven tabs with Overview active by default', async () => {
+  it('renders all seven tabs for the leader, with Overview active by default', async () => {
+    authState.playerId = 'p-leader';
     renderShell();
     await screen.findByText('12-4-1');
     for (const label of ['Overview', 'Members', 'Stats', 'Schedule', 'Promos', 'Messages', 'Manage']) {
-      expect(screen.getByRole('tab', { name: label })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
     }
-    expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('shows signed-out visitors only the public tabs', async () => {
+    renderShell();
+    await screen.findByText('12-4-1');
+    expect(screen.getByRole('link', { name: 'Schedule' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Messages' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Manage' })).not.toBeInTheDocument();
+  });
+
+  it('gives an Admin outside the faction Manage but not Messages, which the API refuses them', async () => {
+    Object.assign(authState, { playerId: 'staff', isAdminOrModerator: true, isSuperAdmin: true });
+    renderShell();
+    await screen.findByText('12-4-1');
+    expect(screen.getByRole('link', { name: 'Manage' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Messages' })).not.toBeInTheDocument();
+  });
+
+  it('gives a Moderator outside the faction neither Manage nor Messages', async () => {
+    Object.assign(authState, { playerId: 'staff', isAdminOrModerator: true, isSuperAdmin: false });
+    renderShell();
+    await screen.findByText('12-4-1');
+    expect(screen.queryByRole('link', { name: 'Manage' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Messages' })).not.toBeInTheDocument();
+  });
+
+  it('labels a leader who is missing instead of leaving "Led by" blank', async () => {
+    mockFactionsGetById.mockResolvedValueOnce(baseFaction({ leaderName: '' }));
+    renderShell();
+    expect(await screen.findByText('Leader no longer listed')).toBeInTheDocument();
+  });
+
+  it('reads a streak sent as a string', async () => {
+    mockFactionsGetById.mockResolvedValueOnce(
+      baseFaction({ standings: { winPercentage: 40, recentForm: ['L'], currentStreak: 'L2' } }),
+    );
+    renderShell();
+    expect(await screen.findByLabelText('Heat: 2 of 5')).toBeInTheDocument();
+  });
+
+  it('shows no heat gauge without a streak', async () => {
+    mockFactionsGetById.mockResolvedValueOnce(
+      baseFaction({ standings: { winPercentage: 0, recentForm: [], currentStreak: { type: 'W', count: 0 } } }),
+    );
+    renderShell();
+    await screen.findByText('12-4-1');
+    expect(screen.queryByRole('img', { name: /Heat/ })).not.toBeInTheDocument();
   });
 
   it('navigates between tabs and applies the active class', async () => {
+    authState.playerId = 'p-leader';
     renderShell();
     await screen.findByText('12-4-1');
 
     // Tabs are stubbed at the top of the file so this assertion stays
     // focused on routing — placeholders verify the right tab rendered.
-    await userEvent.click(screen.getByRole('tab', { name: 'Manage' }));
+    await userEvent.click(screen.getByRole('link', { name: 'Manage' }));
     await waitFor(() => {
       expect(screen.getByText('Manage placeholder')).toBeInTheDocument();
     });
-    expect(screen.getByRole('tab', { name: 'Manage' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute('aria-current', 'page');
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Members' }));
+    await userEvent.click(screen.getByRole('link', { name: 'Members' }));
     await waitFor(() => {
       expect(screen.getByText('Members placeholder')).toBeInTheDocument();
     });
@@ -189,7 +245,7 @@ describe('FactionDetail shell (FAC-11)', () => {
     mockFactionsGetById.mockRejectedValueOnce(new Error('Boom'));
     renderShell();
 
-    expect(await screen.findByText(/Error.*Boom/)).toBeInTheDocument();
+    expect(await screen.findByText('Boom')).toBeInTheDocument();
     const retry = screen.getByRole('button', { name: 'Retry' });
 
     // Subsequent call succeeds — Retry recovers without a page reload.
@@ -200,7 +256,7 @@ describe('FactionDetail shell (FAC-11)', () => {
 });
 
 describe('FactionDetail hero — FAC-22 record + banner-name fixes', () => {
-  it('suppresses the name <h1> when the faction has a custom banner', async () => {
+  it('shows the banner whole beside a visible name, never under it', async () => {
     mockFactionsGetById.mockResolvedValueOnce(
       baseFaction({ imageUrl: '/images/brood.png' }),
     );
@@ -208,12 +264,9 @@ describe('FactionDetail hero — FAC-22 record + banner-name fixes', () => {
 
     // Wait for the hero to render (record is the "got past loading" signal).
     await screen.findByText('12-4-1');
-    // The <h1> name overlay should NOT appear when a banner is set —
-    // the banner art carries the brand and we don't want the name to read
-    // twice.
-    expect(screen.queryByRole('heading', { name: 'The Brood' })).toBeNull();
-    // The banner image's alt text still announces the name for a11y.
-    expect(screen.getByAltText('The Brood faction banner')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'The Brood' })).not.toHaveClass('sr-only');
+    // The art sits in its own frame, so no text is laid over it.
+    expect(screen.getByAltText('The Brood faction banner').parentElement).toHaveClass('poster-hero__frame');
   });
 
   it('renders the name <h1> when the faction has no custom banner', async () => {
@@ -226,7 +279,7 @@ describe('FactionDetail hero — FAC-22 record + banner-name fixes', () => {
     // name needs to be visible.
     expect(
       await screen.findByRole('heading', { name: 'The Brood' }),
-    ).toBeInTheDocument();
+    ).not.toHaveClass('sr-only');
   });
 
   it('clamps undefined wins/losses/draws to 0 instead of rendering "-1"', async () => {
@@ -253,6 +306,42 @@ describe('FactionDetail hero — FAC-22 record + banner-name fixes', () => {
 });
 
 describe('FactionOverview tab (FAC-11)', () => {
+  it('says members are missing instead of "No members yet", and names the opponent in a result', async () => {
+    mockGetDirectory.mockResolvedValue([{ playerId: 'rival', name: 'Rival Player', currentWrestler: 'Sting' }]);
+    mockFactionsGetById.mockResolvedValueOnce(baseFaction({
+      memberIds: ['gone-1', 'gone-2'],
+      members: [],
+      recentMatches: [{ matchId: 'm1', date: '2026-05-26', matchFormat: 'Single', participants: ['gone-1', 'rival'], losers: ['gone-1'], winners: ['rival'] }],
+    }));
+    renderShell();
+
+    expect(await screen.findByText('2 members are no longer listed on the roster.')).toBeInTheDocument();
+    expect(screen.queryByText('No members yet.')).not.toBeInTheDocument();
+    expect(await screen.findByText('vs Sting')).toBeInTheDocument();
+    expect(screen.getByText('Singles')).toBeInTheDocument();
+  });
+
+  it('calls an opponent whose row is gone a former member, once the names have loaded', async () => {
+    mockGetDirectory.mockResolvedValue([{ playerId: 'rival', name: 'Rival Player', currentWrestler: 'Sting' }]);
+    mockFactionsGetById.mockResolvedValueOnce(baseFaction({
+      recentMatches: [{ matchId: 'm1', date: '2026-05-26', matchFormat: 'Single', participants: ['p-leader', 'gone'], winners: ['p-leader'], losers: ['gone'] }],
+    }));
+    renderShell();
+
+    expect(await screen.findByText('vs common.formerMember')).toBeInTheDocument();
+  });
+
+  it('does not call opponents former members when the names failed to load', async () => {
+    mockGetDirectory.mockRejectedValue(new Error('burst'));
+    mockFactionsGetById.mockResolvedValueOnce(baseFaction({
+      recentMatches: [{ matchId: 'm1', date: '2026-05-26', matchFormat: 'Single', participants: ['p-leader', 'rival'], winners: ['p-leader'], losers: ['rival'] }],
+    }));
+    renderShell();
+
+    expect(await screen.findByText('vs common.unknown')).toBeInTheDocument();
+    expect(screen.queryByText('vs common.formerMember')).not.toBeInTheDocument();
+  });
+
   it('renders the roster row, recent results, streak, upcoming, and activity sections', async () => {
     mockFactionsGetSchedule.mockResolvedValueOnce({
       items: [
@@ -308,7 +397,7 @@ describe('FactionOverview tab (FAC-11)', () => {
 
     expect(screen.getByText('Streak')).toBeInTheDocument();
     expect(screen.getByText('3W')).toBeInTheDocument();
-    expect(screen.getByLabelText('Last 10 results')).toBeInTheDocument();
+    expect(screen.getByText(/newest on the right/)).toBeInTheDocument();
 
     // Upcoming card displays count
     expect(await screen.findByText('Upcoming Matches (1)')).toBeInTheDocument();

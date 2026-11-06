@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
 const {
@@ -16,6 +16,7 @@ const {
   mockGetAllTagTeams,
   mockGetAllDivisions,
   mockGetCheckIns,
+  mockGetChallenges,
 } = vi.hoisted(() => ({
   mockGetAllPlayers: vi.fn(),
   mockGetAllChampionships: vi.fn(),
@@ -28,11 +29,13 @@ const {
   mockGetAllTagTeams: vi.fn(),
   mockGetAllDivisions: vi.fn(),
   mockGetCheckIns: vi.fn(),
+  mockGetChallenges: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
+  challengesApi: { getAll: mockGetChallenges },
   matchesApi: { schedule: mockScheduleMatch },
-  playersApi: { getAll: mockGetAllPlayers, getBookingSummary: vi.fn().mockResolvedValue({}) },
+  playersApi: { getAllIncludingHidden: mockGetAllPlayers, getBookingSummary: vi.fn().mockResolvedValue({}) },
   championshipsApi: { getAll: mockGetAllChampionships },
   tournamentsApi: { getAll: mockGetAllTournaments },
   seasonsApi: { getAll: mockGetAllSeasons },
@@ -48,6 +51,7 @@ vi.mock('react-i18next', () => ({
     t: (key: string, options?: string | Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'scheduleMatch.matchFormat': 'Match Format',
+        'scheduleMatch.linkedTitleGone': 'Title is gone',
         'scheduleMatch.selectMatchFormat': 'Select Match Format',
         'scheduleMatch.stipulation': 'Stipulation (Optional)',
         'scheduleMatch.noStipulation': 'Standard Match (No Stipulation)',
@@ -85,7 +89,7 @@ vi.mock('react-i18next', () => ({
       // Support both `t(key, 'fallback string')` and `t(key, { defaultValue: 'x' })`
       if (typeof options === 'string') return options;
       if (options && typeof options === 'object' && typeof options.defaultValue === 'string') {
-        return options.defaultValue;
+        return options.defaultValue.replace('{{sources}}', String(options.sources));
       }
       return key;
     },
@@ -107,6 +111,7 @@ const mockPlayers = [
 
 const mockChampionships = [
   { championshipId: 'c1', name: 'World Title', type: 'singles' as const, isActive: true, createdAt: '2024-01-01' },
+  { championshipId: 'c2', name: 'Tag Titles', type: 'tag' as const, isActive: true, createdAt: '2024-01-01' },
 ];
 
 const mockTournaments = [
@@ -133,6 +138,11 @@ const mockMatchTypes = [
   { matchTypeId: 'mf4', name: 'Fatal 4-Way', description: 'Four competitors', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
 ];
 
+const hiddenPlayer = {
+  playerId: 'p5', name: 'Newbie', currentWrestler: 'Needs Wrestler',
+  wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+};
+
 function setupDefaultMocks() {
   mockGetAllPlayers.mockResolvedValue(mockPlayers);
   mockGetAllChampionships.mockResolvedValue(mockChampionships);
@@ -143,6 +153,7 @@ function setupDefaultMocks() {
   mockGetAllMatchTypes.mockResolvedValue(mockMatchTypes);
   mockGetAllTagTeams.mockResolvedValue([]);
   mockGetAllDivisions.mockResolvedValue([]);
+  mockGetChallenges.mockResolvedValue([]);
   mockGetCheckIns.mockResolvedValue({
     available: [{ playerId: 'p1', name: 'John Cena', currentWrestler: 'The Champ' }],
     tentative: [{ playerId: 'p2', name: 'Dwayne Johnson', currentWrestler: 'The Rock' }],
@@ -339,6 +350,464 @@ describe('ScheduleMatch', () => {
 
     // API should not have been called
     expect(mockScheduleMatch).not.toHaveBeenCalled();
+  });
+
+  it('lets the form submit again after a validation error', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    mockScheduleMatch.mockResolvedValue({ matchId: 'new-match' });
+    renderScheduleMatch();
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
+    await pickParticipants(user, ['The Champ (John Cena)']);
+
+    await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+    expect(await screen.findByText('Please select at least 2 participants')).toBeInTheDocument();
+
+    await pickParticipants(user, ['The Rock (Dwayne Johnson)']);
+    await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+
+    await waitFor(() => expect(mockScheduleMatch).toHaveBeenCalledTimes(1));
+  });
+
+  it('leaves players with no wrestler out of the picker', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);
+    renderScheduleMatch();
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
+    await user.click(screen.getByRole('button', { name: /Add participants/ }));
+
+    expect(screen.getByRole('option', { name: /The Rock/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Newbie/ })).not.toBeInTheDocument();
+  });
+
+  it('keeps a hidden player pre-filled from a challenge', async () => {
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);
+    render(
+      <MemoryRouter
+        initialEntries={[{
+          pathname: '/admin/schedule',
+          state: { fromChallenge: { challengeId: 'ch1', challengerId: 'p1', challengedId: 'p5', matchType: 'Singles' } },
+        }]}
+      >
+        <ScheduleMatch />
+      </MemoryRouter>,
+    );
+
+    const chip = (await screen.findByRole('button', { name: 'Remove Newbie' })).closest('li')!;
+    expect(chip).toHaveTextContent('Newbie');
+    expect(chip).not.toHaveTextContent('Hidden');
+    expect(chip).not.toHaveTextContent('Needs Wrestler');
+  });
+
+  function renderFromChallenge(fromChallenge: Record<string, unknown>) {
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/admin/schedule', state: { fromChallenge } }]}>
+        <ScheduleMatch />
+      </MemoryRouter>,
+    );
+  }
+
+  it('books a title match from a singles title challenge', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    mockScheduleMatch.mockResolvedValue({});
+    renderFromChallenge({ challengeId: 'ch1', challengerId: 'p1', challengedId: 'p2', matchType: 'Singles', championshipId: 'c1' });
+
+    expect(await screen.findByLabelText('Championship Match')).toBeChecked();
+    expect(screen.getByLabelText('Championship')).toHaveValue('c1');
+
+    await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+
+    await waitFor(() => {
+      expect(mockScheduleMatch).toHaveBeenCalledWith(expect.objectContaining({
+        participants: ['p1', 'p2'],
+        isChampionship: true,
+        championshipId: 'c1',
+        challengeId: 'ch1',
+      }));
+    });
+  });
+
+  it('leaves Championship Match unticked for a challenge with no title', async () => {
+    setupDefaultMocks();
+    renderFromChallenge({ challengeId: 'ch1', challengerId: 'p1', challengedId: 'p2', matchType: 'Singles' });
+
+    expect(await screen.findByLabelText('Championship Match')).not.toBeChecked();
+  });
+
+  it('books both teams and the title from a tag title challenge', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    mockGetAllChampionships.mockResolvedValue([
+      { championshipId: 'c2', name: 'Tag Titles', type: 'tag', isActive: true, createdAt: '2024-01-01' },
+    ]);
+    mockScheduleMatch.mockResolvedValue({});
+    const member = (playerId: string) => ({ playerId, playerName: playerId, wrestlerName: playerId });
+    renderFromChallenge({
+      challengeId: 'ch2',
+      challengerId: 'p1',
+      challengedId: 'p3',
+      matchType: 'Tag Team',
+      championshipId: 'c2',
+      challengeMode: 'tag_team',
+      challengerTagTeam: { tagTeamId: 'tt1', tagTeamName: 'A', player1: member('p1'), player2: member('p2') },
+      challengedTagTeam: { tagTeamId: 'tt2', tagTeamName: 'B', player1: member('p3'), player2: member('p4') },
+    });
+
+    expect(await screen.findByLabelText('Championship Match')).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+
+    await waitFor(() => {
+      expect(mockScheduleMatch).toHaveBeenCalledWith(expect.objectContaining({
+        teams: [['p1', 'p2'], ['p3', 'p4']],
+        participants: ['p1', 'p2', 'p3', 'p4'],
+        isChampionship: true,
+        championshipId: 'c2',
+        challengeId: 'ch2',
+      }));
+    });
+  });
+
+  it('falls back to a tag format when a tag challenge names a removed match type', async () => {
+    setupDefaultMocks();
+    renderFromChallenge({
+      challengeId: 'ch3', challengerId: 'p1', challengedId: 'p3', matchType: 'Retired Format', challengeMode: 'tag_team',
+    });
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toHaveValue('Tag Team'));
+  });
+
+  it('carries the title from a call-out promo', async () => {
+    setupDefaultMocks();
+    render(
+      <MemoryRouter
+        initialEntries={[{
+          pathname: '/admin/schedule',
+          state: { fromPromo: { promoId: 'pr1', playerId: 'p1', targetPlayerId: 'p2', championshipId: 'c1' } },
+        }]}
+      >
+        <ScheduleMatch />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByLabelText('Championship Match')).toBeChecked();
+    expect(screen.getByLabelText('Championship')).toHaveValue('c1');
+  });
+
+  describe('a linked title that no longer exists', () => {
+    it('opens a challenge as a non-title match, says so, and can be submitted', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockScheduleMatch.mockResolvedValue({});
+      renderFromChallenge({
+        challengeId: 'ch9', challengerId: 'p1', challengedId: 'p2',
+        matchType: mockMatchTypes[0].name, championshipId: 'deleted-title',
+      });
+
+      expect(await screen.findByText('Title is gone')).toBeInTheDocument();
+      expect(screen.getByLabelText('Championship Match')).not.toBeChecked();
+      expect(screen.queryByLabelText('Championship')).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+
+      await waitFor(() => {
+        expect(mockScheduleMatch).toHaveBeenCalledWith(expect.objectContaining({
+          isChampionship: false,
+          challengeId: 'ch9',
+        }));
+      });
+    });
+
+    it('opens a call-out with no challenge the same way', async () => {
+      setupDefaultMocks();
+      render(
+        <MemoryRouter
+          initialEntries={[{
+            pathname: '/admin/schedule',
+            state: { fromPromo: { promoId: 'pr1', playerId: 'p1', targetPlayerId: 'p2', championshipId: 'deleted-title' } },
+          }]}
+        >
+          <ScheduleMatch />
+        </MemoryRouter>,
+      );
+
+      expect(await screen.findByText('Title is gone')).toBeInTheDocument();
+      expect(screen.getByLabelText('Championship Match')).not.toBeChecked();
+    });
+
+    it('keeps the title when the list of titles failed to load', async () => {
+      setupDefaultMocks();
+      mockGetAllChampionships.mockRejectedValue(new Error('burst'));
+      renderFromChallenge({
+        challengeId: 'ch9', challengerId: 'p1', challengedId: 'p2',
+        matchType: mockMatchTypes[0].name, championshipId: 'c1',
+      });
+
+      expect(await screen.findByLabelText('Championship Match')).toBeChecked();
+      expect(screen.queryByText('Title is gone')).not.toBeInTheDocument();
+    });
+
+    it('says nothing when the title exists', async () => {
+      setupDefaultMocks();
+      renderFromChallenge({
+        challengeId: 'ch9', challengerId: 'p1', challengedId: 'p2',
+        matchType: mockMatchTypes[0].name, championshipId: 'c1',
+      });
+
+      expect(await screen.findByLabelText('Championship Match')).toBeChecked();
+      expect(screen.queryByText('Title is gone')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('booking a tag call-out from the promo row', () => {
+    const tagPromo = {
+      promoId: 'pr-tag', playerId: 'p1', challengeId: 'ch-tag', challengeMode: 'tag_team',
+      createdAt: '2026-01-01T10:00:00.000Z',
+    };
+    const member = (playerId: string) => ({ playerId, playerName: playerId, wrestlerName: playerId });
+    const tagChallenge = {
+      challengeId: 'ch-tag', challengerId: 'p1', challengedId: 'p3', matchType: 'Tag Team',
+      challengeMode: 'tag_team', createdAt: '2026-01-01T10:00:02.000Z',
+      challengerTagTeam: { tagTeamId: 'tt1', tagTeamName: 'A', player1: member('p1'), player2: member('p2') },
+      challengedTagTeam: { tagTeamId: 'tt2', tagTeamName: 'B', player1: member('p3'), player2: member('p4') },
+    };
+
+    function renderFromTagPromo() {
+      render(
+        <MemoryRouter initialEntries={[{ pathname: '/admin/schedule', state: { fromPromo: tagPromo } }]}>
+          <ScheduleMatch />
+        </MemoryRouter>,
+      );
+    }
+
+    it.each([
+      ['accepted', 'an accepted challenge'],
+      ['scheduled', 'a challenge whose match was deleted'],
+    ])('fills in the teams and links both for status %s (%s)', async (status) => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetChallenges.mockResolvedValue([{ ...tagChallenge, status }]);
+      mockScheduleMatch.mockResolvedValue({});
+      renderFromTagPromo();
+
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toHaveValue('Tag Team'));
+      await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+
+      await waitFor(() => {
+        expect(mockScheduleMatch).toHaveBeenCalledWith(expect.objectContaining({
+          teams: [['p1', 'p2'], ['p3', 'p4']],
+          challengeId: 'ch-tag',
+          promoId: 'pr-tag',
+        }));
+      });
+    });
+
+    it('leaves the teams to staff when the challenge cannot be read', async () => {
+      setupDefaultMocks();
+      mockGetChallenges.mockRejectedValue(new Error('offline'));
+      renderFromTagPromo();
+
+      await waitFor(() => expect(mockGetChallenges).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toHaveValue(''));
+    });
+  });
+
+  describe('booking a call-out with a challenge', () => {
+    const promo = {
+      promoId: 'pr1', playerId: 'p1', targetPlayerId: 'p2', championshipId: 'c1',
+      challengeId: 'ch1', createdAt: '2026-01-01T10:00:00.000Z',
+    };
+    const challenge = {
+      challengeId: 'ch1', challengerId: 'p1', challengedId: 'p2', championshipId: 'c1',
+      matchType: mockMatchTypes[2].name, stipulation: mockStipulations[0].name,
+      status: 'accepted', createdAt: '2026-01-01T10:00:02.000Z',
+    };
+
+    function renderFromPromo() {
+      render(
+        <MemoryRouter initialEntries={[{ pathname: '/admin/schedule', state: { fromPromo: promo } }]}>
+          <ScheduleMatch />
+        </MemoryRouter>,
+      );
+    }
+
+    it("carries the challenge's match type and stipulation and links both", async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetChallenges.mockResolvedValue([challenge]);
+      mockScheduleMatch.mockResolvedValue({});
+      renderFromPromo();
+
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toHaveValue(challenge.matchType));
+      expect(mockGetChallenges).toHaveBeenCalledWith({ playerId: 'p1' });
+      expect(screen.getByLabelText('Stipulation (Optional)')).toHaveValue(mockStipulations[0].stipulationId);
+
+      await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+
+      await waitFor(() => {
+        expect(mockScheduleMatch).toHaveBeenCalledWith(expect.objectContaining({
+          matchFormat: challenge.matchType,
+          stipulationId: mockStipulations[0].stipulationId,
+          challengeId: 'ch1',
+          promoId: 'pr1',
+        }));
+      });
+    });
+
+    it('still books from the promo when the challenge cannot be read', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetChallenges.mockRejectedValue(new Error('offline'));
+      mockScheduleMatch.mockResolvedValue({});
+      renderFromPromo();
+
+      expect(await screen.findByLabelText('Championship Match')).toBeChecked();
+      await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+
+      await waitFor(() => {
+        expect(mockScheduleMatch).toHaveBeenCalledWith(expect.objectContaining({ promoId: 'pr1', championshipId: 'c1' }));
+      });
+    });
+
+    it.each([
+      ['A title match from a challenge must include the current champion. Add them, or book it as a non-title match.', 'scheduleMatch.challengeNeedsChampion'],
+      ['This call-out or challenge already has a match booked', 'scheduleMatch.alreadyBooked'],
+    ])('translates the refusal: %s', async (apiMessage, key) => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetChallenges.mockResolvedValue([challenge]);
+      mockScheduleMatch.mockRejectedValue(new Error(apiMessage));
+      renderFromPromo();
+
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toHaveValue(challenge.matchType));
+      await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+
+      expect(await screen.findByText(key)).toBeInTheDocument();
+    });
+  });
+
+  it('does not offer a tag team with a hidden member', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);
+    mockGetAllTagTeams.mockResolvedValue([
+      { tagTeamId: 'tt1', name: 'Clean Team', player1Id: 'p1', player2Id: 'p2' },
+      { tagTeamId: 'tt2', name: 'Half Hidden', player1Id: 'p1', player2Id: 'p5' },
+    ]);
+    renderScheduleMatch();
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Tag Team');
+
+    expect((await screen.findAllByRole('option', { name: /Clean Team/ })).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('option', { name: /Half Hidden/ })).not.toBeInTheDocument();
+  });
+
+  it('labels a blank-name player instead of leaving empty brackets', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([
+      ...mockPlayers,
+      {
+        playerId: 'p5', name: '', currentWrestler: 'Sid Vicious',
+        wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+      },
+    ]);
+    renderScheduleMatch();
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
+    await pickParticipants(user, ['Sid Vicious (Unnamed player)']);
+
+    const chip = screen.getByRole('button', { name: 'Remove Unnamed player' }).closest('li')!;
+    expect(chip).toHaveTextContent('Sid Vicious (Unnamed player)');
+    expect(chip).not.toHaveTextContent('()');
+  });
+
+  it('keeps players with no division in the picker by default', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    mockGetAllDivisions.mockResolvedValue([
+      { divisionId: 'd1', name: 'Heavyweight', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+    ]);
+    mockGetAllPlayers.mockResolvedValue([
+      { ...mockPlayers[0]!, divisionId: 'd1' },
+      {
+        playerId: 'p5', name: 'Newbie', currentWrestler: 'Sid Vicious',
+        wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+      },
+    ]);
+    renderScheduleMatch();
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
+    await pickParticipants(user, ['Sid Vicious (Newbie)']);
+
+    expect(screen.getByRole('button', { name: 'Remove Newbie' })).toBeInTheDocument();
+  });
+
+  describe('when a read fails', () => {
+    it('keeps the rest of the form, names the failed source, and retries only that source', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetAllStipulations.mockRejectedValueOnce(new Error('boom'));
+      renderScheduleMatch();
+
+      const notice = await screen.findByRole('alert');
+      expect(notice).toHaveTextContent('Stipulations');
+      expect(notice).not.toHaveTextContent('Players');
+      expect(within(screen.getByLabelText('Match Format')).getByRole('option', { name: 'Singles' })).toBeInTheDocument();
+
+      await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
+      mockGetAllPlayers.mockClear();
+      await user.click(within(notice).getByRole('button', { name: 'Retry' }));
+
+      await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+      expect(mockGetAllStipulations).toHaveBeenCalledTimes(2);
+      expect(mockGetAllPlayers).not.toHaveBeenCalled();
+      expect(screen.getByLabelText('Match Format')).toHaveValue('Singles');
+    });
+
+    it('holds scheduling until seasons load, so a match cannot silently skip the active season', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetAllSeasons.mockRejectedValueOnce(new Error('boom'));
+      renderScheduleMatch();
+
+      const notice = await screen.findByRole('alert');
+      expect(notice).toHaveTextContent('Seasons');
+      expect(screen.getByRole('button', { name: 'Schedule Match' })).toBeDisabled();
+
+      await user.click(within(notice).getByRole('button', { name: 'Retry' }));
+
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Schedule Match' })).toBeEnabled());
+    });
+  });
+
+  it('picks tag team members with real, keyboard-operable buttons', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    renderScheduleMatch();
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Tag Team');
+    await user.click(screen.getByRole('button', { name: 'Pick Individuals' }));
+    expect(screen.getByRole('button', { name: 'Pick Individuals' })).toHaveAttribute('aria-pressed', 'true');
+
+    const [firstCard] = screen.getAllByRole('button', { name: /John Cena/ });
+    firstCard!.focus();
+    await user.keyboard('{Enter}');
+
+    expect(screen.getByRole('button', { name: 'Remove John Cena' })).toBeInTheDocument();
+    // Now on team 1, so the card in team 2 is unavailable.
+    expect(screen.getByRole('button', { name: /John Cena/ , pressed: false })).toBeDisabled();
   });
 
   // ── Slot-mode (MSL-02) ─────────────────────────────────────────────────────

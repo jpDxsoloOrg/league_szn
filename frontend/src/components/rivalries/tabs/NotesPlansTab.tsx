@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Pencil, Trash2 } from 'lucide-react';
 import { rivalriesApi } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import type { Player } from '../../../types';
@@ -8,6 +9,9 @@ import type {
   RivalryNote,
   RivalryNoteType,
 } from '../../../types/rivalry';
+import Button from '../../ui/Button';
+import Modal from '../../ui/Modal';
+import { useToast } from '../../ui/toastContext';
 import { resolvePlayerFullLabel } from '../rivalryUtils';
 
 interface TabProps {
@@ -35,6 +39,7 @@ const EMPTY_DRAFT: NoteDraft = { content: '', scheduledFor: '' };
 export default function NotesPlansTab({ hydrated, players }: TabProps) {
   const { t } = useTranslation();
   const { isAdminOrModerator, playerId } = useAuth();
+  const { showToast } = useToast();
   const isGm = isAdminOrModerator;
   const rivalryId = hydrated.rivalry.rivalryId;
   const lookup = useMemo(() => new Map(players.map((p) => [p.playerId, p] as const)), [players]);
@@ -45,6 +50,7 @@ export default function NotesPlansTab({ hydrated, players }: TabProps) {
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<string>('');
+  const [noteToDelete, setNoteToDelete] = useState<RivalryNote | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -81,6 +87,8 @@ export default function NotesPlansTab({ hydrated, players }: TabProps) {
       setNotes((prev) => [...prev, res.note]);
       if (noteType === 'plan') setPlanDraft(EMPTY_DRAFT);
       else setStorylineDraft(EMPTY_DRAFT);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : String(err), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -93,19 +101,30 @@ export default function NotesPlansTab({ hydrated, players }: TabProps) {
 
   async function saveEdit(note: RivalryNote) {
     if (!editDraft.trim()) return;
-    const res = await rivalriesApi.notes.upsert(rivalryId, {
-      noteId: note.noteId,
-      noteType: note.noteType,
-      content: editDraft.trim(),
-      visibility: 'participants',
-    });
-    setNotes((prev) => prev.map((n) => (n.noteId === note.noteId ? res.note : n)));
-    setEditingId(null);
+    try {
+      const res = await rivalriesApi.notes.upsert(rivalryId, {
+        noteId: note.noteId,
+        noteType: note.noteType,
+        content: editDraft.trim(),
+        visibility: 'participants',
+      });
+      setNotes((prev) => prev.map((n) => (n.noteId === note.noteId ? res.note : n)));
+      setEditingId(null);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : String(err), 'error');
+    }
   }
 
-  async function deleteNote(note: RivalryNote) {
-    await rivalriesApi.notes.delete(rivalryId, note.noteId);
-    setNotes((prev) => prev.filter((n) => n.noteId !== note.noteId));
+  async function confirmDelete() {
+    if (!noteToDelete) return;
+    try {
+      await rivalriesApi.notes.delete(rivalryId, noteToDelete.noteId);
+      setNotes((prev) => prev.filter((n) => n.noteId !== noteToDelete.noteId));
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : String(err), 'error');
+    } finally {
+      setNoteToDelete(null);
+    }
   }
 
   return (
@@ -138,7 +157,7 @@ export default function NotesPlansTab({ hydrated, players }: TabProps) {
                 <NoteRow
                   key={n.noteId}
                   note={n}
-                  authorName={resolvePlayerFullLabel(lookup.get(n.authorPlayerId), n.authorPlayerId)}
+                  authorName={resolvePlayerFullLabel(lookup.get(n.authorPlayerId), t('common.unknown'))}
                   isEditing={editingId === n.noteId}
                   editDraft={editDraft}
                   setEditDraft={setEditDraft}
@@ -148,7 +167,7 @@ export default function NotesPlansTab({ hydrated, players }: TabProps) {
                   }}
                   onSave={() => saveEdit(n)}
                   onCancel={() => setEditingId(null)}
-                  onDelete={() => deleteNote(n)}
+                  onDelete={() => setNoteToDelete(n)}
                   canEdit={canEdit(n)}
                 />
               ))}
@@ -185,7 +204,7 @@ export default function NotesPlansTab({ hydrated, players }: TabProps) {
                   )}
                   <NoteRow
                     note={n}
-                    authorName={resolvePlayerFullLabel(lookup.get(n.authorPlayerId), n.authorPlayerId)}
+                    authorName={resolvePlayerFullLabel(lookup.get(n.authorPlayerId), t('common.unknown'))}
                     isEditing={editingId === n.noteId}
                     editDraft={editDraft}
                     setEditDraft={setEditDraft}
@@ -195,7 +214,7 @@ export default function NotesPlansTab({ hydrated, players }: TabProps) {
                     }}
                     onSave={() => saveEdit(n)}
                     onCancel={() => setEditingId(null)}
-                    onDelete={() => deleteNote(n)}
+                    onDelete={() => setNoteToDelete(n)}
                     canEdit={canEdit(n)}
                   />
                 </li>
@@ -204,6 +223,21 @@ export default function NotesPlansTab({ hydrated, players }: TabProps) {
           )}
         </section>
       </div>
+
+      <Modal
+        open={noteToDelete !== null}
+        onClose={() => setNoteToDelete(null)}
+        title={t('rivalries.notes.deleteConfirm', { defaultValue: 'Delete this note?' })}
+        size="sm"
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => setNoteToDelete(null)}>{t('rivalries.request.cancel')}</Button>
+            <Button variant="danger" onClick={confirmDelete}>{t('rivalries.notes.delete')}</Button>
+          </>
+        )}
+      >
+        <p>{noteToDelete?.body}</p>
+      </Modal>
     </div>
   );
 }
@@ -243,9 +277,9 @@ function DraftForm({ kind, draft, onChange, onSubmit, submitting, isGm }: DraftF
           />
         </div>
       )}
-      <button type="submit" disabled={submitting || !draft.content.trim()}>
+      <Button type="submit" size="sm" disabled={submitting || !draft.content.trim()}>
         {t('rivalries.notes.save')}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -290,7 +324,7 @@ function NoteRow({
               aria-label={t('rivalries.notes.edit')}
               title={t('rivalries.notes.edit')}
             >
-              ✎
+              <Pencil aria-hidden="true" size={16} />
             </button>
             <button
               type="button"
@@ -299,7 +333,7 @@ function NoteRow({
               aria-label={t('rivalries.notes.delete')}
               title={t('rivalries.notes.delete')}
             >
-              ✕
+              <Trash2 aria-hidden="true" size={16} />
             </button>
           </span>
         )}
@@ -312,12 +346,8 @@ function NoteRow({
             onChange={(e) => setEditDraft(e.target.value)}
           />
           <div className="rivalry-detail-notes__edit-actions">
-            <button type="button" onClick={onSave}>
-              {t('rivalries.notes.save')}
-            </button>
-            <button type="button" onClick={onCancel}>
-              {t('rivalries.request.cancel')}
-            </button>
+            <Button size="sm" onClick={onSave}>{t('rivalries.notes.save')}</Button>
+            <Button size="sm" variant="secondary" onClick={onCancel}>{t('rivalries.request.cancel')}</Button>
           </div>
         </>
       ) : (

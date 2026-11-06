@@ -1,17 +1,43 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Search, SlidersHorizontal } from 'lucide-react';
 import { matchesApi, playersApi, seasonsApi, championshipsApi, stipulationsApi, matchTypesApi } from '../services/api';
+import type { PlayerDirectoryEntry } from '../services/api/players.api';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
-import { useMediaQuery } from '../hooks/useMediaQuery';
-import type { Match, MatchFilters, Player, Season, Championship, Stipulation, MatchType } from '../types';
-import Skeleton from './ui/Skeleton';
+import { useShowMore } from '../hooks/useShowMore';
+import type { Match, MatchFilters, Season, Championship, Stipulation, MatchType } from '../types';
+import Badge from './ui/Badge';
+import type { BadgeTone } from './ui/Badge';
+import Button from './ui/Button';
 import EmptyState from './ui/EmptyState';
+import Modal from './ui/Modal';
+import PageHeader from './ui/PageHeader';
+import Select from './ui/Select';
+import ShowMore from './ui/ShowMore';
+import Skeleton from './ui/Skeleton';
+import Tabs from './ui/Tabs';
 import { StarRating } from './matches/StarRating';
 import { RateMatchWidget } from './matches/RateMatchWidget';
 import { MotnToggleButton } from './matches/MotnToggleButton';
 import { useAuth } from '../contexts/AuthContext';
+import { formatMatchDate } from '../utils/dateUtils';
+import { formatMatchType, groupMatchSides } from '../utils/matchDisplay';
 import './MatchSearch.css';
+
+const STATUS_TONES: Partial<Record<Match['status'], BadgeTone>> = {
+  scheduled: 'primary',
+  'open-signups': 'primary',
+  completed: 'neutral',
+  cancelled: 'loss',
+};
+
+const ROWS_PER_PAGE = 50;
+
+/** Filters behind the Filters button. Status has its own tabs. */
+const PANEL_FILTER_KEYS: (keyof MatchFilters)[] = [
+  'playerId', 'matchType', 'stipulationId', 'championshipId', 'seasonId', 'dateFrom', 'dateTo',
+];
 
 const FILTER_KEYS: (keyof MatchFilters)[] = [
   'status', 'playerId', 'matchType', 'stipulationId', 'championshipId', 'seasonId', 'dateFrom', 'dateTo',
@@ -45,20 +71,27 @@ export default function MatchSearch() {
   const { isAdminOrModerator } = useAuth();
   useDocumentTitle(t('matchSearch.title'));
   const [searchParams, setSearchParams] = useSearchParams();
-  // Mobile app layout (docs/design/mobile-app/league-szn-matches): search bar,
-  // status chips, and W/L result cards. JSDOM has no matchMedia, so tests keep
-  // exercising the desktop markup.
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const location = useLocation();
   const [searchText, setSearchText] = useState('');
 
   const [matches, setMatches] = useState<Match[]>([]);
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [players, setPlayers] = useState<PlayerDirectoryEntry[]>([]);
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [championships, setChampionships] = useState<Championship[]>([]);
   const [stipulations, setStipulations] = useState<Stipulation[]>([]);
   const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [detailMatchId, setDetailMatchId] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(
+    () => PANEL_FILTER_KEYS.some((key) => !!searchParams.get(key)),
+  );
+  const focusedRowRef = useRef<HTMLLIElement>(null);
+
+  // Other pages deep-link one match through router state or ?matchId=.
+  const routeState = location.state as { matchId?: string } | null;
+  const focusedMatchId = routeState?.matchId ?? searchParams.get('matchId');
 
   const filters = useMemo(() => filtersFromParams(searchParams), [searchParams]);
 
@@ -82,7 +115,7 @@ export default function MatchSearch() {
     const load = async () => {
       try {
         const [playersData, seasonsData, championshipsData, stipulationsData, matchTypesData] = await Promise.all([
-          playersApi.getAll(controller.signal),
+          playersApi.getDirectory(controller.signal),
           seasonsApi.getAll(controller.signal),
           championshipsApi.getAll(controller.signal),
           stipulationsApi.getAll(controller.signal),
@@ -131,13 +164,26 @@ export default function MatchSearch() {
     };
     load();
     return () => controller.abort();
-  }, [filters]);
+  }, [filters, reloadKey]);
+
+  useEffect(() => {
+    if (!loading) focusedRowRef.current?.scrollIntoView({ block: 'center' });
+  }, [loading, focusedMatchId]);
 
   const playerMap = useMemo(() => {
-    const map = new Map<string, Player>();
+    const map = new Map<string, PlayerDirectoryEntry>();
     for (const p of players) map.set(p.playerId, p);
     return map;
   }, [players]);
+
+  // The directory also covers hidden players so old matches keep their names.
+  // Only a deep link that already filters by one keeps that player listed.
+  const playerFilterOptions = useMemo(
+    () => players
+      .filter((player) => player.currentWrestler !== null || player.playerId === filters.playerId)
+      .map((player) => ({ value: player.playerId, label: player.name })),
+    [players, filters.playerId],
+  );
 
   const championshipMap = useMemo(() => {
     const map = new Map<string, Championship>();
@@ -157,195 +203,166 @@ export default function MatchSearch() {
     return map;
   }, [seasons]);
 
-  const getPlayerName = useCallback((id: string) => playerMap.get(id)?.name ?? id, [playerMap]);
+  // A deleted player's row is gone, so the name pinned on the match goes first.
+  const getPlayerName = useCallback(
+    (match: Match, id: string) => {
+      const player = playerMap.get(id);
+      if (player) return player.name;
+      // With no directory at all, nobody can be called a former member.
+      if (playerMap.size === 0) return t('common.unknown');
+      return match.slots?.find((slot) => slot.playerId === id)?.wrestlerNameSnapshot ?? t('common.formerMember');
+    },
+    [playerMap, t],
+  );
 
-  // Display-only quick search for the mobile layout. The input is rendered
-  // only on phones, so `searchText` stays empty on desktop and this returns
-  // the API result untouched there.
   const visibleMatches = useMemo(() => {
     const query = searchText.trim().toLowerCase();
     if (!query) return matches;
     return matches.filter((match) => {
-      const participantNames = match.participants.map((pid) => getPlayerName(pid)).join(' ');
+      const participantNames = match.participants.map((pid) => getPlayerName(match, pid)).join(' ');
       const stipulationName = match.stipulationId
         ? stipulationMap.get(match.stipulationId)?.name ?? ''
         : '';
-      return `${participantNames} ${match.matchFormat} ${stipulationName}`
+      return `${participantNames} ${match.matchFormat} ${formatMatchType(match.matchFormat, t)} ${stipulationName}`
         .toLowerCase()
         .includes(query);
     });
-  }, [matches, searchText, getPlayerName, stipulationMap]);
+  }, [matches, searchText, getPlayerName, stipulationMap, t]);
 
-  const statusChips: { value: string; label: string }[] = [
-    { value: '', label: t('common.all') },
-    { value: 'completed', label: t('common.completed') },
-    { value: 'scheduled', label: t('common.scheduled') },
-  ];
+  const { count: visibleCount, showMore } = useShowMore(ROWS_PER_PAGE, `${searchParams.toString()}|${searchText}`);
+  // A deep-linked match has to be on screen for the page to scroll to it.
+  const focusedIndex = focusedMatchId ? visibleMatches.findIndex((match) => match.matchId === focusedMatchId) : -1;
+  const shownCount = Math.min(visibleMatches.length, Math.max(visibleCount, focusedIndex + 1));
+
+  const detailMatch = detailMatchId ? matches.find((match) => match.matchId === detailMatchId) : undefined;
+
+  const updateMatch = useCallback((matchId: string, changes: Partial<Match>) => {
+    setMatches((previous) => previous.map((match) => (match.matchId === matchId ? { ...match, ...changes } : match)));
+  }, []);
+
+  const statusLabel = (status: Match['status']) =>
+    status === 'completed' || status === 'scheduled'
+      ? t(`common.${status}`)
+      : t(`matchSearch.status.${status}`, status);
+
+  const activePanelFilters = PANEL_FILTER_KEYS.filter((key) => !!filters[key]).length;
+  const allOption = { value: '', label: t('common.all') };
+
+  const renderSelect = (
+    key: keyof MatchFilters,
+    label: string,
+    id: string,
+    options: { value: string; label: string }[],
+  ) => (
+    <div className="match-search-filter">
+      <span className="match-search-filter__label">{label}</span>
+      <Select
+        id={id}
+        label={label}
+        value={filters[key] ?? ''}
+        onValueChange={(value) => updateFilter(key, value)}
+        options={[allOption, ...options]}
+      />
+    </div>
+  );
+
+  /** Open sign-ups start with nobody on the card, so the row says what is on offer instead. */
+  const describeEmptyCard = (match: Match) => {
+    const spots = match.slotsRequired ?? match.slots?.length;
+    return match.status === 'open-signups' && spots
+      ? t('matchSearch.spotsOpen', { count: spots })
+      : t('matchSearch.noParticipants');
+  };
+
+  const renderNames = (match: Match) => {
+    if (match.participants.length === 0) {
+      return <span className="match-row__names">{describeEmptyCard(match)}</span>;
+    }
+    const isDraw = match.status === 'completed' && !!match.isDraw;
+    const sides = groupMatchSides(match.participants, (pid) => pid, match.teams, match.matchFormat);
+    const renderName = (pid: string) => (
+      <span className={
+        isDraw ? '' :
+        match.winners?.includes(pid) ? 'match-winner' :
+        match.losers?.includes(pid) ? 'match-loser' : ''
+      }>
+        {getPlayerName(match, pid)}
+      </span>
+    );
+    return (
+      <span className="match-row__names">
+        {sides.map((side, sideIndex) => (
+          <span key={side[0]} className="match-row__name-entry">
+            {/* One vs between two sides; a bigger field reads as a plain list. */}
+            {sideIndex > 0 && sides.length === 2 && <span className="match-vs">{t('common.vs')}</span>}
+            <span>
+              {side.map((pid, memberIndex) => (
+                <span key={pid}>
+                  {memberIndex > 0 && ' & '}
+                  {renderName(pid)}
+                </span>
+              ))}
+              {sides.length > 2 && sideIndex < sides.length - 1 && ','}
+            </span>
+          </span>
+        ))}
+      </span>
+    );
+  };
+
+  const hasFilters = hasActiveFilters(filters);
 
   return (
-    <div className="match-search-container">
-      <div className="match-search-header page-title--mobile-hidden">
-        <h2>{t('matchSearch.title')}</h2>
+    <div className="match-search-page">
+      <PageHeader title={t('matchSearch.title')} />
+
+      <div className="match-search-toolbar">
+        <label className="match-search-box">
+          <Search aria-hidden="true" size={18} />
+          <span className="sr-only">{t('matchSearch.searchPlaceholder', 'Search matches, players...')}</span>
+          <input
+            type="search"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            placeholder={t('matchSearch.searchPlaceholder', 'Search matches, players...')}
+          />
+        </label>
+        <Tabs
+          label={t('matchSearch.filters.status')}
+          value={filters.status ?? 'all'}
+          onValueChange={(value) => updateFilter('status', value === 'all' ? '' : value)}
+          items={[
+            { value: 'all', label: t('common.all') },
+            { value: 'completed', label: t('common.completed') },
+            { value: 'scheduled', label: t('common.scheduled') },
+          ]}
+        />
+        <Button
+          variant="secondary"
+          icon={<SlidersHorizontal aria-hidden="true" size={18} />}
+          aria-expanded={filtersOpen}
+          aria-controls="match-search-filters"
+          onClick={() => setFiltersOpen((open) => !open)}
+        >
+          {t('matchSearch.filtersButton', 'Filters')}
+          {activePanelFilters > 0 && ` (${activePanelFilters})`}
+        </Button>
       </div>
-      {isMobile && (
-        <>
-          <div className="match-search-bar">
-            <svg
-              className="match-search-bar-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <line x1="16.5" y1="16.5" x2="21" y2="21" />
-            </svg>
-            <input
-              type="search"
-              className="match-search-bar-input"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              placeholder={t('matchSearch.searchPlaceholder', 'Search matches, players...')}
-              aria-label={t('matchSearch.searchPlaceholder', 'Search matches, players...')}
-            />
-          </div>
 
-          <div className="match-filter-chips" role="group" aria-label={t('matchSearch.filters.status')}>
-            {statusChips.map((chip) => (
-              <button
-                key={chip.value || 'all'}
-                type="button"
-                className={`match-filter-chip ${(filters.status ?? '') === chip.value ? 'selected' : ''}`}
-                aria-pressed={(filters.status ?? '') === chip.value}
-                onClick={() => updateFilter('status', chip.value)}
-              >
-                {chip.label}
-              </button>
-            ))}
-          </div>
-
-          {hasActiveFilters(filters) && (
-            <div className="filter-actions mobile-filter-actions">
-              <button type="button" className="clear-filters-btn" onClick={clearFilters}>
-                {t('matchSearch.filters.clearAll')}
-              </button>
-              <span className="results-count">
-                {t('matchSearch.resultsCount', { count: matches.length })}
-              </span>
-            </div>
-          )}
-        </>
-      )}
-
-      {!isMobile && (
-      <>
-      <p className="match-search-help">
-        {t(
-          'matchSearch.filtersHelp',
-          'Filters are combined together. Use "Clear Filters" to quickly reset and broaden results.'
-        )}{' '}
-        <Link to="/guide/wiki/events">{t('matchSearch.learnMore', 'Learn more')}</Link>
-      </p>
-
-      {/* Filter Panel */}
-      <div className="match-search-filters" role="search" aria-label={t('matchSearch.filtersLabel')}>
-        <div className="filter-row">
-          {/* Player */}
-          <div className="filter-field">
-            <label htmlFor="filter-player">{t('matchSearch.filters.player')}</label>
-            <select
-              id="filter-player"
-              value={filters.playerId ?? ''}
-              onChange={(e) => updateFilter('playerId', e.target.value)}
-            >
-              <option value="">{t('common.all')}</option>
-              {players.map((p) => (
-                <option key={p.playerId} value={p.playerId}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Match Type */}
-          <div className="filter-field">
-            <label htmlFor="filter-matchType">{t('matchSearch.filters.matchType')}</label>
-            <select
-              id="filter-matchType"
-              value={filters.matchType ?? ''}
-              onChange={(e) => updateFilter('matchType', e.target.value)}
-            >
-              <option value="">{t('common.all')}</option>
-              {matchTypes.map((mt) => (
-                <option key={mt.matchTypeId} value={mt.name}>{mt.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Stipulation */}
-          <div className="filter-field">
-            <label htmlFor="filter-stipulation">{t('matchSearch.filters.stipulation')}</label>
-            <select
-              id="filter-stipulation"
-              value={filters.stipulationId ?? ''}
-              onChange={(e) => updateFilter('stipulationId', e.target.value)}
-            >
-              <option value="">{t('common.all')}</option>
-              {stipulations.map((s) => (
-                <option key={s.stipulationId} value={s.stipulationId}>{s.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Status */}
-          <div className="filter-field">
-            <label htmlFor="filter-status">{t('matchSearch.filters.status')}</label>
-            <select
-              id="filter-status"
-              value={filters.status ?? ''}
-              onChange={(e) => updateFilter('status', e.target.value)}
-            >
-              <option value="">{t('common.all')}</option>
-              <option value="scheduled">{t('common.scheduled')}</option>
-              <option value="completed">{t('common.completed')}</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="filter-row">
-          {/* Championship */}
-          <div className="filter-field">
-            <label htmlFor="filter-championship">{t('matchSearch.filters.championship')}</label>
-            <select
-              id="filter-championship"
-              value={filters.championshipId ?? ''}
-              onChange={(e) => updateFilter('championshipId', e.target.value)}
-            >
-              <option value="">{t('common.all')}</option>
-              {championships.map((c) => (
-                <option key={c.championshipId} value={c.championshipId}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Season */}
-          <div className="filter-field">
-            <label htmlFor="filter-season">{t('matchSearch.filters.season')}</label>
-            <select
-              id="filter-season"
-              value={filters.seasonId ?? ''}
-              onChange={(e) => updateFilter('seasonId', e.target.value)}
-            >
-              <option value="">{t('common.all')}</option>
-              {seasons.map((s) => (
-                <option key={s.seasonId} value={s.seasonId}>{s.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Date From */}
-          <div className="filter-field">
-            <label htmlFor="filter-dateFrom">{t('matchSearch.filters.dateFrom')}</label>
+      {filtersOpen && (
+        <div id="match-search-filters" className="match-search-filters" role="search" aria-label={t('matchSearch.filtersLabel')}>
+          {renderSelect('playerId', t('matchSearch.filters.player'), 'filter-player',
+            playerFilterOptions)}
+          {renderSelect('matchType', t('matchSearch.filters.matchType'), 'filter-matchType',
+            matchTypes.map((matchType) => ({ value: matchType.name, label: matchType.name })))}
+          {renderSelect('stipulationId', t('matchSearch.filters.stipulation'), 'filter-stipulation',
+            stipulations.map((stipulation) => ({ value: stipulation.stipulationId, label: stipulation.name })))}
+          {renderSelect('championshipId', t('matchSearch.filters.championship'), 'filter-championship',
+            championships.map((championship) => ({ value: championship.championshipId, label: championship.name })))}
+          {renderSelect('seasonId', t('matchSearch.filters.season'), 'filter-season',
+            seasons.map((season) => ({ value: season.seasonId, label: season.name })))}
+          <div className="match-search-filter">
+            <label className="match-search-filter__label" htmlFor="filter-dateFrom">{t('matchSearch.filters.dateFrom')}</label>
             <input
               id="filter-dateFrom"
               type="date"
@@ -353,10 +370,8 @@ export default function MatchSearch() {
               onChange={(e) => updateFilter('dateFrom', e.target.value)}
             />
           </div>
-
-          {/* Date To */}
-          <div className="filter-field">
-            <label htmlFor="filter-dateTo">{t('matchSearch.filters.dateTo')}</label>
+          <div className="match-search-filter">
+            <label className="match-search-filter__label" htmlFor="filter-dateTo">{t('matchSearch.filters.dateTo')}</label>
             <input
               id="filter-dateTo"
               type="date"
@@ -364,23 +379,23 @@ export default function MatchSearch() {
               onChange={(e) => updateFilter('dateTo', e.target.value)}
             />
           </div>
+          <p className="match-search-filters__help">
+            {t(
+              'matchSearch.filtersHelp',
+              'Filters are combined together. Use "Clear Filters" to quickly reset and broaden results.'
+            )}{' '}
+            <Link to="/guide/wiki/events">{t('matchSearch.learnMore', 'Learn more')}</Link>
+          </p>
         </div>
-
-        {hasActiveFilters(filters) && (
-          <div className="filter-actions">
-            <button type="button" className="clear-filters-btn" onClick={clearFilters}>
-              {t('matchSearch.filters.clearAll')}
-            </button>
-            <span className="results-count">
-              {t('matchSearch.resultsCount', { count: matches.length })}
-            </span>
-          </div>
-        )}
-      </div>
-      </>
       )}
 
-      {/* Results */}
+      {hasFilters && (
+        <div className="match-search-summary">
+          <span className="results-count">{t('matchSearch.resultsCount', { count: matches.length })}</span>
+          <Button variant="ghost" size="sm" onClick={clearFilters}>{t('matchSearch.filters.clearAll')}</Button>
+        </div>
+      )}
+
       {loading ? (
         <Skeleton variant="block" count={5} />
       ) : error ? (
@@ -388,204 +403,132 @@ export default function MatchSearch() {
           title={t('common.error')}
           description={error}
           actionLabel={t('common.retry')}
-          onAction={() => setSearchParams(searchParams, { replace: true })}
+          onAction={() => setReloadKey((key) => key + 1)}
         />
-      ) : matches.length === 0 ? (
+      ) : visibleMatches.length === 0 ? (
         <EmptyState
           title={t('matchSearch.noResults')}
           description={
-            hasActiveFilters(filters)
+            hasFilters || searchText.trim()
               ? t('matchSearch.noResultsFiltered')
               : t('matchSearch.noMatches')
           }
-          actionLabel={hasActiveFilters(filters) ? t('matchSearch.filters.clearAll') : undefined}
-          onAction={hasActiveFilters(filters) ? clearFilters : undefined}
+          actionLabel={hasFilters ? t('matchSearch.filters.clearAll') : undefined}
+          onAction={hasFilters ? clearFilters : undefined}
         />
       ) : (
-        <div className="match-search-results">
-          {isMobile && visibleMatches.length === 0 && (
-            <p className="match-search-no-hits">{t('matchSearch.noResults')}</p>
-          )}
-          {isMobile && visibleMatches.map((match) => {
-            const stipulationName = match.stipulationId
-              ? stipulationMap.get(match.stipulationId)?.name
-              : undefined;
-            const seasonName = match.seasonId ? seasonMap.get(match.seasonId)?.name : undefined;
-            const hasResult =
-              match.status === 'completed' && !match.isDraw && !!match.winners?.length;
+        <ul className="match-search-results">
+          {visibleMatches.slice(0, shownCount).map((match) => {
+            const isFocused = match.matchId === focusedMatchId;
+            const stipulationName = match.stipulationId ? stipulationMap.get(match.stipulationId)?.name : undefined;
             const hasStars = match.ratingsCount != null && match.ratingsCount > 0;
 
             return (
-              <div key={match.matchId} className={`match-card-m match-${match.status}`}>
-                {(match.isChampionship || hasStars || match.status !== 'completed' || match.matchOfTheNight) && (
-                  <div className="match-card-m-top">
-                    {match.isChampionship && (
-                      <span className="match-title-pill">
-                        <svg
-                          className="match-title-pill-belt"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          aria-hidden="true"
-                        >
-                          <path d="M2 9h5.1a5 5 0 0 1 9.8 0H22v6h-5.1a5 5 0 0 1-9.8 0H2z" opacity="0.45" />
-                          <circle cx="12" cy="12" r="4" />
-                        </svg>
-                        {t('matchSearch.card.titleMatch', 'Title Match')}
-                      </span>
-                    )}
-                    {match.matchOfTheNight && (
-                      <span className="match-tag motn-tag">{t('match.matchOfTheNight')}</span>
-                    )}
-                    <span className="match-card-m-top-right">
-                      {match.status === 'scheduled' && (
-                        <span className="match-status-pill scheduled">{t('common.scheduled')}</span>
-                      )}
-                      {hasStars && (
-                        <StarRating
-                          starRating={match.starRating}
-                          ratingsCount={match.ratingsCount}
-                          size="sm"
-                        />
-                      )}
-                    </span>
-                  </div>
-                )}
-
-                {hasResult ? (
-                  <div className="match-card-m-result">
-                    <div className="match-card-m-row winner">
-                      <span className="match-card-m-names">
-                        {(match.winners ?? []).map(getPlayerName).join(' & ')}
-                      </span>
-                      <span className="result-badge win" aria-label={t('common.completed')}>W</span>
-                    </div>
-                    <div className="match-card-m-def">{t('dashboard.def', 'def.')}</div>
-                    <div className="match-card-m-row loser">
-                      <span className="match-card-m-names">
-                        {(match.losers ?? []).map(getPlayerName).join(' & ')}
-                      </span>
-                      <span className="result-badge loss">L</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="match-card-m-vs">
-                    {match.participants.map((pid, i) => (
-                      <span key={pid} className="match-card-m-vs-entry">
-                        {i > 0 && <span className="match-card-m-vs-sep">{t('common.vs')}</span>}
-                        <span className="match-card-m-names">{getPlayerName(pid)}</span>
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className="match-card-m-footer">
-                  <span className="match-card-m-type">
-                    {match.matchFormat}
-                    {stipulationName ? ` · ${stipulationName}` : ''}
-                  </span>
-                  <span className="match-card-m-date">
-                    {seasonName ? `${seasonName} · ` : ''}
-                    {new Date(match.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+              <li
+                key={match.matchId}
+                ref={isFocused ? focusedRowRef : undefined}
+                className={`match-row${isFocused ? ' match-row--focused' : ''}`}
+                aria-current={isFocused ? 'true' : undefined}
+              >
+                <div className="match-row__main">
+                  {renderNames(match)}
+                  <span className="match-row__meta">
+                    <span>{formatMatchDate(match.date)}</span>
+                    <span>{formatMatchType(match.matchFormat, t)}{stipulationName ? ` · ${stipulationName}` : ''}</span>
                   </span>
                 </div>
-
-                {match.status === 'completed' && (
-                  <div className="match-rate-widget-wrap">
-                    <RateMatchWidget
-                      matchId={match.matchId}
-                      matchStatus={match.status}
-                      userHasRated={match.userHasRated}
-                      userRating={match.userRating}
-                    />
-                    {isAdminOrModerator && (
-                      <MotnToggleButton
-                        matchId={match.matchId}
-                        matchOfTheNight={!!match.matchOfTheNight}
-                      />
-                    )}
-                  </div>
-                )}
-              </div>
+                <div className="match-row__side">
+                  {match.isChampionship && <Badge tone="warning">{t('matchSearch.card.titleMatch', 'Title Match')}</Badge>}
+                  {match.matchOfTheNight && <Badge tone="violet">{t('match.matchOfTheNight')}</Badge>}
+                  <Badge tone={STATUS_TONES[match.status] ?? 'neutral'}>{statusLabel(match.status)}</Badge>
+                  {hasStars && <StarRating starRating={match.starRating} ratingsCount={match.ratingsCount} size="sm" />}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={t('matchSearch.detailsFor', {
+                      names: match.participants.length > 0
+                        ? match.participants.map((pid) => getPlayerName(match, pid)).join(', ')
+                        : describeEmptyCard(match),
+                    })}
+                    onClick={() => setDetailMatchId(match.matchId)}
+                  >
+                    {t('matchSearch.details', 'Details')}
+                  </Button>
+                </div>
+              </li>
             );
           })}
-          {!isMobile && matches.map((match) => (
-            <div key={match.matchId} className={`match-card match-${match.status}`}>
-              <div className="match-card-header">
-                <span className="match-date">
-                  {new Date(match.date).toLocaleDateString()}
-                </span>
-                <span className={`match-status-badge ${match.status}`}>
-                  {t(`common.${match.status}`)}
-                </span>
+        </ul>
+      )}
+
+      {!loading && !error && (
+        <ShowMore shown={shownCount} total={visibleMatches.length} onShowMore={() => showMore(shownCount)} />
+      )}
+
+      <Modal
+        open={!!detailMatch}
+        onClose={() => setDetailMatchId(null)}
+        title={t('matchSearch.detailsTitle', 'Match details')}
+      >
+        {detailMatch && (
+          <div className="match-detail">
+            {renderNames(detailMatch)}
+            <dl className="match-detail__facts">
+              <div>
+                <dt>{t('matchSearch.detailDate', 'Date')}</dt>
+                <dd>{formatMatchDate(detailMatch.date)}</dd>
               </div>
-
-              <div className="match-card-body">
-                <div className="match-participants">
-                  {match.participants.map((pid, i) => (
-                    <span key={pid}>
-                      {i > 0 && <span className="match-vs"> {t('common.vs')} </span>}
-                      <span className={
-                        match.winners?.includes(pid) ? 'match-winner' :
-                        match.losers?.includes(pid) ? 'match-loser' : ''
-                      }>
-                        {getPlayerName(pid)}
-                      </span>
-                    </span>
-                  ))}
+              <div>
+                <dt>{t('matchSearch.filters.matchType')}</dt>
+                <dd>{formatMatchType(detailMatch.matchFormat, t)}</dd>
+              </div>
+              <div>
+                <dt>{t('matchSearch.filters.status')}</dt>
+                <dd>{statusLabel(detailMatch.status)}</dd>
+              </div>
+              {detailMatch.stipulationId && stipulationMap.get(detailMatch.stipulationId) && (
+                <div>
+                  <dt>{t('matchSearch.filters.stipulation')}</dt>
+                  <dd>{stipulationMap.get(detailMatch.stipulationId)?.name}</dd>
                 </div>
-
-                <div className="match-meta">
-                  {match.matchFormat && (
-                    <span className="match-tag">{match.matchFormat}</span>
-                  )}
-                  {match.stipulationId && stipulationMap.get(match.stipulationId) && (
-                    <span className="match-tag">{stipulationMap.get(match.stipulationId)!.name}</span>
-                  )}
-                  {match.championshipId && championshipMap.get(match.championshipId) && (
-                    <span className="match-tag championship-tag">
-                      {championshipMap.get(match.championshipId)!.name}
-                    </span>
-                  )}
-                  {match.seasonId && seasonMap.get(match.seasonId) && (
-                    <span className="match-tag season-tag">
-                      {seasonMap.get(match.seasonId)!.name}
-                    </span>
-                  )}
-                  {match.ratingsCount != null && match.ratingsCount > 0 && (
-                    <span className="match-tag star-tag">
-                      <StarRating
-                        starRating={match.starRating}
-                        ratingsCount={match.ratingsCount}
-                        size="sm"
-                      />
-                    </span>
-                  )}
-                  {match.matchOfTheNight && (
-                    <span className="match-tag motn-tag">{t('match.matchOfTheNight')}</span>
-                  )}
+              )}
+              {detailMatch.championshipId && championshipMap.get(detailMatch.championshipId) && (
+                <div>
+                  <dt>{t('matchSearch.filters.championship')}</dt>
+                  <dd>{championshipMap.get(detailMatch.championshipId)?.name}</dd>
                 </div>
-
-                {match.status === 'completed' && (
-                  <div className="match-rate-widget-wrap">
-                    <RateMatchWidget
-                      matchId={match.matchId}
-                      matchStatus={match.status}
-                      userHasRated={match.userHasRated}
-                      userRating={match.userRating}
-                    />
-                    {isAdminOrModerator && (
-                      <MotnToggleButton
-                        matchId={match.matchId}
-                        matchOfTheNight={!!match.matchOfTheNight}
-                      />
-                    )}
-                  </div>
+              )}
+              {detailMatch.seasonId && seasonMap.get(detailMatch.seasonId) && (
+                <div>
+                  <dt>{t('matchSearch.filters.season')}</dt>
+                  <dd>{seasonMap.get(detailMatch.seasonId)?.name}</dd>
+                </div>
+              )}
+            </dl>
+            {detailMatch.ratingsCount != null && detailMatch.ratingsCount > 0 && (
+              <StarRating starRating={detailMatch.starRating} ratingsCount={detailMatch.ratingsCount} />
+            )}
+            {detailMatch.status === 'completed' && (
+              <div className="match-rate-widget-wrap">
+                <RateMatchWidget
+                  matchId={detailMatch.matchId}
+                  matchStatus={detailMatch.status}
+                  userHasRated={detailMatch.userHasRated}
+                  userRating={detailMatch.userRating}
+                  onRated={(rating) => updateMatch(detailMatch.matchId, { userHasRated: true, userRating: rating })}
+                />
+                {isAdminOrModerator && (
+                  <MotnToggleButton
+                    matchId={detailMatch.matchId}
+                    matchOfTheNight={!!detailMatch.matchOfTheNight}
+                    onToggled={(value) => updateMatch(detailMatch.matchId, { matchOfTheNight: value })}
+                  />
                 )}
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

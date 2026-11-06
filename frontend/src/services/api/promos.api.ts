@@ -2,11 +2,12 @@ import type { PromoWithContext, CreatePromoInput, ReactionType } from '../../typ
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
 export const promosApi = {
-  getAll: async (filters?: { playerId?: string; promoType?: string; includeHidden?: boolean; excludeResponses?: boolean }, signal?: AbortSignal): Promise<PromoWithContext[]> => {
+  getAll: async (filters?: { playerId?: string; promoType?: string; includeHidden?: boolean; includeArchived?: boolean; excludeResponses?: boolean }, signal?: AbortSignal): Promise<PromoWithContext[]> => {
     const params = new URLSearchParams();
     if (filters?.playerId) params.set('playerId', filters.playerId);
     if (filters?.promoType) params.set('promoType', filters.promoType);
     if (filters?.includeHidden) params.set('includeHidden', 'true');
+    if (filters?.includeArchived) params.set('includeArchived', 'true');
     if (filters?.excludeResponses) params.set('excludeResponses', 'true');
     const query = params.toString();
     return fetchWithAuth(`${API_BASE_URL}/promos${query ? `?${query}` : ''}`, {}, signal);
@@ -23,7 +24,7 @@ export const promosApi = {
     });
   },
 
-  react: async (promoId: string, reaction: ReactionType): Promise<{ reactions: Record<string, ReactionType>; reactionCounts: Record<ReactionType, number> }> => {
+  react: async (promoId: string, reaction: ReactionType): Promise<{ reactionCounts: Record<ReactionType, number> }> => {
     return fetchWithAuth(`${API_BASE_URL}/promos/${promoId}/react`, {
       method: 'POST',
       body: JSON.stringify({ reaction }),

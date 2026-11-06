@@ -17,7 +17,8 @@ export function buildUpdateExpression(
   let hasChanges = false;
 
   for (const [field, value] of Object.entries(patch)) {
-    if (value === undefined) continue;
+    // This builder owns updatedAt. DynamoDB rejects a path set twice.
+    if (value === undefined || field === 'updatedAt') continue;
     const tok = toToken(field);
     setExpressions.push(`#${tok} = :${tok}`);
     names[`#${tok}`] = field;

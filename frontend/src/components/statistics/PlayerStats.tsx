@@ -1,125 +1,91 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { statisticsApi } from '../../services/api';
-import type { StatsPlayer } from '../../services/api';
 import { usePlayerStats } from '../../hooks/usePlayerStats';
-import Skeleton from '../ui/Skeleton';
 import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Select from '../ui/Select';
+import Skeleton from '../ui/Skeleton';
 import PlayerStatsContent from './PlayerStatsContent';
 import SeasonSelector from './SeasonSelector';
-import './PlayerStats.css';
+import { usePlayerImages } from './usePlayerImages';
+import { useStatsResource } from './useStatsResource';
+import './stats-common.css';
 
 function PlayerStats() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { playerId: routePlayerId } = useParams<{ playerId: string }>();
-  const [selectedPlayerId, setSelectedPlayerId] = useState(routePlayerId || '');
-  const [players, setPlayers] = useState<StatsPlayer[]>([]);
+  const images = usePlayerImages();
+
+  const loadRoster = useCallback(
+    async (signal: AbortSignal) => (await statisticsApi.getPlayerStats(undefined, undefined, signal)).players,
+    [],
+  );
+  const roster = useStatsResource(loadRoster);
+  const players = roster.data ?? [];
+  const selectedPlayerId = routePlayerId ?? players[0]?.playerId ?? '';
 
   const {
     loading, error, seasons, selectedSeasonId, setSelectedSeasonId,
     overallStats, matchTypeStats, championshipStats, achievements,
   } = usePlayerStats({ playerId: selectedPlayerId });
 
-  // Load player list on mount (unique to full page)
-  useEffect(() => {
-    const abortController = new AbortController();
-    const fetchPlayers = async () => {
-      try {
-        const result = await statisticsApi.getPlayerStats(undefined, undefined, abortController.signal);
-        setPlayers(result.players);
-        if (!selectedPlayerId && result.players.length > 0 && result.players[0]) {
-          setSelectedPlayerId(result.players[0].playerId);
-        }
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name !== 'AbortError') {
-          // Error handled by hook
-        }
-      }
-    };
-    fetchPlayers();
-    return () => abortController.abort();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const player = players.find((candidate) => candidate.playerId === selectedPlayerId);
 
-  const player = useMemo(
-    () => players.find((p) => p.playerId === selectedPlayerId),
-    [players, selectedPlayerId]
-  );
-
-  if (loading && !overallStats) {
+  const renderBody = () => {
+    if (roster.failed) {
+      return <EmptyState title={t('statistics.loadFailed')} actionLabel={t('common.retry')} onAction={roster.reload} />;
+    }
+    if (roster.loading) return <Skeleton variant="block" count={3} />;
+    if (!selectedPlayerId) {
+      return <EmptyState title={t('statistics.playerStats.title')} description={t('statistics.playerStats.noData')} />;
+    }
+    if (loading) return <Skeleton variant="block" count={3} />;
+    if (error) return <EmptyState title={error} />;
+    if (!player || !overallStats) {
+      return <EmptyState title={t('statistics.playerStats.title')} description={t('statistics.playerStats.noData')} />;
+    }
     return (
-      <div className="player-stats">
-        <h2>{t('statistics.playerStats.title')}</h2>
-        <Skeleton variant="block" count={3} />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="player-stats">
-        <h2>{t('statistics.playerStats.title')}</h2>
-        <p>{error}</p>
-      </div>
-    );
-  }
-
-  if (!player || !overallStats) {
-    return (
-      <div className="player-stats">
-        <EmptyState
-          title={t('statistics.playerStats.title')}
-          description={t('statistics.playerStats.noData')}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="player-stats">
-      <div className="ps-header">
-        <h2>{t('statistics.playerStats.title')}</h2>
-        <div className="ps-nav-links">
-          <Link to="/stats/head-to-head">{t('statistics.nav.headToHead')}</Link>
-          <Link to="/stats/leaderboards">{t('statistics.nav.leaderboards')}</Link>
-          <Link to="/stats/rivalries">{t('statistics.nav.rivalries')}</Link>
-          <Link to="/stats/tale-of-tape">{t('statistics.nav.taleOfTape')}</Link>
-          <Link to="/stats/records">{t('statistics.nav.records')}</Link>
-          <Link to="/stats/best-matches">{t('statistics.nav.bestMatches')}</Link>
-          <Link to="/stats/achievements">{t('statistics.nav.achievements')}</Link>
-          <Link to="/stats/match-types">{t('statistics.nav.matchTypeLeaderboards')}</Link>
-        </div>
-      </div>
-
-      <div className="ps-controls">
-        <div className="ps-player-selector">
-          <label htmlFor="player-select">{t('statistics.playerStats.selectPlayer')}</label>
-          <select
-            id="player-select"
-            value={selectedPlayerId}
-            onChange={(e) => setSelectedPlayerId(e.target.value)}
-          >
-            {players.map((p) => (
-              <option key={p.playerId} value={p.playerId}>
-                {p.name} ({p.wrestlerName})
-              </option>
-            ))}
-          </select>
-        </div>
-        <SeasonSelector
-          seasons={seasons}
-          selectedSeasonId={selectedSeasonId}
-          onSeasonChange={setSelectedSeasonId}
-        />
-      </div>
-
       <PlayerStatsContent
         player={player}
+        imageUrl={images.get(player.playerId)}
         overallStats={overallStats}
         matchTypeStats={matchTypeStats}
         championshipStats={championshipStats}
         achievements={achievements}
       />
+    );
+  };
+
+  return (
+    <div className="stats-page">
+      <PageHeader
+        eyebrow={t('nav.statistics')}
+        title={t('statistics.playerStats.title')}
+        actions={
+          <>
+            {players.length > 0 && (
+              <Select
+                label={t('statistics.playerStats.selectPlayer')}
+                value={selectedPlayerId}
+                onValueChange={(playerId) => navigate(`/stats/player/${playerId}`)}
+                options={players.map((candidate) => ({
+                  value: candidate.playerId,
+                  label: `${candidate.name} (${candidate.wrestlerName})`,
+                }))}
+              />
+            )}
+            <SeasonSelector
+              seasons={seasons}
+              selectedSeasonId={selectedSeasonId}
+              onSeasonChange={setSelectedSeasonId}
+            />
+          </>
+        }
+      />
+      {renderBody()}
     </div>
   );
 }

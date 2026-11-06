@@ -1,9 +1,11 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { Match, Championship } from '../../lib/repositories';
+import { isConcurrentWriteError } from '../../lib/repositories/errors';
 import { success, badRequest, conflict, notFound, serverError } from '../../lib/response';
 import { invokeAsync } from '../../lib/asyncLambda';
 import { parseBody } from '../../lib/parseBody';
+import { RESULT_NEEDS_CHAMPION_MESSAGE, championIsOnASide } from '../../lib/challengeTitle';
 import { updateGroupStats } from './updateGroupStats';
 
 interface RecordResultBody {
@@ -29,7 +31,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
       body.losers = [];
     } else {
-      if (!body.winners || !body.losers || body.winners.length === 0) {
+      if (!body.winners || !body.losers || body.winners.length === 0 || body.losers.length === 0) {
         return badRequest('Winners and losers are required');
       }
 
@@ -39,7 +41,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    const { competition: { matches }, runInTransaction } = getRepositories();
+    const {
+      competition: { matches, tournaments, championships },
+      roster: { players },
+      season: { seasons },
+      runInTransaction,
+    } = getRepositories();
 
     // Get the match
     const match = await matches.findByIdWithDate(matchId);
@@ -58,6 +65,48 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const isDraw = body.isDraw === true;
     const allParticipants = isDraw ? [...body.winners] : [...body.winners, ...body.losers];
 
+    if (new Set(allParticipants).size !== allParticipants.length) {
+      return badRequest('A player can only appear once in a match result');
+    }
+
+    const matchParticipants = match.participants || [];
+    if (allParticipants.some((playerId) => !matchParticipants.includes(playerId))) {
+      return badRequest('Winners and losers must be participants in this match');
+    }
+
+    const resultPlayers = await Promise.all(allParticipants.map((playerId) => players.findById(playerId)));
+    if (resultPlayers.some((player) => !player)) {
+      return conflict('A player in this result no longer exists. Update the match participants first.');
+    }
+
+    if (match.seasonId) {
+      const season = await seasons.findById(match.seasonId);
+      if (!season) {
+        return conflict('This match belongs to a season that no longer exists. Update the match season first.');
+      }
+      if (season.status !== 'active') {
+        return conflict(`Season "${season.name}" has ended, so its standings are final. Update the match season first.`);
+      }
+    }
+
+    // The title can change hands after a challenge is booked, and the result
+    // crowns whoever wins. As at booking, staff-booked title matches are not
+    // held to this, and a draw leaves the title where it is.
+    if (!isDraw && match.isChampionship && match.championshipId && match.challengeId) {
+      const championship = await championships.findById(match.championshipId);
+      const sides = match.teams?.length ? match.teams : [matchParticipants];
+      if (championship && !championIsOnASide(championship, sides)) {
+        return conflict(RESULT_NEEDS_CHAMPION_MESSAGE);
+      }
+    }
+
+    if (isDraw && match.tournamentId) {
+      const tournament = await tournaments.findById(match.tournamentId);
+      if (tournament?.type === 'single-elimination') {
+        return badRequest('Single-elimination tournament matches cannot end in a draw');
+      }
+    }
+
     // ── Core transaction: match + player standings + season standings ──
     const matchPatch: Record<string, unknown> = {
       winners: body.winners,
@@ -69,7 +118,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     try {
       await runInTransaction(async (tx) => {
         // 1. Update match with results
-        tx.updateMatch(matchId, match.date, matchPatch);
+        tx.updateMatch(matchId, match.date, matchPatch, { kind: 'notCompleted' });
 
         // 2. Update player standings (all-time)
         for (const playerId of body.winners) {
@@ -94,9 +143,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }
       });
     } catch (transactError: unknown) {
-      const error = transactError as { name?: string };
-      if (error.name === 'TransactionCanceledException') {
-        return badRequest('Match result could not be recorded due to a concurrent update. Please try again.');
+      if (isConcurrentWriteError(transactError)) {
+        return conflict('Match result could not be recorded due to a concurrent update. Please try again.');
       }
       throw transactError;
     }
@@ -180,7 +228,8 @@ async function handleChampionshipResult(
   );
 
   // Store isTitleDefense flag on match for downstream consumers (season awards, UI).
-  // This is a standalone update, not part of any transaction.
+  // This is a standalone update, not part of any transaction. It stays
+  // unguarded: the match is already completed by the time it runs.
   const matchForUpdate = await matchesRepo.findByIdWithDate(match.matchId);
   if (matchForUpdate) {
     // Use a simple UoW for this single update
@@ -254,6 +303,40 @@ async function handleTitleChange(
 
 // ── Tournament progression ─────────────────────────────────────────────
 
+type CompletedRoundRobinMatch = Pick<Match, 'participants' | 'winners' | 'isDraw'>;
+
+/**
+ * Round-robin winner: most points, then most wins, then most wins in matches
+ * between the players still tied. A tie that survives all three goes to the
+ * lowest playerId, so the outcome never depends on the order results arrived.
+ */
+function pickRoundRobinWinner(
+  standings: Record<string, { wins: number; points: number }>,
+  completedMatches: CompletedRoundRobinMatch[],
+): string {
+  const keepHighest = (playerIds: string[], score: (playerId: string) => number): string[] => {
+    const best = Math.max(...playerIds.map(score));
+    return playerIds.filter((playerId) => score(playerId) === best);
+  };
+
+  const byPoints = keepHighest(Object.keys(standings), (playerId) => standings[playerId].points);
+  const tied = keepHighest(byPoints, (playerId) => standings[playerId].wins);
+
+  const headToHeadWins = new Map<string, number>();
+  for (const completed of completedMatches) {
+    if (completed.isDraw) continue;
+    const tiedInMatch = completed.participants.filter((playerId) => tied.includes(playerId));
+    if (tiedInMatch.length < 2) continue;
+    for (const playerId of completed.winners || []) {
+      if (tiedInMatch.includes(playerId)) {
+        headToHeadWins.set(playerId, (headToHeadWins.get(playerId) || 0) + 1);
+      }
+    }
+  }
+
+  return keepHighest(tied, (playerId) => headToHeadWins.get(playerId) || 0).sort()[0];
+}
+
 async function handleTournamentProgression(
   match: Match,
   winners: string[],
@@ -261,7 +344,7 @@ async function handleTournamentProgression(
   isDraw: boolean,
   allParticipants: string[],
 ): Promise<void> {
-  const { competition: { tournaments } } = getRepositories();
+  const { competition: { tournaments, matches } } = getRepositories();
   const tournamentId = match.tournamentId!;
 
   const tournament = await tournaments.findById(tournamentId);
@@ -294,23 +377,19 @@ async function handleTournamentProgression(
     // Check if round-robin is complete
     const participants = (tournament.participants || []) as string[];
     const expectedTotalMatches = (participants.length * (participants.length - 1)) / 2;
-    let totalMatchesPlayed = 0;
-    for (const playerId of Object.keys(standings)) {
-      totalMatchesPlayed += standings[playerId].wins + standings[playerId].draws;
-    }
-    totalMatchesPlayed = totalMatchesPlayed / 2;
 
-    const isComplete = totalMatchesPlayed >= expectedTotalMatches;
+    // The tournament index is eventually consistent and may not show the
+    // result committed moments ago, so this match is merged in explicitly.
+    const tournamentMatches = await matches.listByTournament(tournamentId);
+    const completedMatches: CompletedRoundRobinMatch[] = [
+      ...tournamentMatches.filter((m) => m.status === 'completed' && m.matchId !== match.matchId),
+      { ...match, winners, isDraw },
+    ];
+
+    const isComplete = completedMatches.length >= expectedTotalMatches;
 
     if (isComplete) {
-      let winner = '';
-      let maxPoints = -1;
-      for (const [playerId, stats] of Object.entries(standings)) {
-        if (stats.points > maxPoints) {
-          maxPoints = stats.points;
-          winner = playerId;
-        }
-      }
+      const winner = pickRoundRobinWinner(standings, completedMatches);
       await tournaments.update(tournamentId, { standings, winner, status: 'completed' } as Partial<typeof tournament>);
     } else {
       const newStatus = tournament.status === 'upcoming' ? 'in-progress' : tournament.status;
@@ -413,7 +492,8 @@ async function autoCompleteEvent(matchId: string): Promise<void> {
     let allCompleted = true;
     for (const mId of matchIds) {
       const m = await matches.findById(mId);
-      if (!m || m.status !== 'completed') {
+      // A card whose match is gone must not hold the event open for good.
+      if (m && m.status !== 'completed') {
         allCompleted = false;
         break;
       }

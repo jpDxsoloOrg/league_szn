@@ -1,11 +1,9 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { factionsApi, imagesApi } from '../../services/api';
-import {
-  DEFAULT_WRESTLER_IMAGE,
-  resolveImageSrc,
-  applyImageFallback,
-} from '../../constants/imageFallbacks';
+import Avatar from '../ui/Avatar';
+import Button from '../ui/Button';
+import './groupUi.css';
 import './FactionImageUploader.css';
 
 const ACCEPTED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
@@ -70,40 +68,25 @@ export default function FactionImageUploader({
 
   return (
     <div className="faction-image-uploader" data-testid="faction-image-uploader">
-      <div className="faction-image-uploader__preview">
-        <img
-          src={resolveImageSrc(currentImageUrl, DEFAULT_WRESTLER_IMAGE)}
-          onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-          alt={factionName}
-          className="faction-image-uploader__image"
-        />
-      </div>
+      <Avatar src={currentImageUrl} name={factionName} size="lg" />
       <div className="faction-image-uploader__controls">
-        <button
-          type="button"
-          className="btn-secondary faction-image-uploader__button"
-          onClick={handlePick}
-          disabled={uploading}
-          aria-busy={uploading}
-        >
-          {uploading
-            ? t('factions.my.uploadingImage', 'Uploading…')
-            : buttonLabel}
-        </button>
-        <span className="faction-image-uploader__hint">
+        <Button variant="secondary" onClick={handlePick} loading={uploading}>
+          {uploading ? t('factions.my.uploadingImage', 'Uploading…') : buttonLabel}
+        </Button>
+        <span className="group-muted">
           {t('factions.my.uploadAcceptedTypes', 'PNG, JPEG, GIF, or WebP')}
         </span>
         <input
           ref={fileInputRef}
           type="file"
           accept={ACCEPT_ATTR}
-          className="faction-image-uploader__input"
+          className="group-file-input"
           onChange={handleFileChange}
           aria-label={t('factions.my.uploadImage', 'Upload faction image')}
         />
       </div>
       {error && (
-        <div className="faction-image-uploader__error" role="alert">
+        <div className="faction-image-uploader__error group-error" role="alert">
           {error}
         </div>
       )}

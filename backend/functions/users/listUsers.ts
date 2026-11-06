@@ -19,7 +19,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
   try {
     // Linked players are read straight from the repository rather than via
-    // `GET /players`, which drops any player without a `currentWrestler`.
+    // public `GET /players`, which leaves out players with no real wrestler name.
     // Admins need to see (and slot) a Wrestler-role user whose player record
     // exists but has no wrestler assigned yet.
     const playersByUserId = new Map<string, Player>();

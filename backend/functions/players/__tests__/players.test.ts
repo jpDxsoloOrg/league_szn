@@ -196,6 +196,19 @@ describe('getPlayers', () => {
     expect(JSON.parse(result!.body)).toHaveLength(2);
   });
 
+  it('keeps account ids out of the public list but says who is linked', async () => {
+    const linked = await repos.roster.players.create({ name: 'P1', currentWrestler: 'The Rock' });
+    await repos.roster.players.update(linked.playerId, { userId: 'secret-sub', psnId: 'rock_psn' });
+    await repos.roster.players.create({ name: 'P2', currentWrestler: 'John Cena' });
+
+    const result = await getPlayers(makeEvent(), ctx, cb);
+
+    expect(result!.body).not.toContain('secret-sub');
+    const rows = JSON.parse(result!.body) as Array<{ name: string; hasLinkedAccount: boolean; psnId?: string }>;
+    expect(rows.find((row) => row.name === 'P1')).toMatchObject({ hasLinkedAccount: true, psnId: 'rock_psn' });
+    expect(rows.find((row) => row.name === 'P2')?.hasLinkedAccount).toBe(false);
+  });
+
   it('filters out players without currentWrestler', async () => {
     await repos.roster.players.create({ name: 'P1', currentWrestler: 'The Rock' });
     // Create a player without currentWrestler via store directly
@@ -231,6 +244,21 @@ describe('getPlayers', () => {
 // ─── updatePlayer ────────────────────────────────────────────────────
 
 describe('updatePlayer', () => {
+  it.each([[''], ['   '], [null]])('rejects a blank name (%j) and changes nothing', async (name) => {
+    const player = await repos.roster.players.create({ name: 'Old Name', currentWrestler: 'Rock' });
+    const event = makeEvent({
+      pathParameters: { playerId: player.playerId },
+      body: JSON.stringify({ name, bio: 'kept out' }),
+    });
+
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    const stored = await repos.roster.players.findById(player.playerId);
+    expect(stored).toMatchObject({ name: 'Old Name' });
+    expect(stored?.bio).toBeUndefined();
+  });
+
   it('returns 403 for a Wrestler-role user (staff only)', async () => {
     const player = await repos.roster.players.create({ name: 'Old Name', currentWrestler: 'Rock' });
     const event = makeEvent({
@@ -319,6 +347,52 @@ describe('updatePlayer', () => {
     const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
+  });
+
+  it.each([
+    ['psnId', ''],
+    ['psnId', null],
+    ['imageUrl', ''],
+    ['imageUrl', null],
+  ] as const)('removes %s when set to %j', async (field, cleared) => {
+    const created = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    const player = await repos.roster.players.update(created.playerId, {
+      psnId: 'old_psn',
+      imageUrl: 'https://img.example/old.png',
+    });
+
+    const event = makeEvent({
+      pathParameters: { playerId: player.playerId },
+      body: JSON.stringify({ [field]: cleared }),
+    });
+
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const stored = await repos.roster.players.findById(player.playerId);
+    expect(stored).not.toHaveProperty(field);
+    const kept = field === 'psnId' ? 'imageUrl' : 'psnId';
+    expect(stored?.[kept]).toBe(player[kept]);
+  });
+
+  it('leaves psnId and imageUrl alone when the keys are absent', async () => {
+    const created = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(created.playerId, {
+      psnId: 'old_psn',
+      imageUrl: 'https://img.example/old.png',
+    });
+
+    const event = makeEvent({
+      pathParameters: { playerId: created.playerId },
+      body: JSON.stringify({ name: 'Johnny' }),
+    });
+
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const stored = await repos.roster.players.findById(created.playerId);
+    expect(stored?.psnId).toBe('old_psn');
+    expect(stored?.imageUrl).toBe('https://img.example/old.png');
   });
 
   it('updates currentWrestler field', async () => {
@@ -454,6 +528,155 @@ describe('deletePlayer', () => {
     // Season standings should be cleaned up
     const remaining = await repos.season.standings.listByPlayer(player.playerId);
     expect(remaining).toHaveLength(0);
+  });
+
+  describe('memberships', () => {
+    async function seedStable(memberIds: string[], leaderId: string) {
+      const stable = await repos.roster.stables.create({ name: 'Faction', leaderId, memberIds });
+      await repos.roster.stables.update(stable.stableId, { status: 'active', memberIds });
+      for (const memberId of memberIds) {
+        await repos.roster.players.update(memberId, { stableId: stable.stableId });
+      }
+      return stable;
+    }
+
+    async function seedTagTeam(player1Id: string, player2Id: string) {
+      const tagTeam = await repos.roster.tagTeams.create({ name: 'Team', player1Id, player2Id });
+      await repos.roster.tagTeams.update(tagTeam.tagTeamId, { status: 'active' });
+      await repos.roster.players.update(player1Id, { tagTeamId: tagTeam.tagTeamId });
+      await repos.roster.players.update(player2Id, { tagTeamId: tagTeam.tagTeamId });
+      return tagTeam;
+    }
+
+    const seedPlayer = (name: string) =>
+      repos.roster.players.create({ name, currentWrestler: name });
+
+    it('leaves stable and tag team intact when the player is a champion', async () => {
+      const champ = await seedPlayer('Champ');
+      const mate = await seedPlayer('Mate');
+      const third = await seedPlayer('Third');
+      const stable = await seedStable([champ.playerId, mate.playerId, third.playerId], champ.playerId);
+      const tagTeam = await seedTagTeam(champ.playerId, mate.playerId);
+      await repos.competition.championships.create({
+        name: 'World', type: 'singles', currentChampion: champ.playerId,
+      });
+
+      const result = await deletePlayer(
+        makeEvent({ pathParameters: { playerId: champ.playerId } }),
+        ctx,
+        cb,
+      );
+
+      expect(result!.statusCode).toBe(409);
+      const stableAfter = await repos.roster.stables.findById(stable.stableId);
+      expect(stableAfter!.status).toBe('active');
+      expect(stableAfter!.memberIds).toHaveLength(3);
+      expect(stableAfter!.leaderId).toBe(champ.playerId);
+      expect((await repos.roster.tagTeams.findById(tagTeam.tagTeamId))!.status).toBe('active');
+      const mateAfter = await repos.roster.players.findById(mate.playerId);
+      expect(mateAfter!.tagTeamId).toBe(tagTeam.tagTeamId);
+      expect(mateAfter!.stableId).toBe(stable.stableId);
+    });
+
+    it('clears a stable-mate who is also the tag partner with a single update', async () => {
+      const leaving = await seedPlayer('Leaving');
+      const partner = await seedPlayer('Partner');
+      const stable = await seedStable([leaving.playerId, partner.playerId], leaving.playerId);
+      const tagTeam = await seedTagTeam(leaving.playerId, partner.playerId);
+      const updatedPlayerIds: string[] = [];
+      const runInTransaction = repos.runInTransaction;
+      repos.runInTransaction = (work) =>
+        runInTransaction(async (tx) => {
+          const updatePlayer = tx.updatePlayer.bind(tx);
+          tx.updatePlayer = (playerId, patch) => {
+            updatedPlayerIds.push(playerId);
+            updatePlayer(playerId, patch);
+          };
+          return work(tx);
+        });
+
+      const result = await deletePlayer(
+        makeEvent({ pathParameters: { playerId: leaving.playerId } }),
+        ctx,
+        cb,
+      );
+
+      expect(result!.statusCode).toBe(204);
+      // Once for the partner, then the soft delete of the leaving player.
+      expect(updatedPlayerIds).toEqual([partner.playerId, leaving.playerId]);
+      const partnerAfter = await repos.roster.players.findById(partner.playerId);
+      expect(partnerAfter!.stableId).toBeUndefined();
+      expect(partnerAfter!.tagTeamId).toBeUndefined();
+      expect((await repos.roster.stables.findById(stable.stableId))!.status).toBe('disbanded');
+      expect((await repos.roster.tagTeams.findById(tagTeam.tagTeamId))!.status).toBe('dissolved');
+    });
+
+    it('promotes a new leader when the leader of a larger stable leaves', async () => {
+      const leader = await seedPlayer('Leader');
+      const second = await seedPlayer('Second');
+      const third = await seedPlayer('Third');
+      const stable = await seedStable([leader.playerId, second.playerId, third.playerId], leader.playerId);
+
+      await deletePlayer(makeEvent({ pathParameters: { playerId: leader.playerId } }), ctx, cb);
+
+      const stableAfter = await repos.roster.stables.findById(stable.stableId);
+      expect(stableAfter!.status).toBe('active');
+      expect(stableAfter!.leaderId).toBe(second.playerId);
+      expect(stableAfter!.memberIds).toEqual([second.playerId, third.playerId]);
+    });
+
+    it('does not stage an update for a partner row that no longer exists', async () => {
+      const leaving = await seedPlayer('Leaving');
+      const gone = await seedPlayer('Gone');
+      await seedTagTeam(leaving.playerId, gone.playerId);
+      await repos.roster.players.delete(gone.playerId);
+      const updatedPlayerIds: string[] = [];
+      const runInTransaction = repos.runInTransaction;
+      repos.runInTransaction = (work) =>
+        runInTransaction(async (tx) => {
+          tx.updatePlayer = (playerId) => {
+            updatedPlayerIds.push(playerId);
+          };
+          return work(tx);
+        });
+
+      const result = await deletePlayer(
+        makeEvent({ pathParameters: { playerId: leaving.playerId } }),
+        ctx,
+        cb,
+      );
+
+      expect(result!.statusCode).toBe(204);
+      expect(updatedPlayerIds).toEqual([leaving.playerId]);
+    });
+
+    it('keeps the player and reports the failure when cleanup fails, then succeeds on retry', async () => {
+      const leaving = await seedPlayer('Leaving');
+      const second = await seedPlayer('Second');
+      const stable = await seedStable([leaving.playerId, second.playerId], leaving.playerId);
+      const stableUpdate = repos.roster.stables.update;
+      repos.roster.stables.update = vi.fn().mockRejectedValue(new Error('boom'));
+
+      const failed = await deletePlayer(
+        makeEvent({ pathParameters: { playerId: leaving.playerId } }),
+        ctx,
+        cb,
+      );
+
+      expect(failed!.statusCode).toBe(500);
+      expect(await repos.roster.players.findById(leaving.playerId)).not.toBeNull();
+
+      repos.roster.stables.update = stableUpdate;
+      const retried = await deletePlayer(
+        makeEvent({ pathParameters: { playerId: leaving.playerId } }),
+        ctx,
+        cb,
+      );
+
+      expect(retried!.statusCode).toBe(204);
+      expect(await repos.roster.players.findById(leaving.playerId)).toBeNull();
+      expect((await repos.roster.stables.findById(stable.stableId))!.status).toBe('disbanded');
+    });
   });
 });
 

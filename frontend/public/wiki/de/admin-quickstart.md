@@ -1,31 +1,29 @@
 # Admin-Schnellstart
 
-Neuer Admin? Folge diesen Schritten, um deine Liga von Grund auf einzurichten.
+Neu als Admin? Mit diesen Schritten richtest du deine Liga von Grund auf ein. Öffne **Admin** in der oberen Leiste oder am Handy unter **Ich**. Schritt 1 und die Beispieldaten am Ende brauchen einen vollen Admin; den Rest kann auch ein Moderator erledigen.
 
 ## Schritte
 
-1. **Benutzerverwaltung** — Gehe zu **Benutzerverwaltung** und weise deinen Liga-Mitgliedern Rollen zu. Gib Wrestlern die Rolle **Wrestler**, damit sie Profilseiten erhalten.
+1. **Benutzer prüfen** — Gehe zur **Benutzerverwaltung**. Jeder, der sich registriert, bekommt automatisch die Rolle **Wrestler** und einen Spielereintrag. Du brauchst diese Seite also nur, um Moderatoren und Admins zu ernennen oder jemandem einen Wrestler oder eine Division zuzuweisen.
 
-2. **Divisionen anlegen** — Gehe zu **Divisionen** und lege Divisionen an (z. B. Schwergewicht, Cruiserweight, Main Event, Jobber). Divisionen ordnen Spieler nach Gewichtsklasse oder Ebene zu und können die Herausforderer-Ranglisten auf eine Division beschränken.
+2. **Divisionen erstellen** — Gehe zu **Divisionen** und erstelle die Divisionen deiner Liga. Divisionen gruppieren Spieler und können einen Titel samt Herausforderer-Rangliste auf eine Division beschränken.
 
-3. **Spieler verwalten** — Gehe zu **Spieler verwalten**, um Wrestler-Daten zu bearbeiten, Bilder hochzuladen, Divisionen zuzuweisen und Spieler zu entfernen. Auf dieser Seite werden nur Bearbeitung und Löschung durchgeführt; Admins legen hier keine neuen Wrestler an.
+3. **Spieler verwalten** — Unter **Spieler verwalten** bearbeitest du Spielerdaten, lädst Bilder hoch, weist Divisionen zu und entfernst Spieler. Das Team legt hier keine Spieler an; Spieler entstehen bei der Registrierung. Ein Spieler ohne Wrestler-Namen bleibt ausgeblendet, bis er einen eingibt. Mit **Ausgeblendete anzeigen** findest du diese Spieler.
 
-4. **Saison anlegen** — Gehe zu **Saisons** und lege deine erste Saison an. Es kann nur eine Saison gleichzeitig aktiv sein. Saisons erfassen getrennte Tabellen für jeden Wettbewerbszeitraum.
+4. **Saison erstellen** — Gehe zu **Saisons** und erstelle deine erste Saison. Es kann immer nur eine Saison aktiv sein. Die Herausforderer-Ranglisten brauchen eine aktive Saison.
 
-5. **Meisterschaften anlegen** — Gehe zu **Meisterschaften** und lege Titel an (z. B. World Heavyweight, Intercontinental, Tag Team). Lade Gürtelbilder für ein sauberes Erscheinungsbild hoch.
+5. **Meisterschaften erstellen** — Gehe zu **Meisterschaften** und erstelle deine Titel (z. B. World Heavyweight, Intercontinental, Tag Team). Mit Gürtelbildern sieht das Ganze besser aus.
 
-6. **Event anlegen** — Gehe zu **Events** und lege dein erstes Event oder PPV an. Lege Name, Datum, Typ und Veranstaltungsort fest. Events strukturieren deine Match-Karten.
+6. **Match-Konfiguration festlegen** — Gehe zu **Match-Konfiguration** und lege deine Match-Typen und Stipulationen an, damit sie beim Planen bereitstehen.
 
-7. **Matches planen** — Gehe zu **Match planen** und lege Matches an. Wähle Match-Typ, Teilnehmer, optional eine Stipulation, ordne optional einer Meisterschaft oder einem Turnier zu und weise Saison und Event zu.
+7. **Event erstellen** — Gehe zum Bereich **Events** und klicke auf **Event erstellen**. Wähle den Typ und trage Name, Datum und Ort ein. Nach dem Speichern öffnet sich die Seite des neuen Events.
 
-8. **Match-Card erstellen** — Gehe zurück zu **Events**, wähle dein Event und nutze den **Match-Card-Builder**, um Matches zur Karte hinzuzufügen. Ordne sie in der gewünschten Reihenfolge (Opener, Midcard, Co-Main, Main Event).
+8. **Kampfkarte aufbauen** — Klicke auf der Event-Seite auf **Match hinzufügen**, um Matches direkt auf die Karte zu planen. Mit den Pfeilen **nach oben** und **nach unten** legst du die Reihenfolge fest, und über **Bearbeiten** änderst du die Position eines Matches auf der Card.
 
-9. **Ergebnisse eintragen** — Nach den Matches gehe zu **Ergebnisse eintragen**. Wähle ein Match, ordne jedem Teilnehmer Sieger, Verlierer oder Unentschieden zu und speichere. Tabellen, Meisterschaften und Turnier-Brackets werden automatisch aktualisiert.
+9. **Ergebnisse eintragen** — Klicke nach einem Match auf der Event-Seite auf **Ergebnis eintragen**. Matches ohne Event findest du unter **Einzelne Matches**. Wähle den Sieger oder setze das Häkchen bei **Unentschieden** und speichere. Tabelle, Meisterschaften und Turnierbäume aktualisieren sich automatisch.
 
-10. **Herausforderer konfigurieren** — Gehe zu **Herausforderer-Konfig**, um die automatischen #1-Herausforderer-Ranglisten pro Meisterschaft einzurichten. Lege Ranglistenzeitraum, Mindestanzahl Matches, Divisionsbeschränkungen fest und berechne bei Bedarf neu.
+10. **Herausforderer prüfen** — Die Herausforderer-Ranglisten werden nach jedem Ergebnis und alle 6 Stunden von selbst neu berechnet. Unter **Herausforderer Anpassungen** nimmst du Änderungen für Storylines vor.
 
-11. **Match-Konfiguration setzen** — Gehe zu **Match-Konfiguration** und definiere Match-Typen sowie Stipulations für eine konsistente Planung.
+## Schneller Demo-Modus
 
-## Schnell-Demo
-
-Zuerst ausprobieren? Gehe zum Tab **Gefahrenzone** und klicke auf **Beispieldaten erzeugen**, um die Liga mit 12 Spielern, 3 Divisionen, 4 Meisterschaften, 12 Matches, 2 Turnieren und einer vollen Saison-Tabelle zu füllen.
+**Beispieldaten erzeugen** in der **Gefahrenzone** füllt die Liga mit Beispielspielern, Divisionen, Meisterschaften, Matches, Turnieren und einer Saison. Das funktioniert nur auf der Testseite; auf der echten Ligaseite ist es abgeschaltet. Siehe [Datenverwaltung](admin-data-management).

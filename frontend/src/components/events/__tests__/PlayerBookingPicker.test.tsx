@@ -5,7 +5,8 @@ import type { Player, PlayerBookingInfo } from '../../../types';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, options?: { defaultValue?: string; count?: number }) => {
+    t: (key: string, options?: string | { defaultValue?: string; count?: number }) => {
+      if (typeof options === 'string') return options;
       const value = options?.defaultValue ?? key;
       return typeof options?.count === 'number'
         ? value.replace('{{count}}', String(options.count))
@@ -64,6 +65,37 @@ async function openMenu() {
 }
 
 describe('PlayerBookingPicker', () => {
+  it('uses a plain heading rather than check-in groups when there are no check-ins', async () => {
+    renderPicker({ checkInStatusByPlayerId: undefined });
+    await openMenu();
+
+    expect(screen.getByText('All players (4)')).toBeInTheDocument();
+    expect(screen.queryByText(/No Response/)).not.toBeInTheDocument();
+  });
+
+  it('shows a kept hidden player by name alone, without a tag', async () => {
+    const hiddenPlayer = player('p5', 'Eve', 'Needs Wrestler');
+    renderPicker({ players: [hiddenPlayer], checkInStatusByPlayerId: undefined });
+    await openMenu();
+
+    const option = screen.getByRole('option', { name: /Eve/ });
+    expect(option).not.toHaveTextContent('Hidden');
+    expect(option).not.toHaveTextContent('Needs Wrestler');
+  });
+
+  it('labels a blank-name player instead of leaving empty brackets', async () => {
+    renderPicker({
+      players: [player('blank', '', 'Sid Vicious'), player('blank-hidden', '  ', 'Needs Wrestler')],
+      checkInStatusByPlayerId: new Map(),
+    });
+
+    await openMenu();
+
+    expect(screen.getByRole('option', { name: /Sid Vicious \(Unnamed player\)/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^Unnamed player/ })).toBeInTheDocument();
+    expect(screen.queryByText(/\(\s*\)/)).not.toBeInTheDocument();
+  });
+
   it('lists only available and tentative players by default', async () => {
     renderPicker();
     await openMenu();
@@ -210,7 +242,7 @@ describe('PlayerBookingPicker', () => {
 
       expect(screen.getByRole('button', { name: /1 selected/ })).toBeInTheDocument();
       await openMulti(1);
-      expect(screen.getByText('✓')).toBeInTheDocument();
+      expect(document.querySelector('.booking-picker-check')).toBeInTheDocument();
     });
 
     it('keeps a selected player visible even when filtered out', async () => {

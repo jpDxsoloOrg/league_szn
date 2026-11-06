@@ -5,12 +5,15 @@ import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
 const { mockUsersApi, mockPlayersApi, mockDivisionsApi, mockWrestlersApi, mockUseAuth } = vi.hoisted(() => ({
-  mockUsersApi: { list: vi.fn(), updateRole: vi.fn(), toggleEnabled: vi.fn(), syncRoles: vi.fn() },
+  mockUsersApi: { list: vi.fn(), updateRole: vi.fn(), toggleEnabled: vi.fn(),
+      deleteUser: vi.fn(), syncRoles: vi.fn() },
   mockPlayersApi: { getAll: vi.fn(), update: vi.fn() },
   mockDivisionsApi: { getAll: vi.fn() },
   mockWrestlersApi: { getAll: vi.fn() },
   mockUseAuth: vi.fn(),
 }));
+
+vi.mock('react-i18next', async () => (await import('./i18nMock')).i18nMock);
 
 vi.mock('../../../services/api', () => ({
   usersApi: mockUsersApi,
@@ -107,6 +110,13 @@ function renderComponent() {
   return render(<BrowserRouter><ManageUsers /></BrowserRouter>);
 }
 
+/** Opens the Manage dialog from a user's row. */
+async function openManage(user: ReturnType<typeof userEvent.setup>, email: string) {
+  const row = screen.getByText(email).closest('tr')!;
+  await user.click(within(row).getByRole('button', { name: 'Manage' }));
+  return screen.findByRole('dialog');
+}
+
 describe('ManageUsers', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
@@ -176,23 +186,23 @@ describe('ManageUsers', () => {
     await waitFor(() => { expect(screen.getByText('admin@league.com')).toBeInTheDocument(); });
 
     // Wrestler Requests tab
-    await user.click(screen.getByRole('button', { name: /Wrestler Requests/i }));
+    await user.click(screen.getByRole('tab', { name: /Wrestler Requests/i }));
     expect(screen.getByText('request@league.com')).toBeInTheDocument();
     expect(screen.queryByText('admin@league.com')).not.toBeInTheDocument();
 
     // Wrestlers tab
-    await user.click(screen.getByRole('button', { name: /^Wrestlers$/i }));
+    await user.click(screen.getByRole('tab', { name: /^Wrestlers$/i }));
     expect(screen.getByText('wrestler@league.com')).toBeInTheDocument();
     expect(screen.queryByText('admin@league.com')).not.toBeInTheDocument();
 
     // Admins tab (includes Moderators)
-    await user.click(screen.getByRole('button', { name: /^Admins$/i }));
+    await user.click(screen.getByRole('tab', { name: /^Admins$/i }));
     expect(screen.getByText('admin@league.com')).toBeInTheDocument();
     expect(screen.getByText('mod@league.com')).toBeInTheDocument();
     expect(screen.queryByText('wrestler@league.com')).not.toBeInTheDocument();
 
     // Disabled tab
-    await user.click(screen.getByRole('button', { name: /Disabled/i }));
+    await user.click(screen.getByRole('tab', { name: /Disabled/i }));
     expect(screen.getByText('disabled@league.com')).toBeInTheDocument();
     expect(screen.queryByText('admin@league.com')).not.toBeInTheDocument();
   });
@@ -208,7 +218,7 @@ describe('ManageUsers', () => {
     await waitFor(() => { expect(screen.getByText('request@league.com')).toBeInTheDocument(); });
 
     // Switch to wrestler requests tab and approve
-    await user.click(screen.getByRole('button', { name: /Wrestler Requests/i }));
+    await user.click(screen.getByRole('tab', { name: /Wrestler Requests/i }));
     await user.click(screen.getByRole('button', { name: 'Approve Wrestler' }));
 
     await waitFor(() => {
@@ -231,8 +241,8 @@ describe('ManageUsers', () => {
     renderComponent();
     await waitFor(() => { expect(screen.getByText('wrestler@league.com')).toBeInTheDocument(); });
 
-    const wrestlerRow = screen.getByText('wrestler@league.com').closest('tr')!;
-    await user.click(within(wrestlerRow).getByRole('button', { name: 'Remove Wrestler' }));
+    const dialog = await openManage(user, 'wrestler@league.com');
+    await user.click(within(dialog).getByRole('button', { name: 'Remove Wrestler' }));
 
     await waitFor(() => {
       expect(mockUsersApi.updateRole).toHaveBeenCalledWith('wrestler-user', 'Wrestler', 'demote');
@@ -249,8 +259,8 @@ describe('ManageUsers', () => {
     renderComponent();
     await waitFor(() => { expect(screen.getByText('wrestler@league.com')).toBeInTheDocument(); });
 
-    const wrestlerRow = screen.getByText('wrestler@league.com').closest('tr')!;
-    await user.click(within(wrestlerRow).getByRole('button', { name: 'Disable' }));
+    const dialog = await openManage(user, 'wrestler@league.com');
+    await user.click(within(dialog).getByRole('button', { name: 'Disable' }));
 
     await waitFor(() => {
       expect(mockUsersApi.toggleEnabled).toHaveBeenCalledWith('wrestler-user', false);
@@ -275,6 +285,24 @@ describe('ManageUsers', () => {
       expect(mockPlayersApi.update).toHaveBeenCalledWith('pl-1', { divisionId: 'div-2' });
     });
     await waitFor(() => { expect(divisionSelect).toHaveValue('div-2'); });
+  });
+
+  it('sends an empty division so the API clears it', async () => {
+    const user = userEvent.setup();
+    setupMocks();
+    mockPlayersApi.update.mockResolvedValue({ playerId: 'pl-1' });
+
+    renderComponent();
+    await waitFor(() => { expect(screen.getByText('wrestler@league.com')).toBeInTheDocument(); });
+
+    const wrestlerRow = screen.getByText('wrestler@league.com').closest('tr')!;
+    const divisionSelect = within(wrestlerRow).getByLabelText('Division for wrestler@league.com');
+
+    await user.selectOptions(divisionSelect, '');
+
+    await waitFor(() => {
+      expect(mockPlayersApi.update).toHaveBeenCalledWith('pl-1', { divisionId: '' });
+    });
   });
 
   it('offers a division slot to a Wrestler whose player has no wrestler assigned', async () => {
@@ -361,37 +389,71 @@ describe('ManageUsers', () => {
   });
 
   it('shows SuperAdmin-only actions when isSuperAdmin is true', async () => {
+    const user = userEvent.setup();
     setupMocks({ isSuperAdmin: true });
     renderComponent();
     await waitFor(() => { expect(screen.getByText('admin@league.com')).toBeInTheDocument(); });
 
     // request-user (no groups) -- should see Make Moderator and Make Admin
-    const requestRow = screen.getByText('request@league.com').closest('tr')!;
-    expect(within(requestRow).getByRole('button', { name: 'Make Moderator' })).toBeInTheDocument();
-    expect(within(requestRow).getByRole('button', { name: 'Make Admin' })).toBeInTheDocument();
+    let dialog = await openManage(user, 'request@league.com');
+    expect(within(dialog).getByRole('button', { name: 'Make Moderator' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Make Admin' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
 
     // mod-user -- should see Remove Moderator and Make Admin
-    const modRow = screen.getByText('mod@league.com').closest('tr')!;
-    expect(within(modRow).getByRole('button', { name: 'Remove Moderator' })).toBeInTheDocument();
-    expect(within(modRow).getByRole('button', { name: 'Make Admin' })).toBeInTheDocument();
+    dialog = await openManage(user, 'mod@league.com');
+    expect(within(dialog).getByRole('button', { name: 'Remove Moderator' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Make Admin' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
 
     // admin-user -- should see Remove Admin
-    const adminRow = screen.getByText('admin@league.com').closest('tr')!;
-    expect(within(adminRow).getByRole('button', { name: 'Remove Admin' })).toBeInTheDocument();
+    dialog = await openManage(user, 'admin@league.com');
+    expect(within(dialog).getByRole('button', { name: 'Remove Admin' })).toBeInTheDocument();
   });
 
   it('hides Admin/Moderator management buttons when not SuperAdmin', async () => {
+    const user = userEvent.setup();
     setupMocks({ isSuperAdmin: false });
     renderComponent();
     await waitFor(() => { expect(screen.getByText('admin@league.com')).toBeInTheDocument(); });
 
-    // Non-SuperAdmin should NOT see admin/moderator management buttons
-    expect(screen.queryByRole('button', { name: 'Make Moderator' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Make Admin' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Remove Admin' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Remove Moderator' })).not.toBeInTheDocument();
+    const dialog = await openManage(user, 'request@league.com');
 
-    // But Wrestler actions and Enable/Disable should still be visible
-    expect(screen.getAllByRole('button', { name: 'Disable' }).length).toBeGreaterThan(0);
+    // Non-SuperAdmin should NOT see admin/moderator management buttons
+    expect(within(dialog).queryByRole('button', { name: 'Make Moderator' })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: 'Make Admin' })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: 'Remove Admin' })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: 'Remove Moderator' })).not.toBeInTheDocument();
+
+    // But still sees the account action
+    expect(within(dialog).getByRole('button', { name: 'Disable' })).toBeInTheDocument();
+  });
+
+  it('deletes a disabled user after confirming', async () => {
+    const user = userEvent.setup();
+    setupMocks();
+    mockUsersApi.deleteUser.mockResolvedValue(undefined);
+    renderComponent();
+    await waitFor(() => { expect(screen.getByText('disabled@league.com')).toBeInTheDocument(); });
+
+    const manageDialog = await openManage(user, 'disabled@league.com');
+    await user.click(within(manageDialog).getByRole('button', { name: 'Delete' }));
+
+    const confirmDialog = await screen.findByRole('dialog', { name: 'Delete user' });
+    await user.click(within(confirmDialog).getByRole('button', { name: 'Delete' }));
+
+    await waitFor(() => { expect(mockUsersApi.deleteUser).toHaveBeenCalledTimes(1); });
+    await waitFor(() => { expect(screen.queryByText('disabled@league.com')).not.toBeInTheDocument(); });
+  });
+
+  it('marks a linked player with no wrestler as hidden', async () => {
+    setupMocks();
+    renderComponent();
+    await waitFor(() => { expect(screen.getByText('nowrestler@league.com')).toBeInTheDocument(); });
+
+    const row = screen.getByText('nowrestler@league.com').closest('tr')!;
+    expect(within(row).getByText('Hidden')).toBeInTheDocument();
+    const assigned = screen.getByText('wrestler@league.com').closest('tr')!;
+    expect(within(assigned).queryByText('Hidden')).not.toBeInTheDocument();
   });
 });

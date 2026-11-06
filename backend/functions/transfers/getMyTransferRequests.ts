@@ -40,8 +40,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const enriched = requests.map((req) => ({
       ...req,
-      fromDivisionName: divisionsMap.get(req.fromDivisionId) ?? req.fromDivisionId,
-      toDivisionName: divisionsMap.get(req.toDivisionId) ?? req.toDivisionId,
+      fromDivisionName: divisionsMap.get(req.fromDivisionId) ?? 'Unknown Division',
+      toDivisionName: divisionsMap.get(req.toDivisionId) ?? 'Unknown Division',
     }));
 
     enriched.sort((a, b) => b.createdAt.localeCompare(a.createdAt));

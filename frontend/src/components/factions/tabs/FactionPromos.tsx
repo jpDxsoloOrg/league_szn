@@ -1,14 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useOutletContext } from 'react-router-dom';
+import { Eye } from 'lucide-react';
 import { factionsApi } from '../../../services/api';
 import { logger } from '../../../utils/logger';
 import type {
   FactionPromoFilter,
   FactionPromoRow,
-  FactionPromosResponse,
 } from '../../../types/faction';
 import type { FactionDetailContext } from '../FactionDetail';
+import Badge from '../../ui/Badge';
+import Button from '../../ui/Button';
+import EmptyState from '../../ui/EmptyState';
+import Select from '../../ui/Select';
+import Skeleton from '../../ui/Skeleton';
+import Tabs from '../../ui/Tabs';
+import '../groupUi.css';
 import './FactionPromos.css';
 
 type SortKey = 'newest' | 'viewed' | 'heat';
@@ -69,24 +76,24 @@ export default function FactionPromos() {
     setItems([]);
     setCursor(undefined);
 
-    factionsApi
-      .getPromos(faction.stableId, { filter, limit: PAGE_LIMIT }, ac.signal)
-      .then((response: FactionPromosResponse) => {
+    const loadPromos = async () => {
+      try {
+        const response = await factionsApi.getPromos(faction.stableId, { filter, limit: PAGE_LIMIT }, ac.signal);
         if (!ac.signal.aborted) {
           setItems(response.items);
           setCursor(response.nextCursor);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
           logger.error('Promos tab: getPromos failed');
           setError(err.message);
         }
-      })
-      .finally(() => {
+      } finally {
         if (!ac.signal.aborted) setLoading(false);
-      });
+      }
+    };
 
+    loadPromos();
     return () => ac.abort();
   }, [faction.stableId, filter]);
 
@@ -113,62 +120,45 @@ export default function FactionPromos() {
     }
   };
 
-  return (
-    <div className="faction-promos">
-      <div className="faction-promos__utility">
-        <div
-          className="faction-promos__filters"
-          role="tablist"
-          aria-label={t('factions.promos.filterLabel', 'Promo filter')}
-        >
-          {FILTER_OPTIONS.map((opt) => {
-            const isActive = filter === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                role="tab"
-                aria-pressed={isActive}
-                className={`faction-promos__filter ${isActive ? 'faction-promos__filter--active' : ''}`}
-                onClick={() => setFilter(opt.value)}
-              >
-                {t(opt.i18nKey, opt.fallback)}
-              </button>
-            );
-          })}
-        </div>
+  const sortOptions = [
+    { value: 'newest', label: t('factions.promos.sortNewest', 'Newest') },
+    ...(hasViewCounts ? [{ value: 'viewed', label: t('factions.promos.sortViewed', 'Most Viewed') }] : []),
+    ...(hasHeatImpacts ? [{ value: 'heat', label: t('factions.promos.sortHeat', 'Highest Heat') }] : []),
+  ];
 
-        <label className="faction-promos__sort">
-          <span className="visually-hidden">
-            {t('factions.promos.sortLabel', 'Sort promos')}
-          </span>
-          <select
+  return (
+    <div className="group-page">
+      <div className="group-toolbar">
+        <Tabs
+          label={t('factions.promos.filterLabel', 'Promo filter')}
+          value={filter}
+          onValueChange={(value) => setFilter(value as FactionPromoFilter)}
+          items={FILTER_OPTIONS.map((option) => ({ value: option.value, label: t(option.i18nKey, option.fallback) }))}
+        />
+        {sortOptions.length > 1 && (
+          <Select
+            className="group-toolbar__push"
+            label={t('factions.promos.sortLabel', 'Sort promos')}
             value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-          >
-            <option value="newest">{t('factions.promos.sortNewest', 'Newest')}</option>
-            {hasViewCounts && (
-              <option value="viewed">{t('factions.promos.sortViewed', 'Most Viewed')}</option>
-            )}
-            {hasHeatImpacts && (
-              <option value="heat">{t('factions.promos.sortHeat', 'Highest Heat')}</option>
-            )}
-          </select>
-        </label>
+            onValueChange={(value) => setSort(value as SortKey)}
+            options={sortOptions}
+          />
+        )}
       </div>
 
       {error && (
-        <p className="faction-promos__error" role="alert">
+        <p className="group-error" role="alert">
           {t('factions.promos.error', 'Could not load promos.')}: {error}
         </p>
       )}
 
       {loading ? (
-        <p className="faction-promos__loading">{t('common.loading', 'Loading…')}</p>
+        <Skeleton variant="cards" count={3} />
       ) : sortedItems.length === 0 ? (
-        <p className="faction-promos__empty">
-          {t('factions.promos.empty', 'No promos match this filter yet.')}
-        </p>
+        <EmptyState
+          title={t('factions.detailTabs.promos', 'Promos')}
+          description={t('factions.promos.empty', 'No promos match this filter yet.')}
+        />
       ) : (
         <div className="faction-promos__grid">
           {sortedItems.map((promo) => {
@@ -179,71 +169,46 @@ export default function FactionPromos() {
                   })
                 : t('factions.promos.byline', 'By {{name}}', { name: promo.authorWrestlerName });
 
-            const heatPill =
-              promo.heatImpact !== null && promo.heatImpact !== undefined ? (
-                <span
-                  className={`faction-promos__heat ${
-                    promo.heatImpact > 0
-                      ? 'faction-promos__heat--up'
-                      : promo.heatImpact < 0
-                        ? 'faction-promos__heat--down'
-                        : 'faction-promos__heat--flat'
-                  }`}
-                >
-                  {promo.heatImpact > 0 ? `+${promo.heatImpact}` : promo.heatImpact}
-                </span>
-              ) : null;
-
-            // Headline falls back to the first ~60 chars of the body
-            // when no title was set, so the card always leads with text.
+            const heat = promo.heatImpact;
+            // With no title, the start of the body stands in as the headline.
             const headline = promo.headline ?? promo.excerpt.slice(0, 60);
-            // Show the body only if we have additional content beyond the
-            // headline (i.e. the headline isn't already the same text).
             const bodyText = promo.headline && promo.excerpt ? promo.excerpt : '';
 
             return (
               <article key={promo.promoId} className="faction-promos__card">
-                <Link
-                  to={`/promos/${promo.promoId}`}
-                  className="faction-promos__card-link"
-                >
-                  <p className="faction-promos__byline">{byline}</p>
-                  <h3 className="faction-promos__headline">{headline}</h3>
-                  {bodyText && (
-                    <p className="faction-promos__body-text">{bodyText}</p>
-                  )}
+                <Link to={`/promos/${promo.promoId}`} className="faction-promos__link">
                   {promo.thumbnail && (
-                    <img
-                      src={promo.thumbnail}
-                      alt=""
-                      className="faction-promos__inline-image"
-                      loading="lazy"
-                    />
+                    <img src={promo.thumbnail} alt="" className="faction-promos__image" loading="lazy" />
                   )}
-                  <div className="faction-promos__meta">
-                    <time dateTime={promo.date}>
-                      {new Date(promo.date).toLocaleDateString()}
-                    </time>
+                  <span className="group-muted">{byline}</span>
+                  <h3 className="faction-promos__headline">{headline}</h3>
+                  {bodyText && <p className="faction-promos__body">{bodyText}</p>}
+                  <span className="faction-promos__meta">
+                    <time dateTime={promo.date}>{new Date(promo.date).toLocaleDateString()}</time>
                     {promo.viewCount !== null && promo.viewCount !== undefined && (
                       <span
                         className="faction-promos__views"
-                        aria-label={t('factions.promos.viewsLabel', '{{count}} views', {
-                          count: promo.viewCount,
-                        })}
+                        aria-label={t('factions.promos.viewsLabel', '{{count}} views', { count: promo.viewCount })}
                       >
-                        👁 {promo.viewCount}
+                        <Eye aria-hidden="true" size={14} />
+                        {promo.viewCount}
                       </span>
                     )}
-                    {heatPill}
-                  </div>
+                    {heat !== null && heat !== undefined && (
+                      <Badge tone={heat > 0 ? 'win' : heat < 0 ? 'loss' : 'draw'}>
+                        {heat > 0 ? `+${heat}` : heat}
+                      </Badge>
+                    )}
+                  </span>
                 </Link>
                 {filter === 'directed-at-faction' && (
-                  <Link
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     to={`/promos/new?targetPlayerId=${promo.authorPlayerId}&promoType=response&targetPromoId=${promo.promoId}`}
-                    className="faction-promos__reply"
                   >
                     {t('factions.promos.replyCta', 'Reply with a promo')}
-                  </Link>
+                  </Button>
                 )}
               </article>
             );
@@ -252,17 +217,10 @@ export default function FactionPromos() {
       )}
 
       {cursor && !loading && (
-        <div className="faction-promos__load-more">
-          <button
-            type="button"
-            className="faction-promos__load-more-btn"
-            onClick={handleLoadMore}
-            disabled={loadingMore}
-          >
-            {loadingMore
-              ? t('common.loading', 'Loading…')
-              : t('factions.promos.loadMore', 'Load more')}
-          </button>
+        <div className="faction-promos__more">
+          <Button variant="secondary" onClick={handleLoadMore} loading={loadingMore}>
+            {loadingMore ? t('common.loading', 'Loading…') : t('factions.promos.loadMore', 'Load more')}
+          </Button>
         </div>
       )}
     </div>

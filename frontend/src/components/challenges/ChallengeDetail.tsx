@@ -1,25 +1,52 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { challengesApi, profileApi, stipulationsApi, matchTypesApi } from '../../services/api';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import { useIsHiddenPlayer } from '../../hooks/useIsHiddenPlayer';
 import type { Stipulation, MatchType } from '../../types';
 import type { ChallengeWithPlayers } from '../../types/challenge';
-import { getInitial } from './challengeUtils';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import EmptyState from '../ui/EmptyState';
+import Modal from '../ui/Modal';
+import PageHeader from '../ui/PageHeader';
+import Select from '../ui/Select';
+import Skeleton from '../ui/Skeleton';
+import { useToast } from '../ui/toastContext';
+import ChallengeStatusBadge from './ChallengeStatusBadge';
+import ChallengeVersus from './ChallengeVersus';
+import { getChallengeDeadline, getChallengeSides, getDisplayStatus, isChallengedSide, isChallengerSide } from './challengeUtils';
 import './ChallengeDetail.css';
+
+type DetailAction = 'accept' | 'decline' | 'cancel' | 'counter';
+
+const LONG_DATE: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+
+/** The profile only decides which actions show, so a staff account without one still reads the page. */
+async function loadViewerPlayerId(signal: AbortSignal): Promise<string | null> {
+  try {
+    const profile = await profileApi.getMyProfile(signal);
+    return profile.playerId;
+  } catch {
+    return null;
+  }
+}
 
 export default function ChallengeDetail() {
   const { t } = useTranslation();
   const { challengeId } = useParams<{ challengeId: string }>();
   const navigate = useNavigate();
   const { features } = useSiteConfig();
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const { showToast } = useToast();
+  const isHiddenPlayer = useIsHiddenPlayer();
   const [challenge, setChallenge] = useState<ChallengeWithPlayers | null>(null);
   const [counterChallenge, setCounterChallenge] = useState<ChallengeWithPlayers | null>(null);
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Counter form state
   const [showCounterForm, setShowCounterForm] = useState(false);
   const [counterMatchType, setCounterMatchType] = useState('');
   const [counterStipulation, setCounterStipulation] = useState('');
@@ -31,45 +58,42 @@ export default function ChallengeDetail() {
   useEffect(() => {
     const controller = new AbortController();
     setCounterChallenge(null);
-    (async () => {
+    const load = async () => {
       try {
-        const [mainChallenge, myProfile, stips, mTypes] = await Promise.all([
+        const [mainChallenge, viewerPlayerId, stips, mTypes] = await Promise.all([
           challengesApi.getById(challengeId!, controller.signal),
-          profileApi.getMyProfile(controller.signal),
+          loadViewerPlayerId(controller.signal),
           stipulationsApi.getAll(controller.signal),
           matchTypesApi.getAll(controller.signal),
         ]);
         setChallenge(mainChallenge);
-        setCurrentPlayerId(myProfile.playerId);
+        setCurrentPlayerId(viewerPlayerId);
         setStipulations(stips);
         setMatchTypes(mTypes);
 
         if (mainChallenge.counteredChallengeId) {
-          const counter = await challengesApi.getById(mainChallenge.counteredChallengeId, controller.signal);
-          setCounterChallenge(counter);
+          setCounterChallenge(await challengesApi.getById(mainChallenge.counteredChallengeId, controller.signal));
         }
       } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          console.error('Failed to load challenge details:', err);
-        }
+        if (!controller.signal.aborted) console.error('Failed to load challenge details:', err);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
-    })();
-
+    };
+    void load();
     return () => controller.abort();
   }, [challengeId]);
 
-  const handleAction = async (action: string) => {
+  const handleAction = async (action: DetailAction) => {
     if (!challenge) return;
+    if (action === 'counter' && !counterMatchType) return;
     setSubmitting(true);
     try {
       if (action === 'accept' || action === 'decline') {
-        await challengesApi.respond(challenge.challengeId, action as 'accept' | 'decline');
+        await challengesApi.respond(challenge.challengeId, action);
       } else if (action === 'cancel') {
         await challengesApi.cancel(challenge.challengeId);
-      } else if (action === 'counter') {
-        if (!counterMatchType) return;
+      } else {
         await challengesApi.respond(challenge.challengeId, 'counter', {
           counterMatchType,
           counterStipulation: counterStipulation || undefined,
@@ -77,32 +101,36 @@ export default function ChallengeDetail() {
         });
         setShowCounterForm(false);
       }
-      setActionMessage(t('challenges.detail.actionConfirmed', { action }));
-      // Refresh
+      showToast(t('challenges.detail.actionConfirmed', { action }), 'success');
+
       const updated = await challengesApi.getById(challengeId!);
       setChallenge(updated);
       if (updated.counteredChallengeId) {
-        const counter = await challengesApi.getById(updated.counteredChallengeId);
-        setCounterChallenge(counter);
+        setCounterChallenge(await challengesApi.getById(updated.counteredChallengeId));
       }
-      // After accepting, navigate to promo editor for a response promo
-      if (action === 'accept' && features.promos && updated) {
+      // After accepting, go straight to a response promo.
+      if (action === 'accept' && features.promos) {
         navigate('/promos/new', {
           state: { promoType: 'response', targetPlayerId: updated.challengerId },
         });
       }
     } catch (err) {
-      setActionMessage(`Error: ${err instanceof Error ? err.message : 'Failed'}`);
+      showToast(err instanceof Error ? err.message : String(err), 'error');
     } finally {
       setSubmitting(false);
     }
-    setTimeout(() => setActionMessage(null), 3000);
   };
+
+  const backLink = (
+    <Button variant="ghost" size="sm" to="/challenges" icon={<ArrowLeft aria-hidden="true" size={18} />} className="challenge-detail__back">
+      {t('challenges.detail.backToBoard')}
+    </Button>
+  );
 
   if (loading) {
     return (
       <div className="challenge-detail">
-        <div className="challenge-detail-loading">{t('common.loading')}</div>
+        <Skeleton variant="block" count={3} />
       </div>
     );
   }
@@ -110,362 +138,177 @@ export default function ChallengeDetail() {
   if (!challenge) {
     return (
       <div className="challenge-detail">
-        <Link to="/challenges" className="challenge-detail-back">
-          &larr; {t('challenges.detail.backToBoard')}
-        </Link>
-        <div className="challenge-not-found">
-          <p>{t('challenges.detail.notFound')}</p>
-          <Link to="/challenges" className="btn-issue">
-            {t('challenges.detail.backToBoard')}
-          </Link>
-        </div>
+        {backLink}
+        <EmptyState title={t('challenges.detail.notFound')} />
       </div>
     );
   }
 
-  const isTagTeam = challenge.challengeMode === 'tag_team';
-
-  const isSent = challenge.challengerId === currentPlayerId ||
-    (isTagTeam && !!challenge.challengerTagTeam &&
-     (challenge.challengerTagTeam.player1?.playerId === currentPlayerId ||
-      challenge.challengerTagTeam.player2?.playerId === currentPlayerId));
-
-  const isReceived = challenge.challengedId === currentPlayerId ||
-    (isTagTeam && !!challenge.challengedTagTeam &&
-     (challenge.challengedTagTeam.player1?.playerId === currentPlayerId ||
-      challenge.challengedTagTeam.player2?.playerId === currentPlayerId));
-
-  const createdDate = new Date(challenge.createdAt).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
-  const expiresDate = new Date(challenge.expiresAt).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const isOpen = getDisplayStatus(challenge) === 'pending';
+  const canRespond = isOpen && isChallengedSide(challenge, currentPlayerId);
+  const canCancel = isOpen && isChallengerSide(challenge, currentPlayerId);
+  const [challengerSide, challengedSide] = getChallengeSides(challenge);
+  const deadline = getChallengeDeadline(challenge);
 
   return (
     <div className="challenge-detail">
-      <Link to="/challenges" className="challenge-detail-back">
-        &larr; {t('challenges.detail.backToBoard')}
-      </Link>
+      {backLink}
 
-      <div className="challenge-detail-header">
-        <div className="challenge-detail-meta">
-          <span className="challenge-detail-matchtype">{challenge.matchType}</span>
-          {challenge.stipulation && (
-            <span className="challenge-detail-stipulation">{challenge.stipulation}</span>
-          )}
-          {challenge.championshipId && (
-            <span className="challenge-detail-championship">
-              {t('challenges.board.titleMatch')}
-            </span>
-          )}
-          {isTagTeam && (
-            <span className="challenge-detail-tag-team-badge">
-              {t('challenges.board.tagTeamMatch')}
-            </span>
-          )}
-        </div>
-        <span className={`challenge-status-badge ${challenge.status}`}>
-          {t(`challenges.status.${challenge.status}`)}
-        </span>
-      </div>
-
-      <div className="challenge-detail-versus">
-        {isTagTeam && challenge.challengerTagTeam && challenge.challengedTagTeam ? (
+      <PageHeader
+        eyebrow={t('challenges.detail.title')}
+        title={challenge.matchType}
+        subtitle={challenge.stipulation}
+        actions={(
           <>
-            <div className="challenge-detail-team">
-              <div className="challenge-detail-player-avatar challenger">
-                {getInitial(challenge.challengerTagTeam.tagTeamName)}
-              </div>
-              <div className="challenge-detail-team-name">
-                {challenge.challengerTagTeam.tagTeamName}
-              </div>
-              <div className="challenge-detail-team-members">
-                <div className="challenge-detail-team-member">
-                  {challenge.challengerTagTeam.player1.wrestlerName}
-                  <span className="challenge-detail-team-member-player">
-                    {challenge.challengerTagTeam.player1.playerName}
-                  </span>
-                </div>
-                <div className="challenge-detail-team-member">
-                  {challenge.challengerTagTeam.player2.wrestlerName}
-                  <span className="challenge-detail-team-member-player">
-                    {challenge.challengerTagTeam.player2.playerName}
-                  </span>
-                </div>
-              </div>
-              <span className="challenge-detail-role-label challenger-label">
-                {t('challenges.detail.challengerTeam')}
-              </span>
-            </div>
-
-            <div className="challenge-detail-vs">{t('common.vs').toUpperCase()}</div>
-
-            <div className="challenge-detail-team">
-              <div className="challenge-detail-player-avatar challenged">
-                {getInitial(challenge.challengedTagTeam.tagTeamName)}
-              </div>
-              <div className="challenge-detail-team-name">
-                {challenge.challengedTagTeam.tagTeamName}
-              </div>
-              <div className="challenge-detail-team-members">
-                <div className="challenge-detail-team-member">
-                  {challenge.challengedTagTeam.player1.wrestlerName}
-                  <span className="challenge-detail-team-member-player">
-                    {challenge.challengedTagTeam.player1.playerName}
-                  </span>
-                </div>
-                <div className="challenge-detail-team-member">
-                  {challenge.challengedTagTeam.player2.wrestlerName}
-                  <span className="challenge-detail-team-member-player">
-                    {challenge.challengedTagTeam.player2.playerName}
-                  </span>
-                </div>
-              </div>
-              <span className="challenge-detail-role-label challenged-label">
-                {t('challenges.detail.challengedTeam')}
-              </span>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="challenge-detail-player">
-              <div className="challenge-detail-player-avatar challenger">
-                {getInitial(challenge.challenger.wrestlerName)}
-              </div>
-              <div className="challenge-detail-wrestler">
-                {challenge.challenger.wrestlerName}
-              </div>
-              <div className="challenge-detail-player-label">
-                {challenge.challenger.playerName}
-              </div>
-              <span className="challenge-detail-role-label challenger-label">
-                {t('challenges.detail.challenger')}
-              </span>
-            </div>
-
-            <div className="challenge-detail-vs">{t('common.vs').toUpperCase()}</div>
-
-            <div className="challenge-detail-player">
-              <div className="challenge-detail-player-avatar challenged">
-                {getInitial(challenge.challenged.wrestlerName)}
-              </div>
-              <div className="challenge-detail-wrestler">
-                {challenge.challenged.wrestlerName}
-              </div>
-              <div className="challenge-detail-player-label">
-                {challenge.challenged.playerName}
-              </div>
-              <span className="challenge-detail-role-label challenged-label">
-                {t('challenges.detail.challenged')}
-              </span>
-            </div>
+            {challenge.championshipId && <Badge tone="warning">{t('challenges.board.titleMatch')}</Badge>}
+            {challenge.challengeMode === 'tag_team' && <Badge>{t('challenges.board.tagTeamMatch')}</Badge>}
+            <ChallengeStatusBadge challenge={challenge} />
           </>
         )}
-      </div>
+      />
 
-      <div className="challenge-detail-messages">
-        <h3>{t('challenges.detail.messages')}</h3>
-        {challenge.message && (
-          <div className="challenge-message-block from-challenger">
-            <div className="challenge-message-sender">
-              {challenge.challenger.wrestlerName} ({challenge.challenger.playerName})
-            </div>
-            <div className="challenge-message-text">
-              &ldquo;{challenge.message}&rdquo;
-            </div>
-          </div>
-        )}
-        {challenge.responseMessage && (
-          <div className="challenge-message-block from-challenged">
-            <div className="challenge-message-sender">
-              {challenge.challenged.wrestlerName} ({challenge.challenged.playerName})
-            </div>
-            <div className="challenge-message-text">
-              &ldquo;{challenge.responseMessage}&rdquo;
-            </div>
-          </div>
-        )}
-      </div>
+      <section className="challenge-detail__hero">
+        <ChallengeVersus challenge={challenge} size="lg" showRoles />
+      </section>
 
-      <div className="challenge-detail-info">
-        <div className="challenge-info-item">
-          <div className="challenge-info-label">{t('challenges.detail.status')}</div>
-          <div className="challenge-info-value">
-            {t(`challenges.status.${challenge.status}`)}
-          </div>
-        </div>
-        <div className="challenge-info-item">
-          <div className="challenge-info-label">{t('challenges.detail.created')}</div>
-          <div className="challenge-info-value">{createdDate}</div>
-        </div>
-        <div className="challenge-info-item">
-          <div className="challenge-info-label">{t('challenges.detail.expires')}</div>
-          <div className="challenge-info-value">{expiresDate}</div>
-        </div>
-        <div className="challenge-info-item">
-          <div className="challenge-info-label">{t('challenges.detail.matchType')}</div>
-          <div className="challenge-info-value">
-            {challenge.matchType}
-            {challenge.stipulation ? ` - ${challenge.stipulation}` : ''}
-          </div>
-        </div>
-      </div>
-
-      {actionMessage && (
-        <div
-          className={`challenge-action-message ${
-            actionMessage.startsWith('Error')
-              ? 'challenge-action-message-error'
-              : 'challenge-action-message-success'
-          }`}
-        >
-          {actionMessage}
-        </div>
-      )}
-
-      {isReceived && challenge.status === 'pending' && (
-        <>
-          <div className="challenge-detail-actions">
-            <button className="btn-accept" disabled={submitting} onClick={() => handleAction('accept')}>
-              {t('challenges.detail.accept')}
-            </button>
-            <button className="btn-decline" disabled={submitting} onClick={() => handleAction('decline')}>
-              {t('challenges.detail.decline')}
-            </button>
-            <button
-              className="btn-counter"
-              disabled={submitting}
-              onClick={() => setShowCounterForm(!showCounterForm)}
-            >
-              {t('challenges.detail.counter')}
-            </button>
-          </div>
-
-          {showCounterForm && (
-            <div className="challenge-counter-form">
-              <h3>
-                {t('challenges.detail.counterChallenge')}
-              </h3>
-
-              <div className="challenge-counter-form-group">
-                <label className="challenge-counter-form-label">
-                  {t('challenges.issue.matchType')} *
-                </label>
-                <select
-                  className="challenge-counter-form-select"
-                  value={counterMatchType}
-                  onChange={(e) => setCounterMatchType(e.target.value)}
-                >
-                  <option value="">{t('challenges.issue.selectMatchType')}</option>
-                  {matchTypes.map((mt) => (
-                    <option key={mt.matchTypeId} value={mt.name}>{mt.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="challenge-counter-form-group">
-                <label className="challenge-counter-form-label">
-                  {t('challenges.issue.stipulation')}
-                </label>
-                <select
-                  className="challenge-counter-form-select"
-                  value={counterStipulation}
-                  onChange={(e) => setCounterStipulation(e.target.value)}
-                >
-                  <option value="">{t('common.none', 'None')}</option>
-                  {stipulations.map((s) => (
-                    <option key={s.stipulationId} value={s.name}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="challenge-counter-form-group">
-                <label className="challenge-counter-form-label">
-                  {t('challenges.issue.message')}
-                </label>
-                <textarea
-                  className="challenge-counter-form-textarea"
-                  value={counterMessage}
-                  onChange={(e) => setCounterMessage(e.target.value)}
-                  placeholder={t('challenges.issue.messagePlaceholder')}
-                  rows={3}
-                  maxLength={500}
-                />
-              </div>
-
-              <div className="challenge-counter-form-actions">
-                <button
-                  className="challenge-counter-form-submit"
-                  disabled={!counterMatchType || submitting}
-                  onClick={() => handleAction('counter')}
-                >
-                  {submitting ? t('common.submitting') : t('challenges.issue.submit')}
-                </button>
-                <button
-                  className="challenge-counter-form-cancel"
-                  onClick={() => setShowCounterForm(false)}
-                >
-                  {t('common.cancel')}
-                </button>
-              </div>
-            </div>
+      {(canRespond || canCancel) && (
+        <div className="challenge-detail__actions">
+          {canRespond && (
+            <>
+              <Button disabled={submitting} onClick={() => handleAction('accept')}>
+                {t('challenges.detail.accept')}
+              </Button>
+              <Button variant="secondary" disabled={submitting} onClick={() => handleAction('decline')}>
+                {t('challenges.detail.decline')}
+              </Button>
+              {!isHiddenPlayer && (
+                <Button variant="secondary" disabled={submitting} onClick={() => setShowCounterForm(true)}>
+                  {t('challenges.detail.counter')}
+                </Button>
+              )}
+            </>
           )}
-        </>
-      )}
-
-      {isSent && challenge.status === 'pending' && (
-        <div className="challenge-detail-actions">
-          <button
-            className="btn-cancel-challenge"
-            onClick={() => handleAction('cancel')}
-          >
-            {t('challenges.detail.cancel')}
-          </button>
+          {canCancel && (
+            <Button variant="danger" disabled={submitting} onClick={() => handleAction('cancel')}>
+              {t('challenges.detail.cancel')}
+            </Button>
+          )}
         </div>
       )}
+
+      {(challenge.message || challenge.responseMessage) && (
+        <section className="challenge-detail__section">
+          <h2 className="challenge-detail__heading">{t('challenges.detail.messages')}</h2>
+          {challenge.message && (
+            <blockquote className="challenge-detail__quote">
+              <cite>{challengerSide.name} ({challengerSide.detail})</cite>
+              <p>&ldquo;{challenge.message}&rdquo;</p>
+            </blockquote>
+          )}
+          {challenge.responseMessage && (
+            <blockquote className="challenge-detail__quote challenge-detail__quote--reply">
+              <cite>{challengedSide.name} ({challengedSide.detail})</cite>
+              <p>&ldquo;{challenge.responseMessage}&rdquo;</p>
+            </blockquote>
+          )}
+        </section>
+      )}
+
+      <dl className="challenge-detail__facts">
+        {challenge.championshipName && (
+          <div>
+            <dt>{t('challenges.issue.titleOnTheLine')}</dt>
+            <dd>{challenge.championshipName}</dd>
+          </div>
+        )}
+        <div>
+          <dt>{t('challenges.detail.created')}</dt>
+          <dd>{new Date(challenge.createdAt).toLocaleDateString(undefined, LONG_DATE)}</dd>
+        </div>
+        {deadline !== null && (
+          <div>
+            <dt>{t('challenges.detail.expires')}</dt>
+            <dd>{new Date(deadline).toLocaleDateString(undefined, LONG_DATE)}</dd>
+          </div>
+        )}
+      </dl>
 
       {counterChallenge && (
-        <div className="challenge-counter-chain">
-          <h3>{t('challenges.detail.counterChallenge')}</h3>
-          <Link
-            to={`/challenges/${counterChallenge.challengeId}`}
-            className="challenge-counter-link"
-          >
-            <div className="challenge-counter-link-info">
-              <div>
-                <div className="challenge-counter-link-text">
-                  {counterChallenge.challenger.wrestlerName} {t('common.vs')}{' '}
-                  {counterChallenge.challenged.wrestlerName}
-                </div>
-                <div className="challenge-counter-link-subtext">
-                  {counterChallenge.matchType}
-                  {counterChallenge.stipulation
-                    ? ` - ${counterChallenge.stipulation}`
-                    : ''}
-                </div>
-              </div>
-              <span className="challenge-counter-link-arrow">&rarr;</span>
-            </div>
-          </Link>
-        </div>
+        <section className="challenge-detail__section">
+          <h2 className="challenge-detail__heading">{t('challenges.detail.counterChallenge')}</h2>
+          <Card to={`/challenges/${counterChallenge.challengeId}`} className="challenge-detail__link-card">
+            <span>
+              <span className="challenge-detail__link-title">
+                {counterChallenge.challenger.wrestlerName} {t('common.vs')} {counterChallenge.challenged.wrestlerName}
+              </span>
+              <span className="challenge-detail__link-subtitle">
+                {[counterChallenge.matchType, counterChallenge.stipulation].filter(Boolean).join(' - ')}
+              </span>
+            </span>
+            <ChevronRight aria-hidden="true" size={20} />
+          </Card>
+        </section>
       )}
 
       {challenge.matchId && (
-        <Link to={`/events`} className="challenge-match-link">
-          <div className="challenge-match-link-info">
-            <span className="challenge-match-link-text">
-              {t('challenges.detail.viewScheduledMatch')}
-            </span>
-            <span>&rarr;</span>
-          </div>
-        </Link>
+        <Card to="/events" className="challenge-detail__link-card">
+          <span className="challenge-detail__link-title">{t('challenges.detail.viewScheduledMatch')}</span>
+          <ChevronRight aria-hidden="true" size={20} />
+        </Card>
       )}
+
+      <Modal
+        open={showCounterForm}
+        onClose={() => setShowCounterForm(false)}
+        title={t('challenges.detail.counterChallenge')}
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => setShowCounterForm(false)}>{t('common.cancel')}</Button>
+            <Button loading={submitting} disabled={!counterMatchType} onClick={() => handleAction('counter')}>
+              {submitting ? t('common.submitting') : t('challenges.issue.submit')}
+            </Button>
+          </>
+        )}
+      >
+        <div className="challenge-detail__form">
+          <label className="challenge-detail__field" htmlFor="counter-match-type">
+            {t('challenges.issue.matchType')} *
+          </label>
+          <Select
+            id="counter-match-type"
+            label={t('challenges.issue.matchType')}
+            placeholder={t('challenges.issue.selectMatchType')}
+            value={counterMatchType}
+            onValueChange={setCounterMatchType}
+            options={matchTypes.map((matchType) => ({ value: matchType.name, label: matchType.name }))}
+          />
+          <label className="challenge-detail__field" htmlFor="counter-stipulation">
+            {t('challenges.issue.stipulation')}
+          </label>
+          <Select
+            id="counter-stipulation"
+            label={t('challenges.issue.stipulation')}
+            value={counterStipulation}
+            onValueChange={setCounterStipulation}
+            options={[
+              { value: '', label: t('common.none', 'None') },
+              ...stipulations.map((stipulation) => ({ value: stipulation.name, label: stipulation.name })),
+            ]}
+          />
+          <label className="challenge-detail__field" htmlFor="counter-message">
+            {t('challenges.issue.message')}
+          </label>
+          <textarea
+            id="counter-message"
+            className="challenge-detail__textarea"
+            value={counterMessage}
+            onChange={(event) => setCounterMessage(event.target.value)}
+            placeholder={t('challenges.issue.messagePlaceholder')}
+            rows={3}
+            maxLength={500}
+          />
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -45,6 +45,7 @@ vi.mock('../../services/api', () => ({
 }));
 
 import { AuthProvider, useAuth } from '../AuthContext';
+import { AUTH_EXPIRED_EVENT } from '../../services/api/apiClient';
 
 // --- Test wrapper ---
 function wrapper({ children }: { children: ReactNode }) {
@@ -284,6 +285,23 @@ describe('AuthContext', () => {
   // ===========================================================================
   // P1: Cleanup -- mounted flag prevents state updates after unmount
   // ===========================================================================
+  describe('expired session', () => {
+    it('signs out when the API reports the session cannot be recovered', async () => {
+      mockAuthenticatedUser(['Admin']);
+      mockSignOut.mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+      act(() => {
+        window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+      });
+
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(false));
+      expect(mockSignOut).toHaveBeenCalled();
+    });
+  });
+
   describe('cleanup', () => {
     it('does not update state after unmount during init', async () => {
       // Create a promise we can control to delay getCurrentUser

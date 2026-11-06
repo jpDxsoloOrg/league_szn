@@ -1,28 +1,30 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // --- Hoisted mocks ---
-const { mockWrestlersApi } = vi.hoisted(() => ({
+const { mockFetchWithAuth, mockWrestlersApi, mockPlayersApi } = vi.hoisted(() => ({
+  mockFetchWithAuth: vi.fn(),
+  mockPlayersApi: { getDirectory: vi.fn() },
   mockWrestlersApi: {
     getAll: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
     importBulk: vi.fn(),
-    resetAssignments: vi.fn(),
   },
 }));
 
 vi.mock('../../../services/api', () => ({
+  API_BASE_URL: 'http://api.test',
+  fetchWithAuth: mockFetchWithAuth,
   wrestlersApi: mockWrestlersApi,
+  playersApi: mockPlayersApi,
 }));
-
-vi.mock('../ManageWrestlers.css', () => ({}));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, opts?: Record<string, unknown>) => {
+    t: (key: string, opts?: string | Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'admin.manageWrestlers.resetAll': 'Reset All Assignments',
         'admin.manageWrestlers.resetting': 'Resetting...',
@@ -37,8 +39,8 @@ vi.mock('react-i18next', () => ({
         'admin.manageWrestlers.pageNext': 'Next',
         'admin.manageWrestlers.pageStatus': 'Page {{page}} of {{total}}',
       };
-      let text = translations[key] ?? key;
-      if (opts) {
+      let text = translations[key] ?? (typeof opts === 'string' ? opts : key);
+      if (opts && typeof opts === 'object') {
         for (const [name, value] of Object.entries(opts)) {
           text = text.replace(`{{${name}}}`, String(value));
         }
@@ -68,6 +70,68 @@ describe('ManageWrestlers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mockPlayersApi.getDirectory.mockResolvedValue([]);
+  });
+
+  describe('row actions', () => {
+    it('shows the assigned player by name, not by id', async () => {
+      mockPlayersApi.getDirectory.mockResolvedValue([
+        { playerId: 'p1', name: 'Jane Player', currentWrestler: 'Wrestler 1' },
+      ]);
+      mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1, { isInUse: true, assignedPlayerId: 'p1' })]);
+
+      render(<ManageWrestlers />);
+
+      expect(await screen.findByText('Jane Player')).toBeInTheDocument();
+      expect(screen.queryByText('p1')).not.toBeInTheDocument();
+    });
+
+    it('still renders when the player lookup fails', async () => {
+      mockPlayersApi.getDirectory.mockRejectedValue(new Error('offline'));
+      mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1)]);
+
+      render(<ManageWrestlers />);
+
+      expect(await screen.findByText('Wrestler 1')).toBeInTheDocument();
+    });
+
+    it('releases a wrestler after confirming in the dialog', async () => {
+      const user = userEvent.setup();
+      mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1, { isInUse: true })]);
+      mockWrestlersApi.update.mockResolvedValue({});
+
+      render(<ManageWrestlers />);
+      await user.click(await screen.findByRole('button', { name: 'Release' }));
+      const dialog = await screen.findByRole('dialog');
+      await user.click(within(dialog).getByRole('button', { name: 'Release' }));
+
+      await waitFor(() => {
+        expect(mockWrestlersApi.update).toHaveBeenCalledWith('w-1', { isInUse: false });
+      });
+      expect(window.confirm).not.toHaveBeenCalled();
+    });
+
+    it('deletes a wrestler after confirming in the dialog', async () => {
+      const user = userEvent.setup();
+      mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1)]);
+      mockWrestlersApi.delete.mockResolvedValue(undefined);
+
+      render(<ManageWrestlers />);
+      await user.click(await screen.findByRole('button', { name: 'Delete' }));
+      await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }));
+
+      await waitFor(() => { expect(mockWrestlersApi.delete).toHaveBeenCalledWith('w-1'); });
+    });
+
+    it('opens the import dialog in the shared modal', async () => {
+      const user = userEvent.setup();
+      mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1)]);
+
+      render(<ManageWrestlers />);
+      await user.click(await screen.findByRole('button', { name: 'Import from file' }));
+
+      expect(await screen.findByRole('dialog', { name: 'Import Wrestlers' })).toBeInTheDocument();
+    });
   });
 
   describe('pagination', () => {
@@ -126,7 +190,8 @@ describe('ManageWrestlers', () => {
       await user.click(screen.getByRole('button', { name: 'Next' }));
       expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
 
-      await user.selectOptions(screen.getByLabelText('Filter by Promotion'), 'AEW');
+      await user.click(screen.getByRole('combobox', { name: 'Filter by Promotion' }));
+      await user.click(await screen.findByRole('option', { name: 'AEW' }));
 
       // Single page of AEW results, so the pager disappears and page 1 renders.
       expect(screen.queryByText(/Page \d+ of \d+/)).not.toBeInTheDocument();
@@ -146,7 +211,13 @@ describe('ManageWrestlers', () => {
   });
 
   describe('reset all assignments', () => {
-    it('confirms, calls the API, refetches, and shows the result counts', async () => {
+    const confirmReset = async (user: ReturnType<typeof userEvent.setup>, token: string) => {
+      const dialog = await screen.findByRole('dialog');
+      await user.type(within(dialog).getByRole('textbox'), token);
+      await user.click(within(dialog).getByRole('button', { name: 'Reset All Assignments' }));
+    };
+
+    it('asks for the typed token, sends it, refetches, and shows the result counts', async () => {
       const assigned = makeWrestler(1, {
         isInUse: true,
         assignedPlayerId: 'p-1',
@@ -155,7 +226,7 @@ describe('ManageWrestlers', () => {
       mockWrestlersApi.getAll
         .mockResolvedValueOnce([assigned])
         .mockResolvedValueOnce([makeWrestler(1)]);
-      mockWrestlersApi.resetAssignments.mockResolvedValue({
+      mockFetchWithAuth.mockResolvedValue({
         clearedWrestlers: 1,
         clearedPlayers: 1,
       });
@@ -168,9 +239,10 @@ describe('ManageWrestlers', () => {
 
       await user.click(screen.getByRole('button', { name: 'Reset All Assignments' }));
 
-      expect(window.confirm).toHaveBeenCalledWith(
-        expect.stringContaining('Reset ALL wrestler assignments?'),
-      );
+      const dialog = await screen.findByRole('dialog');
+      expect(dialog).toHaveTextContent('Reset ALL wrestler assignments?');
+      await confirmReset(user, 'RESET-ALL-ASSIGNMENTS');
+
       await waitFor(() => {
         expect(
           screen.getByText(
@@ -178,12 +250,15 @@ describe('ManageWrestlers', () => {
           ),
         ).toBeInTheDocument();
       });
-      expect(mockWrestlersApi.resetAssignments).toHaveBeenCalledTimes(1);
+      expect(mockFetchWithAuth).toHaveBeenCalledTimes(1);
+      expect(mockFetchWithAuth).toHaveBeenCalledWith(
+        'http://api.test/wrestlers/reset-assignments',
+        { method: 'POST', body: JSON.stringify({ confirm: 'RESET-ALL-ASSIGNMENTS' }) },
+      );
       expect(mockWrestlersApi.getAll).toHaveBeenCalledTimes(2);
     });
 
-    it('does nothing when the confirmation is dismissed', async () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(false);
+    it('does nothing when the dialog is cancelled', async () => {
       mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1)]);
       const user = userEvent.setup();
 
@@ -193,13 +268,32 @@ describe('ManageWrestlers', () => {
       });
 
       await user.click(screen.getByRole('button', { name: 'Reset All Assignments' }));
+      await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancel' }));
 
-      expect(mockWrestlersApi.resetAssignments).not.toHaveBeenCalled();
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(mockFetchWithAuth).not.toHaveBeenCalled();
+    });
+
+    it('keeps the reset disabled until the token is typed exactly', async () => {
+      mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1)]);
+      const user = userEvent.setup();
+
+      render(<ManageWrestlers />);
+      await waitFor(() => {
+        expect(screen.getByText('All Wrestlers (1)')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Reset All Assignments' }));
+      const dialog = await screen.findByRole('dialog');
+      await user.type(within(dialog).getByRole('textbox'), 'reset{Enter}');
+
+      expect(within(dialog).getByRole('button', { name: 'Reset All Assignments' })).toBeDisabled();
+      expect(mockFetchWithAuth).not.toHaveBeenCalled();
     });
 
     it('surfaces an error message when the reset fails', async () => {
       mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1)]);
-      mockWrestlersApi.resetAssignments.mockRejectedValue(
+      mockFetchWithAuth.mockRejectedValue(
         new Error('Failed to reset wrestler assignments'),
       );
       const user = userEvent.setup();
@@ -210,6 +304,7 @@ describe('ManageWrestlers', () => {
       });
 
       await user.click(screen.getByRole('button', { name: 'Reset All Assignments' }));
+      await confirmReset(user, 'RESET-ALL-ASSIGNMENTS');
 
       await waitFor(() => {
         expect(

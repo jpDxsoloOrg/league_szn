@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { HydratedMatchSlot, Player, PlayerBookingInfo } from '../../types';
+import { pickablePlayers } from '../../utils/pickablePlayers';
+import Button from '../ui/Button';
+import Modal from '../ui/Modal';
 import PlayerBookingPicker, { type PickerCheckInStatus } from './PlayerBookingPicker';
 import './SlotEditDialog.css';
 
@@ -112,7 +115,7 @@ export default function SlotEditDialog({
       await onSave(buildPatch());
       onClose();
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Failed to save slot');
+      setErrorMsg(err instanceof Error ? err.message : t('matches.slots.saveError', 'Failed to save slot'));
     } finally {
       setSaving(false);
     }
@@ -125,36 +128,47 @@ export default function SlotEditDialog({
       await onSave({ playerId: null });
       onClose();
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Failed to clear slot');
+      setErrorMsg(err instanceof Error ? err.message : t('matches.slots.clearError', 'Failed to clear slot'));
     } finally {
       setSaving(false);
     }
   };
 
-  return (
-    <div
-      className="slot-edit-dialog-overlay"
-      role="dialog"
-      aria-modal="true"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !saving) onClose();
-      }}
-    >
-      <div className="slot-edit-dialog">
-        <h3>
-          {t('matches.slots.editTitle', {
-            position: slot.position,
-            defaultValue: 'Edit slot {{position}}',
-          })}
-        </h3>
+  const closeUnlessSaving = () => {
+    if (!saving) onClose();
+  };
 
-        <div className="slot-edit-dialog-row">
+  return (
+    <Modal
+      open
+      onClose={closeUnlessSaving}
+      className="slot-edit-dialog"
+      title={t('matches.slots.editTitle', {
+        position: slot.position,
+        defaultValue: 'Edit slot {{position}}',
+      })}
+      footer={(
+        <>
+          <Button className="slot-edit-dialog__clear" variant="ghost" onClick={handleClear} disabled={saving}>
+            {t('matches.slots.editClear', { defaultValue: 'Clear slot' })}
+          </Button>
+          <Button variant="secondary" onClick={onClose} disabled={saving}>
+            {t('common.cancel', { defaultValue: 'Cancel' })}
+          </Button>
+          <Button onClick={handleSave} loading={saving}>
+            {t('common.save', { defaultValue: 'Save' })}
+          </Button>
+        </>
+      )}
+    >
+      <div className="slot-edit-dialog__form">
+        <div className="slot-edit-dialog__row">
           <label htmlFor="slot-edit-player">
             {t('matches.slots.editPlayerLabel', { defaultValue: 'Player' })}
           </label>
           <PlayerBookingPicker
             id="slot-edit-player"
-            players={players}
+            players={pickablePlayers(players, slot.playerId ? [slot.playerId] : [])}
             value={playerId}
             onChange={setPlayerId}
             checkInStatusByPlayerId={checkInStatusByPlayerId}
@@ -165,61 +179,56 @@ export default function SlotEditDialog({
         </div>
 
         {showWrestlerRadio && pickedPlayer && (
-          <div className="slot-edit-dialog-row">
-            <label>
-              {t('matches.slots.editWrestlerLabel', { defaultValue: 'Wrestler' })}
+          <fieldset className="slot-edit-dialog__row slot-edit-dialog__group">
+            <legend>{t('matches.slots.editWrestlerLabel', { defaultValue: 'Wrestler' })}</legend>
+            <label className="slot-edit-dialog__check">
+              <input
+                type="radio"
+                name="slot-edit-wrestler-choice"
+                value="main"
+                checked={wrestlerChoice === 'main'}
+                disabled={saving}
+                onChange={() => setWrestlerChoice('main')}
+              />
+              {t('matches.slots.useMain', {
+                name: pickedPlayer.currentWrestler,
+                defaultValue: `Use main: ${pickedPlayer.currentWrestler}`,
+              })}
             </label>
-            <div className="slot-edit-dialog-wrestler-options">
-              <label className="slot-edit-dialog-checkbox">
-                <input
-                  type="radio"
-                  name="slot-edit-wrestler-choice"
-                  value="main"
-                  checked={wrestlerChoice === 'main'}
-                  disabled={saving}
-                  onChange={() => setWrestlerChoice('main')}
-                />
-                {t('matches.slots.useMain', {
-                  name: pickedPlayer.currentWrestler,
-                  defaultValue: `Use main: ${pickedPlayer.currentWrestler}`,
-                })}
-              </label>
-              <label className="slot-edit-dialog-checkbox">
-                <input
-                  type="radio"
-                  name="slot-edit-wrestler-choice"
-                  value="alternate"
-                  checked={wrestlerChoice === 'alternate'}
-                  disabled={saving}
-                  onChange={() => setWrestlerChoice('alternate')}
-                />
-                {t('matches.slots.useAlternate', {
-                  name: pickedPlayer.alternateWrestler,
-                  defaultValue: `Use alternate: ${pickedPlayer.alternateWrestler}`,
-                })}
-              </label>
-            </div>
-          </div>
+            <label className="slot-edit-dialog__check">
+              <input
+                type="radio"
+                name="slot-edit-wrestler-choice"
+                value="alternate"
+                checked={wrestlerChoice === 'alternate'}
+                disabled={saving}
+                onChange={() => setWrestlerChoice('alternate')}
+              />
+              {t('matches.slots.useAlternate', {
+                name: pickedPlayer.alternateWrestler,
+                defaultValue: `Use alternate: ${pickedPlayer.alternateWrestler}`,
+              })}
+            </label>
+          </fieldset>
         )}
 
-        <div className="slot-edit-dialog-row">
-          <label className="slot-edit-dialog-checkbox">
-            <input
-              type="checkbox"
-              checked={locked}
-              disabled={saving || !playerId}
-              onChange={(e) => setLocked(e.target.checked)}
-            />
-            {t('matches.slots.lockToggle', { defaultValue: 'Lock' })}
-          </label>
-        </div>
+        <label className="slot-edit-dialog__check">
+          <input
+            type="checkbox"
+            checked={locked}
+            disabled={saving || !playerId}
+            onChange={(e) => setLocked(e.target.checked)}
+          />
+          {t('matches.slots.lockToggle', { defaultValue: 'Lock' })}
+        </label>
 
-        <div className="slot-edit-dialog-row">
+        <div className="slot-edit-dialog__row">
           <label htmlFor="slot-edit-team">
             {t('matches.slots.teamLabel', { defaultValue: 'Team label' })}
           </label>
           <input
             id="slot-edit-team"
+            className="slot-edit-dialog__input"
             type="text"
             value={teamLabel}
             onChange={(e) => setTeamLabel(e.target.value)}
@@ -228,22 +237,8 @@ export default function SlotEditDialog({
           />
         </div>
 
-        {errorMsg && <div className="slot-edit-dialog-error">{errorMsg}</div>}
-
-        <div className="slot-edit-dialog-actions">
-          <button type="button" className="slot-edit-dialog-clear" onClick={handleClear} disabled={saving}>
-            {t('matches.slots.editClear', { defaultValue: 'Clear slot' })}
-          </button>
-          <button type="button" className="slot-edit-dialog-cancel" onClick={onClose} disabled={saving}>
-            {t('common.cancel', { defaultValue: 'Cancel' })}
-          </button>
-          <button type="button" className="slot-edit-dialog-save" onClick={handleSave} disabled={saving}>
-            {saving
-              ? t('common.saving', { defaultValue: 'Saving…' })
-              : t('common.save', { defaultValue: 'Save' })}
-          </button>
-        </div>
+        {errorMsg && <p className="slot-edit-dialog__error" role="alert">{errorMsg}</p>}
       </div>
-    </div>
+    </Modal>
   );
 }

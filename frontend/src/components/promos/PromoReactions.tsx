@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ReactionType } from '../../types/promo';
 import './PromoReactions.css';
@@ -21,6 +21,7 @@ const REACTION_LABELS: Record<ReactionType, string> = {
 
 interface PromoReactionsProps {
   reactionCounts: Record<ReactionType, number>;
+  /** Without a handler the counts are read-only, as in the editor preview. */
   onReact?: (reaction: ReactionType) => void;
 }
 
@@ -28,38 +29,46 @@ const REACTION_TYPES: ReactionType[] = ['fire', 'mic', 'trash', 'mind-blown', 'c
 
 export default function PromoReactions({ reactionCounts, onReact }: PromoReactionsProps) {
   const { t } = useTranslation();
-  const [activeReactions, setActiveReactions] = useState<Set<ReactionType>>(new Set());
+  // The API keeps one reaction per user, so a new pick replaces the last one.
+  const [activeReaction, setActiveReaction] = useState<ReactionType | null>(null);
   const [counts, setCounts] = useState<Record<ReactionType, number>>({ ...reactionCounts });
 
+  useEffect(() => {
+    setCounts({ ...reactionCounts });
+  }, [reactionCounts]);
+
   const handleReaction = (reaction: ReactionType) => {
-    setActiveReactions((prev) => {
-      const next = new Set(prev);
-      if (next.has(reaction)) {
-        next.delete(reaction);
-        setCounts((c) => ({ ...c, [reaction]: Math.max(0, c[reaction] - 1) }));
-      } else {
-        next.add(reaction);
-        setCounts((c) => ({ ...c, [reaction]: c[reaction] + 1 }));
-      }
-      return next;
+    const next = activeReaction === reaction ? null : reaction;
+    setCounts((current) => {
+      const updated = { ...current };
+      if (activeReaction) updated[activeReaction] = Math.max(0, updated[activeReaction] - 1);
+      if (next) updated[next] += 1;
+      return updated;
     });
+    setActiveReaction(next);
     onReact?.(reaction);
   };
 
   return (
     <div className="promo-reactions">
-      {REACTION_TYPES.map((reaction) => (
-        <button
-          key={reaction}
-          className={`reaction-btn ${activeReactions.has(reaction) ? 'active' : ''}`}
-          onClick={() => handleReaction(reaction)}
-          title={t(`promos.reactions.${reaction}`, REACTION_LABELS[reaction])}
-          aria-label={REACTION_LABELS[reaction]}
-        >
-          <span className="reaction-emoji">{REACTION_EMOJI[reaction]}</span>
-          <span className="reaction-count">{counts[reaction]}</span>
-        </button>
-      ))}
+      {REACTION_TYPES.map((reaction) => {
+        const label = t(`promos.reactions.${reaction}`, REACTION_LABELS[reaction]);
+        return (
+          <button
+            key={reaction}
+            type="button"
+            className={`reaction-btn ${activeReaction === reaction ? 'active' : ''}`}
+            onClick={() => handleReaction(reaction)}
+            disabled={!onReact}
+            title={label}
+            aria-label={label}
+            aria-pressed={activeReaction === reaction}
+          >
+            <span className="reaction-emoji" aria-hidden="true">{REACTION_EMOJI[reaction]}</span>
+            <span className="reaction-count">{counts[reaction]}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

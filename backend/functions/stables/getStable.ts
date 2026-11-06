@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { isPlayerVisible } from '../../lib/needsWrestler';
 import {
   StableRecord,
   MatchRecord,
@@ -8,10 +9,12 @@ import {
   fetchCompletedMatches,
   buildPlayerToStableMap,
   computeStableMatchResults,
+  isWithinFactionLifetime,
   computeFormAndStreak,
   computeHeadToHead,
   computeMatchTypeRecords,
   computeWinPercentage,
+  tallyRecord,
 } from './computeStableStats';
 
 interface PlayerSummary {
@@ -66,24 +69,27 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Build member list
     const members: PlayerSummary[] = [];
-    let leaderName = '';
+    // Stays undefined when the leader is gone or hidden, so clients show their own fallback.
+    let leaderName: string | undefined;
 
     for (const player of memberResults) {
       if (player) {
-        const summary: PlayerSummary = {
-          playerId: player.playerId,
-          playerName: player.name,
-          wrestlerName: player.currentWrestler,
-          imageUrl: player.imageUrl,
-          psnId: player.psnId,
-          wins: player.wins || 0,
-          losses: player.losses || 0,
-          draws: player.draws || 0,
-        };
-        members.push(summary);
+        if (isPlayerVisible(player)) {
+          const summary: PlayerSummary = {
+            playerId: player.playerId,
+            playerName: player.name,
+            wrestlerName: player.currentWrestler,
+            imageUrl: player.imageUrl,
+            psnId: player.psnId,
+            wins: player.wins || 0,
+            losses: player.losses || 0,
+            draws: player.draws || 0,
+          };
+          members.push(summary);
 
-        if (player.playerId === stable.leaderId) {
-          leaderName = player.name;
+          if (player.playerId === stable.leaderId) {
+            leaderName = player.name;
+          }
         }
       }
     }
@@ -118,33 +124,25 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const matchTypeRecords = computeMatchTypeRecords(matchResults);
 
     // Compute W/L/D from actual match data
-    let computedWins = 0;
-    let computedLosses = 0;
-    let computedDraws = 0;
-    for (const r of matchResults) {
-      if (r.outcome === 'W') computedWins++;
-      else if (r.outcome === 'L') computedLosses++;
-      else computedDraws++;
-    }
+    const record = tallyRecord(matchResults);
 
     const standings = {
-      winPercentage: computeWinPercentage(computedWins, computedLosses, computedDraws),
+      winPercentage: computeWinPercentage(record.wins, record.losses, record.draws),
       recentForm,
       currentStreak,
     };
 
     // Build recent matches (last 10)
     const memberSet = new Set(stable.memberIds || []);
-    const recentMatches = buildRecentMatches(matches, memberSet, 10);
+    const lifetimeMatches = matches.filter((match) => isWithinFactionLifetime(match.date, stableForCompute));
+    const recentMatches = buildRecentMatches(lifetimeMatches, memberSet, 10);
 
     return success({
       ...stable,
       // FAC-22: override the (possibly stale or uninitialized) raw counters
       // with the values we just derived from completed-match outcomes so the
       // Detail hero matches Standings, which also computes from matches.
-      wins: computedWins,
-      losses: computedLosses,
-      draws: computedDraws,
+      ...record,
       members,
       leaderName,
       headToHead,

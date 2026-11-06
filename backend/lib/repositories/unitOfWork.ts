@@ -18,6 +18,18 @@ export interface RecordDelta {
 }
 
 /**
+ * Write-time guard for `updateMatch`. A failed guard fails the whole unit of
+ * work with `ConcurrencyError`. Both kinds also require the match to exist.
+ *
+ * - `notCompleted`: the stored status is not `completed`.
+ * - `unchangedSince`: the stored `updatedAt` still equals the value the caller
+ *   read. Pass `undefined` for a legacy row that has no `updatedAt`.
+ */
+export type MatchWriteCondition =
+  | { kind: 'notCompleted' }
+  | { kind: 'unchangedSince'; updatedAt: string | undefined };
+
+/**
  * A unit of work that stages mutations across multiple aggregates and commits
  * them atomically (within the limits of the underlying store).
  *
@@ -35,7 +47,11 @@ export interface UnitOfWork {
   /** Stage a player field update (SET fields). */
   updatePlayer(playerId: string, patch: Record<string, unknown>): void;
 
-  /** Stage a player record increment/decrement. */
+  /**
+   * Stage a player record increment/decrement. The player must exist or the
+   * whole unit of work fails, so a caller working from stored IDs that may be
+   * stale (such as rolling back an old match) must filter them first.
+   */
   incrementPlayerRecord(playerId: string, delta: RecordDelta): void;
 
   /** Stage a player field removal (REMOVE field, SET updatedAt). */
@@ -74,8 +90,13 @@ export interface UnitOfWork {
   /** Stage a season standing increment/decrement. */
   incrementStanding(seasonId: string, playerId: string, delta: RecordDelta): void;
 
-  /** Stage a match field update. */
-  updateMatch(matchId: string, date: string, patch: Record<string, unknown>): void;
+  /** Stage a match field update, optionally guarded by `condition`. */
+  updateMatch(
+    matchId: string,
+    date: string,
+    patch: Record<string, unknown>,
+    condition?: MatchWriteCondition,
+  ): void;
 
   /**
    * Stage a PUT into the faction-channel messages table.
@@ -139,6 +160,8 @@ export interface UnitOfWork {
   /**
    * Stage assigning a wrestler to a player's primary or alternate slot.
    * Sets `isInUse=true` (string on-disk), `assignedPlayerId`, `assignedSlot`.
+   * Fails with `ConcurrencyError` if the wrestler is missing or held by a
+   * different player at commit time.
    */
   assignWrestlerToPlayer(params: {
     wrestlerId: string;
@@ -149,8 +172,10 @@ export interface UnitOfWork {
   /**
    * Stage releasing a wrestler from its current player assignment.
    * Sets `isInUse=false` (string on-disk), REMOVEs `assignedPlayerId`, `assignedSlot`.
+   * With `expectedPlayerId`, fails with `ConcurrencyError` unless that player
+   * still holds the wrestler at commit time.
    */
-  releaseWrestlerFromPlayer(params: { wrestlerId: string }): void;
+  releaseWrestlerFromPlayer(params: { wrestlerId: string; expectedPlayerId?: string }): void;
 
   /** Flush all staged operations. */
   commit(): Promise<void>;

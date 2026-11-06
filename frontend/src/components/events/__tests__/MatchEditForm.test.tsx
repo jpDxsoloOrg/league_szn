@@ -34,7 +34,7 @@ vi.mock('../../../services/api', () => ({
     getAll: mockGetAllMatches,
     update: mockUpdateMatch,
   },
-  playersApi: { getAll: mockGetAllPlayers },
+  playersApi: { getAllIncludingHidden: mockGetAllPlayers },
   championshipsApi: { getAll: mockGetAllChampionships },
   tournamentsApi: { getAll: mockGetAllTournaments },
   seasonsApi: { getAll: mockGetAllSeasons },
@@ -51,7 +51,6 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('../../admin/ScheduleMatch.css', () => ({}));
 vi.mock('../MatchEditForm.css', () => ({}));
 vi.mock('../../admin/SearchableSelect.css', () => ({}));
 
@@ -148,6 +147,49 @@ describe('MatchEditForm', () => {
     vi.clearAllMocks();
   });
 
+  const hiddenPlayer = {
+    playerId: 'p9', name: 'Newbie', currentWrestler: 'Needs Wrestler',
+    wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+  };
+
+  it('leaves a hidden player who is not on this match out of the list', async () => {
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);
+
+    render(<MatchEditForm matchId="m1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    await screen.findByText('Undertaker', { selector: '.match-edit-form__player-name' });
+    expect(screen.queryByText('Newbie')).not.toBeInTheDocument();
+  });
+
+  it('keeps a hidden player already booked on this match, without tagging them', async () => {
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);
+    mockGetAllMatches.mockResolvedValue([{ ...scheduledMatch, participants: ['p1', 'p9'] }]);
+
+    render(<MatchEditForm matchId="m1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    const row = (await screen.findByText('Newbie')).closest('button')!;
+    expect(row).toHaveAttribute('aria-pressed', 'true');
+    expect(row).not.toHaveTextContent('Hidden');
+    expect(row).not.toHaveTextContent('Needs Wrestler');
+  });
+
+  it('saves a booked hidden player back onto the match', async () => {
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);
+    mockGetAllMatches.mockResolvedValue([{ ...scheduledMatch, participants: ['p1', 'p9'] }]);
+    mockUpdateMatch.mockResolvedValue({});
+
+    render(<MatchEditForm matchId="m1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    await screen.findByText('Newbie');
+    await userEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+
+    await waitFor(() => expect(mockUpdateMatch).toHaveBeenCalledTimes(1));
+    expect(mockUpdateMatch.mock.calls[0]![1]).toMatchObject({ participants: ['p1', 'p9'] });
+  });
+
   it('loads existing match data into form fields', async () => {
     setupDefaultMocks();
 
@@ -168,6 +210,39 @@ describe('MatchEditForm', () => {
 
     // Selected count reflects the 2 pre-filled participants
     expect(screen.getByText(/scheduleMatch.selected: 2/)).toBeInTheDocument();
+  });
+
+  it('selects the match type a differently spelled stored format belongs to, and saves without re-picking anyone', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    mockGetAllMatchTypes.mockResolvedValue([
+      { matchTypeId: 'mt1', name: 'Single', createdAt: '', updatedAt: '' },
+      { matchTypeId: 'mt2', name: 'Tag Team', createdAt: '', updatedAt: '' },
+    ]);
+    mockUpdateMatch.mockResolvedValue({ ...scheduledMatch });
+    const onSuccess = vi.fn();
+
+    render(<MatchEditForm matchId="m1" onSuccess={onSuccess} onCancel={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toHaveValue('Single'));
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }));
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+    const [, payload] = mockUpdateMatch.mock.calls[0];
+    expect(payload.matchFormat).toBe('Single');
+    expect(payload.participants).toEqual(['p1', 'p2']);
+  });
+
+  it('prefers the exact match type when two are spelled alike', async () => {
+    setupDefaultMocks();
+    mockGetAllMatchTypes.mockResolvedValue([
+      { matchTypeId: 'mt1', name: 'Single', createdAt: '', updatedAt: '' },
+      { matchTypeId: 'mt2', name: 'singles', createdAt: '', updatedAt: '' },
+    ]);
+
+    render(<MatchEditForm matchId="m1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toHaveValue('singles'));
   });
 
   it('submits with changed format calls matchesApi.update', async () => {

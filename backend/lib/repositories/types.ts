@@ -136,6 +136,12 @@ export interface Player {
    *               cannot blank the roster before the backfill has run.
    */
   hasWrestlerRole?: boolean;
+  /**
+   * Set when the player is deleted. The row stays so history keeps the name,
+   * but it reads as missing through every repository method except the
+   * `...WithDeleted` name lookups.
+   */
+  deletedAt?: string;
   name: string;
   currentWrestler: string;
   alternateWrestler?: string;
@@ -191,6 +197,8 @@ export interface Challenge {
   responseMessage?: string;
   counteredChallengeId?: string;
   matchId?: string;
+  /** The call-out promo this challenge came from. */
+  promoId?: string;
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamId?: string;
   challengedTagTeamId?: string;
@@ -406,6 +414,8 @@ export interface Promo {
   targetPromoId?: string;
   matchId?: string;
   championshipId?: string;
+  /** The challenge this call-out produced. Older call-outs don't have one. */
+  challengeId?: string;
   imageUrl?: string;
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamName?: string;
@@ -436,6 +446,7 @@ export interface ContenderRanking {
   previousRank?: number | null;
   peakRank?: number;
   weeksAtTop?: number;
+  lastTopWeek?: string;
   isOverridden?: boolean;
   overrideType?: string | null;
   organicRank?: number | null;
@@ -566,11 +577,15 @@ export interface Match {
   losers?: string[];
   isDraw?: boolean;
   isChampionship?: boolean;
+  /** Set when a championship result is recorded: true when the champion retained. */
+  isTitleDefense?: boolean;
   championshipId?: string;
   tournamentId?: string;
   seasonId?: string;
   eventId?: string;
   /** Optional pointer to the rivalry this match advances (RIV-06). */
+  /** The challenge this match was booked from. */
+  challengeId?: string;
   rivalryId?: string;
   status: MatchStatus;
   slots?: MatchSlot[];
@@ -603,6 +618,7 @@ export interface Championship {
   name: string;
   type: 'singles' | 'tag';
   currentChampion?: string | string[];
+  divisionId?: string;
   imageUrl?: string;
   isActive?: boolean;
   defenses?: number;

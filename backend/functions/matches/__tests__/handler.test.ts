@@ -30,7 +30,9 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     queryStringParameters: null,
     multiValueQueryStringParameters: null,
     stageVariables: null,
-    requestContext: {} as APIGatewayProxyEvent['requestContext'],
+    requestContext: {
+      authorizer: { principalId: 'admin-sub', groups: 'Admin' },
+    } as unknown as APIGatewayProxyEvent['requestContext'],
     resource: '/matches',
     ...overrides,
   };

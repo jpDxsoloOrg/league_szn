@@ -30,7 +30,14 @@ vi.mock('react-i18next', () => ({
         'standings.noPlayers': 'No players found.',
         'standings.season': 'Season',
         'standings.allTime': 'All Time',
-        'standings.showingFor': 'Showing for',
+        'standings.record': 'Record',
+        'standings.emptyTitle': 'No standings yet',
+        'standings.noMatchesTitle': 'No wrestlers match',
+        'standings.topThree': 'Top three',
+        'standings.restOfTable': 'The chase pack',
+        'standings.alignment.label': 'Alignment',
+        'standings.alignment.all': 'All alignments',
+        'standings.alignment.heel': 'Heel',
         'standings.filterByDivision': 'Filter by Division',
         'standings.noDivision': 'No Division',
         'standings.table.rank': 'Rank',
@@ -57,6 +64,9 @@ vi.mock('react-i18next', () => ({
     },
   }),
 }));
+
+const mockMobile = vi.hoisted(() => ({ value: false }));
+vi.mock('../../hooks/useIsMobile', () => ({ useIsMobile: () => mockMobile.value }));
 
 vi.mock('../Standings.css', () => ({}));
 vi.mock('../PlayerHoverCard.css', () => ({}));
@@ -107,6 +117,34 @@ const mockPlayers = [
   },
 ];
 
+const chasePack = [
+  {
+    playerId: 'p4',
+    name: 'Stone Cold',
+    currentWrestler: 'The Rattlesnake',
+    wins: 10,
+    losses: 5,
+    draws: 5,
+    divisionId: 'div1',
+    alignment: 'heel' as const,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-06-01',
+  },
+  {
+    playerId: 'p5',
+    name: 'Mankind',
+    currentWrestler: 'Mick Foley',
+    wins: 5,
+    losses: 15,
+    draws: 0,
+    divisionId: 'div2',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-06-01',
+  },
+];
+
+const allPlayers = [...mockPlayers, ...chasePack];
+
 const mockSeasons = [
   {
     seasonId: 's1',
@@ -134,179 +172,283 @@ const mockDivisions = [
 describe('Standings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it('renders standings table with W-L-D, win percentage, and player info', async () => {
-    mockGetStandings.mockResolvedValue({
-      players: mockPlayers,
-      sortedByWins: true,
-    });
+    mockMobile.value = false;
     mockGetAllSeasons.mockResolvedValue(mockSeasons);
     mockGetAllDivisions.mockResolvedValue(mockDivisions);
+    mockGetStandings.mockResolvedValue({ players: allPlayers, sortedByWins: true });
+  });
 
+  it('puts the top three on the podium and the rest in a six column table', async () => {
     renderStandings();
 
-    await waitFor(() => {
-      expect(screen.getByText('Standings')).toBeInTheDocument();
-    });
-
-    // Table headers
-    expect(screen.getByText('Rank')).toBeInTheDocument();
-    expect(screen.getByText('Player')).toBeInTheDocument();
-    expect(screen.getByText('Wrestler')).toBeInTheDocument();
-    expect(screen.getByText('W')).toBeInTheDocument();
-    expect(screen.getByText('L')).toBeInTheDocument();
-    expect(screen.getByText('D')).toBeInTheDocument();
-    expect(screen.getByText('Win %')).toBeInTheDocument();
-
-    // Player data
-    expect(screen.getByText('John Cena')).toBeInTheDocument();
-    expect(screen.getByText('The Champ')).toBeInTheDocument();
-    expect(screen.getByText('The Rock')).toBeInTheDocument();
-    expect(screen.getByText('The Great One')).toBeInTheDocument();
-
-    // Win percentages
+    const podium = await screen.findByRole('list', { name: 'Top three' });
+    expect(within(podium).getAllByRole('listitem')).toHaveLength(3);
+    expect(within(podium).getByText('John Cena')).toBeInTheDocument();
+    expect(within(podium).getByText('25 - 10 - 3')).toBeInTheDocument();
     // 25/(25+10+3) = 65.8%
-    expect(screen.getByText('65.8%')).toBeInTheDocument();
-    // 20/(20+12+1) = 60.6%
-    expect(screen.getByText('60.6%')).toBeInTheDocument();
-    // 18/(18+5+0) = 78.3%
-    expect(screen.getByText('78.3%')).toBeInTheDocument();
+    expect(within(podium).getByText('65.8%')).toBeInTheDocument();
 
-    // Division column shown when "all" selected (default)
-    expect(screen.getByText('Division')).toBeInTheDocument();
-    // "Raw" and "SmackDown" appear in both filter buttons AND table cells,
-    // so verify they exist at least once
-    expect(screen.getAllByText('Raw').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('SmackDown').length).toBeGreaterThanOrEqual(1);
-    // Last 5 (form) and Streak columns
-    expect(screen.getByText('Last 5')).toBeInTheDocument();
-    expect(screen.getByText('Streak')).toBeInTheDocument();
+    const table = screen.getByRole('table');
+    expect(within(table).getAllByRole('columnheader')).toHaveLength(6);
+    expect(within(table).queryByText('John Cena')).not.toBeInTheDocument();
+    expect(within(table).getByText('#4')).toBeInTheDocument();
+    expect(within(table).getByText('The Rattlesnake')).toBeInTheDocument();
+    expect(within(table).getByText('10 - 5 - 5')).toBeInTheDocument();
+    expect(within(table).getByText('50.0%')).toBeInTheDocument();
   });
 
-  it('renders player names as links to stats page', async () => {
+  it('links players to their profile', async () => {
+    renderStandings();
+
+    const link = await screen.findByRole('link', { name: 'Stone Cold' });
+    expect(link).toHaveAttribute('href', '/player/p4');
+    expect(screen.getByRole('link', { name: /John Cena/ })).toHaveAttribute('href', '/player/p1');
+  });
+
+  it('shows form oldest to newest and the current streak', async () => {
     mockGetStandings.mockResolvedValue({
-      players: mockPlayers,
+      players: [
+        ...mockPlayers,
+        { ...chasePack[0], recentForm: ['L', 'W', 'W', 'W', 'W'], currentStreak: { type: 'L', count: 1 } },
+      ],
       sortedByWins: true,
     });
-    mockGetAllSeasons.mockResolvedValue(mockSeasons);
-    mockGetAllDivisions.mockResolvedValue(mockDivisions);
 
     renderStandings();
 
-    await waitFor(() => {
-      expect(screen.getByText('John Cena')).toBeInTheDocument();
-    });
-
-    const link = screen.getByRole('link', { name: 'John Cena' });
-    expect(link).toHaveAttribute('href', '/player/p1');
+    const table = await screen.findByRole('table');
+    expect(within(table).getByTitle('Loss Streak')).toHaveTextContent('L1');
+    const dots = within(table).getByRole('img', { name: /ui\.formDots\.label/ });
+    // API order is newest first, so the newest loss must land last.
+    expect(dots.lastElementChild).toHaveClass('ui-form-dots__dot--l');
   });
 
-  it('renders form dots and streak badge when data present', async () => {
-    const playersWithForm = [
-      {
-        ...mockPlayers[0],
-        recentForm: ['W', 'W', 'L', 'W', 'W'] as const,
-        currentStreak: { type: 'W' as const, count: 5 },
-      },
-    ];
+  it('renders a dash when a player has no form or streak', async () => {
+    renderStandings();
+
+    const table = await screen.findByRole('table');
+    expect(within(table).getAllByText('-').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('shows a dash for the win rate of a player with no matches', async () => {
     mockGetStandings.mockResolvedValue({
-      players: playersWithForm,
+      players: [{ ...chasePack[0], wins: 0, losses: 0, draws: 0 }],
       sortedByWins: true,
     });
-    mockGetAllSeasons.mockResolvedValue([]);
-    mockGetAllDivisions.mockResolvedValue(mockDivisions);
+    renderStandings();
+
+    const table = await screen.findByRole('table');
+    expect(within(table).queryByText('0.0%')).not.toBeInTheDocument();
+  });
+
+  it('skips the podium while nobody has played', async () => {
+    mockGetStandings.mockResolvedValue({
+      players: mockPlayers.map((player) => ({ ...player, wins: 0, losses: 0, draws: 0 })),
+      sortedByWins: true,
+    });
 
     renderStandings();
 
-    await waitFor(() => {
-      expect(screen.getByText('John Cena')).toBeInTheDocument();
-    });
-
-    // Streak badge shows for 3+ wins
-    expect(screen.getByTitle('Win Streak')).toBeInTheDocument();
-    expect(screen.getByText(/5W/)).toBeInTheDocument();
+    const table = await screen.findByRole('table');
+    expect(screen.queryByRole('list', { name: 'Top three' })).not.toBeInTheDocument();
+    expect(within(table).getByText('#1')).toBeInTheDocument();
   });
 
-  it('renders dash when no recentForm', async () => {
+  it('gives medals only to players who have wrestled and keeps ranks in step with the table', async () => {
     mockGetStandings.mockResolvedValue({
-      players: mockPlayers,
       sortedByWins: true,
+      // The API order, which puts 0-0-0 above 0-2-0.
+      players: [
+        { ...mockPlayers[0], wins: 3, losses: 0, draws: 0 },
+        { ...chasePack[0], wins: 2, losses: 0, draws: 0 },
+        { ...mockPlayers[1], wins: 0, losses: 0, draws: 0, recentForm: ['W'], currentStreak: { type: 'W', count: 1 } },
+        { ...mockPlayers[2], wins: 0, losses: 2, draws: 0 },
+      ],
     });
-    mockGetAllSeasons.mockResolvedValue([]);
-    mockGetAllDivisions.mockResolvedValue(mockDivisions);
 
     renderStandings();
 
-    await waitFor(() => {
-      expect(screen.getByText('John Cena')).toBeInTheDocument();
-    });
+    const podium = await screen.findByRole('list', { name: 'Top three' });
+    expect(within(podium).getByText('John Cena')).toBeInTheDocument();
+    expect(within(podium).getByText('Stone Cold')).toBeInTheDocument();
+    expect(within(podium).getByText('Undertaker')).toBeInTheDocument();
+    expect(within(podium).queryByText('The Rock')).not.toBeInTheDocument();
 
-    // Form column shows dashes when no recentForm (multiple "-" in table)
-    const formCells = screen.getAllByText('-');
-    expect(formCells.length).toBeGreaterThanOrEqual(1);
+    const table = screen.getByRole('table');
+    expect(within(table).getByText('#4')).toBeInTheDocument();
+    expect(within(table).getByText('The Rock')).toBeInTheDocument();
+    // Nothing recorded in this scope, so form from elsewhere stays out of the row.
+    expect(within(table).queryByText('W1')).not.toBeInTheDocument();
   });
 
-  it('filters standings by season when season selector is changed', async () => {
+  it('skips the podium until three players have wrestled, so the table starts at #1', async () => {
     mockGetStandings.mockResolvedValue({
-      players: mockPlayers,
       sortedByWins: true,
+      players: [
+        { ...mockPlayers[0], wins: 3, losses: 0, draws: 0 },
+        { ...mockPlayers[1], wins: 1, losses: 2, draws: 0 },
+        { ...mockPlayers[2], wins: 0, losses: 0, draws: 0 },
+      ],
     });
-    mockGetAllSeasons.mockResolvedValue(mockSeasons);
-    mockGetAllDivisions.mockResolvedValue(mockDivisions);
 
+    renderStandings();
+
+    const table = await screen.findByRole('table');
+    expect(screen.queryByRole('list', { name: 'Top three' })).not.toBeInTheDocument();
+    expect(screen.queryByText('The chase pack')).not.toBeInTheDocument();
+    expect(within(table).getByText('#1')).toBeInTheDocument();
+    expect(within(table).getByText('John Cena')).toBeInTheDocument();
+  });
+
+  it('shows the win rate on the phone rows', async () => {
+    mockMobile.value = true;
+
+    renderStandings();
+
+    const link = await screen.findByRole('link', { name: /Stone Cold/ });
+    expect(link).toHaveTextContent('50.0%');
+  });
+
+  it('uses a row list instead of the table on phones', async () => {
+    mockMobile.value = true;
+
+    renderStandings();
+
+    const link = await screen.findByRole('link', { name: /Stone Cold/ });
+    expect(link).toHaveAttribute('href', '/player/p4');
+    expect(link).toHaveTextContent('10 - 5 - 5');
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
+  it('defaults to the active season and reloads when the season changes', async () => {
     const user = userEvent.setup();
-
     renderStandings();
 
+    const seasonSelect = await screen.findByRole('combobox', { name: 'Season' });
+    expect(seasonSelect).toHaveTextContent('Season 2 (Active)');
     await waitFor(() => {
-      expect(screen.getByText('Standings')).toBeInTheDocument();
+      expect(mockGetStandings).toHaveBeenCalledWith('s2', expect.any(AbortSignal));
     });
 
-    // Season selector present with seasons
-    const seasonSelect = screen.getByLabelText('Season:');
-    expect(seasonSelect).toBeInTheDocument();
+    await user.click(seasonSelect);
+    expect(await screen.findByRole('option', { name: 'All Time' })).toBeInTheDocument();
+    await user.click(screen.getByRole('option', { name: 'Season 1' }));
 
-    // Should have All Time + 2 seasons (scoped to season select to avoid DivisionFilter options)
-    const seasonOptions = within(seasonSelect).getAllByRole('option');
-    expect(seasonOptions).toHaveLength(3);
-    expect(seasonOptions[0]).toHaveTextContent('All Time');
-    expect(seasonOptions[1]).toHaveTextContent('Season 1');
-    expect(seasonOptions[2]).toHaveTextContent('Season 2 (Active)');
-
-    // Active season (s2) is selected by default; switch to Season 1
-    mockGetStandings.mockResolvedValue({
-      players: [mockPlayers[0]],
-      seasonId: 's1',
-      sortedByWins: true,
-    });
-
-    await user.selectOptions(seasonSelect, 's1');
-
-    // Verify the API was called with the season ID
     await waitFor(() => {
       expect(mockGetStandings).toHaveBeenCalledWith('s1', expect.any(AbortSignal));
     });
+    expect(await screen.findByText('Season 1', { selector: '.page-header__eyebrow' })).toBeInTheDocument();
+  });
 
-    // Season badge appears
-    await waitFor(() => {
-      expect(screen.getByText(/Showing for/)).toBeInTheDocument();
+  it('filters by division and re-ranks from one', async () => {
+    const user = userEvent.setup();
+    renderStandings();
+
+    await user.click(await screen.findByRole('button', { name: 'SmackDown' }));
+
+    expect(screen.getByRole('button', { name: 'SmackDown' })).toHaveAttribute('aria-pressed', 'true');
+    const table = screen.getByRole('table');
+    expect(within(table).getByText('#1')).toBeInTheDocument();
+    expect(within(table).getByText('The Rock')).toBeInTheDocument();
+    expect(within(table).getByText('Mankind')).toBeInTheDocument();
+    expect(screen.queryByText('John Cena')).not.toBeInTheDocument();
+  });
+
+  describe('with more players than one page', () => {
+    // 120 played players, best record first, plus one unbeaten player far down the list.
+    const longTable = Array.from({ length: 120 }, (_, index) => ({
+      ...chasePack[0],
+      playerId: `long-${index}`,
+      name: `Player ${index + 1}`,
+      wins: 200 - index,
+      losses: index === 110 ? 0 : 50,
+      draws: 0,
+      divisionId: index % 2 === 0 ? 'div1' : 'div2',
+    }));
+
+    beforeEach(() => {
+      mockGetAllSeasons.mockResolvedValue([]);
+      mockGetAllDivisions.mockResolvedValue(mockDivisions);
+      mockGetStandings.mockResolvedValue({ players: longTable, sortedByWins: true });
+    });
+
+    const showMoreButton = () => screen.findByRole('button', { name: 'common.showMore' });
+    const tableRows = () => within(screen.getByRole('table')).getAllByRole('row').slice(1);
+
+    it('caps the table and keeps true ranks as more rows are shown', async () => {
+      const user = userEvent.setup();
+      renderStandings();
+
+      await user.click(await showMoreButton());
+
+      expect(tableRows()).toHaveLength(100);
+      expect(within(tableRows()[0]).getByText('#4')).toBeInTheDocument();
+      expect(within(tableRows()[99]).getByText('#103')).toBeInTheDocument();
+
+      await user.click(await showMoreButton());
+
+      expect(tableRows()).toHaveLength(117);
+      expect(within(tableRows()[116]).getByText('#120')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'common.showMore' })).not.toBeInTheDocument();
+    });
+
+    it('caps the phone list too', async () => {
+      mockMobile.value = true;
+      const user = userEvent.setup();
+      renderStandings();
+
+      await user.click(await showMoreButton());
+
+      const rows = within(document.querySelector('.standings-list') as HTMLElement).getAllByRole('listitem');
+      expect(rows).toHaveLength(100);
+      expect(within(rows[99]).getByText('#103')).toBeInTheDocument();
+    });
+
+    it('goes back to one page when a filter changes', async () => {
+      const user = userEvent.setup();
+      renderStandings();
+      await user.click(await showMoreButton());
+      expect(tableRows()).toHaveLength(100);
+
+      await user.click(screen.getByRole('button', { name: 'SmackDown' }));
+
+      expect(tableRows()).toHaveLength(50);
+      expect(within(tableRows()[0]).getByText('#4')).toBeInTheDocument();
+    });
+
+    it('sorts every row, not just the rows on screen', async () => {
+      const user = userEvent.setup();
+      renderStandings();
+      await showMoreButton();
+
+      await user.click(screen.getByRole('button', { name: 'Win %' }));
+      await user.click(screen.getByRole('button', { name: 'Win %' }));
+
+      expect(tableRows()).toHaveLength(50);
+      expect(within(tableRows()[0]).getByText('Player 111')).toBeInTheDocument();
+      expect(within(tableRows()[0]).getByText('#111')).toBeInTheDocument();
     });
   });
 
+  it('keeps the filters on screen when nothing matches them', async () => {
+    const user = userEvent.setup();
+    mockGetStandings.mockResolvedValue({ players: mockPlayers, sortedByWins: true });
+    renderStandings();
+
+    await user.click(await screen.findByRole('combobox', { name: 'Alignment' }));
+    await user.click(await screen.findByRole('option', { name: 'Heel' }));
+
+    expect(await screen.findByText('No wrestlers match')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Season' })).toBeInTheDocument();
+  });
+
   it('shows empty state when no players exist', async () => {
-    mockGetStandings.mockResolvedValue({
-      players: [],
-      sortedByWins: true,
-    });
-    mockGetAllSeasons.mockResolvedValue([]);
-    mockGetAllDivisions.mockResolvedValue([]);
+    mockGetStandings.mockResolvedValue({ players: [], sortedByWins: true });
 
     renderStandings();
 
-    await waitFor(() => {
-      expect(screen.getByText('No players found.')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('No players found.')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Season' })).toBeInTheDocument();
   });
 
   it('shows error state with retry button when API fails', async () => {
@@ -316,25 +458,14 @@ describe('Standings', () => {
 
     renderStandings();
 
-    await waitFor(() => {
-      expect(screen.getByText(/Error/)).toBeInTheDocument();
-      expect(screen.getByText(/Server down/)).toBeInTheDocument();
-    });
+    expect(await screen.findByText(/Server down/)).toBeInTheDocument();
 
-    // Retry button present
-    const retryBtn = screen.getByText('Retry');
-    expect(retryBtn).toBeInTheDocument();
-
-    // Click retry triggers re-fetch
-    mockGetStandings.mockResolvedValue({
-      players: mockPlayers,
-      sortedByWins: true,
-    });
-
-    await userEvent.click(retryBtn);
+    mockGetStandings.mockResolvedValue({ players: mockPlayers, sortedByWins: true });
+    await userEvent.click(screen.getByText('Retry'));
 
     await waitFor(() => {
       expect(mockGetStandings).toHaveBeenCalledTimes(2);
     });
+    expect(await screen.findByRole('list', { name: 'Top three' })).toBeInTheDocument();
   });
 });

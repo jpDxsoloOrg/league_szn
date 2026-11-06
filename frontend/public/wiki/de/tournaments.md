@@ -1,29 +1,33 @@
-# Turniere-Seite
+# Turniere
 
-Turnierbäume und Tabellen für laufende und abgeschlossene Turniere verfolgen.
+Verfolge Turnierbäume und Tabellen laufender und abgeschlossener Turniere. Du findest sie im Bereich **Events**.
 
-## Turniertypen
+## Turnierarten
 
-Die Liga unterstützt zwei Turnierformate:
+Die Liga kennt zwei Turnierformate:
 
 ### K.-o.-System
 
-- Klassisches Turnier im K.-o.-Stil
-- Nach einer Niederlage scheiden Sie aus
-- Sieger rücken in die nächste Runde vor
-- Der Letzte gewinnt das Turnier
+- Klassisches Turnier mit Turnierbaum
+- Wer verliert, scheidet aus
+- Gewinner ziehen in die nächste Runde ein, sobald das Ergebnis eingetragen ist
+- Diese Matches können nicht unentschieden enden
+- Wer als Letzter übrig bleibt, gewinnt das Turnier
 
 ### Jeder gegen Jeden (G1-Climax-Stil)
 
-- Jeder Teilnehmer spielt gegen jeden anderen
+- Jeder Teilnehmer tritt gegen jeden anderen an
 - Punkte: Sieg = 2, Unentschieden = 1, Niederlage = 0
-- Der Spieler mit den meisten Punkten am Ende gewinnt
+- Wer am Ende die meisten Punkte hat, gewinnt
+- Bei Gleichstand entscheidet die Zahl der Siege, danach die Zahl der Siege in den Matches zwischen den punktgleichen Spielern
 
 ## Turnier-Informationen
 
-Jede Turnier-Karte zeigt:
+Jede Turnierkarte zeigt:
 
-- Turniername und -typ
+- Name und Art des Turniers
 - Status (Bevorstehend, Laufend oder Abgeschlossen)
 - Anzahl der Teilnehmer
-- Aktuellen Turnierbaum bzw. Tabelle
+- Den Gewinner, sobald er feststeht
+
+Mit **Details anzeigen** siehst du Turnierbaum oder Tabelle und die vollständige Teilnehmerliste.

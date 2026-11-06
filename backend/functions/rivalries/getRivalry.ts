@@ -1,8 +1,13 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
+import { matchWinners } from '../../lib/matchResult';
+import { toPublicRivalry, withDisplayableBooker } from '../../lib/publicRivalry';
+import { maskSystemMessageIds } from '../../lib/reviewerName';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { authenticate } from '../../lib/authenticate';
 import { getAuthContext, hasRole } from '../../lib/auth';
+import { findHiddenPlayerIds } from '../../lib/needsWrestler';
+import { isPromoArchived } from '../../lib/promoArchive';
 import type {
   Rivalry,
   RivalryMessage,
@@ -91,13 +96,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const noteVisibility = computeAllowedVisibility(isAdmin, callerIsParticipant);
 
     // Run independent fetches in parallel.
-    const [allMatches, perPlayerPromos, upcomingEvents, messagesPage, allNotes] =
+    const [allMatches, perPlayerPromos, upcomingEvents, messagesPage, allNotes, hiddenAuthorIds] =
       await Promise.all([
         matches.list(),
         Promise.all(participantIds.map((pid) => promos.listByPlayer(pid))),
         events.listByStatus('upcoming'),
         rivalryMessages.list(rivalryId, { limit: MAX_MESSAGES * 4 }),
         rivalryNotes.listByRivalry(rivalryId),
+        findHiddenPlayerIds(participantIds, (playerId) => players.findById(playerId)),
       ]);
 
     const headToHead = computeHeadToHead(allMatches, participantIds, {
@@ -109,8 +115,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       endedAt: rivalry.endedAt,
     });
 
+    const now = Date.now();
     const recentPromos = perPlayerPromos
       .flat()
+      .filter((p) => !p.isHidden && !isPromoArchived(p, now) && !hiddenAuthorIds.has(p.playerId))
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
       .slice(0, MAX_PROMOS)
       .map((p) => ({
@@ -125,12 +133,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const recentMessages = messagesPage.items
       .filter((m) => messageAudience.has(m.audience))
-      .slice(0, MAX_MESSAGES);
+      .slice(0, MAX_MESSAGES)
+      .map(maskSystemMessageIds);
 
     const notes = allNotes.filter((n) => noteVisibility.has(n.visibility));
 
     const payload: HydratedRivalry = {
-      rivalry: sanitizeRivalry(rivalry, isAdmin),
+      rivalry: isAdmin ? withDisplayableBooker(rivalry) : toPublicRivalry(rivalry),
       headToHead,
       nextEvent,
       recentPromos,
@@ -161,13 +170,6 @@ function computeAllowedVisibility(
   if (isAdmin) return new Set(['all', 'participants', 'admins']);
   if (isParticipant) return new Set(['all', 'participants']);
   return new Set(['all']);
-}
-
-function sanitizeRivalry(r: Rivalry, isAdmin: boolean): Rivalry {
-  if (isAdmin) return r;
-  const { moderationNote, ...rest } = r;
-  void moderationNote;
-  return rest as Rivalry;
 }
 
 interface MatchLite {
@@ -221,14 +223,14 @@ function computeHeadToHead(
   const sorted = [...completed].sort((a, b) => (a.date < b.date ? 1 : -1));
   for (const m of sorted) {
     if (m.isChampionship) championshipMatches++;
-    if (m.isDraw) {
+    // Same rule as lib/headToHead: only a win over the other rivals counts. A
+    // win they shared, or one by an outsider, leaves them level.
+    const rivalWinners = matchWinners(m).filter((winner) => set.has(winner));
+    if (rivalWinners.length === 1) {
+      const [winner] = rivalWinners;
+      winsByParticipant[winner] = (winsByParticipant[winner] ?? 0) + 1;
+    } else {
       draws++;
-    } else if (m.winners && m.winners.length > 0) {
-      for (const w of m.winners) {
-        if (set.has(w)) {
-          winsByParticipant[w] = (winsByParticipant[w] ?? 0) + 1;
-        }
-      }
     }
     if (!lastMatchDate || m.date > lastMatchDate) lastMatchDate = m.date;
   }

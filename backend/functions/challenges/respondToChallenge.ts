@@ -1,8 +1,12 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError, forbidden } from '../../lib/response';
+import { parseBody } from '../../lib/parseBody';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { v4 as uuidv4 } from 'uuid';
+import { challengeExpiresAt, isChallengeExpired } from '../../lib/challengeExpiry';
+import { CHAMPIONSHIP_NOT_FOUND_MESSAGE, challengeTitleFitError, titleAvailabilityError } from '../../lib/challengeTitle';
+import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
 
 type ChallengeAction = 'accept' | 'decline' | 'counter';
 
@@ -18,30 +22,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('challengeId is required');
     }
 
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    let body;
-    try {
-      body = JSON.parse(event.body);
-    } catch {
-      return badRequest('Invalid JSON in request body');
-    }
-
-    const { action, responseMessage, counterMatchType, counterStipulation, counterMessage } = body as {
+    const { data: body, error: parseError } = parseBody<{
       action: ChallengeAction;
       responseMessage?: string;
       counterMatchType?: string;
       counterStipulation?: string;
       counterMessage?: string;
-    };
+    }>(event);
+    if (parseError) return parseError;
+
+    const { action, responseMessage, counterMatchType, counterStipulation, counterMessage } = body;
 
     if (!action || !['accept', 'decline', 'counter'].includes(action)) {
       return badRequest('action must be accept, decline, or counter');
     }
 
-    const { user: { challenges }, roster: { players, tagTeams } } = getRepositories();
+    const { user: { challenges }, roster: { players, tagTeams }, competition: { championships } } = getRepositories();
 
     // Get the challenge via repo
     const challenge = await challenges.findById(challengeId);
@@ -75,6 +71,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
+    if (isChallengeExpired(challenge)) {
+      return badRequest('Challenge expired');
+    }
+
     const now = new Date().toISOString();
 
     if (action === 'accept' || action === 'decline') {
@@ -92,9 +92,43 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('counterMatchType is required when countering');
     }
 
+    // A counter is a new challenge aimed at the original challenger, so both
+    // ends follow the same rule as createChallenge. Accepting or declining
+    // stays open, because neither one issues anything.
+    if (!isPlayerVisible(responderPlayer)) {
+      return badRequest(SET_WRESTLER_NAME_MESSAGE);
+    }
+
+    const counterTarget = await players.findById(challenge.challengerId);
+    if (counterTarget && !isPlayerVisible(counterTarget)) {
+      return badRequest(TARGET_NEEDS_WRESTLER_MESSAGE);
+    }
+
+    // A counter changes the terms, not the stakes, so a title stays on the line
+    // and the new match type has to suit it.
+    if (challenge.championshipId) {
+      const championship = await championships.findById(challenge.championshipId);
+      if (!championship) return badRequest(CHAMPIONSHIP_NOT_FOUND_MESSAGE);
+
+      const isTagChallenge = challenge.challengeMode === 'tag_team';
+      const teams = isTagChallenge
+        ? await Promise.all([challenge.challengerTagTeamId, challenge.challengedTagTeamId].map((id) => (id ? tagTeams.findById(id) : null)))
+        : [];
+      const sides = isTagChallenge
+        ? await Promise.all(teams.map(async (team) => {
+          const members = await Promise.all((team ? [team.player1Id, team.player2Id] : []).map((id) => players.findById(id)));
+          return members.filter((member) => member !== null);
+        }))
+        : [[responderPlayer], counterTarget ? [counterTarget] : []];
+      const titleError = titleAvailabilityError(championship) ?? challengeTitleFitError(championship, {
+        challengeMode: challenge.challengeMode,
+        matchType: counterMatchType,
+        sides,
+      });
+      if (titleError) return badRequest(titleError);
+    }
+
     const counterChallengeId = uuidv4();
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
 
     const counterChallenge: Record<string, unknown> = {
       challengeId: counterChallengeId,
@@ -102,7 +136,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       challengedId: challenge.challengerId,
       matchType: counterMatchType,
       status: 'pending',
-      expiresAt: expiresAt.toISOString(),
+      expiresAt: challengeExpiresAt(),
       createdAt: now,
       updatedAt: now,
     };
@@ -111,6 +145,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       counterChallenge.challengerTagTeamId = challenge.challengedTagTeamId;
       counterChallenge.challengedTagTeamId = challenge.challengerTagTeamId;
     }
+    if (challenge.championshipId) counterChallenge.championshipId = challenge.championshipId;
+    if (challenge.promoId) counterChallenge.promoId = challenge.promoId;
     if (counterStipulation) counterChallenge.stipulation = counterStipulation;
     if (counterMessage) counterChallenge.message = counterMessage;
 

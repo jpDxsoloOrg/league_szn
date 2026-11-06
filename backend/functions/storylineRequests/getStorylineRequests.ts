@@ -3,6 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import type { StorylineRequest, StorylineRequestStatus } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
+import { createReviewerNameLookup } from '../../lib/reviewerName';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Admin', 'Moderator');
@@ -34,8 +35,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         .map((p) => [p.playerId, p.name])
     );
 
+    const reviewerName = createReviewerNameLookup(allPlayers);
+
+    // reviewedBy is display-only on this admin list, so it carries the name.
     const enriched = requests.map((req) => ({
       ...req,
+      reviewedBy: reviewerName(req.reviewedBy),
       requesterName: playersMap.get(req.requesterId) ?? 'Unknown Player',
       targetPlayerNames: (req.targetPlayerIds || []).map(
         (pid) => playersMap.get(pid) ?? 'Unknown Player'

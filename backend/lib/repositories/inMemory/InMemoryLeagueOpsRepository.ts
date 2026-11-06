@@ -1,10 +1,12 @@
 import { v4 as uuidv4 } from 'uuid';
-import { NotFoundError } from '../errors';
+import { isDeepStrictEqual } from 'node:util';
+import { ConflictError, NotFoundError } from '../errors';
 import { InMemoryCrudRepository } from './InMemoryCrudRepository';
 import type {
   LeagueOpsRepository,
   EventCreateInput,
   EventPatch,
+  EventUpdateOptions,
   ShowCreateInput,
   ShowPatch,
   CompanyCreateInput,
@@ -34,7 +36,8 @@ import type { CrudRepository } from '../CrudRepository';
 
 // ─── Events (CRUD + queries + check-ins) ───────────────────────────
 
-type EventsCrud = CrudRepository<LeagueEvent, EventCreateInput, EventPatch> & {
+type EventsCrud = Omit<CrudRepository<LeagueEvent, EventCreateInput, EventPatch>, 'update'> & {
+  update(eventId: string, patch: EventPatch, options?: EventUpdateOptions): Promise<LeagueEvent>;
   listByStatus(status: EventStatus): Promise<LeagueEvent[]>;
   listBySeason(seasonId: string): Promise<LeagueEvent[]>;
   listByEventType(eventType: string): Promise<LeagueEvent[]>;
@@ -108,9 +111,12 @@ function createEventsSubRepo(): EventsCrud {
       return item;
     },
 
-    async update(eventId: string, patch: EventPatch): Promise<LeagueEvent> {
+    async update(eventId: string, patch: EventPatch, options?: EventUpdateOptions): Promise<LeagueEvent> {
       const existing = events.get(eventId);
       if (!existing) throw new NotFoundError('Event', eventId);
+      if (options?.expectedMatchCards && !isDeepStrictEqual(existing.matchCards, options.expectedMatchCards)) {
+        throw new ConflictError('The match card has changed');
+      }
       const updated: LeagueEvent = {
         ...existing,
         ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)),

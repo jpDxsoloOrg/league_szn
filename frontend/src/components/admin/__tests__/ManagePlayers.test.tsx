@@ -7,7 +7,7 @@ import { BrowserRouter } from 'react-router-dom';
 const { mockPlayersApi, mockDivisionsApi, mockImagesApi, mockWrestlersApi } =
   vi.hoisted(() => ({
     mockPlayersApi: {
-      getAll: vi.fn(),
+      getAllIncludingHidden: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -16,6 +16,8 @@ const { mockPlayersApi, mockDivisionsApi, mockImagesApi, mockWrestlersApi } =
     mockImagesApi: { generateUploadUrl: vi.fn(), uploadToS3: vi.fn() },
     mockWrestlersApi: { getAll: vi.fn() },
   }));
+
+vi.mock('react-i18next', async () => (await import('./i18nMock')).i18nMock);
 
 vi.mock('../../../services/api', () => ({
   playersApi: mockPlayersApi,
@@ -89,17 +91,17 @@ function renderComponent() {
 describe('ManagePlayers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPlayersApi.getAll.mockResolvedValue(mockPlayers);
+    mockPlayersApi.getAllIncludingHidden.mockResolvedValue(mockPlayers);
     mockDivisionsApi.getAll.mockResolvedValue(mockDivisions);
     mockWrestlersApi.getAll.mockResolvedValue(mockWrestlers);
   });
 
   it('shows loading state during initial fetch', () => {
-    mockPlayersApi.getAll.mockReturnValue(new Promise(() => {}));
+    mockPlayersApi.getAllIncludingHidden.mockReturnValue(new Promise(() => {}));
     mockDivisionsApi.getAll.mockReturnValue(new Promise(() => {}));
     mockWrestlersApi.getAll.mockReturnValue(new Promise(() => {}));
     renderComponent();
-    expect(screen.getByText('Loading players...')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('renders player list from API after loading', async () => {
@@ -121,13 +123,19 @@ describe('ManagePlayers', () => {
     expect(screen.getByText('Manual')).toBeInTheDocument();
   });
 
-  it('shows error state on API failure', async () => {
-    mockPlayersApi.getAll.mockRejectedValue(new Error('Network error'));
+  it('names the failed read, keeps the rest of the page, and retries', async () => {
+    const user = userEvent.setup();
+    mockWrestlersApi.getAll.mockRejectedValueOnce(new Error('Network error'));
     renderComponent();
 
-    await waitFor(() => {
-      expect(screen.getByText('Failed to load data')).toBeInTheDocument();
-    });
+    const notice = await screen.findByRole('alert');
+    expect(notice).toHaveTextContent("Couldn't load: Wrestlers.");
+    expect(screen.getByText('John')).toBeInTheDocument();
+
+    await user.click(within(notice).getByRole('button', { name: 'Retry' }));
+
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+    expect(mockWrestlersApi.getAll).toHaveBeenCalledTimes(2);
   });
 
   it('does not show player form initially', async () => {
@@ -226,6 +234,20 @@ describe('ManagePlayers', () => {
     });
   });
 
+  it('leaves a stored name alone when it has characters the form strips', async () => {
+    const user = userEvent.setup();
+    mockPlayersApi.getAllIncludingHidden.mockResolvedValue([{ ...mockPlayers[0], name: 'Mike_23' }]);
+    mockPlayersApi.update.mockResolvedValue({ playerId: 'p1' });
+    renderComponent();
+    await waitFor(() => { expect(screen.getByText('Mike_23')).toBeInTheDocument(); });
+
+    await user.click(screen.getAllByRole('button', { name: 'Edit' })[0]);
+    await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+    await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalled(); });
+    expect(mockPlayersApi.update.mock.calls[0][1]).not.toHaveProperty('name');
+  });
+
   it('clears the wrestler slot when the placeholder option is picked', async () => {
     const user = userEvent.setup();
     mockPlayersApi.update.mockResolvedValue({ playerId: 'p1' });
@@ -244,47 +266,364 @@ describe('ManagePlayers', () => {
 
     await waitFor(() => {
       expect(mockPlayersApi.update).toHaveBeenCalledWith('p1', expect.objectContaining({
-        currentWrestlerId: '',
+        clearCurrentWrestler: true,
       }));
     });
   });
 
-  it('deletes player with confirmation dialog', async () => {
-    const user = userEvent.setup();
-    mockPlayersApi.delete.mockResolvedValue(undefined);
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  describe('players whose wrestler is a name with no roster link', () => {
+    const namedPlayer: Player = {
+      playerId: 'p3', name: 'Adam', currentWrestler: 'Edge', alternateWrestler: 'Christian',
+      wins: 1, losses: 0, draws: 0,
+      createdAt: '2024-01-01', updatedAt: '2024-01-01',
+    };
 
+    const openEdit = async (user: ReturnType<typeof userEvent.setup>) => {
+      mockPlayersApi.getAllIncludingHidden.mockResolvedValue([namedPlayer]);
+      mockPlayersApi.update.mockResolvedValue(namedPlayer);
+      renderComponent();
+      await waitFor(() => { expect(screen.getByText('Adam')).toBeInTheDocument(); });
+      await user.click(screen.getByRole('button', { name: 'Edit' }));
+    };
+
+    const selectedText = (label: string) => {
+      const select = screen.getByLabelText(label) as HTMLSelectElement;
+      return select.selectedOptions[0]?.textContent;
+    };
+
+    it('shows the stored names rather than the empty options', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      expect(selectedText('Wrestler')).toBe('Edge (custom name)');
+      expect(selectedText('Alternate Wrestler')).toBe('Christian (custom name)');
+    });
+
+    it('sends neither wrestler field on a no-change save', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalledTimes(1); });
+      const body = mockPlayersApi.update.mock.calls[0][1];
+      expect(body).not.toHaveProperty('currentWrestlerId');
+      expect(body).not.toHaveProperty('alternateWrestlerId');
+    });
+
+    it('sends neither wrestler field on a division-only save', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      await user.selectOptions(screen.getByLabelText('Division'), 'div-2');
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalledTimes(1); });
+      const body = mockPlayersApi.update.mock.calls[0][1];
+      expect(body).toMatchObject({ divisionId: 'div-2' });
+      expect(body).not.toHaveProperty('currentWrestlerId');
+      expect(body).not.toHaveProperty('alternateWrestlerId');
+    });
+
+    it('leaves the video upload flag out of a save that did not change it', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalledTimes(1); });
+      expect(mockPlayersApi.update.mock.calls[0][1]).not.toHaveProperty('canUploadVideos');
+    });
+
+    it('sends only the slot the admin changed', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      await user.selectOptions(screen.getByLabelText('Alternate Wrestler'), 'w-omega');
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalledTimes(1); });
+      const body = mockPlayersApi.update.mock.calls[0][1];
+      expect(body).toMatchObject({ alternateWrestlerId: 'w-omega' });
+      expect(body).not.toHaveProperty('currentWrestlerId');
+    });
+
+    it('sends nothing for a slot changed and then put back', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      const wrestlerSelect = screen.getByLabelText('Wrestler') as HTMLSelectElement;
+      const originalValue = wrestlerSelect.value;
+      await user.selectOptions(wrestlerSelect, 'w-omega');
+      await user.selectOptions(wrestlerSelect, originalValue);
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalledTimes(1); });
+      expect(mockPlayersApi.update.mock.calls[0][1]).not.toHaveProperty('currentWrestlerId');
+    });
+
+    it('still clears the wrestler when the admin picks that, and warns first', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      await user.selectOptions(screen.getByLabelText('Wrestler'), '');
+      expect(screen.getByText('Saving removes this wrestler and hides the player from public pages.')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => {
+        expect(mockPlayersApi.update).toHaveBeenCalledWith('p3', expect.objectContaining({ clearCurrentWrestler: true }));
+      });
+      expect(mockPlayersApi.update.mock.calls[0][1]).not.toHaveProperty('currentWrestlerId');
+    });
+
+    it('states a clear of a name-only alternate outright too', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      await user.selectOptions(screen.getByLabelText('Alternate Wrestler'), '');
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalledTimes(1); });
+      const body = mockPlayersApi.update.mock.calls[0][1];
+      expect(body).toMatchObject({ clearAlternateWrestler: true });
+      expect(body).not.toHaveProperty('alternateWrestlerId');
+      expect(body).not.toHaveProperty('clearCurrentWrestler');
+    });
+  });
+
+  describe('a linked player who renamed their wrestler', () => {
+    const renamed = {
+      ...mockPlayers[0],
+      currentWrestler: 'Jaxon Alexzander',
+      currentWrestlerId: rockWrestler.wrestlerId,
+    };
+
+    const openEdit = async (player: typeof renamed) => {
+      const user = userEvent.setup();
+      mockPlayersApi.getAllIncludingHidden.mockResolvedValue([player]);
+      mockPlayersApi.update.mockResolvedValue(player);
+      mockWrestlersApi.getAll.mockResolvedValue(mockWrestlers.map((wrestler) => (
+        wrestler.wrestlerId === player.currentWrestlerId ? { ...wrestler, isInUse: true } : wrestler
+      )));
+      renderComponent();
+      await screen.findByText(player.name);
+      await user.click(screen.getByRole('button', { name: 'Edit' }));
+      return { user, select: screen.getByLabelText('Wrestler') as HTMLSelectElement };
+    };
+
+    it('opens on the name the table shows, with the roster row still on offer', async () => {
+      const { select } = await openEdit(renamed);
+
+      expect(select.selectedOptions[0]?.textContent).toBe('Jaxon Alexzander (custom name)');
+      const linkedRow = Array.from(select.options).find((option) => option.value === renamed.currentWrestlerId);
+      expect(linkedRow).toBeDefined();
+    });
+
+    it('sends no wrestler field on a no-change save', async () => {
+      const { user } = await openEdit(renamed);
+
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => expect(mockPlayersApi.update).toHaveBeenCalled());
+      const payload = mockPlayersApi.update.mock.calls[0]?.[1];
+      expect(payload).not.toHaveProperty('currentWrestlerId');
+      expect(payload).not.toHaveProperty('clearCurrentWrestler');
+    });
+
+    it('can relink to the roster row', async () => {
+      const { user, select } = await openEdit(renamed);
+
+      await user.selectOptions(select, renamed.currentWrestlerId);
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => expect(mockPlayersApi.update).toHaveBeenCalled());
+      expect(mockPlayersApi.update.mock.calls[0]?.[1]).toEqual(
+        expect.objectContaining({ currentWrestlerId: renamed.currentWrestlerId }),
+      );
+    });
+
+    it('treats a difference in case alone as still linked', async () => {
+      const { select } = await openEdit({ ...renamed, currentWrestler: rockWrestler.name.toUpperCase() });
+
+      expect(select.value).toBe(renamed.currentWrestlerId);
+    });
+  });
+
+  it('keeps a linked wrestler whose roster row is gone on a no-change save', async () => {
+    const user = userEvent.setup();
+    mockPlayersApi.getAllIncludingHidden.mockResolvedValue([
+      { ...mockPlayers[0]!, currentWrestlerId: 'w-gone' },
+    ]);
+    mockPlayersApi.update.mockResolvedValue(mockPlayers[0]);
     renderComponent();
     await waitFor(() => { expect(screen.getByText('John')).toBeInTheDocument(); });
 
-    const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
-    await user.click(deleteButtons[0]);
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    const wrestlerSelect = screen.getByLabelText('Wrestler') as HTMLSelectElement;
+    expect(wrestlerSelect.selectedOptions[0]?.textContent).toBe('The Rock (custom name)');
 
-    expect(confirmSpy).toHaveBeenCalledWith(
-      'Are you sure you want to delete John? This action cannot be undone.'
-    );
+    await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+    await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalledTimes(1); });
+    expect(mockPlayersApi.update.mock.calls[0][1]).not.toHaveProperty('currentWrestlerId');
+  });
+
+  describe('clearing the PSN ID and the image', () => {
+    const fullPlayer = { ...mockPlayers[0], psnId: 'rock_psn' };
+
+    const openEdit = async (user: ReturnType<typeof userEvent.setup>) => {
+      mockPlayersApi.getAllIncludingHidden.mockResolvedValue([fullPlayer]);
+      mockPlayersApi.update.mockResolvedValue(fullPlayer);
+      renderComponent();
+      await waitFor(() => { expect(screen.getByText('John')).toBeInTheDocument(); });
+      await user.click(screen.getByRole('button', { name: 'Edit' }));
+    };
+
+    const save = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+      await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalledTimes(1); });
+      return mockPlayersApi.update.mock.calls[0][1];
+    };
+
+    it('sends neither field on a save that left them alone', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      const body = await save(user);
+      expect(body).not.toHaveProperty('psnId');
+      expect(body).not.toHaveProperty('imageUrl');
+    });
+
+    it('sends an empty PSN ID when the admin blanked it', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+      await user.clear(screen.getByLabelText(/PSN ID/i));
+
+      const body = await save(user);
+      expect(body.psnId).toBe('');
+      expect(body).not.toHaveProperty('imageUrl');
+    });
+
+    it('sends an empty image URL when the admin removed the image', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+      await user.click(screen.getByRole('button', { name: /Remove Image/i }));
+
+      const body = await save(user);
+      expect(body.imageUrl).toBe('');
+      expect(body).not.toHaveProperty('psnId');
+    });
+
+    it('sends a changed PSN ID', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+      const field = screen.getByLabelText(/PSN ID/i);
+      await user.clear(field);
+      await user.type(field, 'new_psn');
+
+      const body = await save(user);
+      expect(body.psnId).toBe('new_psn');
+    });
+  });
+
+  it('deletes player after confirming in the dialog', async () => {
+    const user = userEvent.setup();
+    mockPlayersApi.delete.mockResolvedValue(undefined);
+    renderComponent();
+
+    await waitFor(() => { expect(screen.getByText('John')).toBeInTheDocument(); });
+
+    const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
+    await user.click(deleteButtons[0]!);
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('Are you sure you want to delete John? This action cannot be undone.');
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
+
     await waitFor(() => {
       expect(mockPlayersApi.delete).toHaveBeenCalledWith('p1');
     });
     await waitFor(() => {
       expect(screen.getByText('Player deleted successfully!')).toBeInTheDocument();
     });
-    confirmSpy.mockRestore();
   });
 
-  it('does not delete player when confirmation is cancelled', async () => {
+  it('does not delete player when the dialog is cancelled', async () => {
     const user = userEvent.setup();
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     renderComponent();
+
     await waitFor(() => { expect(screen.getByText('John')).toBeInTheDocument(); });
 
     const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
-    await user.click(deleteButtons[0]);
+    await user.click(deleteButtons[0]!);
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancel' }));
 
-    expect(confirmSpy).toHaveBeenCalled();
     expect(mockPlayersApi.delete).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
+  });
+
+  it('keeps players with no wrestler out of the table until Show hidden is on', async () => {
+    const user = userEvent.setup();
+    mockPlayersApi.getAllIncludingHidden.mockResolvedValue([
+      ...mockPlayers,
+      {
+        playerId: 'p3', name: 'Newbie', currentWrestler: 'Needs Wrestler',
+        wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+      },
+      {
+        playerId: 'p4', name: 'Blank', currentWrestler: '   ',
+        wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+      },
+    ]);
+    renderComponent();
+
+    await waitFor(() => { expect(screen.getByText('All Players (2 of 4)')).toBeInTheDocument(); });
+
+    expect(mockPlayersApi.getAllIncludingHidden).toHaveBeenCalled();
+    expect(screen.queryByText('Newbie')).not.toBeInTheDocument();
+    expect(screen.queryByText('Blank')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Show hidden (2)' }));
+
+    expect(screen.getByText('All Players (4)')).toBeInTheDocument();
+    const newbieRow = screen.getByText('Newbie').closest('tr')!;
+    expect(within(newbieRow).getByText('Hidden')).toBeInTheDocument();
+    expect(screen.queryByText('Needs Wrestler')).not.toBeInTheDocument();
+    expect(within(screen.getByText('John').closest('tr')!).queryByText('Hidden')).not.toBeInTheDocument();
+  });
+
+  it('offers no Show hidden filter when nobody is hidden', async () => {
+    renderComponent();
+
+    await screen.findByText('John');
+    expect(screen.queryByRole('checkbox', { name: /Show hidden/ })).not.toBeInTheDocument();
+  });
+
+  it('labels a blank-name player and finds them by that label', async () => {
+    const user = userEvent.setup();
+    mockPlayersApi.getAllIncludingHidden.mockResolvedValue([
+      ...mockPlayers,
+      { ...mockPlayers[0], playerId: 'p-blank', name: '' },
+    ]);
+    renderComponent();
+
+    expect(await screen.findByText('Unnamed player')).toBeInTheDocument();
+
+    await user.type(screen.getByRole('searchbox'), 'unnamed');
+
+    expect(screen.getByText('Unnamed player')).toBeInTheDocument();
+    expect(screen.queryByText('John')).not.toBeInTheDocument();
+  });
+
+  it('filters players by search text', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    await waitFor(() => { expect(screen.getByText('John')).toBeInTheDocument(); });
+
+    await user.type(screen.getByRole('searchbox', { name: 'Search players' }), 'becky');
+
+    expect(screen.queryByText('John')).not.toBeInTheDocument();
+    expect(screen.getByText('Jane')).toBeInTheDocument();
   });
 
   it('handles image upload via presigned URL and S3', async () => {
@@ -344,7 +683,7 @@ describe('ManagePlayers', () => {
       expect(screen.getByText('Player updated successfully!')).toBeInTheDocument();
     });
     // loadData is called again after success (initial load + post-save reload)
-    expect(mockPlayersApi.getAll).toHaveBeenCalledTimes(2);
+    expect(mockPlayersApi.getAllIncludingHidden).toHaveBeenCalledTimes(2);
   });
 
   it('shows error when save fails', async () => {

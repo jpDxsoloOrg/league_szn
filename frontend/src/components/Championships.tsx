@@ -1,55 +1,45 @@
-import { useEffect, useState, useCallback, useRef, useMemo} from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ChevronRight, Crown } from 'lucide-react';
 import { championshipsApi, divisionsApi, playersApi } from '../services/api';
-import { formatDate } from '../utils/dateUtils';
+import type { PlayerDirectoryEntry } from '../services/api';
+import { formatMatchDate } from '../utils/dateUtils';
 import { logger } from '../utils/logger';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { type Division, type Championship, type ChampionshipReign, type Player } from '../types';
 import DivisionFilter from './DivisionFilter';
-import Skeleton from './ui/Skeleton';
+import Avatar from './ui/Avatar';
+import Badge from './ui/Badge';
+import DataTable from './ui/DataTable';
+import type { DataTableColumn } from './ui/DataTable';
 import EmptyState from './ui/EmptyState';
-import {
-  DEFAULT_CHAMPIONSHIP_IMAGE,
-  DEFAULT_WRESTLER_IMAGE,
-  applyImageFallback,
-  resolveImageSrc,
-} from '../constants/imageFallbacks';
+import Modal from './ui/Modal';
+import PageHeader from './ui/PageHeader';
+import PhotoTile from './ui/PhotoTile';
+import Skeleton from './ui/Skeleton';
+import { getTitleAccent } from './titleAccent';
 import './Championships.css';
+
+function toIds(holder: string | string[]): string[] {
+  return Array.isArray(holder) ? holder : [holder];
+}
 
 export default function Championships() {
   const { t } = useTranslation();
   useDocumentTitle(t('nav.championships'));
   const [championships, setChampionships] = useState<Championship[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [directory, setDirectory] = useState<PlayerDirectoryEntry[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
-  const [selectedDivision, setSelectedDivision] = useState<string>('all');
-  const [selectedChampionship, setSelectedChampionship] = useState<string | null>(null);
+  const [selectedDivision, setSelectedDivision] = useState('all');
+  const [selectedChampionship, setSelectedChampionship] = useState<Championship | null>(null);
   const [history, setHistory] = useState<ChampionshipReign[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadCount, setReloadCount] = useState(0);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyFailed, setHistoryFailed] = useState(false);
   const historyAbortRef = useRef<AbortController | null>(null);
-
-  // Reload data when retry button is clicked
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      // Include inactive titles so their history stays publicly viewable
-      const [champData, playerData, divisionsData] = await Promise.all([
-        championshipsApi.getAll(undefined, { includeInactive: true }),
-        playersApi.getAll(),
-        divisionsApi.getAll(),
-      ]);
-      setChampionships(champData);
-      setPlayers(playerData);
-      setDivisions(divisionsData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load championships');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -58,250 +48,218 @@ export default function Championships() {
       try {
         setLoading(true);
         setError(null);
-        const [champData, playerData, divisionsData] = await Promise.all([
+        // Inactive titles stay listed so their history remains public. The
+        // directory covers former champions who no longer have a wrestler.
+        const [champData, playerData, directoryData, divisionsData] = await Promise.all([
           championshipsApi.getAll(abortController.signal, { includeInactive: true }),
           playersApi.getAll(abortController.signal),
+          playersApi.getDirectory(abortController.signal),
           divisionsApi.getAll(abortController.signal),
         ]);
-        if (!abortController.signal.aborted) {
-          setChampionships(champData);
-          setPlayers(playerData);
-          setDivisions(divisionsData);
-        }
+        if (abortController.signal.aborted) return;
+        setChampionships(champData);
+        setPlayers(playerData);
+        setDirectory(directoryData);
+        setDivisions(divisionsData);
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
-          setError(err.message || 'Failed to load championships');
+          setError(err.message);
         }
       } finally {
-        if (!abortController.signal.aborted) {
-          setLoading(false);
-        }
+        if (!abortController.signal.aborted) setLoading(false);
       }
     };
 
     fetchData();
     return () => abortController.abort();
-  }, []);
+  }, [reloadCount]);
 
-  const loadHistory = useCallback(async (championshipId: string) => {
-    // Cancel any previous history request
-    if (historyAbortRef.current) {
-      historyAbortRef.current.abort();
-    }
-    historyAbortRef.current = new AbortController();
+  useEffect(() => () => historyAbortRef.current?.abort(), []);
+
+  const openHistory = async (championship: Championship) => {
+    historyAbortRef.current?.abort();
+    const abortController = new AbortController();
+    historyAbortRef.current = abortController;
+
+    setSelectedChampionship(championship);
+    setHistory([]);
+    setHistoryFailed(false);
+    setLoadingHistory(true);
 
     try {
-      setLoadingHistory(true);
-      const historyData = await championshipsApi.getHistory(
-        championshipId,
-        historyAbortRef.current.signal
-      );
-      setHistory(historyData);
-      setSelectedChampionship(championshipId);
+      const historyData = await championshipsApi.getHistory(championship.championshipId, abortController.signal);
+      if (!abortController.signal.aborted) setHistory(historyData);
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
         logger.error('Failed to load championship history');
+        setHistoryFailed(true);
       }
     } finally {
-      setLoadingHistory(false);
+      if (!abortController.signal.aborted) setLoadingHistory(false);
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    if (!selectedChampionship) return;
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSelectedChampionship(null);
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [selectedChampionship]);
+  const closeHistory = () => {
+    historyAbortRef.current?.abort();
+    setSelectedChampionship(null);
+  };
 
   const filteredChampionships = useMemo((): Championship[] => {
     let result = championships;
     if (selectedDivision === 'none') {
-      result = championships.filter(c => !c.divisionId);
+      result = championships.filter((championship) => !championship.divisionId);
     } else if (selectedDivision !== 'all') {
-      result = championships.filter(c => c.divisionId === selectedDivision);
+      result = championships.filter((championship) => championship.divisionId === selectedDivision);
     }
-    // Active titles first; inactive ones stay listed so their history remains viewable
-    return [...result].sort((a, b) => Number(b.isActive !== false) - Number(a.isActive !== false));
+    // Active titles first.
+    return [...result].sort((first, second) => Number(second.isActive !== false) - Number(first.isActive !== false));
   }, [championships, selectedDivision]);
 
-  const getPlayerName = (playerId: string | string[]) => {
-    if (Array.isArray(playerId)) {
-      return playerId.map(id => {
-        const player = players.find(p => p.playerId === id);
-        return player ? player.name : t('common.unknown');
-      }).join(' & ');
+  // Wrestler first, the same name the champion goes by on the home page.
+  const playerNames = useMemo(
+    () => new Map(directory.map((entry) => [entry.playerId, entry.currentWrestler || entry.name])),
+    [directory],
+  );
+  const playerImages = useMemo(() => new Map(players.map((player) => [player.playerId, player.imageUrl])), [players]);
+
+  const getHolderName = (holder: string | string[]) =>
+    toIds(holder).map((playerId) => playerNames.get(playerId) ?? t('common.formerMember')).join(' & ');
+
+  const historyColumns: DataTableColumn<ChampionshipReign>[] = [
+    {
+      key: 'champion',
+      header: t('championships.table.champion'),
+      render: (reign) => <span className="title-history__champion">{getHolderName(reign.champion)}</span>,
+    },
+    { key: 'won', header: t('championships.table.wonDate'), render: (reign) => formatMatchDate(reign.wonDate) },
+    {
+      key: 'lost',
+      header: t('championships.table.lostDate'),
+      render: (reign) => (reign.lostDate ? formatMatchDate(reign.lostDate) : t('common.current')),
+    },
+    {
+      key: 'days',
+      header: t('championships.table.daysHeld'),
+      render: (reign) => (reign.daysHeld !== undefined ? `${reign.daysHeld} ${t('common.days')}` : '-'),
+      align: 'end',
+    },
+    {
+      key: 'defenses',
+      header: t('championships.table.defenses'),
+      render: (reign) => reign.defenses ?? 0,
+      align: 'end',
+    },
+  ];
+
+  const renderTitles = () => {
+    if (loading) return <Skeleton variant="cards" />;
+
+    if (error !== null) {
+      return (
+        <EmptyState
+          title={t('common.error')}
+          description={error || t('championships.loadFailed')}
+          actionLabel={t('common.retry')}
+          onAction={() => setReloadCount((count) => count + 1)}
+        />
+      );
     }
-    const player = players.find(p => p.playerId === playerId);
-    return player ? player.name : t('common.unknown');
-  };
 
-  // Avatar sources for the mobile champion row (hidden on desktop via CSS).
-  const getChampionAvatars = (champion: string | string[]) => {
-    const ids = Array.isArray(champion) ? champion : [champion];
-    return ids.map((id) => {
-      const player = players.find((p) => p.playerId === id);
-      return { id, src: resolveImageSrc(player?.imageUrl, DEFAULT_WRESTLER_IMAGE) };
-    });
-  };
+    if (championships.length === 0) {
+      return <EmptyState title={t('championships.emptyTitle')} description={t('championships.noChampionships')} />;
+    }
 
-  if (loading) {
-    return <Skeleton variant="cards" />;
-  }
+    if (filteredChampionships.length === 0) {
+      return <EmptyState title={t('championships.noneInDivisionTitle')} description={t('championships.noneInDivision')} />;
+    }
 
-  if (error) {
     return (
-      <div className="error">
-        <p>{t('common.error')}: {error}</p>
-        <button onClick={loadData}>{t('common.retry')}</button>
-      </div>
+      <ul className="title-grid">
+        {filteredChampionships.map((championship) => {
+          const inactive = championship.isActive === false;
+          const holder = championship.currentChampion;
+          const holderIds = holder ? toIds(holder) : [];
+          // The belt photo leads; a title without one shows its champion instead.
+          const imageUrl = championship.imageUrl || playerImages.get(holderIds[0] ?? '');
+          return (
+            <li key={championship.championshipId} className={inactive ? 'title-item title-item--inactive' : 'title-item'}>
+              <PhotoTile
+                className="title-item__tile"
+                imageUrl={imageUrl}
+                imageAlt={championship.name}
+                eyebrow={championship.name}
+                title={holder ? getHolderName(holder) : t('common.vacant')}
+                fallbackIcon={holder ? undefined : <Crown />}
+                accent={inactive ? 'none' : getTitleAccent(championship)}
+                badge={inactive ? <Badge>{t('championships.inactive')}</Badge> : undefined}
+                meta={(
+                  <span className="title-item__meta">
+                    {holderIds.map((playerId) => (
+                      <Avatar key={playerId} size="sm" src={playerImages.get(playerId)} name={playerNames.get(playerId) ?? t('common.formerMember')} />
+                    ))}
+                    {championship.type !== 'singles' && t('championships.tagTeam')}
+                    <span className="title-item__history">
+                      {t('championships.history')}
+                      <ChevronRight aria-hidden="true" size={16} />
+                    </span>
+                  </span>
+                )}
+              />
+              {/* Laid over the tile, so the whole title opens its history. */}
+              <button
+                type="button"
+                className="title-item__open"
+                aria-label={`${t('championships.viewHistory')}: ${championship.name}`}
+                onClick={() => openHistory(championship)}
+              />
+            </li>
+          );
+        })}
+      </ul>
     );
-  }
+  };
 
-  if (championships.length === 0) {
+  const renderHistory = () => {
+    if (loadingHistory) return <Skeleton variant="table" count={4} />;
+    if (historyFailed) return <EmptyState title={t('common.error')} description={t('championships.historyLoadFailed')} />;
     return (
-      <EmptyState
-        title={t('championships.title')}
-        description={t('championships.noChampionships')}
+      <DataTable
+        className="title-history"
+        caption={t('championships.history')}
+        columns={historyColumns}
+        rows={history}
+        rowKey={(reign) => reign.wonDate}
+        empty={<EmptyState title={t('championships.history')} description={t('championships.noHistory')} />}
       />
     );
-  }
+  };
 
   return (
-    <div className="championships-container">
-      <h2 className="page-title--mobile-hidden">{t('championships.title')}</h2>
-        {divisions.length > 0 && (
-            <DivisionFilter
-              divisions={divisions}
-              selectedDivision={selectedDivision}
-              onSelect={setSelectedDivision}
-              labelKey="championships.filterByDivision"
-              showNoDivision
-            />
-          )}
-      <div className="championships-grid">
-        {filteredChampionships.map((championship) => (
-          <div
-            key={championship.championshipId}
-            className={`championship-card${championship.isActive === false ? ' championship-card--inactive' : ''}`}
-          >
-            <div className="championship-image-container">
-              <img
-                src={resolveImageSrc(championship.imageUrl, DEFAULT_CHAMPIONSHIP_IMAGE)}
-                onError={(event) => applyImageFallback(event, DEFAULT_CHAMPIONSHIP_IMAGE)}
-                alt={championship.name}
-                className="championship-image"
-              />
-            </div>
-            <div className="championship-header">
-              <h3>{championship.name}</h3>
-              <span className="championship-type">
-                {championship.type === 'singles' ? t('championships.singles') : t('championships.tagTeam')}
-              </span>
-              {championship.isActive === false && (
-                <span className="championship-inactive-badge">{t('championships.inactive')}</span>
-              )}
-            </div>
+    <div className="championships-page">
+      <PageHeader title={t('championships.title')} />
 
-            <div className="current-champion">
-              <label>{t('championships.currentChampion')}:</label>
-              {championship.currentChampion ? (
-                <div className="champion-row">
-                  <div className="champion-avatars" aria-hidden="true">
-                    {getChampionAvatars(championship.currentChampion).map((avatar) => (
-                      <img
-                        key={avatar.id}
-                        src={avatar.src}
-                        onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-                        alt=""
-                        className="champion-avatar"
-                      />
-                    ))}
-                  </div>
-                  <p>{getPlayerName(championship.currentChampion)}</p>
-                </div>
-              ) : (
-                <p className="vacant-pill">{t('common.vacant')}</p>
-              )}
-            </div>
-
-            <button
-              onClick={() => loadHistory(championship.championshipId)}
-              className="view-history-btn"
-            >
-              {t('championships.viewHistory')}
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {selectedChampionship && (
-        <div
-          className="history-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="history-modal-title"
-          onClick={() => setSelectedChampionship(null)}
-        >
-          <div className="history-content" onClick={(e) => e.stopPropagation()}>
-            <div className="history-header">
-              <h3 id="history-modal-title">
-                {championships.find(c => c.championshipId === selectedChampionship)?.name} {t('championships.history')}
-              </h3>
-              <button
-                onClick={() => setSelectedChampionship(null)}
-                className="close-btn"
-                aria-label={t('common.closeModal') || 'Close modal'}
-              >
-                ×
-              </button>
-            </div>
-
-            {loadingHistory ? (
-              <div className="loading">{t('championships.loadingHistory')}</div>
-            ) : history.length === 0 ? (
-              <p>{t('championships.noHistory')}</p>
-            ) : (
-              <div className="history-table-wrapper">
-                <table className="history-table">
-                  <thead>
-                    <tr>
-                      <th>{t('championships.table.champion')}</th>
-                      <th>{t('championships.table.wonDate')}</th>
-                      <th>{t('championships.table.lostDate')}</th>
-                      <th>{t('championships.table.daysHeld')}</th>
-                      <th>{t('championships.table.defenses')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {history.map((reign, index) => (
-                      <tr key={index}>
-                        <td className="champion-name">
-                          {getPlayerName(reign.champion)}
-                        </td>
-                        <td>{formatDate(reign.wonDate)}</td>
-                        <td>
-                          {reign.lostDate
-                            ? formatDate(reign.lostDate)
-                            : t('common.current')}
-                        </td>
-                        <td>
-                          {reign.daysHeld !== undefined
-                            ? `${reign.daysHeld} ${t('common.days')}`
-                            : '-'}
-                        </td>
-                        <td>{reign.defenses ?? 0}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+      {divisions.length > 0 && (
+        <div className="championships-page__filter">
+          <DivisionFilter
+            divisions={divisions}
+            selectedDivision={selectedDivision}
+            onSelect={setSelectedDivision}
+            labelKey="championships.filterByDivision"
+            showNoDivision
+          />
         </div>
       )}
+
+      {renderTitles()}
+
+      <Modal
+        open={selectedChampionship !== null}
+        onClose={closeHistory}
+        title={`${selectedChampionship?.name ?? ''} ${t('championships.history')}`}
+        size="lg"
+      >
+        {renderHistory()}
+      </Modal>
     </div>
   );
 }

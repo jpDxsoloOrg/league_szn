@@ -75,7 +75,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    return success({ reactions: updatedPromo.reactions, reactionCounts: updatedPromo.reactionCounts });
+    return success({ reactionCounts: updatedPromo.reactionCounts });
   } catch (err) {
     console.error('Error reacting to promo:', err);
     return serverError('Failed to react to promo');

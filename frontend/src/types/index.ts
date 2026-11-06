@@ -1,6 +1,9 @@
 export interface Player {
   playerId: string;
+  /** Sent only to staff and to the player themselves. */
   userId?: string;
+  /** Whether a user account is linked; sent to everyone. */
+  hasLinkedAccount?: boolean;
   name: string;
   currentWrestler: string;
   alternateWrestler?: string;
@@ -255,6 +258,9 @@ export interface DashboardMatch {
   winnerImageUrl?: string;
   loserName: string;
   loserImageUrl?: string;
+  isDraw?: boolean;
+  /** Everyone in a drawn match, as "A vs B". Only set when `isDraw` is true. */
+  participantsName?: string;
   eventId?: string;
 }
 
@@ -395,7 +401,7 @@ export interface Announcement {
   announcementId: string;
   title: string;
   body: string;          // HTML content
-  createdBy: string;
+  createdBy?: string;    // Admin lists only; public reads leave it out
   isActive: boolean;
   priority: number;      // 1=low, 2=medium, 3=high
   expiresAt?: string;
@@ -415,7 +421,7 @@ export interface Video {
   category: VideoCategory;
   tags: string[];
   isPublished: boolean;
-  uploadedBy: string;
+  uploadedBy?: string;   // Admin lists only; public reads leave it out
   createdAt: string;
   updatedAt: string;
 }
@@ -428,7 +434,7 @@ export interface AppNotification {
   type: NotificationType;
   message: string;
   sourceId: string;
-  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'match_invitation' | 'match_invitation_declined' | 'rivalry';
+  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'match_invitation' | 'match_invitation_declined' | 'rivalry' | 'storyline_request';
   isRead: boolean;
   createdAt: string;
 }
@@ -491,6 +497,8 @@ export interface TransferRequest {
   createdAt: string;
   updatedAt: string;
   reviewedBy?: string;
+  /** Display name for `reviewedBy`, which is a raw account id. */
+  reviewedByName?: string;
   reviewNote?: string;
 }
 
@@ -512,6 +520,8 @@ export interface StorylineRequest {
   status: StorylineRequestStatus;
   gmNote?: string;
   reviewedBy?: string;
+  /** Display name for `reviewedBy`, which is a raw account id. */
+  reviewedByName?: string;
   createdAt: string;
   updatedAt: string;
 }

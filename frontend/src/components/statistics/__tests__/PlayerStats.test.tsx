@@ -1,17 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockGetPlayerStats, mockGetAllSeasons } = vi.hoisted(() => ({
+const { mockGetPlayerStats, mockGetAllSeasons, mockGetRoster } = vi.hoisted(() => ({
   mockGetPlayerStats: vi.fn(),
   mockGetAllSeasons: vi.fn(),
+  mockGetRoster: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
   statisticsApi: { getPlayerStats: mockGetPlayerStats },
   seasonsApi: { getAll: mockGetAllSeasons },
+  playersApi: { getAll: mockGetRoster },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -60,11 +62,6 @@ vi.mock('react-i18next', () => ({
     },
   }),
 }));
-
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return { ...actual, useParams: () => ({}) };
-});
 
 vi.mock('../PlayerStats.css', () => ({}));
 
@@ -151,11 +148,14 @@ const fullPlayerStatsResponse = {
   achievements: mockAchievements,
 };
 
-function renderComponent() {
+function renderComponent(entry = '/stats') {
   return render(
-    <BrowserRouter>
-      <PlayerStats />
-    </BrowserRouter>
+    <MemoryRouter initialEntries={[entry]}>
+      <Routes>
+        <Route path="/stats" element={<PlayerStats />} />
+        <Route path="/stats/player/:playerId" element={<PlayerStats />} />
+      </Routes>
+    </MemoryRouter>
   );
 }
 
@@ -173,14 +173,12 @@ describe('PlayerStats', () => {
 
     renderComponent();
 
-    await waitFor(() => {
-      expect(screen.getByText('Select Player')).toBeInTheDocument();
-    });
+    const user = userEvent.setup();
+    const select = await screen.findByRole('combobox', { name: 'Select Player' });
 
-    const select = screen.getByRole('combobox');
-    expect(select).toBeInTheDocument();
+    await user.click(select);
 
-    const options = screen.getAllByRole('option');
+    const options = await screen.findAllByRole('option');
     expect(options).toHaveLength(2);
     expect(options[0]).toHaveTextContent('John Cena (The Champ)');
     expect(options[1]).toHaveTextContent('The Rock (The Great One)');
@@ -219,13 +217,77 @@ describe('PlayerStats', () => {
     expect(screen.getByText('Championship History')).toBeInTheDocument();
     expect(screen.getByText(/World Heavyweight Championship/)).toBeInTheDocument();
     expect(screen.getByText('Current Champion')).toBeInTheDocument();
-    expect(screen.getByText(/3 reigns/)).toBeInTheDocument();
+    expect(screen.getByText('statistics.labels.reignCount')).toBeInTheDocument();
     expect(screen.getByText(/450 days held/)).toBeInTheDocument();
 
     // Achievements
     expect(screen.getByText('Recent Achievements')).toBeInTheDocument();
     expect(screen.getByText('Grand Slam')).toBeInTheDocument();
-    expect(screen.getByText('View All Achievements')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View All Achievements' })).toHaveAttribute('href', '/stats/achievements?player=p1');
+  });
+
+  it('shows the real photo in the record card', async () => {
+    mockGetPlayerStats
+      .mockResolvedValueOnce({ players: mockPlayers })
+      .mockResolvedValueOnce(fullPlayerStatsResponse);
+    mockGetRoster.mockResolvedValue([{ playerId: mockPlayers[0].playerId, imageUrl: 'https://img.test/p1.png' }]);
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByRole('img', { name: mockPlayers[0].name })).toHaveAttribute('src', 'https://img.test/p1.png');
+    });
+  });
+
+  it('shows a dash for the win rate of a player with no matches', async () => {
+    const overall = fullPlayerStatsResponse.statistics.find((stat) => stat.statType === 'overall');
+    mockGetPlayerStats
+      .mockResolvedValueOnce({ players: mockPlayers })
+      .mockResolvedValueOnce({
+        ...fullPlayerStatsResponse,
+        statistics: [{ ...overall, wins: 0, losses: 0, draws: 0, matchesPlayed: 0, winPercentage: 0 }],
+      });
+
+    renderComponent();
+
+    await screen.findByText('0 matches played');
+    expect(document.querySelector('.ps-win-pct-value')).toHaveTextContent('-');
+  });
+
+  it('leaves out match types the player has never competed in', async () => {
+    mockGetPlayerStats
+      .mockResolvedValueOnce({ players: mockPlayers })
+      .mockResolvedValueOnce({
+        ...fullPlayerStatsResponse,
+        statistics: [overallStat, singlesStat, { ...tagStat, statType: 'cage' as const, matchesPlayed: 0 }],
+      });
+
+    renderComponent();
+
+    expect(await screen.findByText('Singles')).toBeInTheDocument();
+    expect(screen.queryByText('Cage')).not.toBeInTheDocument();
+  });
+
+  it('shows the empty state when the league has no players', async () => {
+    mockGetPlayerStats.mockResolvedValueOnce({ players: [] });
+
+    renderComponent();
+
+    expect(await screen.findByText('No data available')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  });
+
+  it('loads the player named in the URL', async () => {
+    mockGetPlayerStats.mockImplementation(async (playerId?: string) => (
+      playerId ? { ...fullPlayerStatsResponse, statistics: [{ ...overallStat, playerId }] } : { players: mockPlayers }
+    ));
+
+    renderComponent('/stats/player/p2');
+
+    await waitFor(() => {
+      expect(document.querySelector('.ps-name')).toHaveTextContent('The Rock');
+    });
+    expect(mockGetPlayerStats).toHaveBeenCalledWith('p2', undefined, expect.any(AbortSignal));
   });
 
   it('shows loading state initially', async () => {
@@ -258,15 +320,9 @@ describe('PlayerStats', () => {
 
     renderComponent();
 
-    await waitFor(() => {
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
-    });
-
     // Wait for initial stats to render
     await waitFor(() => {
-      // The h3 inside the record card shows the name
-      const nameHeading = document.querySelector('.ps-record-card h3');
-      expect(nameHeading).toHaveTextContent('John Cena (The Champ)');
+      expect(document.querySelector('.ps-name')).toHaveTextContent('John Cena');
     });
 
     // Setup mock for the second player selection
@@ -278,7 +334,8 @@ describe('PlayerStats', () => {
       ],
     });
 
-    await user.selectOptions(screen.getByRole('combobox'), 'p2');
+    await user.click(screen.getByRole('combobox'));
+    await user.click(await screen.findByRole('option', { name: 'The Rock (The Great One)' }));
 
     // The third call should be for player p2
     await waitFor(() => {

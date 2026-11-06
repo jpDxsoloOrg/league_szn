@@ -5,9 +5,10 @@ import { BrowserRouter } from 'react-router-dom';
 import type { PromoWithContext } from '../../../types/promo';
 
 // --- Hoisted mocks ---
-const { mockGetAllPromos, mockReact } = vi.hoisted(() => ({
+const { mockGetAllPromos, mockReact, mockUseAuth } = vi.hoisted(() => ({
   mockGetAllPromos: vi.fn(),
   mockReact: vi.fn(),
+  mockUseAuth: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -52,7 +53,7 @@ vi.mock('../PromoCard.css', () => ({}));
 vi.mock('../PromoReactions.css', () => ({}));
 
 vi.mock('../../../contexts/AuthContext', () => ({
-  useAuth: () => ({ isAuthenticated: false, playerId: null }),
+  useAuth: mockUseAuth,
 }));
 
 vi.mock('../../../contexts/SiteConfigContext', () => ({
@@ -93,9 +94,11 @@ function renderFeed() {
 describe('PromoFeed', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, playerId: null, isAdminOrModerator: false, hasRole: () => false });
   });
 
   it('renders promo list with filter tabs after loading', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, playerId: 'p-1', isAdminOrModerator: false, hasRole: () => true });
     const promos = [
       makePromo({ wrestlerName: 'Undertaker', playerName: 'Mark' }),
       makePromo({
@@ -130,7 +133,7 @@ describe('PromoFeed', () => {
     );
 
     // Promo content rendered
-    expect(screen.getByText('Undertaker')).toBeInTheDocument();
+    expect(await screen.findByText('Undertaker')).toBeInTheDocument();
     expect(screen.getByText('The Rock')).toBeInTheDocument();
   });
 
@@ -226,9 +229,80 @@ describe('PromoFeed', () => {
     });
 
     // Parent promo's card is visible
-    expect(screen.getByText('Undertaker')).toBeInTheDocument();
+    expect(await screen.findByText('Undertaker')).toBeInTheDocument();
     // Response promo's card is filtered out client-side
     expect(screen.queryByText('The Rock')).not.toBeInTheDocument();
     expect(screen.queryByText('Bring it on!')).not.toBeInTheDocument();
+  });
+
+  it('offers archived promos to staff only', async () => {
+    mockGetAllPromos.mockResolvedValue([]);
+
+    const { unmount } = renderFeed();
+    await waitFor(() => expect(mockGetAllPromos).toHaveBeenCalled());
+    expect(screen.queryByLabelText('Show archived')).not.toBeInTheDocument();
+    unmount();
+
+    const user = userEvent.setup();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, playerId: 'staff', isAdminOrModerator: true, hasRole: () => true });
+    renderFeed();
+    await user.click(await screen.findByLabelText('Show archived'));
+
+    await waitFor(() => {
+      expect(mockGetAllPromos).toHaveBeenLastCalledWith(
+        { excludeResponses: true, includeArchived: true },
+        expect.any(AbortSignal)
+      );
+    });
+  });
+
+  it('shows guests the feed read-only, with nothing that needs a player', async () => {
+    mockGetAllPromos.mockResolvedValue([makePromo({ wrestlerName: 'Undertaker' })]);
+    renderFeed();
+
+    await screen.findByText('Undertaker');
+    expect(screen.getByRole('button', { name: 'Fire' })).toBeDisabled();
+    expect(screen.queryByRole('tab', { name: /Mentions/ })).not.toBeInTheDocument();
+  });
+
+  it('lets a wrestler react', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, playerId: 'p-1', isAdminOrModerator: false, hasRole: () => true });
+    mockGetAllPromos.mockResolvedValue([makePromo({ wrestlerName: 'Undertaker' })]);
+    renderFeed();
+
+    await screen.findByText('Undertaker');
+    expect(screen.getByRole('button', { name: 'Fire' })).toBeEnabled();
+    expect(screen.getByRole('tab', { name: /Mentions/ })).toBeInTheDocument();
+  });
+
+  it('shows a retry when the feed fails to load', async () => {
+    const user = userEvent.setup();
+    mockGetAllPromos.mockRejectedValueOnce(new Error('Network down'));
+    mockGetAllPromos.mockResolvedValue([makePromo()]);
+
+    renderFeed();
+
+    await user.click(await screen.findByText('Retry'));
+
+    expect(await screen.findByText('Stone Cold')).toBeInTheDocument();
+  });
+
+  it('keeps the unread count and Mark all as read from guests', async () => {
+    mockGetAllPromos.mockResolvedValue([makePromo()]);
+    renderFeed();
+
+    expect(await screen.findByText('I am the best wrestler in this league!')).toBeInTheDocument();
+    expect(screen.queryByText(/unread/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Mark all as read' })).not.toBeInTheDocument();
+  });
+
+  it('shows the unread count and Mark all as read to a signed-in member', async () => {
+    localStorage.clear();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, playerId: 'p-9', isAdminOrModerator: false, hasRole: () => true });
+    mockGetAllPromos.mockResolvedValue([makePromo()]);
+    renderFeed();
+
+    expect(await screen.findByText(/unread/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Mark all as read' })).toBeInTheDocument();
   });
 });
