@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { rivalriesApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Rivalry } from '../../types/rivalry';
+import Card from '../ui/Card';
+import HomeSection from '../home/HomeSection';
 import HeatBadge from './HeatBadge';
 
 /**
@@ -44,23 +46,23 @@ export default function DashboardRivalries() {
   if (!loaded || !isAuthenticated || !isWrestler || rivalries.length === 0) return null;
 
   return (
-    <section className="db-rivalries">
-      <header className="db-section-header">
-        <h3 className="db-section-title">{t('rivalries.hub.tabs.mine')}</h3>
-        <Link to="/rivalries?tab=mine" className="db-section-link">
-          {t('rivalries.hub.viewRivalry')} →
-        </Link>
-      </header>
-      <ul className="db-rivalries__list">
-        {rivalries.map((r) => (
-          <li key={r.rivalryId}>
-            <Link to={`/rivalries/${r.rivalryId}`} className="db-rivalries__item">
-              <span className="db-rivalries__title">{r.title}</span>
-              <HeatBadge heat={r.heat} heatScore={r.heatScore} size="sm" />
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <HomeSection
+      title={t('rivalries.hub.tabs.mine')}
+      linkTo="/rivalries?tab=mine"
+      linkLabel={t('home.allMyRivalries')}
+    >
+      <Card padding="none">
+        <ul className="home-list">
+          {rivalries.map((r) => (
+            <li key={r.rivalryId}>
+              <Link to={`/rivalries/${r.rivalryId}`} className="home-rivalry">
+                <span>{r.title}</span>
+                <HeatBadge heat={r.heat} heatScore={r.heatScore} size="sm" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Card>
+    </HomeSection>
   );
 }

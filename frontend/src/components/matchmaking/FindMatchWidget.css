@@ -1,14 +1,14 @@
 /* ===========================
-   FindMatchWidget — Prestige Brutalism
-   Tonal layering, no borders, gold accents
+   FindMatchWidget — Main Event Arena
    =========================== */
 
 .fm-widget {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
-  background: #1c1b1b;
-  border-radius: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
   padding: 1.25rem 1.25rem 1.1rem;
   width: 100%;
 }
@@ -27,18 +27,18 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #d0c5af;
+  color: var(--color-text-secondary);
 }
 
 .fm-widget-online-count {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #d0c5af;
+  color: var(--color-text-secondary);
 }
 
 /* — Status dots — */
@@ -50,12 +50,12 @@
 }
 
 .fm-widget-status-dot--online {
-  background-color: #4ade80;
-  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.18);
+  background-color: var(--color-win);
+  box-shadow: 0 0 0 3px var(--tint-win);
 }
 
 .fm-widget-status-dot--offline {
-  background-color: #5b5b5b;
+  background-color: var(--color-draw);
 }
 
 /* — Incoming challenges — */
@@ -73,10 +73,10 @@
   grid-template-columns: 40px 1fr auto;
   gap: 0.75rem;
   align-items: center;
-  background: #2a2a2a;
-  border-radius: 4px;
+  background: transparent;
+  border-bottom: 1px solid var(--color-hairline);
   padding: 0.7rem 0.8rem;
-  box-shadow: inset 2px 0 0 0 #f2ca50;
+  box-shadow: inset 2px 0 0 0 var(--color-cyan);
 }
 
 .fm-widget-invite-actions {
@@ -88,14 +88,14 @@
 .fm-widget-accept {
   appearance: none;
   border: none;
-  background: linear-gradient(135deg, #f2ca50 0%, #d4af37 100%);
-  color: #3c2f00;
-  font-size: 0.72rem;
+  background: var(--color-cyan);
+  color: var(--color-on-accent);
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 0.4rem 0.75rem;
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   cursor: pointer;
   transition: filter 0.15s ease;
 }
@@ -112,21 +112,21 @@
 .fm-widget-decline {
   appearance: none;
   background: transparent;
-  color: #99907c;
-  border: 1px solid rgba(153, 144, 124, 0.35);
-  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-hairline);
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 0.32rem 0.6rem;
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .fm-widget-decline:hover:not(:disabled) {
-  background-color: rgba(153, 144, 124, 0.08);
-  color: #d0c5af;
+  background-color: var(--color-overlay-soft);
+  color: var(--color-text-secondary);
 }
 
 .fm-widget-decline:disabled {
@@ -135,8 +135,8 @@
 }
 
 .fm-widget-section-count--hot {
-  background: rgba(242, 202, 80, 0.18);
-  color: #f2ca50;
+  background: var(--tint-cyan);
+  color: var(--color-cyan);
 }
 
 /* — Section label — */
@@ -145,28 +145,28 @@
   align-items: center;
   justify-content: space-between;
   margin-top: 0.25rem;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #99907c;
+  color: var(--color-text-muted);
 }
 
 .fm-widget-section-count {
-  background: #2a2a2a;
-  color: #d0c5af;
-  border-radius: 999px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-pill);
   padding: 0.15rem 0.55rem;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
 }
 
 /* — Error — */
 .fm-widget-error {
-  color: #ffb4ab;
+  color: var(--color-loss);
   font-size: 0.82rem;
   padding: 0.5rem 0.7rem;
-  background: rgba(147, 0, 10, 0.18);
-  border-radius: 4px;
+  background: var(--tint-loss);
+  border-radius: var(--radius-control);
 }
 
 /* — Skeleton — */
@@ -178,12 +178,12 @@
 
 .fm-widget-skeleton-row {
   height: 64px;
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   background: linear-gradient(
     90deg,
-    #2a2a2a 0%,
-    #353534 50%,
-    #2a2a2a 100%
+    var(--color-surface-raised) 0%,
+    var(--color-hairline) 50%,
+    var(--color-surface-raised) 100%
   );
   background-size: 200% 100%;
   animation: fm-widget-shimmer 1.6s ease-in-out infinite;
@@ -201,21 +201,21 @@
   align-items: center;
   text-align: center;
   padding: 1.5rem 0.5rem 1.25rem;
-  background: #2a2a2a;
-  border-radius: 4px;
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-control);
 }
 
 .fm-widget-empty-text {
   margin: 0 0 0.35rem 0;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #e5e2e1;
+  color: var(--color-text);
 }
 
 .fm-widget-empty-hint {
   margin: 0;
   font-size: 0.78rem;
-  color: #99907c;
+  color: var(--color-text-muted);
 }
 
 /* — Queue list — */
@@ -235,36 +235,36 @@
   grid-template-columns: 40px 1fr auto;
   gap: 0.75rem;
   align-items: center;
-  background: #2a2a2a;
-  border-radius: 4px;
+  background: transparent;
+  border-bottom: 1px solid var(--color-hairline);
   padding: 0.7rem 0.8rem;
   transition: background-color 0.15s ease;
 }
 
 .fm-widget-queue-card:hover {
-  background: #353534;
+  background: var(--color-overlay-soft);
 }
 
 .fm-widget-queue-card--self {
-  background: #353534;
-  box-shadow: inset 2px 0 0 0 #f2ca50;
+  background: var(--tint-cyan);
+  box-shadow: inset 2px 0 0 0 var(--color-cyan);
 }
 
 .fm-widget-queue-card--self:hover {
-  background: #3a3939;
+  background: var(--color-overlay-soft);
 }
 
 .fm-widget-self-badge {
   display: inline-block;
   margin-left: 0.4rem;
-  background: rgba(242, 202, 80, 0.14);
-  color: #f2ca50;
-  font-size: 0.6rem;
+  background: var(--tint-cyan);
+  color: var(--color-cyan);
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 0.12rem 0.4rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   vertical-align: middle;
 }
 
@@ -273,9 +273,9 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #353534;
-  color: #f2ca50;
-  font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
+  background: var(--color-surface-raised);
+  color: var(--color-cyan);
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 0.85rem;
   display: flex;
@@ -301,10 +301,10 @@
 }
 
 .fm-widget-wrestler-name {
-  font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
+  font-family: var(--font-heading);
   font-size: 0.88rem;
   font-weight: 700;
-  color: #e5e2e1;
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -313,8 +313,8 @@
 }
 
 .fm-widget-player-name {
-  font-size: 0.74rem;
-  color: #99907c;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -328,14 +328,14 @@
 }
 
 .fm-widget-pref-chip {
-  background: #353534;
-  color: #d0c5af;
-  font-size: 0.65rem;
+  background: var(--color-surface-raised);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 0.18rem 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 /* Card action */
@@ -347,49 +347,51 @@
 }
 
 .fm-widget-challenge {
+  min-height: var(--touch-target);
   appearance: none;
   border: none;
-  background: #f2ca50;
-  color: #3c2f00;
-  font-size: 0.72rem;
+  background: var(--color-cyan);
+  color: var(--color-on-accent);
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 0.4rem 0.75rem;
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
 .fm-widget-challenge:hover:not(:disabled) {
-  background: #ffe088;
+  background: var(--color-cyan-bright);
 }
 
 .fm-widget-challenge:disabled {
-  background: #353534;
-  color: #99907c;
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
   cursor: not-allowed;
 }
 
 .fm-widget-joined-ago {
-  font-size: 0.65rem;
-  color: #99907c;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
   white-space: nowrap;
 }
 
 /* — CTA — */
 .fm-widget-cta {
+  min-height: var(--touch-target);
   appearance: none;
   border: none;
-  background: linear-gradient(135deg, #f2ca50 0%, #d4af37 100%);
-  color: #3c2f00;
-  font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
+  background: var(--color-cyan);
+  color: var(--color-on-accent);
+  font-family: var(--font-heading);
   font-size: 0.85rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 0.75rem 1rem;
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   cursor: pointer;
   transition: filter 0.15s ease, transform 0.1s ease;
   margin-top: 0.4rem;
@@ -411,6 +413,6 @@
 .fm-widget-cta-subtitle {
   margin: 0;
   text-align: center;
-  font-size: 0.72rem;
-  color: #99907c;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
 }

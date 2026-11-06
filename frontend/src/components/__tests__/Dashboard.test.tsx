@@ -3,12 +3,16 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
-const { mockGetDashboard } = vi.hoisted(() => ({
+const { mockGetDashboard, mockGetEvent, mockGetStandings } = vi.hoisted(() => ({
   mockGetDashboard: vi.fn(),
+  mockGetEvent: vi.fn(),
+  mockGetStandings: vi.fn(),
 }));
 
 vi.mock('../../services/api', () => ({
   dashboardApi: { get: mockGetDashboard },
+  eventsApi: { getById: mockGetEvent },
+  standingsApi: { get: mockGetStandings },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -90,6 +94,8 @@ describe('Dashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetDashboard.mockResolvedValue(emptyDashboard);
+    mockGetEvent.mockRejectedValue(new Error('not available'));
+    mockGetStandings.mockResolvedValue({ players: [], sortedByWins: true });
   });
 
   it('renders loading state initially then shows content after load', async () => {
@@ -99,6 +105,8 @@ describe('Dashboard', () => {
     );
 
     renderDashboard();
+
+    expect(screen.getAllByRole('status').length).toBeGreaterThan(0);
 
     resolve!(emptyDashboard);
     await waitFor(() => {
@@ -172,5 +180,116 @@ describe('Dashboard', () => {
       },
       { timeout: 3000 }
     );
+  });
+
+  it('leads with the live event and lists the other shows under it', async () => {
+    mockGetDashboard.mockResolvedValue({
+      ...emptyDashboard,
+      inProgressEvents: [{ eventId: 'live', name: 'Toxic Tuesday', date: '2026-11-03', eventType: 'weekly' }],
+      upcomingEvents: [{ eventId: 'next', name: 'Summer Slam', date: '2027-08-01', eventType: 'ppv' }],
+    });
+
+    renderDashboard();
+
+    const heading = await screen.findByRole('heading', { level: 1 });
+    expect(heading).toHaveTextContent('Toxic Tuesday');
+    expect(screen.getByText('LIVE')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Summer Slam/ })).toHaveAttribute('href', '/events/next');
+    expect(screen.getByRole('link', { name: 'home.seeTheCard' })).toHaveAttribute('href', '/events/live');
+  });
+
+  it('leads with the next event when nothing is live, without a live badge', async () => {
+    mockGetDashboard.mockResolvedValue({
+      ...emptyDashboard,
+      upcomingEvents: [
+        { eventId: 'e1', name: 'First Show', date: '2099-01-01', eventType: 'ppv' },
+        { eventId: 'e2', name: 'Second Show', date: '2099-02-01', eventType: 'ppv' },
+      ],
+    });
+
+    renderDashboard();
+
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('First Show');
+    expect(screen.queryByText('LIVE')).not.toBeInTheDocument();
+    expect(screen.getByText('home.nextUp')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Second Show/ })).toBeInTheDocument();
+  });
+
+  it('shows the booked main event in the hero', async () => {
+    mockGetDashboard.mockResolvedValue({
+      ...emptyDashboard,
+      upcomingEvents: [{ eventId: 'e1', name: 'First Show', date: '2099-01-01', eventType: 'ppv' }],
+    });
+    mockGetEvent.mockResolvedValue({
+      eventId: 'e1',
+      description: 'Two rivals, one night.',
+      enrichedMatches: [
+        {
+          position: 1,
+          matchId: 'm1',
+          designation: 'main-event',
+          matchData: {
+            isChampionship: true,
+            championshipName: 'World Title',
+            stipulationName: 'Steel Cage',
+            participants: [
+              { playerId: 'p1', playerName: 'Ann', wrestlerName: 'Edge' },
+              { playerId: 'p2', playerName: 'Ben', wrestlerName: 'Sting' },
+            ],
+          },
+        },
+      ],
+    });
+
+    renderDashboard();
+
+    expect(await screen.findByText('Edge vs Sting')).toBeInTheDocument();
+    expect(screen.getByText('World Title · Steel Cage')).toBeInTheDocument();
+    expect(screen.getByText('Two rivals, one night.')).toBeInTheDocument();
+  });
+
+  it('asks for the active season and shows the leaders, skipping players with no matches', async () => {
+    mockGetDashboard.mockResolvedValue({
+      ...emptyDashboard,
+      seasonInfo: { seasonId: 's1', name: 'Season 1', status: 'active' },
+    });
+    mockGetStandings.mockResolvedValue({
+      sortedByWins: true,
+      players: [
+        { playerId: 'p1', name: 'Ann', currentWrestler: 'Edge', wins: 3, losses: 1, draws: 0, recentForm: ['W', 'L'] },
+        { playerId: 'p2', name: 'Ben', currentWrestler: 'Sting', wins: 0, losses: 0, draws: 0 },
+      ],
+    });
+
+    renderDashboard();
+
+    expect(await screen.findByRole('link', { name: /Edge/ })).toHaveAttribute('href', '/player/p1');
+    expect(mockGetStandings).toHaveBeenCalledWith('s1', expect.any(AbortSignal));
+    expect(screen.getByText('3-1-0')).toBeInTheDocument();
+    expect(screen.queryByText('Sting')).not.toBeInTheDocument();
+  });
+
+  it('keeps the page up and offers a retry when the table fails to load', async () => {
+    mockGetStandings.mockRejectedValueOnce(new Error('boom'));
+
+    renderDashboard();
+
+    await screen.findByText('home.standingsError');
+    expect(screen.getByText('No active champions')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByText('home.noStandings')).toBeInTheDocument();
+  });
+
+  it('shows season progress only when the season has an end date', async () => {
+    mockGetDashboard.mockResolvedValue({
+      ...emptyDashboard,
+      seasonInfo: { seasonId: 's1', name: 'Season 1', status: 'active', startDate: '2020-01-01', endDate: '2020-12-31' },
+    });
+
+    renderDashboard();
+
+    expect(await screen.findByRole('progressbar')).toHaveAttribute('value', '100');
+    expect(screen.getByText('100%')).toBeInTheDocument();
   });
 });
