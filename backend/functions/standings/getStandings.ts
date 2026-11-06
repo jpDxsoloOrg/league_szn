@@ -4,6 +4,8 @@ import { success, serverError } from '../../lib/response';
 import { hasWrestlerRole } from '../../lib/wrestlerRole';
 import { isPlayerVisible } from '../../lib/needsWrestler';
 import { computeRecentFormAndStreak } from '../../lib/recentForm';
+import { getVerifiedCaller } from '../../lib/optionalCaller';
+import { toPublicPlayer } from '../../lib/publicPlayer';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -11,9 +13,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const seasonId = event.queryStringParameters?.seasonId;
 
     // Fetch overalls and matches in parallel
-    const [overallItems, rawMatches] = await Promise.all([
+    const [overallItems, rawMatches, caller] = await Promise.all([
       overalls.listAll(),
       matches.listCompleted(),
+      getVerifiedCaller(event),
     ]);
 
     const overallsByPlayerId = new Map<string, number>(
@@ -52,7 +55,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         );
         const mainOverall = overallsByPlayerId.get(player.playerId);
         return {
-          ...player,
+          ...toPublicPlayer(player, caller),
           wins: standing ? (standing.wins || 0) : 0,
           losses: standing ? (standing.losses || 0) : 0,
           draws: standing ? (standing.draws || 0) : 0,
@@ -105,7 +108,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         completedMatches
       );
       const mainOverall = overallsByPlayerId.get(player.playerId);
-      return { ...player, recentForm, currentStreak, ...(mainOverall !== undefined ? { mainOverall } : {}) };
+      return { ...toPublicPlayer(player, caller), recentForm, currentStreak, ...(mainOverall !== undefined ? { mainOverall } : {}) };
     });
 
     return success({

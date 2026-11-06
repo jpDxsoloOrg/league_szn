@@ -1,6 +1,9 @@
 export interface Player {
   playerId: string;
+  /** Sent only to staff and to the player themselves. */
   userId?: string;
+  /** Whether a user account is linked; sent to everyone. */
+  hasLinkedAccount?: boolean;
   name: string;
   currentWrestler: string;
   alternateWrestler?: string;

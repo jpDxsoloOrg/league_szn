@@ -60,17 +60,16 @@ import IssueChallenge from '../IssueChallenge';
 
 const players: Player[] = [
   {
-    playerId: 'p-1', userId: 'u-1', name: 'John', currentWrestler: 'Stone Cold',
+    playerId: 'p-1', hasLinkedAccount: true, name: 'John', currentWrestler: 'Stone Cold',
     wins: 10, losses: 5, draws: 0, createdAt: '', updatedAt: '',
   },
   {
-    playerId: 'p-2', userId: 'u-2', name: 'Jane', currentWrestler: 'The Rock',
+    playerId: 'p-2', hasLinkedAccount: true, name: 'Jane', currentWrestler: 'The Rock',
     wins: 8, losses: 7, draws: 1, createdAt: '', updatedAt: '',
   },
   {
-    playerId: 'p-3', name: 'NoLink', currentWrestler: 'Unlinked Guy',
+    playerId: 'p-3', hasLinkedAccount: false, name: 'NoLink', currentWrestler: 'Unlinked Guy',
     wins: 0, losses: 0, draws: 0, createdAt: '', updatedAt: '',
-    // no userId - not linked
   },
 ];
 

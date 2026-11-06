@@ -60,8 +60,8 @@ export default function IssueChallenge() {
 
   const currentPlayer = players.find((p) => p.playerId === currentPlayerId);
   const opponent = players.find((p) => p.playerId === opponentId);
-  // Only show players with linked accounts (userId) who can actually respond to challenges
-  const availableOpponents = players.filter((p) => p.playerId !== currentPlayerId && p.userId);
+  // Only show players with linked accounts who can actually respond to challenges
+  const availableOpponents = players.filter((p) => p.playerId !== currentPlayerId && p.hasLinkedAccount);
 
   const selectedTagTeam = tagTeams.find((tt) => tt.tagTeamId === selectedTagTeamId);
 

@@ -2,7 +2,8 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { isPlayerVisible } from '../../lib/needsWrestler';
-import { canViewHiddenPlayer } from '../../lib/optionalCaller';
+import { canViewHiddenPlayer, getVerifiedCaller } from '../../lib/optionalCaller';
+import { toPublicPlayer } from '../../lib/publicPlayer';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -50,7 +51,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
 
     return success({
-      ...player,
+      ...toPublicPlayer(player, await getVerifiedCaller(event)),
       seasonRecords,
     });
   } catch (err) {
