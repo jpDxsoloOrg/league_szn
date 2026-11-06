@@ -1,0 +1,98 @@
+{
+  "events": {
+    "emptyTitle": "No events yet",
+    "calendar": {
+      "nextMonth": "Next month",
+      "previousMonth": "Previous month",
+      "noResults": "No completed events yet.",
+      "recentResults": "Recent Results",
+      "showMore": "Show more",
+      "typeFilter": "Event type",
+      "viewCard": "View the card"
+    },
+    "create": {
+      "company": "Company",
+      "error": "Failed to create event.",
+      "nameRequired": "Enter an event name.",
+      "noCompany": "No company",
+      "noShow": "No show",
+      "show": "Show",
+      "venueHint": "Leave blank to pick a saved location at random."
+    },
+    "detail": {
+      "confirmDeleteTitle": "Confirm delete",
+      "deleteMatchConfirm": {
+        "championship": "Delete this completed championship match? Player stats and championship history will be rolled back. This cannot be undone.",
+        "completed": "Delete this completed {{format}} match? Player stats (wins/losses/draws) will be rolled back. This cannot be undone.",
+        "scheduled": "Delete this {{format}} match? This cannot be undone.",
+        "tournament": "Delete this completed tournament match? Player stats and tournament progression will be rolled back. This cannot be undone."
+      },
+      "deleteMatchError": "Failed to delete match.",
+      "detailsError": "Failed to update event details.",
+      "editDetails": "Edit date and venue",
+      "editMatchTitle": "Edit match",
+      "manage": "Manage event",
+      "statusError": "Failed to update status.",
+      "statusLabel": "Event status"
+    },
+    "forms": {
+      "allDivisions": "All Divisions",
+      "championship": "Championship",
+      "championshipMatch": "Championship Match",
+      "draw": "Draw",
+      "drawHint": "All participants will receive a draw.",
+      "filterDivision": "Filter by Division",
+      "loadError": "Failed to load match data",
+      "matchNotFound": "Match not found",
+      "noDivision": "No Division",
+      "noSeason": "No Season (Exhibition)",
+      "onlyScheduled": "Only scheduled matches can be edited. Completed matches cannot be modified.",
+      "saveChanges": "Save Changes",
+      "selectChampionship": "Select Championship",
+      "tournament": "Tournament (Optional)",
+      "updateError": "Failed to update match"
+    },
+    "results": {
+      "draw": "Draw"
+    }
+  },
+  "match": {
+    "rating": {
+      "votesCount_one": "{{count}} vote",
+      "votesCount_other": "{{count}} votes"
+    }
+  },
+  "matchSearch": {
+    "detailDate": "Date",
+    "details": "Details",
+    "detailsFor": "Details: {{names}}",
+    "detailsTitle": "Match details",
+    "filtersButton": "Filters",
+    "filtersHelp": "Filters are combined together. Use \"Clear Filters\" to quickly reset and broaden results.",
+    "learnMore": "Learn more",
+    "status": {
+      "open-signups": "Open sign-ups",
+      "cancelled": "Cancelled"
+    }
+  },
+  "matches": {
+    "slots": {
+      "clearError": "Failed to clear slot",
+      "positionLabel": "Position {{position}}",
+      "saveError": "Failed to save slot"
+    }
+  },
+  "scheduleMatch": {
+    "designation": "Card Position",
+    "event": "Event",
+    "matchFormat": "Match Format",
+    "noEvent": "No Event (Standalone Match)",
+    "noStipulation": "Standard Match (No Stipulation)",
+    "selectMatchFormat": "Select Match Format",
+    "tagTeam": {
+      "selectTagTeam": "Select a Tag Team...",
+      "useIndividuals": "Pick Individuals",
+      "useTagTeams": "Use Tag Teams"
+    }
+  }
+}

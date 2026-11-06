@@ -24,7 +24,7 @@
   display: inline-flex;
   align-items: center;
   gap: 1px;
-  color: var(--color-accent-gold, #c8a85a);
+  color: var(--color-warn);
 }
 
 .star-rating__star {
@@ -47,13 +47,13 @@
 
 /* The "background" layer is the muted empty-star colour. */
 .star-rating__star-bg {
-  color: var(--color-text-muted, #888888);
+  color: var(--color-text-muted);
   opacity: 0.55;
 }
 
 /* The "foreground" layer is the gold fill, clipped per fill state. */
 .star-rating__star-fg {
-  color: var(--color-accent-gold, #c8a85a);
+  color: var(--color-warn);
   overflow: hidden;
 }
 
@@ -70,12 +70,12 @@
 }
 
 .star-rating__count {
-  color: var(--color-text-muted, #888888);
+  color: var(--color-text-muted);
   font-size: 0.85em;
 }
 
 .star-rating--empty {
-  color: var(--color-text-muted, #888888);
+  color: var(--color-text-muted);
   font-style: italic;
   font-size: 0.9em;
 }

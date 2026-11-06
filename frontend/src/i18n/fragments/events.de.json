@@ -1,0 +1,98 @@
+{
+  "events": {
+    "emptyTitle": "Noch keine Events",
+    "calendar": {
+      "nextMonth": "Nächster Monat",
+      "previousMonth": "Vorheriger Monat",
+      "noResults": "Noch keine abgeschlossenen Events.",
+      "recentResults": "Neueste Ergebnisse",
+      "showMore": "Mehr anzeigen",
+      "typeFilter": "Event-Typ",
+      "viewCard": "Zur Match Card"
+    },
+    "create": {
+      "company": "Promotion",
+      "error": "Event konnte nicht erstellt werden.",
+      "nameRequired": "Gib einen Event-Namen ein.",
+      "noCompany": "Keine Promotion",
+      "noShow": "Keine Show",
+      "show": "Show",
+      "venueHint": "Leer lassen, um zufällig einen gespeicherten Ort zu wählen."
+    },
+    "detail": {
+      "confirmDeleteTitle": "Löschen bestätigen",
+      "deleteMatchConfirm": {
+        "championship": "Dieses abgeschlossene Titelmatch löschen? Spielerstatistiken und die Titelhistorie werden zurückgesetzt. Das kann nicht rückgängig gemacht werden.",
+        "completed": "Dieses abgeschlossene {{format}}-Match löschen? Spielerstatistiken (Siege/Niederlagen/Unentschieden) werden zurückgesetzt. Das kann nicht rückgängig gemacht werden.",
+        "scheduled": "Dieses {{format}}-Match löschen? Das kann nicht rückgängig gemacht werden.",
+        "tournament": "Dieses abgeschlossene Turniermatch löschen? Spielerstatistiken und der Turnierfortschritt werden zurückgesetzt. Das kann nicht rückgängig gemacht werden."
+      },
+      "deleteMatchError": "Match konnte nicht gelöscht werden.",
+      "detailsError": "Event-Details konnten nicht aktualisiert werden.",
+      "editDetails": "Datum und Ort bearbeiten",
+      "editMatchTitle": "Match bearbeiten",
+      "manage": "Event verwalten",
+      "statusError": "Status konnte nicht aktualisiert werden.",
+      "statusLabel": "Event-Status"
+    },
+    "forms": {
+      "allDivisions": "Alle Divisionen",
+      "championship": "Titel",
+      "championshipMatch": "Titelmatch",
+      "draw": "Unentschieden",
+      "drawHint": "Alle Teilnehmer erhalten ein Unentschieden.",
+      "filterDivision": "Nach Division filtern",
+      "loadError": "Matchdaten konnten nicht geladen werden",
+      "matchNotFound": "Match nicht gefunden",
+      "noDivision": "Keine Division",
+      "noSeason": "Keine Saison (Showmatch)",
+      "onlyScheduled": "Nur geplante Matches können bearbeitet werden. Abgeschlossene Matches lassen sich nicht ändern.",
+      "saveChanges": "Änderungen speichern",
+      "selectChampionship": "Titel auswählen",
+      "tournament": "Turnier (optional)",
+      "updateError": "Match konnte nicht aktualisiert werden"
+    },
+    "results": {
+      "draw": "Unentschieden"
+    }
+  },
+  "match": {
+    "rating": {
+      "votesCount_one": "{{count}} Stimme",
+      "votesCount_other": "{{count}} Stimmen"
+    }
+  },
+  "matchSearch": {
+    "detailDate": "Datum",
+    "details": "Details",
+    "detailsFor": "Details: {{names}}",
+    "detailsTitle": "Matchdetails",
+    "filtersButton": "Filter",
+    "filtersHelp": "Filter werden miteinander kombiniert. Mit „Filter löschen“ setzt du sie schnell zurück und erweiterst die Ergebnisse.",
+    "learnMore": "Mehr erfahren",
+    "status": {
+      "open-signups": "Offene Anmeldung",
+      "cancelled": "Abgesagt"
+    }
+  },
+  "matches": {
+    "slots": {
+      "clearError": "Slot konnte nicht geleert werden",
+      "positionLabel": "Position {{position}}",
+      "saveError": "Slot konnte nicht gespeichert werden"
+    }
+  },
+  "scheduleMatch": {
+    "designation": "Position auf der Card",
+    "event": "Event",
+    "matchFormat": "Matchformat",
+    "noEvent": "Kein Event (einzelnes Match)",
+    "noStipulation": "Standardmatch (keine Stipulation)",
+    "selectMatchFormat": "Matchformat auswählen",
+    "tagTeam": {
+      "selectTagTeam": "Tag Team auswählen...",
+      "useIndividuals": "Einzelne auswählen",
+      "useTagTeams": "Tag Teams verwenden"
+    }
+  }
+}

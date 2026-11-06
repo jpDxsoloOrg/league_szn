@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ArrowLeft, CalendarClock, Lock, LockOpen, Mic, Pencil, Plus, Trash2, Trophy } from 'lucide-react';
 import { eventsApi, matchesApi, playersApi, tagTeamsApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import type {
   MatchDesignation,
+  EventStatus,
   EventWithMatches,
   EventCheckIn as EventCheckInRow,
   EventCheckInStatus,
@@ -13,6 +16,13 @@ import type {
 } from '../../types/event';
 import type { Match, Player, MatchStatus, PlayerBookingInfo } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import EmptyState from '../ui/EmptyState';
+import Modal from '../ui/Modal';
+import PageHeader from '../ui/PageHeader';
+import Select from '../ui/Select';
 import Skeleton from '../ui/Skeleton';
 import MatchResultForm from './MatchResultForm';
 import MatchEditForm from './MatchEditForm';
@@ -26,39 +36,17 @@ import { StarRating } from '../matches/StarRating';
 import { RateMatchWidget } from '../matches/RateMatchWidget';
 import { MotnToggleButton } from '../matches/MotnToggleButton';
 import { formatCalendarDate, toCalendarDate } from '../../utils/dateUtils';
+import { DESIGNATION_LABEL_KEYS, EVENT_STATUS_TONES, EVENT_TYPE_TONES } from './eventDisplay';
 import './EventDetail.css';
 
-const eventTypeColors: Record<string, string> = {
-  ppv: '#d4af37',
-  weekly: '#60a5fa',
-  special: '#a78bfa',
-  house: '#9ca3af',
-};
-
-const statusColors: Record<string, string> = {
-  upcoming: '#60a5fa',
-  'in-progress': '#4ade80',
-  completed: '#9ca3af',
-  cancelled: '#f87171',
-};
-
-const designationLabels: Record<MatchDesignation, string> = {
-  'pre-show': 'events.designations.preShow',
-  'opener': 'events.designations.opener',
-  'midcard': 'events.designations.midcard',
-  'co-main': 'events.designations.coMain',
-  'main-event': 'events.designations.mainEvent',
-};
-
-const designationColors: Record<MatchDesignation, string> = {
-  'pre-show': '#6b7280',
-  'opener': '#60a5fa',
-  'midcard': '#a78bfa',
-  'co-main': '#f59e0b',
-  'main-event': '#d4af37',
-};
+const EVENT_STATUSES: EventStatus[] = ['upcoming', 'in-progress', 'completed', 'cancelled'];
 
 type HydratedTagTeam = TagTeam & { player1Name?: string; player2Name?: string };
+
+/** What the delete confirmation is currently asking about. */
+type PendingDelete =
+  | { kind: 'event'; message: string }
+  | { kind: 'match'; matchId: string; message: string };
 
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -77,19 +65,16 @@ export default function EventDetail() {
   const [error, setError] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [editingDate, setEditingDate] = useState(false);
+  const [manageError, setManageError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [dateDraft, setDateDraft] = useState('');
-  const [savingDate, setSavingDate] = useState(false);
-  const [dateError, setDateError] = useState<string | null>(null);
-  const [editingVenue, setEditingVenue] = useState(false);
   const [venueDraft, setVenueDraft] = useState('');
-  const [savingVenue, setSavingVenue] = useState(false);
-  const [venueError, setVenueError] = useState<string | null>(null);
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
   const [togglingLock, setTogglingLock] = useState(false);
-  const [lockError, setLockError] = useState<string | null>(null);
 
-  // Admin-only data for inline record/edit/delete flows
+  // Staff-only data for the record, edit and delete flows
   const [scheduledMatches, setScheduledMatches] = useState<Match[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [tagTeams, setTagTeams] = useState<HydratedTagTeam[]>([]);
@@ -137,7 +122,8 @@ export default function EventDetail() {
     try {
       const [scheduled, playersData, tagTeamsData, rosterData] = await Promise.all([
         matchesApi.getAll({ status: 'scheduled' }),
-        playersApi.getAll(),
+        // Staff can book hidden players, so the pickers need the full roster.
+        playersApi.getAllIncludingHidden(),
         tagTeamsApi.getAll({ status: 'active' }).catch(() => [] as TagTeam[]),
         // Drives the colour-coded slot picker. A failure here only costs the
         // check-in grouping, so fall back to an unfiltered picker.
@@ -233,80 +219,49 @@ export default function EventDetail() {
   const handleStatusChange = async (newStatus: string) => {
     if (!eventData || !eventId || newStatus === eventData.status) return;
     setUpdatingStatus(true);
+    setManageError(null);
     try {
-      await eventsApi.update(eventId, { status: newStatus as 'upcoming' | 'in-progress' | 'completed' | 'cancelled' });
-      setEventData({ ...eventData, status: newStatus as EventWithMatches['status'] });
+      await eventsApi.update(eventId, { status: newStatus as EventStatus });
+      setEventData({ ...eventData, status: newStatus as EventStatus });
     } catch (err) {
-      console.error('Failed to update event status:', err);
+      setManageError(err instanceof Error ? err.message : t('events.detail.statusError', 'Failed to update status.'));
     } finally {
       setUpdatingStatus(false);
     }
   };
 
-  const handleStartEditDate = () => {
+  const handleOpenDetails = () => {
     if (!eventData) return;
     setDateDraft(toCalendarDate(eventData.date));
-    setDateError(null);
-    setEditingDate(true);
-  };
-
-  const handleCancelEditDate = () => {
-    setEditingDate(false);
-    setDateError(null);
-  };
-
-  const handleSaveDate = async () => {
-    if (!eventData || !eventId || savingDate) return;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateDraft)) {
-      setDateError(t('events.admin.editDate.invalid', 'Pick a valid date.'));
-      return;
-    }
-    if (dateDraft === toCalendarDate(eventData.date)) {
-      setEditingDate(false);
-      return;
-    }
-    setSavingDate(true);
-    setDateError(null);
-    try {
-      const updated = await eventsApi.update(eventId, { date: dateDraft });
-      setEventData({ ...eventData, date: updated.date });
-      setEditingDate(false);
-    } catch (err) {
-      setDateError(err instanceof Error ? err.message : t('events.admin.editDate.error', 'Failed to update date.'));
-    } finally {
-      setSavingDate(false);
-    }
-  };
-
-  const handleStartEditVenue = () => {
-    if (!eventData) return;
     setVenueDraft(eventData.venue ?? '');
-    setVenueError(null);
-    setEditingVenue(true);
+    setDetailsError(null);
+    setDetailsOpen(true);
   };
 
-  const handleCancelEditVenue = () => {
-    setEditingVenue(false);
-    setVenueError(null);
-  };
-
-  const handleSaveVenue = async () => {
-    if (!eventData || !eventId || savingVenue) return;
-    const trimmed = venueDraft.trim();
-    if (trimmed === (eventData.venue ?? '')) {
-      setEditingVenue(false);
+  const handleSaveDetails = async () => {
+    if (!eventData || !eventId || savingDetails) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateDraft)) {
+      setDetailsError(t('events.admin.editDate.invalid', 'Pick a valid date.'));
       return;
     }
-    setSavingVenue(true);
-    setVenueError(null);
+    const venue = venueDraft.trim();
+    const updates: { date?: string; venue?: string } = {};
+    if (dateDraft !== toCalendarDate(eventData.date)) updates.date = dateDraft;
+    if (venue !== (eventData.venue ?? '')) updates.venue = venue;
+    if (Object.keys(updates).length === 0) {
+      setDetailsOpen(false);
+      return;
+    }
+    setSavingDetails(true);
+    setDetailsError(null);
     try {
-      const updated = await eventsApi.update(eventId, { venue: trimmed });
-      setEventData({ ...eventData, venue: updated.venue });
-      setEditingVenue(false);
+      const updated = await eventsApi.update(eventId, updates);
+      setEventData({ ...eventData, date: updated.date, venue: updated.venue });
+      setDetailsOpen(false);
     } catch (err) {
-      setVenueError(err instanceof Error ? err.message : t('events.admin.editVenue.error', 'Failed to update location.'));
+      setDetailsError(err instanceof Error ? err.message : t('events.detail.detailsError', 'Failed to update event details.'));
     } finally {
-      setSavingVenue(false);
+      setSavingDetails(false);
     }
   };
 
@@ -314,33 +269,24 @@ export default function EventDetail() {
     if (!eventData || !eventId || togglingLock) return;
     const next = !eventData.checkInsLocked;
     setTogglingLock(true);
-    setLockError(null);
+    setManageError(null);
     try {
       const updated = await eventsApi.update(eventId, { checkInsLocked: next });
       setEventData({ ...eventData, checkInsLocked: updated.checkInsLocked });
     } catch (err) {
-      setLockError(err instanceof Error ? err.message : t('events.admin.lockSignups.error', 'Failed to update sign-ups.'));
+      setManageError(err instanceof Error ? err.message : t('events.admin.lockSignups.error', 'Failed to update sign-ups.'));
     } finally {
       setTogglingLock(false);
     }
   };
 
-  const handleDeleteEvent = async () => {
-    if (!eventData || !eventId || deleting) return;
-    const confirmMsg = t('events.admin.confirmDeleteEvent', { name: eventData.name });
-    if (!window.confirm(confirmMsg)) return;
-    setDeleting(true);
-    setDeleteError(null);
-    try {
-      await eventsApi.delete(eventId);
-      navigate('/events');
-    } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : t('events.admin.deleteEventError'));
-      setDeleting(false);
-    }
+  const handleRequestDeleteEvent = () => {
+    if (!eventData) return;
+    setManageError(null);
+    setPendingDelete({ kind: 'event', message: t('events.admin.confirmDeleteEvent', { name: eventData.name }) });
   };
 
-  const handleDeleteMatch = async (matchId: string) => {
+  const handleRequestDeleteMatch = (matchId: string) => {
     const targetMatch = scheduledMatches.find(m => m.matchId === matchId)
       ?? eventData?.enrichedMatches.find(em => em.matchId === matchId)?.matchData;
     if (!targetMatch) return;
@@ -350,26 +296,52 @@ export default function EventDetail() {
     const isTournament = 'tournamentId' in targetMatch && !!(targetMatch as { tournamentId?: string }).tournamentId;
     const matchFormat = 'matchFormat' in targetMatch ? (targetMatch as { matchFormat: string }).matchFormat : 'match';
 
-    let confirmMsg: string;
+    let message: string;
     if (!isCompleted) {
-      confirmMsg = `Delete this ${matchFormat} match? This cannot be undone.`;
+      message = t('events.detail.deleteMatchConfirm.scheduled', {
+        format: matchFormat,
+        defaultValue: `Delete this ${matchFormat} match? This cannot be undone.`,
+      });
     } else if (isChampionship) {
-      confirmMsg = `Delete this completed CHAMPIONSHIP match? Player stats AND championship history will be rolled back. This cannot be undone.`;
+      message = t('events.detail.deleteMatchConfirm.championship', 'Delete this completed championship match? Player stats and championship history will be rolled back. This cannot be undone.');
     } else if (isTournament) {
-      confirmMsg = `Delete this completed TOURNAMENT match? Player stats AND tournament progression will be rolled back. This cannot be undone.`;
+      message = t('events.detail.deleteMatchConfirm.tournament', 'Delete this completed tournament match? Player stats and tournament progression will be rolled back. This cannot be undone.');
     } else {
-      confirmMsg = `Delete this completed ${matchFormat} match? Player stats (wins/losses/draws) will be rolled back. This cannot be undone.`;
+      message = t('events.detail.deleteMatchConfirm.completed', {
+        format: matchFormat,
+        defaultValue: `Delete this completed ${matchFormat} match? Player stats (wins/losses/draws) will be rolled back. This cannot be undone.`,
+      });
     }
 
-    if (!window.confirm(confirmMsg)) return;
+    setMatchActionError(null);
+    setPendingDelete({ kind: 'match', matchId, message });
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) return;
+    if (pendingDelete.kind === 'event') {
+      if (!eventId || deleting) return;
+      setDeleting(true);
+      setPendingDelete(null);
+      try {
+        await eventsApi.delete(eventId);
+        navigate('/events');
+      } catch (err) {
+        setManageError(err instanceof Error ? err.message : t('events.admin.deleteEventError'));
+        setDeleting(false);
+      }
+      return;
+    }
+
+    const { matchId } = pendingDelete;
+    setPendingDelete(null);
     setDeletingMatchId(matchId);
     setMatchActionError(null);
     try {
       await matchesApi.delete(matchId);
       await refreshAfterMutation();
     } catch (err) {
-      setMatchActionError(err instanceof Error ? err.message : 'Failed to delete match');
+      setMatchActionError(err instanceof Error ? err.message : t('events.detail.deleteMatchError', 'Failed to delete match.'));
     } finally {
       setDeletingMatchId(null);
     }
@@ -486,7 +458,8 @@ export default function EventDetail() {
     [checkInRoster],
   );
 
-  if (loading) {
+  // Refetches keep the current page on screen so open forms and slots survive.
+  if (loading && eventData?.eventId !== eventId) {
     return (
       <div className="event-detail-page">
         <Skeleton variant="block" count={4} />
@@ -497,18 +470,16 @@ export default function EventDetail() {
   if (error || !eventData) {
     return (
       <div className="event-detail-page">
-        <div className="event-not-found">
-          <p>{error || t('events.detail.notFound')}</p>
-          <Link to="/events" className="back-link">{t('events.detail.backToEvents')}</Link>
-        </div>
+        <EmptyState
+          title={error || t('events.detail.notFound')}
+          actionLabel={t('events.detail.backToEvents')}
+          onAction={() => navigate('/events')}
+        />
       </div>
     );
   }
 
-  const typeColor = eventTypeColors[eventData.eventType] || '#9ca3af';
-  const statusColor = statusColors[eventData.status] || '#9ca3af';
-
-  const formattedDate = formatCalendarDate(eventData.date, 'en-US', {
+  const formattedDate = formatCalendarDate(eventData.date, undefined, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -536,15 +507,6 @@ export default function EventDetail() {
       )?.matchId ?? null)
     : null;
 
-  const renderStarRating = (rating: number) => {
-    const full = Math.floor(rating);
-    const half = rating % 1 >= 0.5;
-    const stars: string[] = [];
-    for (let i = 0; i < full; i++) stars.push('\u2605');
-    if (half) stars.push('\u00BD');
-    return stars.join('');
-  };
-
   const handleRecordResult = (matchId: string) => {
     setRecordingMatchId(matchId);
     setEditingMatchId(null);
@@ -557,7 +519,7 @@ export default function EventDetail() {
     setMatchActionError(null);
   };
 
-  const handleCancelInlineForm = () => {
+  const handleCloseMatchForm = () => {
     setRecordingMatchId(null);
     setEditingMatchId(null);
     setMatchActionError(null);
@@ -566,40 +528,21 @@ export default function EventDetail() {
   const renderMatchEntry = (
     match: typeof enrichedMatches[number],
   ) => {
-    const isRecording = recordingMatchId === match.matchId;
-    const isEditing = editingMatchId === match.matchId;
-    const rawMatch = scheduledMatchesById.get(match.matchId);
-
     const slots = match.matchData?.slots;
-    const hasSlots = !!(slots && slots.length > 0);
+    const isScheduled = match.matchData?.status === 'scheduled';
 
     return (
-      <div
+      <MatchEntry
         key={match.matchId}
-        className={`match-entry-with-actions${hasSlots ? ' has-slots' : ''}`}
+        match={match}
+        isCompleted={match.matchData?.status === 'completed'}
+        isAdmin={isAdminOrModerator}
+        isDeleting={deletingMatchId === match.matchId}
+        onRecordResult={isAdminOrModerator && isScheduled ? () => handleRecordResult(match.matchId) : undefined}
+        onEdit={isAdminOrModerator && isScheduled ? () => handleEditMatch(match.matchId) : undefined}
+        onDelete={isAdminOrModerator ? () => handleRequestDeleteMatch(match.matchId) : undefined}
+        onMatchUpdated={refreshAfterMutation}
       >
-        <MatchEntry
-          match={match}
-          isCompleted={match.matchData?.status === 'completed'}
-          isAdmin={isAdminOrModerator}
-          isDeleting={deletingMatchId === match.matchId}
-          onRecordResult={
-            isAdminOrModerator && match.matchData?.status === 'scheduled'
-              ? () => handleRecordResult(match.matchId)
-              : undefined
-          }
-          onEdit={
-            isAdminOrModerator && match.matchData?.status === 'scheduled'
-              ? () => handleEditMatch(match.matchId)
-              : undefined
-          }
-          onDelete={
-            isAdminOrModerator
-              ? () => handleDeleteMatch(match.matchId)
-              : undefined
-          }
-          onMatchUpdated={refreshAfterMutation}
-        />
         {slots && slots.length > 0 && match.matchData && (
           <MatchSlots
             matchId={match.matchId}
@@ -629,367 +572,257 @@ export default function EventDetail() {
             }
             currentPlayerCurrentWrestler={currentWrestler}
             currentPlayerAlternateWrestler={alternateWrestler}
-            winnerPlayerIds={match.matchData.winners}
+            winnerPlayerIds={match.matchData.losers?.length ? match.matchData.winners : undefined}
             loserPlayerIds={match.matchData.losers}
           />
         )}
-        {isRecording && rawMatch && (
-          <div className="inline-form-container">
-            <MatchResultForm
-              match={rawMatch}
-              players={players}
-              tagTeams={tagTeams}
-              onSuccess={refreshAfterMutation}
-              onCancel={handleCancelInlineForm}
-            />
-          </div>
-        )}
-        {isRecording && !rawMatch && (
-          <div className="inline-form-container">
-            <div className="inline-form-error">
-              {t('events.detail.matchNotFound', 'Match data is not available. Try refreshing the page.')}
-            </div>
-          </div>
-        )}
-        {isEditing && (
-          <div className="inline-form-container">
-            <MatchEditForm
-              matchId={match.matchId}
-              lockedEventId={eventData.eventId}
-              onSuccess={refreshAfterMutation}
-              onCancel={handleCancelInlineForm}
-            />
-          </div>
-        )}
-      </div>
+      </MatchEntry>
     );
   };
 
+  const canAddMatch = isAdminOrModerator && (eventData.status === 'upcoming' || eventData.status === 'in-progress');
+  const goToSchedule = () => navigate('/admin/schedule', {
+    state: { fromEvent: { eventId: eventData.eventId, name: eventData.name, date: eventData.date } },
+  });
+  const recordingMatch = recordingMatchId ? scheduledMatchesById.get(recordingMatchId) : undefined;
+  const lockLabel = eventData.checkInsLocked
+    ? t('events.admin.lockSignups.unlock', 'Unlock sign-ups')
+    : t('events.admin.lockSignups.lock', 'Lock sign-ups');
+  const hasCompletedMatch = enrichedMatches.some((match) => match.matchData?.status === 'completed');
+  const subtitle = [formattedDate, eventData.venue].filter(Boolean).join(' · ');
+
   return (
     <div className="event-detail-page">
-      <Link to="/events" className="back-link">
-        &larr; {t('events.detail.backToEvents')}
-      </Link>
+      <Button className="event-detail-back" variant="ghost" size="sm" to="/events" icon={<ArrowLeft aria-hidden="true" size={18} />}>
+        {t('events.detail.backToEvents')}
+      </Button>
 
-      {eventData.imageUrl && (
-        <div className="event-banner">
-          <img
-            src={eventData.imageUrl}
-            alt={eventData.name}
-            className="event-banner-img"
-          />
-        </div>
-      )}
-
-      {/* Event Header */}
-      <div
-        className="event-detail-header"
-        style={{ borderTopColor: typeColor }}
-      >
-        <div className="event-detail-title-row">
-          <h2 className="event-detail-name">{eventData.name}</h2>
-          <div className="event-detail-badges">
-            <span
-              className="event-detail-type-badge"
-              style={{ backgroundColor: typeColor }}
-            >
-              {t(`events.types.${eventData.eventType}`)}
-            </span>
-            {isAdminOrModerator ? (
+      <section className={`event-hero${eventData.imageUrl ? ' event-hero--image' : ''}`}>
+        {eventData.imageUrl && <img src={eventData.imageUrl} alt="" className="event-hero__image" />}
+        <div className="event-hero__content">
+          <div className="event-hero__badges">
+            <Badge tone={EVENT_STATUS_TONES[eventData.status]}>{t(`events.status.${eventData.status}`)}</Badge>
+            <Badge tone={EVENT_TYPE_TONES[eventData.eventType]}>{t(`events.types.${eventData.eventType}`)}</Badge>
+          </div>
+          <PageHeader
+            title={eventData.name}
+            subtitle={subtitle}
+            actions={(
               <>
-                <select
-                  className="event-status-select"
-                  value={eventData.status}
-                  onChange={(e) => handleStatusChange(e.target.value)}
-                  disabled={updatingStatus}
-                  style={{ color: statusColor, borderColor: statusColor }}
-                >
-                  <option value="upcoming">{t('events.status.upcoming')}</option>
-                  <option value="in-progress">{t('events.status.in-progress')}</option>
-                  <option value="completed">{t('events.status.completed')}</option>
-                  <option value="cancelled">{t('events.status.cancelled')}</option>
-                </select>
-                <button
-                  type="button"
-                  className={`event-detail-lock-btn${eventData.checkInsLocked ? ' is-locked' : ''}`}
-                  onClick={handleToggleSignupLock}
-                  disabled={togglingLock}
-                  title={
-                    eventData.checkInsLocked
-                      ? t('events.admin.lockSignups.unlock', 'Unlock sign-ups')
-                      : t('events.admin.lockSignups.lock', 'Lock sign-ups')
-                  }
-                  aria-pressed={!!eventData.checkInsLocked}
-                >
-                  {togglingLock
-                    ? t('common.saving')
-                    : eventData.checkInsLocked
-                      ? t('events.admin.lockSignups.unlock', 'Unlock sign-ups')
-                      : t('events.admin.lockSignups.lock', 'Lock sign-ups')}
-                </button>
-                <button
-                  type="button"
-                  className="event-detail-delete-btn"
-                  onClick={handleDeleteEvent}
-                  disabled={deleting}
-                  title={t('events.admin.deleteEvent')}
-                  aria-label={t('events.admin.deleteEvent')}
-                >
-                  {deleting ? t('common.saving') : t('events.admin.deleteEvent')}
-                </button>
-              </>
-            ) : (
-              <span
-                className="event-detail-status-badge"
-                style={{ color: statusColor, borderColor: statusColor }}
-              >
-                {t(`events.status.${eventData.status}`)}
-              </span>
-            )}
-          </div>
-        </div>
-        {deleteError && (
-          <div className="event-detail-delete-error" role="alert">
-            {deleteError}
-          </div>
-        )}
-        {lockError && (
-          <div className="event-detail-delete-error" role="alert">
-            {lockError}
-          </div>
-        )}
-
-        <div className="event-detail-info">
-          <div className="event-detail-info-item event-detail-date-row">
-            <span className="info-label">{t('events.detail.date')}:</span>
-            {isAdminOrModerator && editingDate ? (
-              <span className="event-detail-date-edit">
-                <input
-                  type="date"
-                  value={dateDraft}
-                  onChange={(e) => setDateDraft(e.target.value)}
-                  disabled={savingDate}
-                  aria-label={t('events.admin.editDate.label', 'Event date')}
-                />
-                <button
-                  type="button"
-                  className="event-detail-date-save"
-                  onClick={handleSaveDate}
-                  disabled={savingDate}
-                >
-                  {savingDate ? t('common.saving') : t('common.save', 'Save')}
-                </button>
-                <button
-                  type="button"
-                  className="event-detail-date-cancel"
-                  onClick={handleCancelEditDate}
-                  disabled={savingDate}
-                >
-                  {t('common.cancel', 'Cancel')}
-                </button>
-              </span>
-            ) : (
-              <>
-                <span>{formattedDate}</span>
-                {isAdminOrModerator && (
-                  <button
-                    type="button"
-                    className="event-detail-date-edit-btn"
-                    onClick={handleStartEditDate}
-                    aria-label={t('events.admin.editDate.label', 'Event date')}
-                  >
-                    {t('common.edit', 'Edit')}
-                  </button>
+                {hasCompletedMatch && (
+                  <Button to={`/events/${eventData.eventId}/results`} icon={<Trophy aria-hidden="true" size={18} />}>
+                    {t('events.detail.viewResults')}
+                  </Button>
+                )}
+                {enrichedMatches.length > 0 && (
+                  <Button variant="secondary" to={`/events/${eventData.eventId}/commentary`} icon={<Mic aria-hidden="true" size={18} />}>
+                    {t('events.detail.openCommentary')}
+                  </Button>
                 )}
               </>
             )}
-          </div>
-          {dateError && (
-            <div className="event-detail-date-error" role="alert">
-              {dateError}
-            </div>
-          )}
-          {(eventData.venue || isAdminOrModerator) && (
-            <div className="event-detail-info-item event-detail-date-row">
-              <span className="info-label">{t('events.detail.venue')}:</span>
-              {isAdminOrModerator && editingVenue ? (
-                <span className="event-detail-date-edit">
-                  <input
-                    type="text"
-                    value={venueDraft}
-                    onChange={(e) => setVenueDraft(e.target.value)}
-                    disabled={savingVenue}
-                    maxLength={120}
-                    placeholder={t('events.admin.editVenue.placeholder', 'e.g., Madison Square Garden, New York')}
-                    aria-label={t('events.admin.editVenue.label', 'Event location')}
-                  />
-                  <button
-                    type="button"
-                    className="event-detail-date-save"
-                    onClick={handleSaveVenue}
-                    disabled={savingVenue}
-                  >
-                    {savingVenue ? t('common.saving') : t('common.save', 'Save')}
-                  </button>
-                  <button
-                    type="button"
-                    className="event-detail-date-cancel"
-                    onClick={handleCancelEditVenue}
-                    disabled={savingVenue}
-                  >
-                    {t('common.cancel', 'Cancel')}
-                  </button>
-                </span>
-              ) : (
-                <>
-                  <span>{eventData.venue || t('events.admin.editVenue.empty', 'Not set')}</span>
-                  {isAdminOrModerator && (
-                    <button
-                      type="button"
-                      className="event-detail-date-edit-btn"
-                      onClick={handleStartEditVenue}
-                      aria-label={t('events.admin.editVenue.label', 'Event location')}
-                    >
-                      {t('common.edit', 'Edit')}
-                    </button>
-                  )}
-                </>
+          />
+          {eventData.description && <p className="event-hero__description">{eventData.description}</p>}
+          {(eventData.attendance || eventData.rating) && (
+            <dl className="event-hero__facts">
+              {eventData.attendance && (
+                <div>
+                  <dt>{t('events.detail.attendance')}</dt>
+                  <dd>{eventData.attendance.toLocaleString()}</dd>
+                </div>
               )}
-            </div>
+              {eventData.rating && (
+                <div>
+                  <dt>{t('events.detail.rating')}</dt>
+                  <dd>{eventData.rating}/5</dd>
+                </div>
+              )}
+            </dl>
           )}
-          {venueError && (
-            <div className="event-detail-date-error" role="alert">
-              {venueError}
-            </div>
+        </div>
+      </section>
+
+      {isAdminOrModerator && (
+        <section className="event-manage" aria-label={t('events.detail.manage', 'Manage event')}>
+          <Select
+            className="event-manage__status"
+            label={t('events.detail.statusLabel', 'Event status')}
+            value={eventData.status}
+            onValueChange={handleStatusChange}
+            disabled={updatingStatus}
+            options={EVENT_STATUSES.map((status) => ({ value: status, label: t(`events.status.${status}`) }))}
+          />
+          <Button variant="secondary" size="sm" icon={<CalendarClock aria-hidden="true" size={18} />} onClick={handleOpenDetails}>
+            {t('events.detail.editDetails', 'Edit date and venue')}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={eventData.checkInsLocked ? <LockOpen aria-hidden="true" size={18} /> : <Lock aria-hidden="true" size={18} />}
+            onClick={handleToggleSignupLock}
+            loading={togglingLock}
+            aria-pressed={!!eventData.checkInsLocked}
+          >
+            {lockLabel}
+          </Button>
+          <Button
+            className="event-manage__delete"
+            variant="danger"
+            size="sm"
+            icon={<Trash2 aria-hidden="true" size={18} />}
+            onClick={handleRequestDeleteEvent}
+            loading={deleting}
+          >
+            {t('events.admin.deleteEvent')}
+          </Button>
+          {manageError && <p className="event-detail-error" role="alert">{manageError}</p>}
+        </section>
+      )}
+
+      {isAuthenticated && isWrestler && playerId && checkInSummary && (
+        <Card className="event-rsvp">
+          <h2 className="event-section-title">{t('events.checkIn.title')}</h2>
+          <EventCheckIn
+            eventStatus={eventData.status}
+            currentStatus={myCheckIn?.status ?? null}
+            summary={checkInSummary}
+            onChange={handleCheckInChange}
+            signupsLocked={!!eventData.checkInsLocked}
+          />
+          {checkInError && (
+            <p className="event-detail-error" role="alert">
+              {t(checkInError, { defaultValue: 'Failed to update check-in.' })}
+            </p>
           )}
-          {eventData.attendance && (
-            <div className="event-detail-info-item">
-              <span className="info-label">{t('events.detail.attendance')}:</span>
-              <span>{eventData.attendance.toLocaleString()}</span>
-            </div>
-          )}
-          {eventData.rating && (
-            <div className="event-detail-info-item">
-              <span className="info-label">{t('events.detail.rating')}:</span>
-              <span className="event-rating">
-                {renderStarRating(eventData.rating)} ({eventData.rating}/5)
-              </span>
-            </div>
+        </Card>
+      )}
+
+      <section className="event-card-section">
+        <div className="event-card-section__header">
+          <h2 className="event-section-title">{t('events.detail.matchCard')}</h2>
+          {canAddMatch && enrichedMatches.length > 0 && (
+            <Button variant="secondary" size="sm" icon={<Plus aria-hidden="true" size={18} />} onClick={goToSchedule}>
+              {t('events.detail.addMatch', 'Add Match')}
+            </Button>
           )}
         </div>
 
-        {eventData.description && (
-          <p className="event-detail-description">{eventData.description}</p>
-        )}
-
-        {isAuthenticated && isWrestler && playerId && checkInSummary && (
-          <>
-            <EventCheckIn
-              eventStatus={eventData.status}
-              currentStatus={myCheckIn?.status ?? null}
-              summary={checkInSummary}
-              onChange={handleCheckInChange}
-              signupsLocked={!!eventData.checkInsLocked}
-            />
-            {checkInError && (
-              <div className="event-checkin-error" role="alert">
-                {t(checkInError, { defaultValue: 'Failed to update check-in.' })}
-              </div>
-            )}
-          </>
-        )}
-
-        {enrichedMatches.length > 0 && (
-          <Link
-            to={`/events/${eventData.eventId}/commentary`}
-            className="view-results-btn commentary-view-btn"
-          >
-            {t('events.detail.openCommentary')}
-          </Link>
-        )}
-        {enrichedMatches.some(m => m.matchData?.status === 'completed') && (
-          <Link
-            to={`/events/${eventData.eventId}/results`}
-            className="view-results-btn"
-          >
-            {t('events.detail.viewResults')}
-          </Link>
-        )}
-      </div>
-
-      {/* Match Card */}
-      <div className="event-match-card-section">
-        <div className="match-card-header">
-          <h3 className="match-card-title">{t('events.detail.matchCard')}</h3>
-          {isAdminOrModerator && (eventData.status === 'upcoming' || eventData.status === 'in-progress') && (
-            <button
-              className="add-match-btn"
-              onClick={() => navigate('/admin/schedule', {
-                state: { fromEvent: { eventId: eventData.eventId, name: eventData.name, date: eventData.date } },
-              })}
-            >
-              + {t('events.detail.addMatch', 'Add Match')}
-            </button>
-          )}
-        </div>
-
-        {matchActionError && (
-          <div className="event-detail-delete-error" role="alert">
-            {matchActionError}
-          </div>
-        )}
+        {matchActionError && <p className="event-detail-error" role="alert">{matchActionError}</p>}
 
         {enrichedMatches.length === 0 ? (
-          <div className="no-matches-block">
-            <p className="no-matches-message">{t('events.detail.noMatches')}</p>
-            {isAdminOrModerator && (eventData.status === 'upcoming' || eventData.status === 'in-progress') && (
-              <button
-                className="add-match-btn add-match-btn-lg"
-                onClick={() => navigate('/admin/schedule', {
-                  state: { fromEvent: { eventId: eventData.eventId, name: eventData.name, date: eventData.date } },
-                })}
-              >
-                + {t('events.detail.scheduleFirstMatch', 'Schedule First Match')}
-              </button>
-            )}
-          </div>
+          <EmptyState
+            title={t('events.detail.noMatches')}
+            actionLabel={canAddMatch ? t('events.detail.scheduleFirstMatch', 'Schedule First Match') : undefined}
+            onAction={canAddMatch ? goToSchedule : undefined}
+          />
         ) : (
           <>
-            {/* Pre-show */}
             {preShowMatches.length > 0 && (
-              <div className="pre-show-section">
-                <div className="pre-show-divider">
-                  <span>{t('events.detail.preShow')}</span>
-                </div>
-                <div className="match-list">
-                  {preShowMatches.map(renderMatchEntry)}
-                </div>
-              </div>
+              <>
+                <h3 className="event-card-section__divider">{t('events.detail.preShow')}</h3>
+                <div className="event-match-list">{preShowMatches.map(renderMatchEntry)}</div>
+              </>
             )}
-
-            {/* Main Card */}
             {mainCardMatches.length > 0 && (
-              <div className="main-card-section">
+              <>
                 {preShowMatches.length > 0 && (
-                  <div className="main-card-divider">
-                    <span>{t('events.detail.mainCard')}</span>
-                  </div>
+                  <h3 className="event-card-section__divider">{t('events.detail.mainCard')}</h3>
                 )}
-                <div className="match-list">
-                  {mainCardMatches.map(renderMatchEntry)}
-                </div>
-              </div>
+                <div className="event-match-list">{mainCardMatches.map(renderMatchEntry)}</div>
+              </>
             )}
           </>
         )}
-      </div>
+      </section>
 
       {isAdminOrModerator && eventId && (
-        <EventCheckInRosterPanel
-          eventId={eventId}
-          bookedPlayerIds={bookedPlayerIds}
-        />
+        <EventCheckInRosterPanel eventId={eventId} bookedPlayerIds={bookedPlayerIds} />
       )}
+
+      <Modal
+        open={!!recordingMatchId}
+        onClose={handleCloseMatchForm}
+        title={t('events.detail.recordResult', 'Record Result')}
+      >
+        {recordingMatch ? (
+          <MatchResultForm
+            match={recordingMatch}
+            players={players}
+            tagTeams={tagTeams}
+            onSuccess={refreshAfterMutation}
+            onCancel={handleCloseMatchForm}
+          />
+        ) : (
+          <p className="event-detail-error" role="alert">
+            {t('events.detail.matchNotFound', 'Match data is not available. Try refreshing the page.')}
+          </p>
+        )}
+      </Modal>
+
+      <Modal
+        open={!!editingMatchId}
+        onClose={handleCloseMatchForm}
+        title={t('events.detail.editMatchTitle', 'Edit match')}
+        size="lg"
+      >
+        {editingMatchId && (
+          <MatchEditForm
+            matchId={editingMatchId}
+            lockedEventId={eventData.eventId}
+            onSuccess={refreshAfterMutation}
+            onCancel={handleCloseMatchForm}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        open={detailsOpen}
+        onClose={() => setDetailsOpen(false)}
+        title={t('events.detail.editDetails', 'Edit date and venue')}
+        size="sm"
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => setDetailsOpen(false)} disabled={savingDetails}>
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button onClick={handleSaveDetails} loading={savingDetails}>{t('common.save', 'Save')}</Button>
+          </>
+        )}
+      >
+        <div className="event-details-form">
+          {detailsError && <p className="event-detail-error" role="alert">{detailsError}</p>}
+          <label className="event-details-form__field">
+            <span>{t('events.admin.editDate.label', 'Event date')}</span>
+            <input type="date" value={dateDraft} onChange={(e) => setDateDraft(e.target.value)} disabled={savingDetails} />
+          </label>
+          <label className="event-details-form__field">
+            <span>{t('events.admin.editVenue.label', 'Event location')}</span>
+            <input
+              type="text"
+              value={venueDraft}
+              onChange={(e) => setVenueDraft(e.target.value)}
+              disabled={savingDetails}
+              maxLength={120}
+              placeholder={t('events.admin.editVenue.placeholder', 'e.g., Madison Square Garden, New York')}
+            />
+          </label>
+        </div>
+      </Modal>
+
+      <Modal
+        open={!!pendingDelete}
+        onClose={() => setPendingDelete(null)}
+        title={t('events.detail.confirmDeleteTitle', 'Confirm delete')}
+        size="sm"
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => setPendingDelete(null)}>{t('common.cancel', 'Cancel')}</Button>
+            <Button variant="danger" onClick={handleConfirmDelete}>{t('common.delete', 'Delete')}</Button>
+          </>
+        )}
+      >
+        <p>{pendingDelete?.message}</p>
+      </Modal>
 
       <SlotEditDialog
         slot={editingSlot?.slot ?? null}
@@ -1043,6 +876,8 @@ interface MatchEntryProps {
   /** Invoked after a rating submission or a MOTN toggle so the parent can
    *  refetch the event and propagate the new aggregate / state. */
   onMatchUpdated?: () => void;
+  /** Slot list, shown inside the match row so it does not read as a second card. */
+  children?: ReactNode;
 }
 
 function MatchEntry({
@@ -1054,95 +889,76 @@ function MatchEntry({
   onEdit,
   onDelete,
   onMatchUpdated,
+  children,
 }: MatchEntryProps) {
   const { t } = useTranslation();
   const { designation, matchData } = match;
-  const desColor = designationColors[designation];
   const isMainEvent = designation === 'main-event';
+  const entryClass = `event-match${isMainEvent ? ' event-match--main' : ''}`;
+  const designationBadge = (
+    <Badge tone={isMainEvent ? 'pink' : 'neutral'}>{t(DESIGNATION_LABEL_KEYS[designation])}</Badge>
+  );
 
   if (!matchData) {
     return (
-      <div className={`match-entry ${isMainEvent ? 'main-event-match' : ''}`}>
-        <div className="match-entry-header">
-          <span
-            className="match-designation-badge"
-            style={{ backgroundColor: desColor }}
-          >
-            {t(designationLabels[designation])}
-          </span>
-          <span className="match-type-label">{t('events.detail.matchTBA', 'Match TBA')}</span>
+      <article className={entryClass}>
+        <div className="event-match__header">
+          {designationBadge}
+          <span className="event-match__type">{t('events.detail.matchTBA', 'Match TBA')}</span>
         </div>
-      </div>
+      </article>
     );
   }
 
+  const isDraw = isCompleted && (matchData.winners?.length ?? 0) > 0 && (matchData.losers?.length ?? 0) === 0;
+
   return (
-    <div className={`match-entry ${isMainEvent ? 'main-event-match' : ''}`}>
-      <div className="match-entry-header">
-        <span
-          className="match-designation-badge"
-          style={{ backgroundColor: desColor }}
-        >
-          {t(designationLabels[designation])}
-        </span>
-        <span className="match-type-label">
+    <article className={entryClass}>
+      <div className="event-match__header">
+        {designationBadge}
+        <span className="event-match__type">
           {matchData.matchFormat}
-          {matchData.stipulationName && ` - ${matchData.stipulationName}`}
+          {matchData.stipulationName && ` · ${matchData.stipulationName}`}
         </span>
         {matchData.isChampionship && (
-          <span className="match-championship-badge">
-            {matchData.championshipName || t('events.detail.championshipMatch')}
-          </span>
+          <Badge tone="warning">{matchData.championshipName || t('events.detail.championshipMatch')}</Badge>
         )}
-        {isCompleted && (matchData.starRating != null || matchData.matchOfTheNight) && (
-          <span className="match-awards">
-            {matchData.starRating != null && (
-              <span className="match-star-rating">
-                <StarRating
-                  starRating={matchData.starRating}
-                  ratingsCount={matchData.ratingsCount}
-                  size="sm"
-                />
-              </span>
-            )}
-            {matchData.matchOfTheNight && (
-              <span className="match-motn-badge">{t('match.matchOfTheNightBadge')}</span>
-            )}
-          </span>
+        {isCompleted && matchData.matchOfTheNight && (
+          <Badge tone="violet">{t('match.matchOfTheNightBadge')}</Badge>
+        )}
+        {isCompleted && matchData.starRating != null && (
+          <StarRating starRating={matchData.starRating} ratingsCount={matchData.ratingsCount} size="sm" />
         )}
       </div>
 
-      <div className="match-participants">
-        {matchData.participants.map((p) => {
-          const isWinner = isCompleted && matchData.winners?.includes(p.playerId);
-          const isLoser = isCompleted && matchData.losers?.includes(p.playerId);
+      <ul className="event-match__participants">
+        {matchData.participants.map((participant, index) => {
+          const isWinner = isCompleted && !isDraw && matchData.winners?.includes(participant.playerId);
+          const isLoser = isCompleted && matchData.losers?.includes(participant.playerId);
           return (
-            <span
-              key={p.playerId}
-              className={`participant ${isWinner ? 'winner' : ''} ${isLoser ? 'loser' : ''}`}
-            >
-              {p.wrestlerName}
-              {p.psnId ? (
-                <span className="participant-player">
-                  ({p.playerName}{' · '}
-                  <span className="participant-psn">{p.psnId}</span>
-                  {')'}
+            <li key={participant.playerId} className="event-match__participant-item">
+              {index > 0 && <span className="event-match__vs">{t('common.vs')}</span>}
+              <span className={`event-match__participant${isWinner ? ' is-winner' : ''}${isLoser ? ' is-loser' : ''}`}>
+                <span className="event-match__wrestler">
+                  {participant.wrestlerName}
+                  {isWinner && <Badge tone="win">{t('events.detail.winner')}</Badge>}
                 </span>
-              ) : (
-                <span className="participant-player">({p.playerName})</span>
-              )}
-              {isWinner && <span className="winner-indicator"> {t('events.detail.winner')}</span>}
-            </span>
+                <span className="event-match__player">
+                  {participant.playerName}
+                  {participant.psnId && ` · ${participant.psnId}`}
+                </span>
+              </span>
+            </li>
           );
         })}
-      </div>
+      </ul>
 
-      {match.notes && (
-        <div className="match-notes">{match.notes}</div>
-      )}
+      {match.notes && <p className="event-match__notes">{match.notes}</p>}
+
+      {children}
 
       {isCompleted && (
-        <div className="match-rate-widget-wrap">
+        <div className="event-match__rating">
           <RateMatchWidget
             matchId={matchData.matchId}
             matchStatus={matchData.status}
@@ -1161,39 +977,24 @@ function MatchEntry({
       )}
 
       {isAdmin && (onRecordResult || onEdit || onDelete) && (
-        <div className="match-entry-actions">
+        <div className="event-match__actions">
           {onRecordResult && (
-            <button
-              type="button"
-              className="match-action-btn match-action-btn-primary"
-              onClick={onRecordResult}
-              disabled={isDeleting}
-            >
+            <Button size="sm" onClick={onRecordResult} disabled={isDeleting}>
               {t('events.detail.recordResult', 'Record Result')}
-            </button>
+            </Button>
           )}
           {onEdit && (
-            <button
-              type="button"
-              className="match-action-btn match-action-btn-secondary"
-              onClick={onEdit}
-              disabled={isDeleting}
-            >
+            <Button variant="secondary" size="sm" icon={<Pencil aria-hidden="true" size={16} />} onClick={onEdit} disabled={isDeleting}>
               {t('events.detail.editMatch', 'Edit')}
-            </button>
+            </Button>
           )}
           {onDelete && (
-            <button
-              type="button"
-              className="match-action-btn match-action-btn-destructive"
-              onClick={onDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? t('common.saving') : t('events.detail.deleteMatch', 'Delete')}
-            </button>
+            <Button variant="ghost" size="sm" icon={<Trash2 aria-hidden="true" size={16} />} onClick={onDelete} loading={isDeleting}>
+              {t('events.detail.deleteMatch', 'Delete')}
+            </Button>
           )}
         </div>
       )}
-    </div>
+    </article>
   );
 }
