@@ -417,7 +417,7 @@ describe('getStatistics - head-to-head', () => {
     expect(body.headToHead.recentResults[0].winnerId).toBe('p2');
   });
 
-  it('agrees with the record when both selected players are on the winning team', async () => {
+  it('leaves partners level when both selected players are on the winning team', async () => {
     const matches = [
       makeMatch({ matchId: 'm1', date: '2024-01-01', participants: ['p1', 'p2', 'p3'], winners: ['p2', 'p1'], losers: ['p3'] }),
     ];
@@ -428,8 +428,10 @@ describe('getStatistics - head-to-head', () => {
     });
     const body = JSON.parse((await handler(event, ctx, cb))!.body);
 
-    expect(body.headToHead.player1Wins).toBe(1);
-    expect(body.headToHead.recentResults[0].winnerId).toBe('p1');
+    expect(body.headToHead.player1Wins).toBe(0);
+    expect(body.headToHead.player2Wins).toBe(0);
+    expect(body.headToHead.draws).toBe(1);
+    expect(body.headToHead.recentResults[0].winnerId).toBe('');
   });
 
   it('returns recent 5 results sorted by date descending', async () => {
