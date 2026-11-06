@@ -38,5 +38,4 @@ Die Aufforderung, einen Namen einzugeben, öffnet sich nach der Anmeldung. **Sp�
 - **Liga-Regeln** findest du unter Ich. Lies die [Liga-Regeln](league-rules) vor deinem ersten Match.
 - Der [Benutzer-Schnellstart](user-quickstart) ist ein kurzer Rundgang über die Seite.
 - Die [Häufigen Fragen](faqs) beantworten die wichtigsten Fragen.
-- Wenn du zum Liga-Team gehörst, nutze den [Admin-Schnellstart](admin-quickstart).
 - Die Sprache wechselst du über die Auswahl English / Deutsch. Sie ist am Computer in der Kopfzeile und am Handy auf der Ich-Seite.

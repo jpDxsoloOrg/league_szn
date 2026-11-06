@@ -42,4 +42,3 @@ Once you have a wrestler name, these are all under **Me** or **Storylines**:
 - Read the [League Rules](league-rules)
 - Browse [FAQs](faqs)
 - Use [Tips](tips)
-- If you are league staff, open the [Admin Quickstart](admin-quickstart)
