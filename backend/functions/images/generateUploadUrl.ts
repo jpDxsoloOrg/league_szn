@@ -32,6 +32,13 @@ const VIDEO_FOLDER_EXTENSIONS = new Map<string, string>([
   ...IMAGE_EXTENSIONS,
 ]);
 
+// Only the admin panel uploads to these, for championship and show artwork.
+const STAFF_ONLY_FOLDERS: ReadonlySet<string> = new Set(['championships', 'shows']);
+
+function canUploadToStaffFolder(event: APIGatewayProxyEvent): boolean {
+  return process.env.IS_OFFLINE === 'true' || hasRole(getAuthContext(event), 'Admin', 'Moderator');
+}
+
 // Same rule as createVideo: staff, or a wrestler whose player record has
 // canUploadVideos set.
 async function canUploadToVideosFolder(event: APIGatewayProxyEvent): Promise<boolean> {
@@ -74,6 +81,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     if (body.folder === 'videos' && !(await canUploadToVideosFolder(event))) {
       return forbidden('Your account is not permitted to upload videos');
+    }
+
+    if (STAFF_ONLY_FOLDERS.has(body.folder) && !canUploadToStaffFolder(event)) {
+      return forbidden('Only league staff can upload to this folder');
     }
 
     // The stored extension follows the validated MIME type, not the client's file name.
