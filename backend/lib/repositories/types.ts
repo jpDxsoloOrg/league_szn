@@ -566,6 +566,8 @@ export interface Match {
   losers?: string[];
   isDraw?: boolean;
   isChampionship?: boolean;
+  /** Set when a championship result is recorded: true when the champion retained. */
+  isTitleDefense?: boolean;
   championshipId?: string;
   tournamentId?: string;
   seasonId?: string;

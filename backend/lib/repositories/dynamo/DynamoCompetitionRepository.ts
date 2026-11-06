@@ -329,6 +329,23 @@ class TournamentsDynamo implements TournamentsMethods {
       throw err;
     }
   }
+
+  async removeWinner(tournamentId: string): Promise<void> {
+    try {
+      await dynamoDb.update({
+        TableName: TableNames.TOURNAMENTS,
+        Key: { tournamentId },
+        UpdateExpression: 'REMOVE winner SET updatedAt = :now',
+        ExpressionAttributeValues: { ':now': new Date().toISOString() },
+        ConditionExpression: 'attribute_exists(tournamentId)',
+      });
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name === 'ConditionalCheckFailedException') {
+        throw new NotFoundError('Tournament', tournamentId);
+      }
+      throw err;
+    }
+  }
 }
 
 // ─── Contenders ─────────────────────────────────────────────────────

@@ -10,6 +10,7 @@ import {
   serverError,
 } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
+import { isConcurrentWriteError } from '../../lib/repositories/errors';
 
 interface ClaimSlotBody {
   wrestlerChoice?: 'main' | 'alternate';
@@ -198,13 +199,27 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Note: don't pass `updatedAt` in the patch — DynamoUnitOfWork.updateMatch
     // appends it automatically and DynamoDB rejects an UpdateExpression that
     // sets the same path twice with a ValidationException.
-    await runInTransaction(async (tx) => {
-      tx.updateMatch(matchId, match.date, {
-        slots: updatedSlots,
-        participants: updatedParticipants,
-        status: newStatus,
+    // The slots array is written whole, so the write is guarded on the version
+    // read above: a concurrent claim fails here instead of being overwritten.
+    try {
+      await runInTransaction(async (tx) => {
+        tx.updateMatch(
+          matchId,
+          match.date,
+          {
+            slots: updatedSlots,
+            participants: updatedParticipants,
+            status: newStatus,
+          },
+          { kind: 'unchangedSince', updatedAt: match.updatedAt },
+        );
       });
-    });
+    } catch (writeError: unknown) {
+      if (isConcurrentWriteError(writeError)) {
+        return conflict('This match changed while you were signing up. Refresh and try again.');
+      }
+      throw writeError;
+    }
 
     const updated: Match = {
       ...match,

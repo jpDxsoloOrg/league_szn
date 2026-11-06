@@ -25,3 +25,14 @@ export class ConcurrencyError extends RepositoryError {
     this.name = 'ConcurrencyError';
   }
 }
+
+/**
+ * True when a unit of work failed because another write got there first: a
+ * guarded item changed (`ConcurrencyError`), or DynamoDB cancelled the
+ * transaction for a reason the UoW does not map to a typed error, such as an
+ * overlapping transaction.
+ */
+export function isConcurrentWriteError(err: unknown): boolean {
+  if (err instanceof ConcurrencyError) return true;
+  return (err as { name?: unknown } | null | undefined)?.name === 'TransactionCanceledException';
+}

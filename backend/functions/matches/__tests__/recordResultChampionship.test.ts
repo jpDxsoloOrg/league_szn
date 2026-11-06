@@ -64,6 +64,18 @@ const mockContendersRepo = {
   writeHistory: vi.fn(),
 };
 
+const mockPlayersRepo = {
+  findById: vi.fn(async (playerId: string): Promise<{ playerId: string } | null> => ({ playerId })),
+};
+
+const mockSeasonsRepo = {
+  findById: vi.fn(async (seasonId: string): Promise<Record<string, unknown> | null> => ({
+    seasonId,
+    name: 'Season 1',
+    status: 'active',
+  })),
+};
+
 const mockRunInTransaction = vi.fn();
 
 vi.mock('../../../lib/repositories', () => ({
@@ -77,6 +89,8 @@ vi.mock('../../../lib/repositories', () => ({
     leagueOps: {
       events: mockEventsRepo,
     },
+    roster: { players: mockPlayersRepo },
+    season: { seasons: mockSeasonsRepo },
     runInTransaction: mockRunInTransaction,
   }),
 }));
@@ -227,6 +241,7 @@ describe('recordResult — championship title defense', () => {
       { championshipId: 'c1', currentChampion: ['p1', 'p2'] },
       { championshipId: 'c1', wonDate: '2024-01-01T00:00:00Z', champion: ['p1', 'p2'] },
     );
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue({ ...champMatch, participants: ['p1', 'p2', 'p3', 'p4'] });
     // Winners in reversed order from currentChampion
     await recordResult(ev({ winners: ['p2', 'p1'], losers: ['p3', 'p4'] }), ctx, cb);
 
@@ -239,11 +254,26 @@ describe('recordResult — championship title defense', () => {
     expect(itdTx).toBeDefined();
   });
 
+  it('writes isTitleDefense without a guard, since the match is already completed', async () => {
+    stubChamp(
+      { championshipId: 'c1', currentChampion: 'p1' },
+      { championshipId: 'c1', wonDate: '2024-01-01T00:00:00Z', champion: 'p1' },
+    );
+    await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
+
+    const flagCall = capturedTxCalls
+      .flatMap((tx) => tx.updateMatch.mock.calls as unknown[][])
+      .find((call) => (call[2] as Record<string, unknown>).isTitleDefense === true);
+    expect(flagCall).toBeDefined();
+    expect(flagCall![3]).toBeUndefined();
+  });
+
   it('tag team title change when different team wins', async () => {
     stubChamp(
       { championshipId: 'c1', currentChampion: ['p1', 'p2'] },
       { championshipId: 'c1', wonDate: '2024-01-01T00:00:00Z', champion: ['p1', 'p2'] },
     );
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue({ ...champMatch, participants: ['p1', 'p2', 'p3', 'p4'] });
     await recordResult(ev({ winners: ['p3', 'p4'], losers: ['p1', 'p2'] }), ctx, cb);
 
     // isTitleDefense should be false

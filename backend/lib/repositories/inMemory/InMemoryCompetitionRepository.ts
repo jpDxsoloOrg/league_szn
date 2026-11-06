@@ -252,6 +252,14 @@ export class InMemoryCompetitionRepository implements CompetitionRepository {
       this.tournamentsStore.set(tournamentId, updated);
       return updated;
     },
+
+    removeWinner: async (tournamentId: string): Promise<void> => {
+      const existing = this.tournamentsStore.get(tournamentId);
+      if (!existing) throw new NotFoundError('Tournament', tournamentId);
+      const { winner: _removedWinner, ...rest } = existing;
+      void _removedWinner;
+      this.tournamentsStore.set(tournamentId, { ...rest, updatedAt: new Date().toISOString() });
+    },
   };
 
   // ─── contenders ─────────────────────────────────────────────────────

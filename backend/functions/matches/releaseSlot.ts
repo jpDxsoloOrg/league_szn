@@ -10,6 +10,7 @@ import {
   serverError,
 } from '../../lib/response';
 import { getAuthContext, hasRole, requireRole } from '../../lib/auth';
+import { isConcurrentWriteError } from '../../lib/repositories/errors';
 
 /**
  * DELETE /matches/{matchId}/slots/{slotId}/claim
@@ -89,13 +90,27 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // DynamoUnitOfWork.updateMatch appends updatedAt itself; passing it again
     // here would set the same path twice and fail validation.
-    await runInTransaction(async (tx) => {
-      tx.updateMatch(matchId, match.date, {
-        slots: updatedSlots,
-        participants: updatedParticipants,
-        status: newStatus,
+    // The slots array is written whole, so the write is guarded on the version
+    // read above: a concurrent change fails here instead of being overwritten.
+    try {
+      await runInTransaction(async (tx) => {
+        tx.updateMatch(
+          matchId,
+          match.date,
+          {
+            slots: updatedSlots,
+            participants: updatedParticipants,
+            status: newStatus,
+          },
+          { kind: 'unchangedSince', updatedAt: match.updatedAt },
+        );
       });
-    });
+    } catch (writeError: unknown) {
+      if (isConcurrentWriteError(writeError)) {
+        return conflict('This match changed while the slot was being released. Refresh and try again.');
+      }
+      throw writeError;
+    }
 
     const updated: Match = {
       ...match,
