@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
 const { mockGetAchievements } = vi.hoisted(() => ({
@@ -78,11 +78,11 @@ const playerAchievements = [
   },
 ];
 
-function renderComponent() {
+function renderComponent(entry = '/stats/achievements') {
   return render(
-    <BrowserRouter>
+    <MemoryRouter initialEntries={[entry]}>
       <Achievements />
-    </BrowserRouter>
+    </MemoryRouter>
   );
 }
 
@@ -108,7 +108,7 @@ describe('Achievements', () => {
 
     // Wait for player achievements to load (second API call)
     await waitFor(() => {
-      expect(document.querySelector('.ach-earned-date')).toBeTruthy();
+      expect(document.querySelector('.ach-card-earned')).toBeTruthy();
     });
 
     // All achievement defs rendered
@@ -116,9 +116,9 @@ describe('Achievements', () => {
     expect(screen.getByText('Grand Slam')).toBeInTheDocument();
     expect(screen.getByText('Streak Master')).toBeInTheDocument();
 
-    // Earned achievement shows date
-    const earnedDate = document.querySelector('.ach-earned-date');
-    expect(earnedDate).toHaveTextContent('Earned on 2024-03-15');
+    // The API stamps earnedAt at request time, so no date is displayed
+    expect(document.querySelector('.ach-card-earned')).toHaveTextContent('First Blood');
+    expect(screen.queryByText(/2024-03-15/)).not.toBeInTheDocument();
 
     // Locked achievements show "Locked" label
     const lockedLabels = screen.getAllByText('Locked');
@@ -144,7 +144,7 @@ describe('Achievements', () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText('All')).toBeInTheDocument();
+      expect(document.querySelector('.ach-card-earned')).toBeTruthy();
     });
 
     // Click Milestones filter
@@ -159,6 +159,31 @@ describe('Achievements', () => {
 
     // Progress updates: 1/1 for milestones
     expect(screen.getByText('1/1 earned')).toBeInTheDocument();
+  });
+
+  it('opens on the player named in the URL', async () => {
+    mockGetAchievements.mockResolvedValue({
+      players: mockPlayers,
+      allAchievements: allAchievementDefs,
+      achievements: playerAchievements,
+    });
+
+    renderComponent(`/stats/achievements?player=${mockPlayers[1]!.playerId}`);
+
+    await waitFor(() => {
+      expect(mockGetAchievements).toHaveBeenCalledWith(mockPlayers[1]!.playerId, expect.any(AbortSignal));
+    });
+  });
+
+  it('does not show everything as locked when the earned list fails to load', async () => {
+    mockGetAchievements
+      .mockResolvedValueOnce({ players: mockPlayers, allAchievements: allAchievementDefs })
+      .mockRejectedValueOnce(new Error('Network error'));
+
+    renderComponent();
+
+    expect(await screen.findByRole('button', { name: 'common.retry' })).toBeInTheDocument();
+    expect(screen.queryByText('Locked')).not.toBeInTheDocument();
   });
 
   it('shows loading state while fetching data', async () => {

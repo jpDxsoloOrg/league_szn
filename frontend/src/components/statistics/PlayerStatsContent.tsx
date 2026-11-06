@@ -2,6 +2,11 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { StatsPlayer } from '../../services/api';
 import type { PlayerStatistics as PlayerStatisticsType, ChampionshipStats, Achievement } from '../../types/statistics';
+import { formatCalendarDate } from '../../utils/dateUtils';
+import Avatar from '../ui/Avatar';
+import Badge from '../ui/Badge';
+import DataTable from '../ui/DataTable';
+import './stats-common.css';
 import './PlayerStats.css';
 
 interface PlayerStatsContentProps {
@@ -27,166 +32,150 @@ function PlayerStatsContent({
     ladder: t('statistics.matchTypes.ladder'),
     cage: t('statistics.matchTypes.cage'),
   };
+  const matchTypeLabel = (stat: PlayerStatisticsType) => matchTypeLabels[stat.statType] ?? stat.statType;
+  const playedMatchTypes = matchTypeStats.filter((stat) => stat.matchesPlayed > 0);
 
-  function renderBarChart(stat: PlayerStatisticsType) {
-    return (
-      <div className="ps-bar-row" key={stat.statType}>
-        <span className="ps-bar-label">
-          {matchTypeLabels[stat.statType] || stat.statType}
-        </span>
-        <div className="ps-bar-track">
-          <div
-            className="ps-bar-fill"
-            style={{ width: `${stat.winPercentage}%` }}
-          >
-            <span className="ps-bar-value">{stat.winPercentage.toFixed(0)}%</span>
-          </div>
-        </div>
-        <span className="ps-bar-matches">
-          {t('statistics.playerStats.matchCount', { count: stat.matchesPlayed })}
-        </span>
-      </div>
-    );
-  }
+  const streaks = [
+    { key: 'current', label: t('statistics.labels.currentStreak'), value: overallStats.currentWinStreak },
+    { key: 'best', label: t('statistics.labels.longestWinStreak'), value: overallStats.longestWinStreak },
+    { key: 'worst', label: t('statistics.labels.longestLossStreak'), value: overallStats.longestLossStreak },
+    { key: 'titles', label: t('statistics.labels.titleWins'), value: overallStats.championshipWins },
+  ];
 
   return (
     <>
-      <div className="ps-grid">
-        {/* W-L-D Record Card */}
-        <div className="ps-card ps-record-card">
-          <h3>{player.name} ({player.wrestlerName})</h3>
-          <div className="ps-wld">
-            <div className="ps-wld-item ps-wins">
-              <span className="ps-wld-number">{overallStats.wins}</span>
-              <span className="ps-wld-label">{t('statistics.labels.wins')}</span>
-            </div>
-            <div className="ps-wld-divider">-</div>
-            <div className="ps-wld-item ps-losses">
-              <span className="ps-wld-number">{overallStats.losses}</span>
-              <span className="ps-wld-label">{t('statistics.labels.losses')}</span>
-            </div>
-            <div className="ps-wld-divider">-</div>
-            <div className="ps-wld-item ps-draws">
-              <span className="ps-wld-number">{overallStats.draws}</span>
-              <span className="ps-wld-label">{t('statistics.labels.draws')}</span>
-            </div>
-          </div>
-          <div className="ps-win-pct">
-            <span className="ps-win-pct-value">{overallStats.winPercentage.toFixed(1)}%</span>
-            <span className="ps-win-pct-label">{t('statistics.labels.winPercentage')}</span>
-          </div>
-          <div className="ps-matches-played">
-            {overallStats.matchesPlayed} {t('statistics.labels.matchesPlayed')}
-          </div>
-        </div>
-
-        {/* Streak Stats */}
-        <div className="ps-card ps-streak-card">
-          <h3>{t('statistics.playerStats.streaks')}</h3>
-          <div className="ps-streak-grid">
-            <div className="ps-streak-item">
-              <span className="ps-streak-value" data-positive={overallStats.currentWinStreak > 0}>
-                {overallStats.currentWinStreak}
-              </span>
-              <span className="ps-streak-label">{t('statistics.labels.currentStreak')}</span>
-            </div>
-            <div className="ps-streak-item">
-              <span className="ps-streak-value">{overallStats.longestWinStreak}</span>
-              <span className="ps-streak-label">{t('statistics.labels.longestWinStreak')}</span>
-            </div>
-            <div className="ps-streak-item">
-              <span className="ps-streak-value ps-loss-streak">{overallStats.longestLossStreak}</span>
-              <span className="ps-streak-label">{t('statistics.labels.longestLossStreak')}</span>
-            </div>
-            <div className="ps-streak-item">
-              <span className="ps-streak-value">{overallStats.championshipWins}</span>
-              <span className="ps-streak-label">{t('statistics.labels.titleWins')}</span>
-            </div>
-          </div>
+      <section className="ps-record-card">
+        <Avatar name={player.name} size="xl" ring="pink" />
+        <div className="ps-identity">
+          <h2 className="ps-name">{player.name}</h2>
+          <p className="ps-wrestler">{player.wrestlerName}</p>
           {overallStats.firstMatchDate && (
-            <div className="ps-date-range">
-              {t('statistics.labels.active')}: {overallStats.firstMatchDate} - {overallStats.lastMatchDate || t('statistics.labels.present')}
-            </div>
+            <p className="ps-date-range">
+              {t('statistics.labels.active')}: {formatCalendarDate(overallStats.firstMatchDate)}
+              {' - '}
+              {overallStats.lastMatchDate ? formatCalendarDate(overallStats.lastMatchDate) : t('statistics.labels.present')}
+            </p>
           )}
         </div>
-      </div>
-
-      {/* Match Type Breakdown */}
-      <div className="ps-card ps-breakdown-card">
-        <h3>{t('statistics.playerStats.matchTypeBreakdown')}</h3>
-        <h4 className="ps-bar-subheading">{t('statistics.playerStats.winRateByMatchType')}</h4>
-        <div className="ps-bar-chart">
-          {matchTypeStats.map((stat) => renderBarChart(stat))}
+        <div className="ps-record">
+          <dl className="ps-wld">
+            <div className="ps-wld-item ps-wins">
+              <dt className="ps-wld-label">{t('statistics.labels.wins')}</dt>
+              <dd className="ps-wld-number">{overallStats.wins}</dd>
+            </div>
+            <div className="ps-wld-item ps-losses">
+              <dt className="ps-wld-label">{t('statistics.labels.losses')}</dt>
+              <dd className="ps-wld-number">{overallStats.losses}</dd>
+            </div>
+            <div className="ps-wld-item">
+              <dt className="ps-wld-label">{t('statistics.labels.draws')}</dt>
+              <dd className="ps-wld-number">{overallStats.draws}</dd>
+            </div>
+          </dl>
+          <p className="ps-record-summary">
+            <span className="ps-win-pct-value">{overallStats.winPercentage.toFixed(1)}%</span>
+            {' '}{t('statistics.labels.winPercentage')}
+            <span className="ps-matches-played">{overallStats.matchesPlayed} {t('statistics.labels.matchesPlayed')}</span>
+          </p>
         </div>
-        <table className="ps-breakdown-table">
-          <thead>
-            <tr>
-              <th>{t('statistics.labels.matchType')}</th>
-              <th>{t('statistics.labels.wins')}</th>
-              <th>{t('statistics.labels.losses')}</th>
-              <th>{t('statistics.labels.draws')}</th>
-              <th>{t('statistics.labels.bestStreak')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {matchTypeStats.map((stat) => (
-              <tr key={stat.statType}>
-                <td>{matchTypeLabels[stat.statType] || stat.statType}</td>
-                <td className="ps-td-wins">{stat.wins}</td>
-                <td className="ps-td-losses">{stat.losses}</td>
-                <td>{stat.draws}</td>
-                <td>{stat.longestWinStreak}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      </section>
 
-      {/* Championship History */}
-      {championshipStats.length > 0 && (
-        <div className="ps-card ps-championship-card">
-          <h3>{t('statistics.playerStats.championshipHistory')}</h3>
-          <div className="ps-champ-list">
-            {championshipStats.map((cs) => (
-              <div key={cs.championshipId} className="ps-champ-item">
-                <div className="ps-champ-name">
-                  {cs.championshipName || cs.championshipId}
-                  {cs.currentlyHolding && (
-                    <span className="ps-champ-current">{t('statistics.labels.currentChampion')}</span>
-                  )}
-                </div>
-                <div className="ps-champ-details">
-                  <span>{cs.totalReigns} {t('statistics.labels.reigns')}</span>
-                  <span>{cs.totalDaysHeld} {t('statistics.labels.daysHeld')}</span>
-                  <span>{cs.totalDefenses} {t('statistics.labels.defenses')}</span>
-                  <span>{t('statistics.labels.longestReign')}: {cs.longestReign} {t('common.days')}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      <section className="stats-section">
+        <h2 className="stats-section__title">{t('statistics.playerStats.streaks')}</h2>
+        <dl className="ps-streak-grid">
+          {streaks.map((streak) => (
+            <div key={streak.key} className="ps-streak-item">
+              <dt className="ps-streak-label">{streak.label}</dt>
+              <dd className="ps-streak-value">{streak.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      {playedMatchTypes.length > 0 && (
+        <section className="stats-section">
+          <h2 className="stats-section__title">{t('statistics.playerStats.matchTypeBreakdown')}</h2>
+          <DataTable
+            caption={t('statistics.playerStats.winRateByMatchType')}
+            rows={playedMatchTypes}
+            rowKey={(stat) => stat.statType}
+            columns={[
+              { key: 'type', header: t('statistics.labels.matchType'), render: matchTypeLabel },
+              {
+                key: 'record',
+                header: t('statistics.labels.record'),
+                align: 'center',
+                render: (stat) => `${stat.wins} - ${stat.losses} - ${stat.draws}`,
+              },
+              {
+                key: 'winRate',
+                header: t('statistics.labels.winPercentage'),
+                render: (stat) => (
+                  <span className="ps-win-rate">
+                    <progress className="stats-bar" value={stat.winPercentage} max={100} aria-hidden="true" />
+                    {stat.winPercentage.toFixed(0)}%
+                  </span>
+                ),
+                sortValue: (stat) => stat.winPercentage,
+              },
+              {
+                key: 'matches',
+                header: t('statistics.labels.matchesPlayed'),
+                align: 'end',
+                render: (stat) => stat.matchesPlayed,
+                hideOnMobile: true,
+              },
+              {
+                key: 'bestStreak',
+                header: t('statistics.labels.bestStreak'),
+                align: 'end',
+                render: (stat) => stat.longestWinStreak,
+              },
+            ]}
+          />
+        </section>
       )}
 
-      {/* Recent Achievements */}
-      {achievements.length > 0 && (
-        <div className="ps-card ps-achievements-card">
-          <h3>{t('statistics.playerStats.recentAchievements')}</h3>
-          <div className="ps-achievement-list">
-            {achievements.slice(0, 5).map((ach) => (
-              <div key={ach.achievementId} className="ps-achievement-item">
-                <span className="ps-achievement-icon">{ach.icon}</span>
-                <div className="ps-achievement-info">
-                  <span className="ps-achievement-name">{ach.achievementName}</span>
-                  <span className="ps-achievement-desc">{ach.description}</span>
+      {championshipStats.length > 0 && (
+        <section className="stats-section">
+          <h2 className="stats-section__title">{t('statistics.playerStats.championshipHistory')}</h2>
+          <ul className="stats-rows">
+            {championshipStats.map((championship) => (
+              <li key={championship.championshipId}>
+                <div className="stats-row__main">
+                  <span className="stats-row__title">{championship.championshipName ?? championship.championshipId}</span>
+                  <span className="stats-row__detail ps-champ-details">
+                    <span>{championship.totalReigns} {t('statistics.labels.reigns')}</span>
+                    <span>{championship.totalDaysHeld} {t('statistics.labels.daysHeld')}</span>
+                    <span>{championship.totalDefenses} {t('statistics.labels.defenses')}</span>
+                    <span>{t('statistics.labels.longestReign')}: {championship.longestReign} {t('common.days')}</span>
+                  </span>
                 </div>
-                <span className="ps-achievement-date">{ach.earnedAt}</span>
-              </div>
+                {championship.currentlyHolding && <Badge tone="warning">{t('statistics.labels.currentChampion')}</Badge>}
+              </li>
             ))}
-          </div>
-          <Link to="/stats/achievements" className="ps-view-all-link">
+          </ul>
+        </section>
+      )}
+
+      {achievements.length > 0 && (
+        <section className="stats-section">
+          <h2 className="stats-section__title">{t('statistics.playerStats.recentAchievements')}</h2>
+          <ul className="stats-rows">
+            {achievements.slice(0, 5).map((achievement) => (
+              <li key={achievement.achievementId}>
+                <span className="ps-achievement-icon" aria-hidden="true">{achievement.icon}</span>
+                <div className="stats-row__main">
+                  <span className="stats-row__title">{achievement.achievementName}</span>
+                  <span className="stats-row__detail">{achievement.description}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <Link to={`/stats/achievements?player=${player.playerId}`} className="ps-view-all-link">
             {t('statistics.playerStats.viewAllAchievements')}
           </Link>
-        </div>
+        </section>
       )}
     </>
   );

@@ -1,57 +1,29 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { statisticsApi, seasonsApi } from '../../services/api';
-import type { LeaderboardEntry } from '../../types/statistics';
-import type { Season } from '../../types';
+import { statisticsApi } from '../../services/api';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
-import SeasonSelector from './SeasonSelector';
-import './Leaderboards.css';
+import Tabs from '../ui/Tabs';
+import LeaderboardFilters from './LeaderboardFilters';
+import RankedBoard from './RankedBoard';
+import { useLeaderboardFilters } from './useLeaderboardFilters';
+import { useStatsResource } from './useStatsResource';
+import './stats-common.css';
 
 type CategoryKey = 'mostWins' | 'bestWinPercentage' | 'longestStreak' | 'mostChampionships' | 'longestReign';
 
 function Leaderboards() {
   const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('mostWins');
-  const [leaderboards, setLeaderboards] = useState<Record<string, LeaderboardEntry[]>>({});
-  const [loading, setLoading] = useState(true);
-  const [seasons, setSeasons] = useState<Season[]>([]);
-  const [selectedSeasonId, setSelectedSeasonId] = useState('');
+  const filters = useLeaderboardFilters();
+  const { seasonId } = filters;
 
-  // Load seasons on mount
-  useEffect(() => {
-    const abortController = new AbortController();
-    seasonsApi.getAll(abortController.signal)
-      .then(setSeasons)
-      .catch((err: unknown) => {
-        if (err instanceof Error && err.name !== 'AbortError') {
-          console.error('Failed to load seasons', err);
-        }
-      });
-    return () => abortController.abort();
-  }, []);
-
-  // Load leaderboards when season changes
-  useEffect(() => {
-    const abortController = new AbortController();
-    const fetchLeaderboards = async () => {
-      setLoading(true);
-      try {
-        const result = await statisticsApi.getLeaderboards(
-          selectedSeasonId || undefined, abortController.signal
-        );
-        setLeaderboards(result.leaderboards);
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name !== 'AbortError') {
-          console.error('Failed to load leaderboards', err);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLeaderboards();
-    return () => abortController.abort();
-  }, [selectedSeasonId]);
+  const loadBoards = useCallback(
+    (signal: AbortSignal) => statisticsApi.getLeaderboards(seasonId || undefined, signal),
+    [seasonId],
+  );
+  const { data, loading, failed, reload } = useStatsResource(loadBoards);
 
   const categories: { key: CategoryKey; label: string }[] = [
     { key: 'mostWins', label: t('statistics.leaderboards.categories.mostWins') },
@@ -61,112 +33,42 @@ function Leaderboards() {
     { key: 'longestReign', label: t('statistics.leaderboards.categories.longestReign') },
   ];
 
-  const entries: LeaderboardEntry[] = leaderboards[activeCategory] || [];
-
-  const valueSuffix: Record<CategoryKey, string> = {
-    mostWins: '',
-    bestWinPercentage: '%',
-    longestStreak: '',
-    mostChampionships: '',
-    longestReign: ` ${t('common.days')}`,
+  const formatValue = (value: number): string => {
+    if (activeCategory === 'bestWinPercentage') return `${value.toFixed(1)}%`;
+    if (activeCategory === 'longestReign') return `${value} ${t('common.days')}`;
+    return String(value);
   };
 
-  function getMedalColor(rank: number): string | null {
-    switch (rank) {
-      case 1: return '#d4af37';
-      case 2: return '#c0c0c0';
-      case 3: return '#cd7f32';
-      default: return null;
-    }
-  }
-
-  function getMedalLabel(rank: number): string {
-    switch (rank) {
-      case 1: return '1st';
-      case 2: return '2nd';
-      case 3: return '3rd';
-      default: return `${rank}th`;
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="leaderboards">
-        <h2>{t('statistics.leaderboards.title')}</h2>
-        <Skeleton variant="table" count={8} />
-      </div>
-    );
-  }
+  const entries = (data?.leaderboards[activeCategory] ?? []).map((entry) => ({
+    ...entry,
+    value: formatValue(entry.value),
+  }));
+  const activeLabel = categories.find((category) => category.key === activeCategory)?.label ?? '';
 
   return (
-    <div className="leaderboards">
-      <div className="lb-header">
-        <h2>{t('statistics.leaderboards.title')}</h2>
-        <div className="lb-nav-links">
-          <Link to="/stats">{t('statistics.nav.playerStats')}</Link>
-          <Link to="/stats/head-to-head">{t('statistics.nav.headToHead')}</Link>
-          <Link to="/stats/match-types">{t('statistics.nav.matchTypeLeaderboards')}</Link>
-          <Link to="/stats/records">{t('statistics.nav.records')}</Link>
-        </div>
-      </div>
-
-      <SeasonSelector
-        seasons={seasons}
-        selectedSeasonId={selectedSeasonId}
-        onSeasonChange={setSelectedSeasonId}
+    <div className="stats-page">
+      <PageHeader
+        eyebrow={t('nav.statistics')}
+        title={t('statistics.leaderboards.title')}
+        actions={<LeaderboardFilters filters={filters} />}
       />
 
-      {/* Category Tabs */}
-      <div className="lb-tabs">
-        {categories.map((cat) => (
-          <button
-            key={cat.key}
-            className={`lb-tab ${activeCategory === cat.key ? 'lb-tab-active' : ''}`}
-            onClick={() => setActiveCategory(cat.key)}
-          >
-            {cat.label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        label={t('statistics.leaderboards.title')}
+        value={activeCategory}
+        onValueChange={(value) => setActiveCategory(value as CategoryKey)}
+        items={categories.map((category) => ({ value: category.key, label: category.label }))}
+      />
 
-      {/* Leaderboard List */}
-      <div className="lb-list">
-        {entries.map((entry) => {
-          const medalColor = getMedalColor(entry.rank);
-          return (
-            <div
-              key={entry.playerId}
-              className={`lb-entry ${medalColor ? 'lb-entry-medal' : ''}`}
-              style={medalColor ? { borderLeftColor: medalColor } : undefined}
-            >
-              <div className="lb-rank" style={medalColor ? { color: medalColor } : undefined}>
-                {entry.rank <= 3 ? (
-                  <span className="lb-medal" style={{ backgroundColor: medalColor || undefined }}>
-                    {getMedalLabel(entry.rank)}
-                  </span>
-                ) : (
-                  <span className="lb-rank-num">{entry.rank}</span>
-                )}
-              </div>
-              <div className="lb-player-info">
-                <Link to={`/stats/player/${entry.playerId}`} className="lb-player-name">
-                  {entry.playerName}
-                </Link>
-                <span className="lb-wrestler-name">{entry.wrestlerName}</span>
-              </div>
-              <div className="lb-value">
-                {typeof entry.value === 'number' && activeCategory === 'bestWinPercentage'
-                  ? entry.value.toFixed(1)
-                  : entry.value}
-                {valueSuffix[activeCategory]}
-              </div>
-            </div>
-          );
-        })}
-        {entries.length === 0 && (
-          <p>{t('statistics.leaderboards.noData', 'No data available yet.')}</p>
-        )}
-      </div>
+      {failed ? (
+        <EmptyState title={t('statistics.loadFailed')} actionLabel={t('common.retry')} onAction={reload} />
+      ) : loading ? (
+        <Skeleton variant="table" count={8} />
+      ) : entries.length === 0 ? (
+        <EmptyState title={activeLabel} description={t('statistics.leaderboards.noData')} />
+      ) : (
+        <RankedBoard entries={entries} label={activeLabel} />
+      )}
     </div>
   );
 }

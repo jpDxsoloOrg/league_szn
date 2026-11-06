@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 
 const { mockGetMatchTypeLeaderboards } = vi.hoisted(() => ({
   mockGetMatchTypeLeaderboards: vi.fn(),
@@ -45,15 +45,14 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../Leaderboards.css', () => ({}));
-vi.mock('../SeasonSelector.css', () => ({}));
 
 import MatchTypeLeaderboards from '../MatchTypeLeaderboards';
 
-function renderComponent() {
+function renderComponent(entry = '/stats/match-types') {
   return render(
-    <BrowserRouter>
+    <MemoryRouter initialEntries={[entry]}>
       <MatchTypeLeaderboards />
-    </BrowserRouter>
+    </MemoryRouter>
   );
 }
 
@@ -83,7 +82,7 @@ describe('MatchTypeLeaderboards', () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText('Match Type Leaderboards')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: 'Match Type Leaderboards' })).toBeInTheDocument();
       expect(screen.getByText('John Cena')).toBeInTheDocument();
       expect(screen.getByText('83.3%')).toBeInTheDocument();
     });
@@ -120,8 +119,8 @@ describe('MatchTypeLeaderboards', () => {
 
     renderComponent();
 
-    const select = await screen.findByLabelText('Match Type');
-    await user.selectOptions(select, 'mt-tag');
+    await user.click(await screen.findByRole('combobox', { name: 'Match Type' }));
+    await user.click(await screen.findByRole('option', { name: 'Tag Team' }));
 
     await waitFor(() => {
       expect(mockGetMatchTypeLeaderboards).toHaveBeenNthCalledWith(
@@ -130,6 +129,30 @@ describe('MatchTypeLeaderboards', () => {
         expect.any(AbortSignal)
       );
       expect(screen.getByText('No match data available for this type yet.')).toBeInTheDocument();
+    });
+  });
+
+  it('applies filters from the URL and clears the stipulation when a match type is chosen', async () => {
+    const user = userEvent.setup();
+    mockGetMatchTypeLeaderboards.mockResolvedValue({ leaderboard: [], appliedFilters: {} });
+
+    renderComponent('/stats/match-types?stipulation=stip-cage');
+
+    await waitFor(() => {
+      expect(mockGetMatchTypeLeaderboards).toHaveBeenCalledWith(
+        { seasonId: undefined, matchTypeId: undefined, stipulationId: 'stip-cage' },
+        expect.any(AbortSignal)
+      );
+    });
+
+    await user.click(await screen.findByRole('combobox', { name: 'Match Type' }));
+    await user.click(await screen.findByRole('option', { name: 'Single' }));
+
+    await waitFor(() => {
+      expect(mockGetMatchTypeLeaderboards).toHaveBeenLastCalledWith(
+        { seasonId: undefined, matchTypeId: 'mt-single', stipulationId: undefined },
+        expect.any(AbortSignal)
+      );
     });
   });
 });

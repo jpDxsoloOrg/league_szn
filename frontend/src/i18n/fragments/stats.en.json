@@ -1,0 +1,29 @@
+{
+  "statistics": {
+    "loadFailed": "Could not load these stats",
+    "nav": {
+      "playerStats": "Player"
+    },
+    "labels": {
+      "record": "Record",
+      "stipulation": "Stipulation"
+    },
+    "headToHead": {
+      "compareView": "Compare",
+      "viewLabel": "Head-to-Head view",
+      "needTwoPlayers": "At least two players are needed for a comparison."
+    },
+    "leaderboards": {
+      "noData": "No data available yet."
+    },
+    "recordBook": {
+      "noRecords": "No records available yet."
+    },
+    "achievements": {
+      "noPlayers": "No players to show achievements for yet."
+    },
+    "bestMatches": {
+      "unknownPlayer": "Unknown player"
+    }
+  }
+}

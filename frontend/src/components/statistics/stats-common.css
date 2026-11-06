@@ -1,0 +1,120 @@
+/* Layout shared by every page under /stats. */
+.stats-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.stats-page .page-header {
+  margin-bottom: 0;
+}
+
+.stats-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.stats-section__title {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.stats-section__note {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+/* One surface holding hairline-separated rows. */
+.stats-rows {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+}
+
+.stats-rows > li {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  min-height: 3.5rem;
+  padding: 0.75rem 1.25rem;
+}
+
+.stats-rows > li + li {
+  border-top: 1px solid var(--color-hairline);
+}
+
+.stats-row__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.stats-row__title {
+  color: var(--color-text);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.stats-row__detail {
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+}
+
+/* Filled bars use <progress> so widths need no inline style. */
+.stats-bar {
+  display: block;
+  width: 100%;
+  height: 0.5rem;
+  overflow: hidden;
+  appearance: none;
+  border: none;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-overlay-soft);
+}
+
+.stats-bar::-webkit-progress-bar {
+  border-radius: var(--radius-pill);
+  background-color: var(--color-overlay-soft);
+}
+
+.stats-bar::-webkit-progress-value {
+  border-radius: var(--radius-pill);
+  background-color: var(--color-cyan);
+}
+
+.stats-bar::-moz-progress-bar {
+  border-radius: var(--radius-pill);
+  background-color: var(--color-cyan);
+}
+
+@media (max-width: 768px) {
+  .stats-page {
+    gap: 1.25rem;
+  }
+
+  /* Filters share the full width instead of wrapping ragged. */
+  .stats-page .page-header__actions {
+    width: 100%;
+  }
+
+  .stats-page .page-header__actions .ui-select__trigger {
+    flex: 1 1 9rem;
+    min-width: 0;
+  }
+
+  .stats-rows > li {
+    padding: 0.75rem 1rem;
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "statistics": {
+    "loadFailed": "Diese Statistiken konnten nicht geladen werden",
+    "nav": {
+      "playerStats": "Spieler"
+    },
+    "labels": {
+      "record": "Bilanz",
+      "stipulation": "Stipulation"
+    },
+    "headToHead": {
+      "compareView": "Vergleich",
+      "viewLabel": "Head-to-Head-Ansicht",
+      "needTwoPlayers": "Für einen Vergleich werden mindestens zwei Spieler benötigt."
+    },
+    "leaderboards": {
+      "noData": "Noch keine Daten verfügbar."
+    },
+    "recordBook": {
+      "noRecords": "Noch keine Rekorde verfügbar."
+    },
+    "achievements": {
+      "noPlayers": "Noch keine Spieler, für die Erfolge angezeigt werden können."
+    },
+    "bestMatches": {
+      "unknownPlayer": "Unbekannter Spieler"
+    }
+  }
+}

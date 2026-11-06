@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 
 // --- Hoisted mocks ---
 const { mockGetLeaderboards } = vi.hoisted(() => ({
@@ -11,6 +11,12 @@ const { mockGetLeaderboards } = vi.hoisted(() => ({
 vi.mock('../../../services/api', () => ({
   statisticsApi: { getLeaderboards: mockGetLeaderboards },
   seasonsApi: {
+    getAll: vi.fn().mockResolvedValue([]),
+  },
+  matchTypesApi: {
+    getAll: vi.fn().mockResolvedValue([{ matchTypeId: 'mt-tag', name: 'Tag Team', createdAt: '', updatedAt: '' }]),
+  },
+  stipulationsApi: {
     getAll: vi.fn().mockResolvedValue([]),
   },
 }));
@@ -31,6 +37,10 @@ vi.mock('react-i18next', () => ({
         'statistics.nav.playerStats': 'Player Stats',
         'statistics.nav.headToHead': 'Head to Head',
         'statistics.nav.records': 'Records',
+        'statistics.labels.matchType': 'Match Type',
+        'statistics.loadFailed': 'Could not load these stats',
+        'common.all': 'All',
+        'common.retry': 'Retry',
         'common.loading': 'Loading...',
         'common.days': 'days',
       };
@@ -40,7 +50,6 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../Leaderboards.css', () => ({}));
-vi.mock('../SeasonSelector.css', () => ({}));
 
 import Leaderboards from '../Leaderboards';
 
@@ -61,11 +70,17 @@ const mockLeaderboards = {
   longestReign: [],
 };
 
+function LocationProbe() {
+  const { pathname, search } = useLocation();
+  return <output data-testid="location">{`${pathname}${search}`}</output>;
+}
+
 function renderComponent() {
   return render(
-    <BrowserRouter>
+    <MemoryRouter initialEntries={['/stats/leaderboards']}>
       <Leaderboards />
-    </BrowserRouter>
+      <LocationProbe />
+    </MemoryRouter>
   );
 }
 
@@ -74,7 +89,7 @@ describe('Leaderboards', () => {
     vi.clearAllMocks();
   });
 
-  it('renders leaderboard entries for the default Most Wins category with medal badges', async () => {
+  it('renders the default Most Wins category with a top-three podium and a list below', async () => {
     mockGetLeaderboards.mockResolvedValue({
       players: [],
       leaderboards: mockLeaderboards,
@@ -82,22 +97,20 @@ describe('Leaderboards', () => {
 
     renderComponent();
 
-    await waitFor(() => {
-      expect(screen.getByText('Leaderboards')).toBeInTheDocument();
-    });
-
     // Default active tab is "Most Wins"
-    expect(screen.getByText('John Cena')).toBeInTheDocument();
+    expect(await screen.findByText('John Cena')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Leaderboards' })).toBeInTheDocument();
     expect(screen.getByText('The Rock')).toBeInTheDocument();
     expect(screen.getByText('Undertaker')).toBeInTheDocument();
 
-    // Medal badges for top 3
-    expect(screen.getByText('1st')).toBeInTheDocument();
-    expect(screen.getByText('2nd')).toBeInTheDocument();
-    expect(screen.getByText('3rd')).toBeInTheDocument();
+    // Podium ranks for the top 3
+    expect(screen.getByText('#1')).toBeInTheDocument();
+    expect(screen.getByText('#2')).toBeInTheDocument();
+    expect(screen.getByText('#3')).toBeInTheDocument();
 
-    // 4th place gets a plain number
-    expect(screen.getByText('4')).toBeInTheDocument();
+    // 4th place sits in the list and links to the player's stats
+    expect(screen.getByText('#4')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Triple H' })).toHaveAttribute('href', '/stats/player/p4');
 
     // Values shown
     expect(screen.getByText('25')).toBeInTheDocument();
@@ -113,9 +126,7 @@ describe('Leaderboards', () => {
 
     renderComponent();
 
-    await waitFor(() => {
-      expect(screen.getByText('Leaderboards')).toBeInTheDocument();
-    });
+    await screen.findByText('John Cena');
 
     // Switch to Win % tab
     await user.click(screen.getByText('Win %'));
@@ -132,6 +143,27 @@ describe('Leaderboards', () => {
     await waitFor(() => {
       expect(screen.getByText('No data available yet.')).toBeInTheDocument();
     });
+  });
+
+  it('moves to the filtered board when a match type is chosen', async () => {
+    const user = userEvent.setup();
+    mockGetLeaderboards.mockResolvedValue({ players: [], leaderboards: mockLeaderboards });
+
+    renderComponent();
+
+    await user.click(await screen.findByRole('combobox', { name: 'Match Type' }));
+    await user.click(await screen.findByRole('option', { name: 'Tag Team' }));
+
+    expect(screen.getByTestId('location')).toHaveTextContent('/stats/match-types?matchType=mt-tag');
+  });
+
+  it('offers a retry instead of an empty board when loading fails', async () => {
+    mockGetLeaderboards.mockRejectedValue(new Error('Network error'));
+
+    renderComponent();
+
+    expect(await screen.findByRole('button', { name: 'Retry' })).toBeInTheDocument();
+    expect(screen.queryByText('No data available yet.')).not.toBeInTheDocument();
   });
 
   it('shows loading state while fetching data', async () => {

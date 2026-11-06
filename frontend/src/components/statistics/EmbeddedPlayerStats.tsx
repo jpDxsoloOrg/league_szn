@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePlayerStats } from '../../hooks/usePlayerStats';
-import Skeleton from '../ui/Skeleton';
+import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
+import Skeleton from '../ui/Skeleton';
 import PlayerStatsContent from './PlayerStatsContent';
 import SeasonSelector from './SeasonSelector';
+import './stats-common.css';
 import './PlayerStats.css';
 
 interface EmbeddedPlayerStatsProps {
@@ -21,56 +22,32 @@ function EmbeddedPlayerStats({ playerId }: EmbeddedPlayerStatsProps) {
   } = usePlayerStats({ playerId });
 
   const player = useMemo(
-    () => data?.players?.find((p) => p.playerId === playerId),
+    () => data?.players?.find((candidate) => candidate.playerId === playerId),
     [data, playerId]
   );
 
   if (loading && !overallStats) {
-    return (
-      <div className="player-stats">
-        <Skeleton variant="block" count={3} />
-      </div>
-    );
+    return <Skeleton variant="block" count={3} />;
   }
 
   if (error) {
-    return (
-      <div className="player-stats">
-        <p>{error}</p>
-      </div>
-    );
+    return <EmptyState title={error} />;
   }
 
   if (!player || !overallStats) {
-    return (
-      <div className="player-stats">
-        <EmptyState
-          title={t('statistics.playerStats.title')}
-          description={t('statistics.playerStats.noData')}
-        />
-      </div>
-    );
+    return <EmptyState title={t('statistics.playerStats.title')} description={t('statistics.playerStats.noData')} />;
   }
 
   return (
-    <div className="player-stats">
-      <div className="ps-nav-links">
-        <Link to="/stats/head-to-head">{t('statistics.nav.headToHead')}</Link>
-        <Link to="/stats/leaderboards">{t('statistics.nav.leaderboards')}</Link>
-        <Link to="/stats/match-types">{t('statistics.nav.matchTypeLeaderboards')}</Link>
-        <Link to="/stats/rivalries">{t('statistics.nav.rivalries')}</Link>
-        <Link to="/stats/tale-of-tape">{t('statistics.nav.taleOfTape')}</Link>
-        <Link to="/stats/records">{t('statistics.nav.records')}</Link>
-        <Link to="/stats/best-matches">{t('statistics.nav.bestMatches')}</Link>
-        <Link to="/stats/achievements">{t('statistics.nav.achievements')}</Link>
+    <div className="stats-page">
+      <div className="ps-embedded-bar">
+        <SeasonSelector
+          seasons={seasons}
+          selectedSeasonId={selectedSeasonId}
+          onSeasonChange={setSelectedSeasonId}
+        />
+        <Button variant="ghost" to={`/stats/player/${playerId}`}>{t('publicProfile.fullStats')}</Button>
       </div>
-
-      <SeasonSelector
-        seasons={seasons}
-        selectedSeasonId={selectedSeasonId}
-        onSeasonChange={setSelectedSeasonId}
-        compact
-      />
 
       <PlayerStatsContent
         player={player}
