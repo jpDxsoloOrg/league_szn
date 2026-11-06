@@ -11,6 +11,7 @@ import {
   fetchCompletedMatches,
   buildPlayerToStableMap,
   computeStableMatchResults,
+  isWithinFactionLifetime,
   computeMatchTypeRecords,
   computeHeadToHead,
   computeWinPercentage,
@@ -223,9 +224,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return !player || isPlayerVisible(player);
     });
 
+    // Member rows cover the same matches as the faction totals above them.
+    const lifetimeMatches = matches.filter((match) => isWithinFactionLifetime(match.date, factionRecord));
+
     const members: MemberStatsRow[] = listedMemberIds.map((playerId) => {
       const player = playerById.get(playerId);
-      const { results, wins, losses, draws } = computeMemberForm(matches, playerId);
+      const { results, wins, losses, draws } = computeMemberForm(lifetimeMatches, playerId);
       const { recentForm, currentStreak } = computeRecentFormAndStreak(results, RECENT_FORM_LIMIT);
       return {
         playerId,

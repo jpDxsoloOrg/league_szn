@@ -150,7 +150,11 @@ tests had not. The fixes are in this PR.
   page, so list and detail agree. List numbers can change after deploy. Tag team
   records count only matches within the team's lifetime. On prod data this
   matched every active and dissolved team, and took one old match each from two
-  teams still awaiting approval.
+  teams still awaiting approval. Faction records have the same bound, from
+  `createdAt` to `disbandedAt`, with no end date while the status is not
+  `disbanded` because reactivating keeps the old date. They stay approximate:
+  no membership history is stored, so a member's pre-join matches inside the
+  faction's lifetime still count and a removed member's matches do not.
 - **Win %:** one 0-100 scale everywhere.
 - **Cancelling challenges:** both update builders set `updatedAt` a second time
   when a patch carried it, which DynamoDB rejects, so every cancel returned 500.
