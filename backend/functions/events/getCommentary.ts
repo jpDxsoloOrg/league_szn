@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { resolveBilledName } from '../../lib/needsWrestler';
+import { isPlayerVisible, resolveBilledName } from '../../lib/needsWrestler';
 import { getRepositories } from '../../lib/repositories';
 import type { Match, MatchSlot, Player, WrestlerMove } from '../../lib/repositories/types';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
@@ -162,16 +162,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       if (!p) return null;
       const slot = (match.slots as MatchSlot[] | undefined)?.find((s) => s.playerId === playerId);
       const standing = standingByPlayer.get(playerId);
+      // A hidden player stays named on a card, but their profile stays private.
+      const profile = isPlayerVisible(p)
+        ? { imageUrl: p.imageUrl, alignment: p.alignment, bio: p.bio, signatures: p.signatures ?? [], finishers: p.finishers ?? [] }
+        : { signatures: [], finishers: [] };
       return {
         playerId,
         playerName: p.name,
         wrestlerName: resolveBilledName(slot?.wrestlerNameSnapshot, p, p.playerId),
-        imageUrl: p.imageUrl,
-        alignment: p.alignment,
+        ...profile,
         divisionName: p.divisionId ? divisionNameById.get(p.divisionId) : undefined,
-        bio: p.bio,
-        signatures: p.signatures ?? [],
-        finishers: p.finishers ?? [],
         seasonRecord: season
           ? { wins: standing?.wins ?? 0, losses: standing?.losses ?? 0, draws: standing?.draws ?? 0 }
           : null,

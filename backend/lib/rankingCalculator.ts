@@ -1,5 +1,6 @@
 import { dynamoDb, TableNames } from './dynamodb';
 import { matchWinners } from './matchResult';
+import { isPlayerVisible } from './needsWrestler';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -83,16 +84,21 @@ export async function calculateRankingsForChampionship(
 
   // ------------------------------------------------------------------
   // 1a. Fetch eligible player IDs. Matches keep the ids of deleted players,
-  //     so a candidate must still be a live player, and on a division-locked
-  //     title a member of that division.
+  //     so a candidate must still be a live player, shown on the roster, and
+  //     on a division-locked title a member of that division. A hidden player
+  //     would otherwise hold a slot that the read then drops.
   // ------------------------------------------------------------------
   const allPlayers = await dynamoDb.scanAll({
     TableName: TableNames.PLAYERS,
-    ProjectionExpression: 'playerId, divisionId, deletedAt',
+    ProjectionExpression: 'playerId, divisionId, deletedAt, currentWrestler',
   });
   const eligiblePlayerIds = new Set(
     allPlayers
-      .filter((p) => !p.deletedAt && (!divisionId || p.divisionId === divisionId))
+      .filter((p) => (
+        !p.deletedAt
+        && isPlayerVisible({ currentWrestler: p.currentWrestler as string | undefined })
+        && (!divisionId || p.divisionId === divisionId)
+      ))
       .map((p) => p.playerId as string),
   );
 

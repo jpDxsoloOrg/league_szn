@@ -125,6 +125,27 @@ describe('getCommentary', () => {
     expect(body.name).toBe('Fallout');
   });
 
+  it('keeps a hidden participant on the card but leaves out their profile', async () => {
+    const a = await player('A');
+    const b = await player('B');
+    await repos.roster.players.update(b, {
+      currentWrestler: 'Needs Wrestler',
+      bio: 'Private bio',
+      imageUrl: 'https://example.com/b.png',
+      signatures: [{ gameName: 'Secret', customName: 'Secret' }],
+    });
+    await cardMatch('m1', [a, b]);
+    const eventId = await eventWith([{ matchId: 'm1', position: 1, designation: 'opener' }]);
+
+    const { body } = await call(eventId);
+
+    const hidden = body.matches[0].participants.find((row: { playerId: string }) => row.playerId === b);
+    expect(hidden.playerName).toBe('B');
+    expect(hidden.bio).toBeUndefined();
+    expect(hidden.imageUrl).toBeUndefined();
+    expect(hidden.signatures).toEqual([]);
+  });
+
   it('includes moveset, bio, division and records for each participant', async () => {
     const division = await repos.leagueOps.divisions.create({ name: 'Raw' });
     const a = await player('A', {
