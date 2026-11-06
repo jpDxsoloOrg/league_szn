@@ -3365,6 +3365,7 @@ paths:
         '200': { description: Transfer request created }
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not permitted, or the transfers feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /transfers/me:
     get:

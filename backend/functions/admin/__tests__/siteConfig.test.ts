@@ -23,6 +23,7 @@ const DEFAULT_FEATURES = {
   stables: true,
   rivalries: true,
   notifications: true,
+  transfers: false,
 };
 
 function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent {
@@ -97,6 +98,7 @@ describe('getSiteConfig', () => {
       stables: true,
       rivalries: true,
       notifications: true,
+      transfers: false,
     });
   });
 });
@@ -125,6 +127,19 @@ describe('updateSiteConfig', () => {
     const result = await updateSiteConfig(event, ctx, cb);
 
     expect(result!.statusCode).toBe(403);
+  });
+
+  it('saves the transfers flag', async () => {
+    const event = withAuth(
+      makeEvent({ body: JSON.stringify({ features: { transfers: true } }) }),
+      'Admin',
+    );
+
+    const result = await updateSiteConfig(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body).features.transfers).toBe(true);
+    expect((await siteConfigRepo.getFeatures()).transfers).toBe(true);
   });
 
   it('returns 400 when request body is missing', async () => {
@@ -223,6 +238,7 @@ describe('updateSiteConfig', () => {
       stables: true,
       rivalries: true,
       notifications: true,
+      transfers: false,
     });
   });
 
@@ -244,6 +260,7 @@ describe('updateSiteConfig', () => {
       stables: true,
       rivalries: true,
       notifications: true,
+      transfers: false,
     });
   });
 });
