@@ -71,6 +71,10 @@
   border-color: var(--color-pink);
 }
 
+.event-result__meta .ui-badge {
+  white-space: normal;
+}
+
 .event-result__meta {
   display: flex;
   flex-wrap: wrap;

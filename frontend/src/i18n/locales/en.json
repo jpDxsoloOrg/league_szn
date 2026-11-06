@@ -3015,7 +3015,7 @@
       },
       "count_one": "{{count}} tag team",
       "count_other": "{{count}} tag teams",
-      "playerMissing": "Player not found",
+      "playerMissing": "Former member",
       "dissolveTitle": "Dissolve tag team",
       "dissolveConfirm": "Dissolve \"{{name}}\"? This cannot be undone."
     },

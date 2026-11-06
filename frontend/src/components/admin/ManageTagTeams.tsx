@@ -120,7 +120,7 @@ export default function ManageTagTeams() {
       // The team keeps the wrestler it was billed with, as the public page shows.
       return storedWrestlerName
         ? <span>{storedWrestlerName}</span>
-        : <span className="ar-sub">{t('adminRoster.tagTeams.playerMissing', 'Player not found')}</span>;
+        : <span className="ar-sub">{t('adminRoster.tagTeams.playerMissing', 'Former member')}</span>;
     }
     const details = [isNeedsWrestler(player.currentWrestler) ? '' : player.currentWrestler, player.psnId]
       .filter(Boolean)

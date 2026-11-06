@@ -3019,7 +3019,7 @@
       },
       "count_one": "{{count}} Tag Team",
       "count_other": "{{count}} Tag Teams",
-      "playerMissing": "Spieler nicht gefunden",
+      "playerMissing": "Ehemaliges Mitglied",
       "dissolveTitle": "Tag Team auflösen",
       "dissolveConfirm": "„{{name}}“ auflösen? Dies kann nicht rückgängig gemacht werden."
     },

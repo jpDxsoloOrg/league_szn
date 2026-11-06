@@ -156,6 +156,11 @@
   gap: 0.5rem;
 }
 
+/* Title names are free length, and a badge can't otherwise wrap on a phone. */
+.event-match__header .ui-badge {
+  white-space: normal;
+}
+
 .event-match__type {
   color: var(--color-text-secondary);
   font-size: 0.9375rem;

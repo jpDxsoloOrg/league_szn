@@ -68,7 +68,7 @@ describe('ManageTagTeams', () => {
     render(<ManageTagTeams />);
 
     const row = (await screen.findByText('New Day')).closest('tr')!;
-    expect(within(row).getAllByText('Player not found')).toHaveLength(2);
+    expect(within(row).getAllByText('Former member')).toHaveLength(2);
   });
 
   it('falls back to the wrestler the team was billed with when the player record is gone', async () => {
@@ -81,7 +81,7 @@ describe('ManageTagTeams', () => {
     const row = (await screen.findByText('New Day')).closest('tr')!;
     expect(within(row).getByText('Undertaker')).toBeInTheDocument();
     expect(within(row).getByText('Kane')).toBeInTheDocument();
-    expect(within(row).queryByText('Player not found')).not.toBeInTheDocument();
+    expect(within(row).queryByText('Former member')).not.toBeInTheDocument();
   });
 
   it('asks before dissolving, and sends nothing if the admin backs out', async () => {
