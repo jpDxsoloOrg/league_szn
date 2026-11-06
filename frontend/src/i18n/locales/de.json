@@ -2876,7 +2876,7 @@
       "deleteTitle": "Spieler löschen",
       "deleteConfirm": "{{name}} wirklich löschen? Dies kann nicht rückgängig gemacht werden.",
       "noDivision": "Keine Division",
-      "keptWrestler": "{{name}} (nicht mit dem Roster verknüpft)",
+      "keptWrestler": "{{name}} (eigener Name)",
       "clearWarning": "Beim Speichern wird dieser Wrestler entfernt und der Spieler auf öffentlichen Seiten ausgeblendet."
     },
     "wrestlers": {

@@ -281,8 +281,8 @@ describe('ManagePlayers', () => {
       const user = userEvent.setup();
       await openEdit(user);
 
-      expect(selectedText('Wrestler')).toBe('Edge (not linked to the roster)');
-      expect(selectedText('Alternate Wrestler')).toBe('Christian (not linked to the roster)');
+      expect(selectedText('Wrestler')).toBe('Edge (custom name)');
+      expect(selectedText('Alternate Wrestler')).toBe('Christian (custom name)');
     });
 
     it('sends neither wrestler field on a no-change save', async () => {
@@ -377,6 +377,64 @@ describe('ManagePlayers', () => {
     });
   });
 
+  describe('a linked player who renamed their wrestler', () => {
+    const renamed = {
+      ...mockPlayers[0],
+      currentWrestler: 'Jaxon Alexzander',
+      currentWrestlerId: rockWrestler.wrestlerId,
+    };
+
+    const openEdit = async (player: typeof renamed) => {
+      const user = userEvent.setup();
+      mockPlayersApi.getAllIncludingHidden.mockResolvedValue([player]);
+      mockPlayersApi.update.mockResolvedValue(player);
+      mockWrestlersApi.getAll.mockResolvedValue(mockWrestlers.map((wrestler) => (
+        wrestler.wrestlerId === player.currentWrestlerId ? { ...wrestler, isInUse: true } : wrestler
+      )));
+      renderComponent();
+      await screen.findByText(player.name);
+      await user.click(screen.getByRole('button', { name: 'Edit' }));
+      return { user, select: screen.getByLabelText('Wrestler') as HTMLSelectElement };
+    };
+
+    it('opens on the name the table shows, with the roster row still on offer', async () => {
+      const { select } = await openEdit(renamed);
+
+      expect(select.selectedOptions[0]?.textContent).toBe('Jaxon Alexzander (custom name)');
+      const linkedRow = Array.from(select.options).find((option) => option.value === renamed.currentWrestlerId);
+      expect(linkedRow).toBeDefined();
+    });
+
+    it('sends no wrestler field on a no-change save', async () => {
+      const { user } = await openEdit(renamed);
+
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => expect(mockPlayersApi.update).toHaveBeenCalled());
+      const payload = mockPlayersApi.update.mock.calls[0]?.[1];
+      expect(payload).not.toHaveProperty('currentWrestlerId');
+      expect(payload).not.toHaveProperty('clearCurrentWrestler');
+    });
+
+    it('can relink to the roster row', async () => {
+      const { user, select } = await openEdit(renamed);
+
+      await user.selectOptions(select, renamed.currentWrestlerId);
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => expect(mockPlayersApi.update).toHaveBeenCalled());
+      expect(mockPlayersApi.update.mock.calls[0]?.[1]).toEqual(
+        expect.objectContaining({ currentWrestlerId: renamed.currentWrestlerId }),
+      );
+    });
+
+    it('treats a difference in case alone as still linked', async () => {
+      const { select } = await openEdit({ ...renamed, currentWrestler: rockWrestler.name.toUpperCase() });
+
+      expect(select.value).toBe(renamed.currentWrestlerId);
+    });
+  });
+
   it('keeps a linked wrestler whose roster row is gone on a no-change save', async () => {
     const user = userEvent.setup();
     mockPlayersApi.getAllIncludingHidden.mockResolvedValue([
@@ -388,7 +446,7 @@ describe('ManagePlayers', () => {
 
     await user.click(screen.getByRole('button', { name: 'Edit' }));
     const wrestlerSelect = screen.getByLabelText('Wrestler') as HTMLSelectElement;
-    expect(wrestlerSelect.selectedOptions[0]?.textContent).toBe('The Rock (not linked to the roster)');
+    expect(wrestlerSelect.selectedOptions[0]?.textContent).toBe('The Rock (custom name)');
 
     await user.click(screen.getByRole('button', { name: 'Update Player' }));
 

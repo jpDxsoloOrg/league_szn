@@ -2804,7 +2804,7 @@
       "uploadImage": "Click to upload image",
       "deleteTitle": "Delete player",
       "deleteConfirm": "Are you sure you want to delete {{name}}? This action cannot be undone.",
-      "keptWrestler": "{{name}} (not linked to the roster)",
+      "keptWrestler": "{{name}} (custom name)",
       "clearWarning": "Saving removes this wrestler and hides the player from public pages."
     },
     "matchCard": {
