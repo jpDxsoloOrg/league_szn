@@ -95,7 +95,7 @@ export interface PlayerStrike {
   strikeId: string;
   issuedAt: string;            // ISO, server time
   issuedBy: string;            // Cognito sub
-  issuedByName: string;        // Admin's player name, else username
+  issuedByName: string;        // Admin's player name, else username, else 'League Staff'
   reason: string;
   clearedAt?: string;          // set means it no longer counts
   clearedBy?: string;
@@ -155,7 +155,7 @@ updateIfStatus(challengeId: string, patch: Partial<Challenge>, expectedStatus: C
 export const WARNING_DAYS = 7;
 export const COOLDOWN_DAYS = 14;
 export const SIGNUP_BLOCK_DAYS = 7;
-/** Days after T2 from which another strike deactivates. 7 is the request as written, 0 is anywhere in the 14 days. */
+/** Days after T2 from which another strike deactivates. 0 is anywhere in the 14 days (owner decision 2). */
 export const DEACTIVATION_WINDOW_START_DAYS = 0;
 export const MIN_REASON_LENGTH = 3;
 export const MAX_REASON_LENGTH = 500;
@@ -173,7 +173,7 @@ export interface ActiveStrikeView { strikeId: string; issuedAt: string; reason: 
 
 export interface PlayerDisciplineSummary {
   status: DisciplineStatus;
-  activeStrikeCount: number;           // can pass 3 when first-week strikes restart T2
+  activeStrikeCount: number;           // 3 for a deactivated player
   activeStrikes: ActiveStrikeView[];
   cooldownEndsAt: string | null;
   signupBlockedUntil: string | null;   // non-null only while status is 'signup-blocked'
@@ -256,7 +256,7 @@ All on the existing `players` Lambda, in-Lambda auth through `lib/router.ts`, so
 ```ts
 export interface DisciplineHoldings {
   titles: { championshipId: string; name: string }[];
-  matches: { matchId: string; date: string; status: 'scheduled' | 'open-signups'; eventId?: string; tournamentId?: string }[];
+  matches: { matchId: string; date: string; status: 'scheduled' | 'open-signups'; matchFormat?: string; opponents: string[]; eventId?: string; tournamentId?: string }[];
   challenges: { challengeId: string; opponentName: string }[];     // status 'accepted', tag team membership included
   tournaments: { tournamentId: string; name: string; status: string }[];  // any not completed that the player is in
 }
@@ -299,7 +299,6 @@ Added to `NotificationType`: `strike_issued`, `strike_removed`, `account_reactiv
 |---|---|---|
 | Strike 1 | Player | "You received a strike. Check your profile for details." |
 | Strike 2 | Player | "You received a second strike. You cannot sign up for matches for 7 days." |
-| Strike that restarts the block | Player | "You received another strike. You cannot sign up for matches for 7 days from now." |
 | Deactivating strike | Nobody | The player can no longer sign in to read it. |
 | Strike removed | Player | "A strike was removed from your account." |
 | Reactivated | Player | "Your account has been reactivated." |
@@ -460,7 +459,7 @@ A deactivated caller of the remaining team and faction routes is stopped by §7.
   - Loads `GET /players/{id}/discipline`.
   - Shows status with dates, active strikes, and full history with who did what.
   - Admins get forms for Issue strike, Remove (per strike), Reactivate, each with a required reason. Moderators see it read-only. `isStaffAccount` disables Issue and explains why.
-  - The primary button states `nextStrikeOutcome`: "Issue warning", "Issue second strike" (or "Issue strike and restart block" when one is already running), "Deactivate account". Submit sends the `version` and `nextStrikeOutcome` the modal loaded, and is disabled while a request is in flight. On `DISCIPLINE_CONFLICT` the modal reloads and shows the new state.
+  - The primary button states `nextStrikeOutcome`: "Issue warning", "Issue second strike", "Deactivate account". Submit sends the `version` and `nextStrikeOutcome` the modal loaded, and is disabled while a request is in flight. On `DISCIPLINE_CONFLICT` the modal reloads and shows the new state.
   - Remove appears only on strikes in `summary.activeStrikes`.
   - The Reactivate form has a "Restore earlier strikes (the last strike was a mistake)" checkbox, and shows the current `holdings`.
   - When `accountEnabled` disagrees with the row, a warning points to Manage Users (§6).
@@ -501,7 +500,7 @@ discipline.errors.{SIGNUP_BLOCKED,PLAYER_DEACTIVATED,PLAYER_UNAVAILABLE,ALREADY_
                    NOT_DEACTIVATED,STAFF_PROTECTED,DISCIPLINE_CONFLICT,STRIKE_NOT_ACTIVE,
                    DISCIPLINE_ACTIVE,PSN_ID_UNAVAILABLE,PSN_ID_LOCKED}
 discipline.notice.{title,cooldownEnds,signupBlockedUntil,strikeReason}
-discipline.admin.{title,history,issueWarning,issueSecond,issueRestart,deactivateAccount,remove,reactivate,
+discipline.admin.{title,history,issueWarning,issueSecond,deactivateAccount,remove,reactivate,
                   restorePriorStrikes,reason,reasonHint,staffProtected,readOnly,accountSyncFailed,
                   accountMismatch,loginAlreadyDisabled,softHoldsFailed,notLinked,holdingsTitle,
                   holdingsNotChanged,bookingWarning,tournamentForfeitWarning}
@@ -537,7 +536,6 @@ Wiki, in `frontend/public/wiki/` with German copies in `wiki/de/`:
 | 0 (cleared), 5 | 6 | `warned`, ends 12 |
 | 0, 5 (cleared) | 6 | `warned`, ends 7 |
 | 0 (cleared at 15), 5 | 15 | `clear`, removal after strike 2's own warning has lapsed |
-| 0, 5, 11.999 | 12 | **Default only.** `signup-blocked`, count 3, until 18.999, cooldown 25.999 |
 | 0, 5, 12, `deactivatedAt` | any | `deactivated`, count 3, on the block boundary |
 | 0, 5, 18.999, `deactivatedAt` | any | `deactivated`, count 3 |
 | 0, 5, 13, `deactivatedAt` | 400 | `deactivated`, still 3 active far past the windows |
@@ -548,19 +546,17 @@ Wiki, in `frontend/public/wiki/` with German copies in `wiki/de/`:
 | 0, 5, 13 with only 13 cleared by restore | 19 | `clear` |
 | unsorted input | | Same as sorted |
 
-`nextStrikeOutcome`, at the default of 7. Rows marked 0 also run with `windowStartDays` 0:
+`nextStrikeOutcome`, at the default of 0:
 
 | Strikes (day issued) | Now (day) | Expect |
 |---|---|---|
 | none | 0 | `warned` |
 | 0 | 3 | `signup-blocked` |
 | 0 | 7 | `warned` |
-| 0, 5 | 8, which is `T2 + 3d` | `signup-blocked`; with 0, `deactivated` |
-| 0, 5 | 12, which is `T2 + 7d` exactly | `deactivated`; with 0, `deactivated` |
-| 0, 5 | 19 minus 1 ms | `deactivated`; with 0, `deactivated` |
+| 0, 5 | 8, which is `T2 + 3d` | `deactivated` |
+| 0, 5 | 12, which is `T2 + 7d` exactly | `deactivated` |
+| 0, 5 | 19 minus 1 ms | `deactivated` |
 | 0, 5 | 19 | `warned` |
-| 0, 5, 8 | 14 | `signup-blocked`, because `T2` is now 8 |
-| 0, 5, 8 | 15 | `deactivated` |
 
 Also:
 - `callerRefusal`, `targetRefusal` (no reason leaked), `bookingRefusal` (passes a sign-up block), `validateReason`, `toSignupGuardKey`.
@@ -636,6 +632,7 @@ Everything under `frontend/`: §8, §9, §10. Mirror §5 in `frontend/src/types/
 - **Pre-deploy audit, read-only, both stages**: scan Players and list any `userId` held by more than one row with no `deletedAt`. `UserIdIndex` does not enforce uniqueness, and sign-up gates read only the first row, so fix any duplicates before release. Prod data has not been checked for this.
 - **Dev**: a PR based on `feat/site-redesign` does not trigger `deploy-dev.yml`. Use `gh workflow run deploy-dev.yml --ref feat/player-strikes` after pushing. Devtest is shared with PR #388, and each push overwrites the other, so check before testing. Before handing the stage back to #388, reactivate and clear all QA strikes (see Rollback).
 - **Prod**: the owner deploys it.
+- **Announcement**: after the prod deploy, the owner posts `docs/announcements/strike-system.html` as a new announcement, then deactivates the older active announcements so it is easy to find. Within a priority the newest shows first, but anyone who closes the popup hides the whole queue for that session.
 - **Rollback**: not neutral once one strike exists.
   - Older code spreads `...rest` in `toPublicPlayer`, so it would publish strike reasons and issuer names on public `GET /players`. It would also show deactivated players again while their logins stay disabled.
   - A safe rollback target therefore includes the first commit from §12 integration. The owner can deploy that commit ahead of the feature to make every later rollback safe.
