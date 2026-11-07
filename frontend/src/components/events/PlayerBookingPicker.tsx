@@ -16,6 +16,7 @@ import {
 } from '../../utils/checkInStatus';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
 import { nameOrUnnamed } from '../../utils/playerName';
+import { BookingDisciplineBadge } from '../admin/DisciplineBadge';
 import './PlayerBookingPicker.css';
 
 /** @deprecated Use CheckInStatus from utils/checkInStatus. Kept for callers. */
@@ -279,6 +280,7 @@ export default function PlayerBookingPicker({
             {placeholder ?? openLabel}
           </span>
         )}
+        {selectedPlayer && <BookingDisciplineBadge discipline={selectedPlayer.discipline} />}
         <ChevronDown className="booking-picker-caret" aria-hidden="true" size={18} />
       </button>
 
@@ -350,6 +352,7 @@ export default function PlayerBookingPicker({
                     <span className="booking-picker-option-text">
                       {playerLabel(player, unnamedLabel)}
                     </span>
+                    <BookingDisciplineBadge discipline={player.discipline} />
                     {multi && isSelected(player.playerId) && (
                       <Check className="booking-picker-check" aria-hidden="true" size={16} />
                     )}

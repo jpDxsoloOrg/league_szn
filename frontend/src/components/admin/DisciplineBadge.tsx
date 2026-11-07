@@ -28,3 +28,9 @@ export default function DisciplineBadge({ discipline }: DisciplineBadgeProps) {
     </Badge>
   );
 }
+
+/** Beside a player being booked: only the states that affect the booking. */
+export function BookingDisciplineBadge({ discipline }: DisciplineBadgeProps) {
+  const status = liveDiscipline(discipline)?.status;
+  return status === 'signup-blocked' || status === 'deactivated' ? <DisciplineBadge discipline={discipline} /> : null;
+}

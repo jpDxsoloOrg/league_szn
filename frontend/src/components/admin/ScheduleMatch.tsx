@@ -23,6 +23,7 @@ import Button from '../ui/Button';
 import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import AdminNotice from './AdminNotice';
+import { BookingDisciplineBadge } from './DisciplineBadge';
 import SourceLoadNotice from './SourceLoadNotice';
 import { settleSources } from './loadSources';
 import './adminRoster.css';
@@ -908,6 +909,7 @@ export default function ScheduleMatch() {
                           team.map(playerId => (
                             <span key={playerId} className="team-member-tag am-chip">
                               {getPlayerName(playerId)}
+                              <BookingDisciplineBadge discipline={players.find((player) => player.playerId === playerId)?.discipline} />
                               <button
                                 type="button"
                                 className="remove-member-btn am-chip-remove"
@@ -950,6 +952,7 @@ export default function ScheduleMatch() {
                                 {!isNeedsWrestler(player.currentWrestler) && (
                                   <span className="participant-wrestler">{player.currentWrestler}</span>
                                 )}
+                                <BookingDisciplineBadge discipline={player.discipline} />
                                 {isInOtherTeam && (
                                   <span className="other-team-label">
                                     {t('scheduleMatch.tagTeam.team', 'Team')} {playerTeamIndex + 1}
@@ -1054,6 +1057,7 @@ export default function ScheduleMatch() {
                           {player && hidden && displayName(player)}
                           {!player && playerId}
                         </span>
+                        <BookingDisciplineBadge discipline={player?.discipline} />
                         <button
                           type="button"
                           className="selected-participant-remove"

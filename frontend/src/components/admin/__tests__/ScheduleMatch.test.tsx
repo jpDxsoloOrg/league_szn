@@ -48,6 +48,7 @@ vi.mock('../../../services/api', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en-US' },
     t: (key: string, options?: string | Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'scheduleMatch.matchFormat': 'Match Format',
@@ -446,6 +447,46 @@ describe('ScheduleMatch', () => {
       await pickParticipants(user, ['The Champ (John Cena)']);
 
       expect(screen.getByText('discipline.admin.bookingWarning')).toBeInTheDocument();
+    });
+
+    it('flags the blocked player in the picker and on the chip, not only above the form', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      const blockedUntil = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+      mockGetAllPlayers.mockResolvedValue([
+        {
+          ...mockPlayers[0],
+          discipline: { ...summary('signup-blocked'), signupBlockedUntil: blockedUntil, cooldownEndsAt: blockedUntil },
+        },
+        ...mockPlayers.slice(1),
+      ]);
+      renderScheduleMatch();
+
+      await openPicker(user);
+      await user.click(screen.getByRole('button', { name: /Add participants…/ }));
+
+      const option = screen.getByRole('option', { name: /The Champ \(John Cena\)/ });
+      expect(within(option).getByText('discipline.status.signupBlocked')).toBeInTheDocument();
+
+      await user.click(option);
+
+      const chip = screen.getByText('The Champ (John Cena)', { selector: '.selected-participant-text' }).closest('li');
+      expect(within(chip as HTMLElement).getByText('discipline.status.signupBlocked')).toBeInTheDocument();
+    });
+
+    it('leaves a warned player unflagged, since a warning does not affect booking', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetAllPlayers.mockResolvedValue([
+        { ...mockPlayers[0], discipline: { ...summary('warned'), cooldownEndsAt: new Date(Date.now() + 60000).toISOString() } },
+        ...mockPlayers.slice(1),
+      ]);
+      renderScheduleMatch();
+
+      await openPicker(user);
+      await pickParticipants(user, ['The Champ (John Cena)']);
+
+      expect(screen.queryByText('discipline.status.warned')).not.toBeInTheDocument();
     });
   });
 
