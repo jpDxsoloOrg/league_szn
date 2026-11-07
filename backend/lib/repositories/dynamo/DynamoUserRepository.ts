@@ -227,6 +227,29 @@ class ChallengesDelegate
     }
   }
 
+  async updateIfStatus(
+    challengeId: string,
+    patch: Partial<Challenge>,
+    expectedStatus: ChallengeStatus,
+  ): Promise<boolean> {
+    const { UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues } =
+      buildUpdateExpression(patch, new Date().toISOString());
+    try {
+      await dynamoDb.update({
+        TableName: TableNames.CHALLENGES,
+        Key: { challengeId },
+        UpdateExpression,
+        ConditionExpression: '#expectedStatusField = :expectedStatus',
+        ExpressionAttributeNames: { ...ExpressionAttributeNames, '#expectedStatusField': 'status' },
+        ExpressionAttributeValues: { ...ExpressionAttributeValues, ':expectedStatus': expectedStatus },
+      });
+      return true;
+    } catch (err) {
+      if (err instanceof Error && err.name === 'ConditionalCheckFailedException') return false;
+      throw err;
+    }
+  }
+
   async listByPlayer(playerId: string): Promise<Challenge[]> {
     const [sent, received] = await Promise.all([
       this.listByChallenger(playerId),
@@ -533,6 +556,7 @@ export class DynamoUserRepository implements UserRepository {
     listByChallenged(playerId: string): Promise<Challenge[]>;
     listByPlayer(playerId: string): Promise<Challenge[]>;
     expireIfPending(challengeId: string): Promise<boolean>;
+    updateIfStatus(challengeId: string, patch: Partial<Challenge>, expectedStatus: ChallengeStatus): Promise<boolean>;
   } = new ChallengesDelegate();
   readonly fantasy: FantasyMethods = new FantasyDelegate();
   readonly siteConfig: SiteConfigMethods = new SiteConfigDelegate();

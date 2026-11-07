@@ -1,11 +1,13 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { NotFoundError } from '../../lib/repositories/errors';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { success, badRequest, notFound, refused, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { NEEDS_WRESTLER, isNeedsWrestler } from '../../lib/needsWrestler';
 import { applyMovesetFields } from './movesetFields';
 import { getAuthContext, requireRole } from '../../lib/auth';
+import { isSignupRefused } from '../../lib/accountStatus';
+import { toOwnPlayer } from '../../lib/publicPlayer';
 import type { PlayerPatch } from '../../lib/repositories';
 import {
   filterExistingWrestlerIds,
@@ -25,6 +27,8 @@ const STRING_FIELDS = [
 const FK_FIELDS = ['currentWrestlerId', 'alternateWrestlerId'] as const;
 const MAX_NAME_LENGTH = 100;
 const MAX_URL_LENGTH = 2048;
+
+const normalizePsnId = (psnId: string | undefined): string => (psnId ?? '').trim().toLowerCase();
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Wrestler');
@@ -110,6 +114,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       (patch as Record<string, unknown>)[field] =
         field === 'currentWrestler' && isNeedsWrestler(value) ? NEEDS_WRESTLER : value;
       hasChanges = true;
+    }
+
+    // Claiming the PSN ID of someone blocked or deactivated would get round the
+    // signup guard, which checks the same IDs. The answer says nothing about why.
+    const newPsnId = normalizePsnId(patch.psnId);
+    if (newPsnId && newPsnId !== normalizePsnId(player.psnId)
+      && await isSignupRefused({ psnId: patch.psnId, excludePlayerId: playerId })) {
+      return refused(409, 'PLAYER_UNAVAILABLE', 'That PSN ID cannot be used');
     }
 
     const movesetError = applyMovesetFields(body, patch);
@@ -200,11 +212,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         tx.updatePlayer(playerId, patch as Record<string, unknown>);
       });
       const refreshed = await roster.players.findById(playerId);
-      return success(refreshed);
+      return success(refreshed && toOwnPlayer(refreshed));
     }
 
     const updated = await roster.players.update(playerId, patch);
-    return success(updated);
+    return success(toOwnPlayer(updated));
   } catch (err) {
     if (err instanceof NotFoundError) return notFound(err.message);
     console.error('Error updating player profile:', err);

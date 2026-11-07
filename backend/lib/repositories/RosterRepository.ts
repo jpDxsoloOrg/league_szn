@@ -1,6 +1,8 @@
 import type { CrudRepository } from './CrudRepository';
 import type {
   Player,
+  PlayerDeactivation,
+  PlayerStrike,
   TagTeam,
   TagTeamStatus,
   Stable,
@@ -56,6 +58,16 @@ export interface PlayerPatch {
   bio?: string;
   signatures?: WrestlerMove[];
   finishers?: WrestlerMove[];
+}
+
+/** The only way to write discipline state. See `players.updateDiscipline`. */
+export interface PlayerDisciplinePatch {
+  strikes: PlayerStrike[];
+  deactivations: PlayerDeactivation[];
+  /** null removes the attribute. */
+  deactivatedAt: string | null;
+  /** Omitted leaves it unchanged. */
+  signupGuardKey?: string;
 }
 
 // ─── Tag Team input types ───────────────────────────────────────────
@@ -199,6 +211,13 @@ export interface RosterRepository {
     findByIdWithDeleted(playerId: string): Promise<Player | null>;
     /** For resolving names on history only: every row, soft-deleted included. */
     listWithDeleted(): Promise<Player[]>;
+    /**
+     * Writes discipline state only if `disciplineVersion` still equals
+     * `expectedVersion` (0 means the attribute is absent), then bumps it.
+     * Throws `ConcurrencyError` when the version moved on or the player is
+     * missing or soft-deleted.
+     */
+    updateDiscipline(playerId: string, patch: PlayerDisciplinePatch, expectedVersion: number): Promise<Player>;
   };
   tagTeams: CrudRepository<TagTeam, TagTeamCreateInput, TagTeamPatch> & {
     listByStatus(status: TagTeamStatus): Promise<TagTeam[]>;

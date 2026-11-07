@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toPublicPlayer } from '../publicPlayer';
+import { toOwnPlayer, toPublicPlayer } from '../publicPlayer';
 import type { AuthContext, UserRole } from '../auth';
 
 function caller(sub: string, ...groups: UserRole[]): AuthContext {
@@ -73,13 +73,12 @@ describe('toPublicPlayer', () => {
     expect(shaped).not.toHaveProperty('userId');
   });
 
-  describe('stored discipline fields', () => {
+  describe('discipline', () => {
     const issuedAt = new Date().toISOString();
     const disciplined = {
       ...player,
       strikes: [{ strikeId: 's1', issuedAt, issuedBy: 'admin-sub', issuedByName: 'Admin', reason: 'Late' }],
       deactivations: [],
-      deactivatedAt: issuedAt,
       disciplineVersion: 1,
       signupGuardKey: 'rock@example.com',
     };
@@ -88,15 +87,51 @@ describe('toPublicPlayer', () => {
     it.each([
       ['an anonymous caller', null],
       ['another wrestler', caller('other-sub', 'Wrestler')],
+    ])('shows %s neither the fields nor the summary', (_label, viewer) => {
+      const shaped = toPublicPlayer({ ...disciplined, deactivatedAt: issuedAt }, viewer);
+
+      for (const field of storedFields) expect(shaped).not.toHaveProperty(field);
+      expect(shaped).not.toHaveProperty('discipline');
+      expect(JSON.stringify(shaped)).not.toContain('Late');
+    });
+
+    it.each([
       ['the player', caller('owner-sub', 'Wrestler')],
       ['an Admin', caller('staff-sub', 'Admin')],
       ['a Moderator', caller('staff-sub', 'Moderator')],
-    ])('are removed for %s', (_label, viewer) => {
-      const shaped = toPublicPlayer(disciplined, viewer);
+    ])('gives %s the summary and still no stored fields', (_label, viewer) => {
+      const shaped = toPublicPlayer({ ...disciplined, deactivatedAt: issuedAt }, viewer);
 
       for (const field of storedFields) expect(shaped).not.toHaveProperty(field);
-      expect(JSON.stringify(shaped)).not.toContain('Late');
+      expect(shaped.discipline).toMatchObject({ status: 'deactivated', deactivatedAt: issuedAt, activeStrikeCount: 1 });
       expect(JSON.stringify(shaped)).not.toContain('admin-sub');
+    });
+
+    it('gives staff a clear summary for a player with no strikes', () => {
+      expect(toPublicPlayer(player, caller('staff-sub', 'Admin')).discipline?.status).toBe('clear');
+    });
+  });
+});
+
+describe('toOwnPlayer', () => {
+  it('swaps the stored fields for the summary and keeps the account fields', () => {
+    const issuedAt = new Date().toISOString();
+    const shaped = toOwnPlayer({
+      playerId: 'p1',
+      userId: 'owner-sub',
+      strikes: [{ strikeId: 's1', issuedAt, issuedBy: 'admin-sub', issuedByName: 'Admin', reason: 'Late' }],
+      deactivations: [],
+      disciplineVersion: 1,
+      signupGuardKey: 'rock@example.com',
+    });
+
+    expect(shaped).toEqual({
+      playerId: 'p1',
+      userId: 'owner-sub',
+      discipline: expect.objectContaining({
+        status: 'warned',
+        activeStrikes: [{ strikeId: 's1', issuedAt, reason: 'Late' }],
+      }),
     });
   });
 });

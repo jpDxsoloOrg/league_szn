@@ -34,6 +34,28 @@ export const error = (statusCode: number, message: string): APIGatewayProxyResul
   };
 };
 
+export type RefusalCode = 'SIGNUP_BLOCKED' | 'PLAYER_DEACTIVATED' | 'PLAYER_UNAVAILABLE'
+  | 'ALREADY_DEACTIVATED' | 'NOT_DEACTIVATED' | 'STAFF_PROTECTED' | 'DISCIPLINE_CONFLICT' | 'STRIKE_NOT_ACTIVE'
+  | 'DISCIPLINE_ACTIVE';
+
+/** A refusal the frontend can translate by `code`. `message` stays English. */
+export const refused = (
+  statusCode: number,
+  code: RefusalCode,
+  message: string,
+  extra?: { blockedUntil?: string },
+): APIGatewayProxyResult => {
+  return {
+    statusCode,
+    headers,
+    body: JSON.stringify({
+      message,
+      code,
+      ...(extra?.blockedUntil !== undefined ? { blockedUntil: extra.blockedUntil } : {}),
+    }),
+  };
+};
+
 export const badRequest = (message: string): APIGatewayProxyResult => {
   return error(400, message);
 };

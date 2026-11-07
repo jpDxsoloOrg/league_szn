@@ -96,6 +96,7 @@ type ChallengesCrudType = CrudRepository<Challenge, ChallengeCreateInput, Partia
   listByChallenged(playerId: string): Promise<Challenge[]>;
   listByPlayer(playerId: string): Promise<Challenge[]>;
   expireIfPending(challengeId: string): Promise<boolean>;
+  updateIfStatus(challengeId: string, patch: Partial<Challenge>, expectedStatus: ChallengeStatus): Promise<boolean>;
 };
 
 class ChallengesImpl implements ChallengesCrudType {
@@ -147,6 +148,21 @@ class ChallengesImpl implements ChallengesCrudType {
     const existing = this.store.get(challengeId);
     if (existing?.status !== 'pending') return false;
     this.store.set(challengeId, { ...existing, status: 'expired' });
+    return true;
+  }
+
+  async updateIfStatus(
+    challengeId: string,
+    patch: Partial<Challenge>,
+    expectedStatus: ChallengeStatus,
+  ): Promise<boolean> {
+    const existing = this.store.get(challengeId);
+    if (existing?.status !== expectedStatus) return false;
+    this.store.set(challengeId, {
+      ...existing,
+      ...Object.fromEntries(Object.entries(patch).filter(([, value]) => value !== undefined)),
+      updatedAt: new Date().toISOString(),
+    });
     return true;
   }
 
