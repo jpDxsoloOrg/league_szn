@@ -119,6 +119,38 @@ export interface SeasonAward {
 
 // ─── Wave 4 types ──────────────────────────────────────────────────
 
+/** One strike on a player. Kept for good: clearing stamps it, nothing deletes it. */
+export interface PlayerStrike {
+  strikeId: string;
+  /** ISO, server time. */
+  issuedAt: string;
+  /** Cognito sub. */
+  issuedBy: string;
+  /** Admin's player name, else username. */
+  issuedByName: string;
+  reason: string;
+  /** Set means it no longer counts. */
+  clearedAt?: string;
+  clearedBy?: string;
+  clearedByName?: string;
+  clearedReason?: string;
+  clearedKind?: 'removed' | 'reactivated';
+}
+
+/** One deactivation on a player, open until the reactivated fields are set. */
+export interface PlayerDeactivation {
+  deactivatedAt: string;
+  deactivatedBy: string;
+  deactivatedByName: string;
+  strikeId: string;
+  /** The login was already disabled at strike 3, so reactivating must not enable it. */
+  cognitoAlreadyDisabled?: boolean;
+  reactivatedAt?: string;
+  reactivatedBy?: string;
+  reactivatedByName?: string;
+  reactivationReason?: string;
+}
+
 export interface Player {
   playerId: string;
   userId?: string;
@@ -169,6 +201,18 @@ export interface Player {
   signatures?: WrestlerMove[];
   /** Up to MAX_MOVES finishers; see lib/movesets.ts for the limits. */
   finishers?: WrestlerMove[];
+  /**
+   * Discipline fields. These are not on `PlayerPatch`: write them only through
+   * `players.updateDiscipline`, and read them only through `lib/discipline.ts`.
+   */
+  strikes?: PlayerStrike[];
+  deactivations?: PlayerDeactivation[];
+  /** Present only while deactivated. Copy of the open PlayerDeactivation record. */
+  deactivatedAt?: string;
+  /** Optimistic lock for discipline writes. Absent reads as 0. */
+  disciplineVersion?: number;
+  /** toSignupGuardKey(email), stored at any strike that blocks or deactivates. Only used while isSignupBlocked. */
+  signupGuardKey?: string;
   createdAt: string;
   updatedAt: string;
 }

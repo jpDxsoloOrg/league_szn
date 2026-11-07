@@ -72,4 +72,31 @@ describe('toPublicPlayer', () => {
     expect(shaped.hasLinkedAccount).toBe(false);
     expect(shaped).not.toHaveProperty('userId');
   });
+
+  describe('stored discipline fields', () => {
+    const issuedAt = new Date().toISOString();
+    const disciplined = {
+      ...player,
+      strikes: [{ strikeId: 's1', issuedAt, issuedBy: 'admin-sub', issuedByName: 'Admin', reason: 'Late' }],
+      deactivations: [],
+      deactivatedAt: issuedAt,
+      disciplineVersion: 1,
+      signupGuardKey: 'rock@example.com',
+    };
+    const storedFields = ['strikes', 'deactivations', 'deactivatedAt', 'disciplineVersion', 'signupGuardKey'];
+
+    it.each([
+      ['an anonymous caller', null],
+      ['another wrestler', caller('other-sub', 'Wrestler')],
+      ['the player', caller('owner-sub', 'Wrestler')],
+      ['an Admin', caller('staff-sub', 'Admin')],
+      ['a Moderator', caller('staff-sub', 'Moderator')],
+    ])('are removed for %s', (_label, viewer) => {
+      const shaped = toPublicPlayer(disciplined, viewer);
+
+      for (const field of storedFields) expect(shaped).not.toHaveProperty(field);
+      expect(JSON.stringify(shaped)).not.toContain('Late');
+      expect(JSON.stringify(shaped)).not.toContain('admin-sub');
+    });
+  });
 });
