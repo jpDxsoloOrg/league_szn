@@ -15,6 +15,7 @@ import type {
 } from '../../types/matchmaking';
 import InvitationCard from './InvitationCard';
 import './FindMatchPage.css';
+import { usePollWhileVisible } from '../../hooks/usePollWhileVisible';
 
 type QueueStatus = 'idle' | 'queued' | 'matched';
 
@@ -90,21 +91,12 @@ export default function FindMatchPage() {
       return;
     }
 
-    let cancelled = false;
-
-    const tick = (): void => {
-      if (cancelled) return;
-      void fetchAll();
-    };
-
-    tick();
-    const intervalId = window.setInterval(tick, POLL_INTERVAL_MS);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
-    };
+    void fetchAll();
   }, [presenceEnabled, isWrestler, playerId, fetchAll]);
+
+  usePollWhileVisible(() => {
+    void fetchAll();
+  }, POLL_INTERVAL_MS, Boolean(presenceEnabled && isWrestler && playerId));
 
   const handleEnablePresence = useCallback(async (): Promise<void> => {
     setPresenceBusy(true);

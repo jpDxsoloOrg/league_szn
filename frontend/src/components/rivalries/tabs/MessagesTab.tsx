@@ -11,6 +11,7 @@ import type { Player } from '../../../types';
 import type { HydratedRivalry, RivalryMessage } from '../../../types/rivalry';
 import { resolveWrestlerName } from '../rivalryUtils';
 import './MessagesTab.css';
+import { usePollWhileVisible } from '../../../hooks/usePollWhileVisible';
 
 interface TabProps {
   hydrated: HydratedRivalry;
@@ -144,11 +145,9 @@ export default function MessagesTab({ hydrated, players }: TabProps) {
     }
   }, [rivalryId]);
 
-  useEffect(() => {
-    if (!visible) return;
-    const id = window.setInterval(pollOnce, POLL_INTERVAL_MS);
-    return () => window.clearInterval(id);
-  }, [visible, pollOnce]);
+  usePollWhileVisible(() => {
+    void pollOnce();
+  }, POLL_INTERVAL_MS, visible);
 
   // ─── Display order (oldest → newest) ─────────────────────────────
   const activeFeed = useMemo(

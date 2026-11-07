@@ -6,6 +6,7 @@ import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { notificationsApi } from '../services/api/notifications.api';
 import type { AppNotification } from '../types';
 import './NotificationBell.css';
+import { usePollWhileVisible } from '../hooks/usePollWhileVisible';
 
 const POLL_INTERVAL_MS = 60_000;
 const NOTIFICATIONS_LIMIT = 20;
@@ -70,7 +71,6 @@ export default function NotificationBell() {
   const [isLoading, setIsLoading] = useState(false);
 
   const bellRef = useRef<HTMLDivElement>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const shouldShow = isAuthenticated && features.notifications;
 
@@ -102,18 +102,14 @@ export default function NotificationBell() {
     const controller = new AbortController();
     fetchUnreadCount(controller.signal);
 
-    intervalRef.current = setInterval(() => {
-      fetchUnreadCount();
-    }, POLL_INTERVAL_MS);
-
     return () => {
       controller.abort();
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
     };
   }, [shouldShow, fetchUnreadCount]);
+
+  usePollWhileVisible(() => {
+    void fetchUnreadCount();
+  }, POLL_INTERVAL_MS, shouldShow);
 
   // Fetch notifications when dropdown opens
   useEffect(() => {

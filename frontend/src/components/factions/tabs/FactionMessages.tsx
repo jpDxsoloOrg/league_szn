@@ -16,6 +16,7 @@ import type {
 import type { DirectMessageThreadSummary } from '../../../types/faction';
 import type { FactionDetailContext } from '../FactionDetail';
 import './FactionMessages.css';
+import { usePollWhileVisible } from '../../../hooks/usePollWhileVisible';
 
 const POLL_INTERVAL_MS = 10_000;
 const COMPOSER_MAX_LINES = 6;
@@ -311,11 +312,9 @@ export default function FactionMessages() {
     }
   }, [activeThread, faction.stableId]);
 
-  useEffect(() => {
-    if (!visible) return;
-    const id = window.setInterval(pollOnce, POLL_INTERVAL_MS);
-    return () => window.clearInterval(id);
-  }, [visible, pollOnce]);
+  usePollWhileVisible(() => {
+    void pollOnce();
+  }, POLL_INTERVAL_MS, visible);
 
   // ─── Active feed (sorted oldest→newest for display) ───────────────
   const activeFeed: DisplayMessage[] = useMemo(() => {

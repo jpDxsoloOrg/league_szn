@@ -11,7 +11,8 @@ import { useAuth } from './AuthContext';
 import { matchmakingApi } from '../services/api/matchmaking.api';
 
 const SESSION_STORAGE_KEY = 'wwe2k.presenceEnabled';
-const HEARTBEAT_INTERVAL_MS = 60_000;
+// Server presence lasts 5 minutes, so this still tolerates a missed beat.
+const HEARTBEAT_INTERVAL_MS = 120_000;
 // Auto-flip presence to offline after this much wall-clock time with no
 // user activity. Protects against tabs left open all day looking online.
 const INACTIVITY_TIMEOUT_MS = 15 * 60_000;

@@ -7,6 +7,7 @@ import { matchmakingApi } from '../../services/api/matchmaking.api';
 import { stipulationsApi } from '../../services/api/stipulations.api';
 import type { MatchInvitation, QueueEntry } from '../../types/matchmaking';
 import './FindMatchWidget.css';
+import { usePollWhileVisible } from '../../hooks/usePollWhileVisible';
 
 const POLL_INTERVAL_MS = 15_000;
 
@@ -108,20 +109,12 @@ const FindMatchWidget: React.FC = () => {
       return;
     }
 
-    let cancelled = false;
-    const run = (): void => {
-      if (cancelled) return;
-      void fetchDataRef.current();
-    };
-
-    run();
-    const interval = window.setInterval(run, POLL_INTERVAL_MS);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
+    void fetchDataRef.current();
   }, [isWrestler, playerId]);
+
+  usePollWhileVisible(() => {
+    void fetchDataRef.current();
+  }, POLL_INTERVAL_MS, Boolean(isWrestler && playerId));
 
   const handleChallenge = useCallback(
     async (targetId: string): Promise<void> => {
