@@ -377,11 +377,13 @@ describe('AuthContext', () => {
 
     it('refreshes the profile once, just after the block ends', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true });
-      await signedIn({ discipline: discipline('signup-blocked', DAY, 8 * DAY) });
+      // Shorter than the re-read, so only the end of the block can fire.
+      const blockMs = 120_000;
+      await signedIn({ discipline: discipline('signup-blocked', blockMs, 8 * DAY) });
       mockGetMyProfile.mockResolvedValue({ playerId: 'p1', discipline: discipline('cooldown', null, 7 * DAY) });
 
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(DAY - 5000);
+        await vi.advanceTimersByTimeAsync(blockMs - 5000);
       });
       expect(mockGetMyProfile).not.toHaveBeenCalled();
 
@@ -425,6 +427,60 @@ describe('AuthContext', () => {
       });
 
       await waitFor(() => expect(result.current.profile?.discipline).toEqual(refreshed));
+    });
+
+    describe('a block lifted early by staff', () => {
+      const cleared = { playerId: 'p1', discipline: discipline('warned', null, 5 * DAY) };
+
+      it('picks it up while the tab stays open', async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        const { result } = await signedIn({ discipline: discipline('signup-blocked', 5 * DAY, 12 * DAY) });
+        mockGetMyProfile.mockResolvedValue(cleared);
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(5 * 60_000);
+        });
+
+        expect(result.current.profile?.discipline?.status).toBe('warned');
+      });
+
+      it('picks it up as soon as the player comes back to the tab', async () => {
+        const { result } = await signedIn({ discipline: discipline('signup-blocked', 5 * DAY, 12 * DAY) });
+        mockGetMyProfile.mockResolvedValue(cleared);
+
+        act(() => {
+          window.dispatchEvent(new Event('focus'));
+        });
+
+        await waitFor(() => expect(result.current.profile?.discipline?.status).toBe('warned'));
+      });
+
+      it('stops checking once the block has gone', async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        await signedIn({ discipline: discipline('signup-blocked', 5 * DAY, 12 * DAY) });
+        mockGetMyProfile.mockResolvedValue(cleared);
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(5 * 60_000);
+        });
+        mockGetMyProfile.mockClear();
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(60 * 60_000);
+          window.dispatchEvent(new Event('focus'));
+        });
+
+        expect(mockGetMyProfile).not.toHaveBeenCalled();
+      });
+
+      it('does not re-read for a player with no block', async () => {
+        await signedIn({ discipline: discipline('warned', null, 5 * DAY) });
+
+        act(() => {
+          window.dispatchEvent(new Event('focus'));
+        });
+
+        expect(mockGetMyProfile).not.toHaveBeenCalled();
+      });
     });
 
     it('ignores a refresh that lands after signing out', async () => {

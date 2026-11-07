@@ -4,11 +4,14 @@ import { ANNOUNCEMENTS_CLOSED_KEY } from '../utils/announcementDismissal';
 import { cognitoAuth, type UserRole } from '../services/cognito';
 import { profileApi } from '../services/api';
 import { AUTH_EXPIRED_EVENT, SIGNUP_BLOCKED_EVENT } from '../services/api/apiClient';
-import { MAX_TIMER_MS, msUntilNextBoundary } from '../utils/discipline';
+import { MAX_TIMER_MS, isBlockedNow, msUntilNextBoundary } from '../utils/discipline';
 import type { Player } from '../types';
 
 /** Refresh just after a window ends, so a slightly slow server clock has passed it too. */
 const DISCIPLINE_REFRESH_SLACK_MS = 1000;
+
+/** How often a blocked tab re-reads the profile, so staff lifting the block reaches it. */
+const BLOCK_RECHECK_MS = 5 * 60_000;
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -256,6 +259,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
     return () => window.clearTimeout(timer);
   }, [discipline, refreshProfile]);
+
+  // Staff can lift a block early. A blocked tab has its controls off, so it sends
+  // nothing that could be answered, and it has to ask.
+  const signupBlocked = isBlockedNow(discipline);
+  useEffect(() => {
+    if (!signupBlocked) return undefined;
+    const recheck = () => void refreshProfile();
+    const recheckWhenVisible = () => {
+      if (document.visibilityState === 'visible') recheck();
+    };
+    const timer = window.setInterval(recheck, BLOCK_RECHECK_MS);
+    window.addEventListener('focus', recheck);
+    document.addEventListener('visibilitychange', recheckWhenVisible);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', recheck);
+      document.removeEventListener('visibilitychange', recheckWhenVisible);
+    };
+  }, [signupBlocked, refreshProfile]);
 
   useEffect(() => {
     const onSignupBlocked = () => {
