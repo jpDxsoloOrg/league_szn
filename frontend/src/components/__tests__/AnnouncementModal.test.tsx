@@ -96,6 +96,21 @@ describe('AnnouncementModal', () => {
     expect(JSON.parse(localStorage.getItem('dismissed_announcements') ?? '[]')).toEqual(['a', 'b']);
   });
 
+  it('leads with the first the API sends, and hiding it leaves the rest alone', async () => {
+    mockGetActive.mockResolvedValue([
+      announcement('newest', { title: 'Newest' }),
+      announcement('older', { title: 'Older' }),
+    ]);
+    render(<AnnouncementModal />);
+
+    expect(await screen.findByRole('dialog', { name: 'Newest' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'announcements.dontShowAgain' }));
+
+    expect(await screen.findByRole('dialog', { name: 'Older' })).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('dismissed_announcements') ?? '[]')).toEqual(['newest']);
+  });
+
   it('survives a corrupt dismissed list', async () => {
     localStorage.setItem('dismissed_announcements', '{"not":"a list"}');
     render(<AnnouncementModal />);
