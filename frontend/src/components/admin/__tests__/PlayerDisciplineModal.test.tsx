@@ -186,7 +186,6 @@ describe('PlayerDisciplineModal', () => {
 
     it.each([
       ['a second strike', 1, 'discipline.admin.issueSecond'],
-      ['a strike during a running block', 2, 'discipline.admin.issueRestart'],
     ])('labels %s', async (_name, activeStrikeCount, label) => {
       mockDiscipline.get.mockResolvedValue(detail({
         nextStrikeOutcome: 'signup-blocked',

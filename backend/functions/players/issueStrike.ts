@@ -40,11 +40,10 @@ interface IssueStrikeBody {
 const OUTCOMES: readonly unknown[] = ['warned', 'signup-blocked', 'deactivated'] satisfies StrikeOutcome[];
 
 /** Message for a strike that does not deactivate. A deactivated player cannot sign in to read one. */
-export function strikeMessage(outcome: StrikeOutcome, priorActiveStrikes: number): string {
-  if (outcome === 'warned') return 'You received a strike. Check your profile for details.';
-  return priorActiveStrikes === 1
-    ? 'You received a second strike. You cannot sign up for matches for 7 days.'
-    : 'You received another strike. You cannot sign up for matches for 7 days from now.';
+function strikeMessage(outcome: StrikeOutcome): string {
+  return outcome === 'warned'
+    ? 'You received a strike. Check your profile for details.'
+    : 'You received a second strike. You cannot sign up for matches for 7 days.';
 }
 
 async function holdingsOrEmpty(playerId: string): Promise<DisciplineHoldings> {
@@ -128,7 +127,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
       : null;
 
-    const priorActiveStrikes = computeDiscipline(player, now).activeStrikeCount;
     let updated: Player;
     try {
       updated = await players.updateDiscipline(playerId, {
@@ -153,7 +151,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     await notifyDiscipline(
       hasAccount ? player.userId : undefined,
       'strike_issued',
-      strikeMessage(outcome, priorActiveStrikes),
+      strikeMessage(outcome),
       strike.strikeId,
     );
     const result: DisciplineActionResult = {

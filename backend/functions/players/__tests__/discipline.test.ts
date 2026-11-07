@@ -31,7 +31,7 @@ import type { Match, Player, PlayerDeactivation, PlayerStrike } from '../../../l
 import type { DisciplineActionResult, PlayerDisciplineDetail } from '../../../lib/disciplineActions';
 import { authedEvent, call } from '../../__tests__/visibilityTestHelpers';
 import { handler as getPlayerDiscipline } from '../getPlayerDiscipline';
-import { handler as issueStrike, strikeMessage } from '../issueStrike';
+import { handler as issueStrike } from '../issueStrike';
 import { handler as removeStrike } from '../removeStrike';
 import { handler as reactivatePlayer } from '../reactivatePlayer';
 import { handler as deletePlayer } from '../deletePlayer';
@@ -468,10 +468,6 @@ describe('issueStrike', () => {
     }));
 
     expect(result.statusCode).toBe(403);
-  });
-
-  it('words a strike that restarts the block, for when the window start is raised', () => {
-    expect(strikeMessage('signup-blocked', 2)).toBe('You received another strike. You cannot sign up for matches for 7 days from now.');
   });
 });
 

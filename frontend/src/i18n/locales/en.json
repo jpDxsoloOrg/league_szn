@@ -3554,7 +3554,6 @@
       },
       "issueWarning": "Issue warning",
       "issueSecond": "Issue second strike",
-      "issueRestart": "Issue strike and restart block",
       "deactivateAccount": "Deactivate account",
       "remove": "Remove",
       "confirmRemove": "Remove strike",

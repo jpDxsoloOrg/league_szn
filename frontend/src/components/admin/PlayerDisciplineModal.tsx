@@ -241,7 +241,7 @@ function DisciplineBody({ player, onChanged, onClose }: DisciplineBodyProps) {
   const issueLabel = () => {
     if (nextStrikeOutcome === 'deactivated') return t('discipline.admin.deactivateAccount');
     if (nextStrikeOutcome === 'warned') return t('discipline.admin.issueWarning');
-    return summary.activeStrikeCount >= 2 ? t('discipline.admin.issueRestart') : t('discipline.admin.issueSecond');
+    return t('discipline.admin.issueSecond');
   };
 
   const issueStrike = async () => {

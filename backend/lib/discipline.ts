@@ -12,7 +12,12 @@ import { refused } from './response';
 export const WARNING_DAYS = 7;
 export const COOLDOWN_DAYS = 14;
 export const SIGNUP_BLOCK_DAYS = 7;
-/** Days after T2 from which another strike deactivates. 0 is anywhere in the 14 days (owner decision 2). */
+/**
+ * Days after T2 from which another strike deactivates. 0 is anywhere in the 14
+ * days (owner decision 2), so a third strike always deactivates. Above 0 it could
+ * restart the block instead, which has no wording of its own in the modal or the
+ * notification.
+ */
 export const DEACTIVATION_WINDOW_START_DAYS = 0;
 export const MIN_REASON_LENGTH = 3;
 export const MAX_REASON_LENGTH = 500;
