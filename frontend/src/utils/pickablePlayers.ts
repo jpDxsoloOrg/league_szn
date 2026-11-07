@@ -1,8 +1,10 @@
+import type { DisciplineStatus } from '../types';
 import { isNeedsWrestler } from './needsWrestler';
 
 interface RosterPlayer {
   playerId: string;
   currentWrestler?: string | null;
+  discipline?: { status: DisciplineStatus } | null;
 }
 
 interface TagTeamMembers {
@@ -11,17 +13,21 @@ interface TagTeamMembers {
 }
 
 /**
- * Who a staff picker may offer: players with a wrestler, plus `keepIds`, the
- * people already on the record being viewed. A hidden player who is already
- * booked stays, so editing an old record does not drop them on save. Pass the
- * full staff roster, and keep using that roster to resolve names on old records.
+ * Who a staff picker may offer: players with a wrestler who are not deactivated,
+ * plus `keepIds`, the people already on the record being viewed. A hidden player
+ * who is already booked stays, so editing an old record does not drop them on
+ * save. Pass the full staff roster, and keep using that roster to resolve names
+ * on old records.
  */
 export function pickablePlayers<T extends RosterPlayer>(
   players: readonly T[],
   keepIds: Iterable<string> = [],
 ): T[] {
   const kept = new Set(keepIds);
-  return players.filter((player) => !isNeedsWrestler(player.currentWrestler) || kept.has(player.playerId));
+  return players.filter((player) => (
+    kept.has(player.playerId)
+    || (!isNeedsWrestler(player.currentWrestler) && player.discipline?.status !== 'deactivated')
+  ));
 }
 
 /** Tag teams a picker may offer: picking one must not book a hidden member. */

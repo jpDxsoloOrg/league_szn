@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
@@ -45,7 +45,7 @@ vi.mock('../../services/api', () => ({
 }));
 
 import { AuthProvider, useAuth } from '../AuthContext';
-import { AUTH_EXPIRED_EVENT } from '../../services/api/apiClient';
+import { AUTH_EXPIRED_EVENT, SIGNUP_BLOCKED_EVENT } from '../../services/api/apiClient';
 
 // --- Test wrapper ---
 function wrapper({ children }: { children: ReactNode }) {
@@ -348,6 +348,102 @@ describe('AuthContext', () => {
       }).toThrow('useAuth must be used within an AuthProvider');
 
       consoleSpy.mockRestore();
+    });
+  });
+
+  describe('discipline windows in an open tab', () => {
+    const DAY = 86_400_000;
+    const discipline = (status: string, blockMs: number | null, cooldownMs: number) => ({
+      status,
+      activeStrikeCount: 2,
+      activeStrikes: [],
+      cooldownEndsAt: new Date(Date.now() + cooldownMs).toISOString(),
+      signupBlockedUntil: blockMs === null ? null : new Date(Date.now() + blockMs).toISOString(),
+      deactivatedAt: null,
+    });
+
+    const signedIn = async (profile: Record<string, unknown>) => {
+      mockAuthenticatedUser(['Wrestler'], { playerId: 'p1' });
+      mockGetMyProfile.mockResolvedValue({ playerId: 'p1', ...profile });
+      const hook = renderHook(() => useAuth(), { wrapper });
+      await vi.waitFor(() => expect(hook.result.current.profile).not.toBeNull());
+      mockGetMyProfile.mockClear();
+      return hook;
+    };
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('refreshes the profile once, just after the block ends', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      await signedIn({ discipline: discipline('signup-blocked', DAY, 8 * DAY) });
+      mockGetMyProfile.mockResolvedValue({ playerId: 'p1', discipline: discipline('cooldown', null, 7 * DAY) });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(DAY - 5000);
+      });
+      expect(mockGetMyProfile).not.toHaveBeenCalled();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10_000);
+      });
+      expect(mockGetMyProfile).toHaveBeenCalledTimes(1);
+    });
+
+    it('caps a delay at the timer limit rather than firing at once', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      await signedIn({ discipline: discipline('warned', null, 40 * DAY) });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(DAY);
+      });
+      expect(mockGetMyProfile).not.toHaveBeenCalled();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(24 * DAY);
+      });
+      expect(mockGetMyProfile).toHaveBeenCalledTimes(1);
+    });
+
+    it('sets no timer for a clear player', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      await signedIn({});
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30 * DAY);
+      });
+      expect(mockGetMyProfile).not.toHaveBeenCalled();
+    });
+
+    it('refreshes when any call is refused for a sign-up block', async () => {
+      const { result } = await signedIn({});
+      const refreshed = discipline('signup-blocked', DAY, 8 * DAY);
+      mockGetMyProfile.mockResolvedValue({ playerId: 'p1', discipline: refreshed });
+
+      act(() => {
+        window.dispatchEvent(new Event(SIGNUP_BLOCKED_EVENT));
+      });
+
+      await waitFor(() => expect(result.current.profile?.discipline).toEqual(refreshed));
+    });
+
+    it('ignores a refresh that lands after signing out', async () => {
+      const { result } = await signedIn({});
+      let finish: (value: unknown) => void = () => undefined;
+      mockGetMyProfile.mockReturnValue(new Promise((resolve) => { finish = resolve; }));
+
+      act(() => {
+        window.dispatchEvent(new Event(SIGNUP_BLOCKED_EVENT));
+      });
+      await act(async () => {
+        await result.current.signOut();
+      });
+      await act(async () => {
+        finish({ playerId: 'p1' });
+      });
+
+      expect(result.current.playerId).toBeNull();
+      expect(result.current.profile).toBeNull();
     });
   });
 });

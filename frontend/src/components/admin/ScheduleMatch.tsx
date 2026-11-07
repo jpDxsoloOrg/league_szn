@@ -501,8 +501,18 @@ export default function ScheduleMatch() {
 
   // A challenge or promo can pre-fill someone who has since become hidden.
   const selectedPlayerIds = [...formData.participants, ...teams.flat(), ...slotRowPlayerIds];
-  const bookablePlayers = pickablePlayers(players, selectedPlayerIds);
-  const bookableTagTeams = pickableTagTeams(activeTagTeams, players, selectedPlayerIds);
+  // A deactivated entrant stays bookable, so a tournament can still finish.
+  const tournamentEntrantIds = tournaments.find(
+    (tournament) => tournament.tournamentId === formData.tournamentId,
+  )?.participants ?? [];
+  const keptPlayerIds = [...selectedPlayerIds, ...tournamentEntrantIds];
+  const bookablePlayers = pickablePlayers(players, keptPlayerIds);
+  const bookableTagTeams = pickableTagTeams(activeTagTeams, players, keptPlayerIds);
+  const selectedPlayers = players.filter((player) => selectedPlayerIds.includes(player.playerId));
+  const signupBlockedPicks = selectedPlayers.filter((player) => player.discipline?.status === 'signup-blocked');
+  const deactivatedEntrantPicks = selectedPlayers.filter(
+    (player) => player.discipline?.status === 'deactivated' && tournamentEntrantIds.includes(player.playerId),
+  );
 
   const filteredPlayers = divisionFilter === 'all'
     ? bookablePlayers
@@ -612,6 +622,16 @@ export default function ScheduleMatch() {
       {error && <AdminNotice tone="error">{error}</AdminNotice>}
       {success && <AdminNotice tone="success">{success}</AdminNotice>}
       {linkedTitleGone && <AdminNotice tone="warning">{t('scheduleMatch.linkedTitleGone')}</AdminNotice>}
+      {signupBlockedPicks.length > 0 && (
+        <AdminNotice tone="warning">
+          {t('discipline.admin.bookingWarning', { names: signupBlockedPicks.map((player) => player.name).join(', ') })}
+        </AdminNotice>
+      )}
+      {deactivatedEntrantPicks.length > 0 && (
+        <AdminNotice tone="warning">
+          {t('discipline.admin.tournamentForfeitWarning', { names: deactivatedEntrantPicks.map((player) => player.name).join(', ') })}
+        </AdminNotice>
+      )}
 
       <form onSubmit={handleSubmit} className="match-form am-form">
         <fieldset className="match-form__section">

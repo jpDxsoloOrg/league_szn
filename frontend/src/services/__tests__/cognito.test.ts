@@ -98,7 +98,7 @@ describe('cognito service — auth flows', () => {
       mockAmplifySignIn.mockRejectedValue(err);
 
       await expect(cognitoAuth.signIn('a@b.com', 'pass')).rejects.toThrow(
-        'Your account is currently disabled',
+        'Your account has been deactivated or disabled',
       );
     });
 
@@ -157,6 +157,16 @@ describe('cognito service — auth flows', () => {
   });
 
   describe('signUp', () => {
+    it('replaces the PreSignUp refusal with a plain message', async () => {
+      const err = new Error('PreSignUp failed with error This account cannot be registered. Please contact an administrator..');
+      (err as Error & { name: string }).name = 'UserLambdaValidationException';
+      mockAmplifySignUp.mockRejectedValue(err);
+
+      await expect(cognitoAuth.signUp('a@b.com', 'Pass1234')).rejects.toThrow(
+        /^This account cannot be registered\. Please contact an administrator\.$/,
+      );
+    });
+
     it('calls Amplify signUp with email and returns correct shape', async () => {
       mockAmplifySignUp.mockResolvedValue({
         isSignUpComplete: false,

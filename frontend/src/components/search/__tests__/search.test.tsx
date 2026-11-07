@@ -95,6 +95,12 @@ describe('search index', () => {
     ]);
   });
 
+  it('drops a deactivated player, whose profile would not open', () => {
+    expect(toWrestlerEntries([
+      { playerId: 'p9', name: 'Gone', currentWrestler: 'Sting', deactivated: true },
+    ])).toEqual([]);
+  });
+
   it('links events to their page and drops retired titles', () => {
     expect(toEventEntries([{ eventId: 'e1', name: 'Show', date: '2026-11-01T00:00:00Z' } as LeagueEvent])[0]?.to).toBe('/events/e1');
     const titles = toChampionshipEntries([

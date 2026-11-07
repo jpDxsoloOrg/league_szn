@@ -5,6 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowLeft, ArrowUp, CalendarClock, Lock, LockOpen, Mic, Pencil, Plus, Trash2, Trophy } from 'lucide-react';
 import { eventsApi, isApiError, matchesApi, playersApi, tagTeamsApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSignupBlock } from '../../hooks/useSignupBlock';
+import { formatInstant } from '../../utils/dateUtils';
+import { refusalOr } from '../../utils/discipline';
+import SuspensionNotice from '../discipline/SuspensionNotice';
 import { useToast } from '../ui/toastContext';
 import type {
   MatchDesignation,
@@ -65,7 +69,8 @@ type PendingDelete =
 
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const signupBlock = useSignupBlock();
   const navigate = useNavigate();
   const { showToast } = useToast();
   const {
@@ -489,13 +494,13 @@ export default function EventDetail() {
         setCheckInError(null);
       } catch (err) {
         if (ignore) return;
-        setCheckInError(err instanceof Error ? err.message : 'events.checkIn.error');
+        setCheckInError(refusalOr(err, t('events.checkIn.error', { defaultValue: 'Failed to update check-in.' })));
       }
     })();
     return () => {
       ignore = true;
     };
-  }, [eventId, isAuthenticated, isWrestler, playerId]);
+  }, [eventId, isAuthenticated, isWrestler, playerId, t]);
 
   const handleCheckInChange = useCallback(
     async (status: EventCheckInStatus | null) => {
@@ -533,14 +538,14 @@ export default function EventDetail() {
           const row = await eventsApi.checkIn(eventId, status);
           setMyCheckIn(row);
         }
-      } catch {
+      } catch (err) {
         // Revert
         setMyCheckIn(prevCheckIn);
         setCheckInSummary(prevSummary);
-        setCheckInError('events.checkIn.error');
+        setCheckInError(refusalOr(err, t('events.checkIn.error', { defaultValue: 'Failed to update check-in.' })));
       }
     },
-    [eventId, myCheckIn, checkInSummary]
+    [eventId, myCheckIn, checkInSummary, t]
   );
 
   // A swap can re-insert the focused row, and a match that reaches the end of
@@ -732,11 +737,14 @@ export default function EventDetail() {
               ? (slot) => handleAdminEditSlot(match.matchId, slot)
               : undefined}
             claimDisabled={
+              signupBlock.blocked ||
               !!eventData.checkInsLocked ||
               (!!userOccupiedMatchId && userOccupiedMatchId !== match.matchId)
             }
             disableClaimReason={
-              eventData.checkInsLocked
+              signupBlock.until
+                ? t('discipline.notice.signupBlockedUntil', { date: formatInstant(signupBlock.until, i18n.language) })
+                : eventData.checkInsLocked
                 ? t('events.checkIn.lockedByAdmin', {
                     defaultValue: 'Sign-ups are closed for this event.',
                   })
@@ -761,6 +769,7 @@ export default function EventDetail() {
   const lockLabel = eventData.checkInsLocked
     ? t('events.admin.lockSignups.unlock', 'Unlock sign-ups')
     : t('events.admin.lockSignups.lock', 'Lock sign-ups');
+  const hasOpenSlot = enrichedMatches.some((match) => match.matchData?.slots?.some((slot) => !slot.playerId));
   const hasCompletedMatch = enrichedMatches.some((match) => match.matchData?.status === 'completed');
   const subtitle = [formattedDate, eventData.venue].filter(Boolean).join(' · ');
 
@@ -866,12 +875,9 @@ export default function EventDetail() {
             summary={checkInSummary}
             onChange={handleCheckInChange}
             signupsLocked={!!eventData.checkInsLocked}
+            signupBlockedUntil={signupBlock.until}
           />
-          {checkInError && (
-            <p className="event-detail-error" role="alert">
-              {t(checkInError, { defaultValue: 'Failed to update check-in.' })}
-            </p>
-          )}
+          {checkInError && <p className="event-detail-error" role="alert">{checkInError}</p>}
         </Card>
       )}
 
@@ -886,6 +892,7 @@ export default function EventDetail() {
         </div>
 
         {matchActionError && <p className="event-detail-error" role="alert">{matchActionError}</p>}
+        {signupBlock.until && hasOpenSlot && <SuspensionNotice until={signupBlock.until} />}
 
         {enrichedMatches.length === 0 ? (
           <EmptyState

@@ -14,6 +14,9 @@ import Button from '../ui/Button';
 import Card from '../ui/Card';
 import ChallengeStatusBadge from '../challenges/ChallengeStatusBadge';
 import { findCallOutChallenge, getDisplayStatus } from '../challenges/challengeUtils';
+import { useSignupBlock } from '../../hooks/useSignupBlock';
+import { formatInstant } from '../../utils/dateUtils';
+import { refusalOr } from '../../utils/discipline';
 import PromoReactions from './PromoReactions';
 import './PromoCard.css';
 
@@ -54,8 +57,9 @@ function highlightMentions(content: string): (string | JSX.Element)[] {
 const TRUNCATE_LENGTH = 150;
 
 export default function PromoCard({ promo, compact = false, isRead, onView, onReact }: PromoCardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { playerId } = useAuth();
+  const signupBlock = useSignupBlock();
   const { features } = useSiteConfig();
   const [acceptingChallenge, setAcceptingChallenge] = useState(false);
   const [challenge, setChallenge] = useState<ChallengeWithPlayers | null>(null);
@@ -108,8 +112,8 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
     try {
       await challengesApi.respond(challenge.challengeId, 'accept');
       setChallenge({ ...challenge, status: 'accepted' });
-    } catch {
-      setChallengeError(t('promos.card.acceptFailed', 'Could not accept the challenge. Try again.'));
+    } catch (err) {
+      setChallengeError(refusalOr(err, t('promos.card.acceptFailed', 'Could not accept the challenge. Try again.')));
     } finally {
       setAcceptingChallenge(false);
     }
@@ -119,7 +123,15 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
     const status = getDisplayStatus(current);
     if (status === 'pending') {
       return (
-        <Button size="sm" loading={acceptingChallenge} onClick={handleAcceptChallenge}>
+        <Button
+          size="sm"
+          loading={acceptingChallenge}
+          disabled={signupBlock.blocked}
+          title={signupBlock.until
+            ? t('discipline.notice.signupBlockedUntil', { date: formatInstant(signupBlock.until, i18n.language) })
+            : undefined}
+          onClick={handleAcceptChallenge}
+        >
           {acceptingChallenge
             ? t('promos.card.accepting', 'Accepting...')
             : t('promos.card.acceptChallenge', 'Accept Challenge')}

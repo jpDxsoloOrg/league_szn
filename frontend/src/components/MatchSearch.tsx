@@ -180,7 +180,9 @@ export default function MatchSearch() {
   // Only a deep link that already filters by one keeps that player listed.
   const playerFilterOptions = useMemo(
     () => players
-      .filter((player) => player.currentWrestler !== null || player.playerId === filters.playerId)
+      .filter((player) => (
+        (player.currentWrestler !== null && !player.deactivated) || player.playerId === filters.playerId
+      ))
       .map((player) => ({ value: player.playerId, label: player.name })),
     [players, filters.playerId],
   );

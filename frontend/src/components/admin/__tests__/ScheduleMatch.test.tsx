@@ -385,6 +385,70 @@ describe('ScheduleMatch', () => {
     expect(screen.queryByRole('option', { name: /Newbie/ })).not.toBeInTheDocument();
   });
 
+  describe('discipline', () => {
+    const summary = (status: string) => ({
+      status,
+      activeStrikeCount: 3,
+      activeStrikes: [],
+      cooldownEndsAt: null,
+      signupBlockedUntil: null,
+      deactivatedAt: null,
+    });
+    const deactivatedEntrant = {
+      ...mockPlayers[0],
+      playerId: 'p9',
+      name: 'Gone Guy',
+      currentWrestler: 'Sting',
+      discipline: summary('deactivated'),
+    };
+
+    const openPicker = async (user: ReturnType<typeof userEvent.setup>) => {
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+      await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
+    };
+
+    it('leaves a deactivated player out of the picker', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetAllPlayers.mockResolvedValue([...mockPlayers, deactivatedEntrant]);
+      renderScheduleMatch();
+
+      await openPicker(user);
+      await user.click(screen.getByRole('button', { name: /Add participants/ }));
+
+      expect(screen.queryByRole('option', { name: /Sting/ })).not.toBeInTheDocument();
+    });
+
+    it('offers a deactivated entrant of the chosen tournament, and warns about the forfeit', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetAllPlayers.mockResolvedValue([...mockPlayers, deactivatedEntrant]);
+      mockGetAllTournaments.mockResolvedValue([{ ...mockTournaments[0], participants: ['p9', 'p1'] }]);
+      renderScheduleMatch();
+
+      await openPicker(user);
+      await user.selectOptions(screen.getByLabelText(/Tournament/), 't1');
+      await pickParticipants(user, ['Sting (Gone Guy)']);
+
+      expect(screen.getByText('discipline.admin.tournamentForfeitWarning')).toBeInTheDocument();
+    });
+
+    it('warns about a player blocked from signing up, and still lets staff book them', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetAllPlayers.mockResolvedValue([
+        { ...mockPlayers[0], discipline: summary('signup-blocked') },
+        ...mockPlayers.slice(1),
+      ]);
+      renderScheduleMatch();
+
+      await openPicker(user);
+      await pickParticipants(user, ['The Champ (John Cena)']);
+
+      expect(screen.getByText('discipline.admin.bookingWarning')).toBeInTheDocument();
+    });
+  });
+
   it('keeps a hidden player pre-filled from a challenge', async () => {
     setupDefaultMocks();
     mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);

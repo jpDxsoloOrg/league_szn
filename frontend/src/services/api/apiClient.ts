@@ -1,3 +1,7 @@
+import i18n from 'i18next';
+import { formatInstant } from '../../utils/dateUtils';
+import { translateOutsideReact } from '../../utils/translateOutsideReact';
+
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 // Helper to get auth token from session storage (uses Cognito access token)
@@ -8,16 +12,57 @@ export const getAuthToken = (): string | null => {
 /** Fired when a signed-in request gets a 401 that a refresh could not fix. */
 export const AUTH_EXPIRED_EVENT = 'league:auth-expired';
 
-/** A failed API response. `message` is the server's, `status` the HTTP code. */
+/** Fired on any SIGNUP_BLOCKED refusal: the block began after the profile was loaded. */
+export const SIGNUP_BLOCKED_EVENT = 'league:signup-blocked';
+
+/** Refusals the server sends with a `code`. Its `message` stays English, so these translate here. */
+const DISCIPLINE_REFUSAL_CODES = new Set([
+  'SIGNUP_BLOCKED',
+  'PLAYER_DEACTIVATED',
+  'PLAYER_UNAVAILABLE',
+  'ALREADY_DEACTIVATED',
+  'NOT_DEACTIVATED',
+  'STAFF_PROTECTED',
+  'DISCIPLINE_CONFLICT',
+  'STRIKE_NOT_ACTIVE',
+  'DISCIPLINE_ACTIVE',
+]);
+
+interface ApiErrorBody {
+  message?: string;
+  code?: string;
+  blockedUntil?: string;
+}
+
+/**
+ * A failed API response. `status` is the HTTP code and `code` the refusal code,
+ * if any. `message` is the server's, or its translation for a known code, so
+ * call sites that show `err.message` need no changes.
+ */
 export class ApiError extends Error {
   readonly status: number;
+  readonly code?: string;
+  readonly blockedUntil?: string;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, details: { code?: string; blockedUntil?: string } = {}) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = details.code;
+    this.blockedUntil = details.blockedUntil;
   }
 }
+
+const refusalMessage = ({ code, blockedUntil }: ApiErrorBody, serverMessage: string): string => {
+  if (!code || !DISCIPLINE_REFUSAL_CODES.has(code)) return serverMessage;
+  if (code === 'SIGNUP_BLOCKED' && blockedUntil) {
+    return translateOutsideReact('discipline.errors.SIGNUP_BLOCKED', serverMessage, {
+      date: formatInstant(blockedUntil, i18n.language),
+    });
+  }
+  const key = code === 'SIGNUP_BLOCKED' ? 'SIGNUP_BLOCKED_NO_DATE' : code;
+  return translateOutsideReact(`discipline.errors.${key}`, serverMessage);
+};
 
 /** True when `err` is an API failure with this status. */
 export const isApiError = (err: unknown, status: number): err is ApiError =>
@@ -110,8 +155,13 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}, sign
       window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
       throw new ApiError('Your session has expired. Please sign in again.', response.status);
     }
-    const error = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new ApiError(error.message || `HTTP ${response.status}`, response.status);
+    const error: ApiErrorBody = await response.json().catch(() => ({ message: 'Request failed' }));
+    if (error.code === 'SIGNUP_BLOCKED') window.dispatchEvent(new Event(SIGNUP_BLOCKED_EVENT));
+    throw new ApiError(
+      refusalMessage(error, error.message || `HTTP ${response.status}`),
+      response.status,
+      { code: error.code, blockedUntil: error.blockedUntil },
+    );
   }
 
   // Handle 204 No Content responses (e.g., from DELETE operations)

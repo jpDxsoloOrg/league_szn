@@ -16,6 +16,8 @@ import Card from '../ui/Card';
 import PageHeader from '../ui/PageHeader';
 import Select from '../ui/Select';
 import { getChallengeTitleOptions } from '../challenges/challengeUtils';
+import { useSignupBlock } from '../../hooks/useSignupBlock';
+import SuspensionNotice from '../discipline/SuspensionNotice';
 import PromoCard from './PromoCard';
 import './PromoEditor.css';
 
@@ -96,6 +98,7 @@ const MIN_CONTENT = 50;
 
 export default function PromoEditor() {
   const { t } = useTranslation();
+  const signupBlock = useSignupBlock();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { features } = useSiteConfig();
@@ -246,8 +249,11 @@ export default function PromoEditor() {
   const stakedChampionshipId = needsChallenge && !challengeTitles.some((c) => c.championshipId === championshipId)
     ? ''
     : championshipId;
+  // A call-out leads to a match, so a sign-up block stops it. Other promos stay open.
+  const callOutBlocked = promoType === 'call-out' && signupBlock.blocked;
   const canSubmit =
     !isHiddenPlayer &&
+    !callOutBlocked &&
     isContentValid &&
     promoType &&
     !submitting &&
@@ -453,6 +459,8 @@ export default function PromoEditor() {
       {isHiddenPlayer && (
         <HiddenPlayerNotice title={t('me.setup.cannotCutPromoTitle')} body={t('me.setup.cannotCutPromoBody')} />
       )}
+
+      {callOutBlocked && signupBlock.until && <SuspensionNotice until={signupBlock.until} />}
 
       {error && <div className="promo-editor__error" role="alert">{error}</div>}
 

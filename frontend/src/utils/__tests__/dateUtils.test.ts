@@ -16,6 +16,7 @@ import {
   formatTime,
   formatMatchDate,
   formatRelativeTime,
+  formatInstant,
 } from '../dateUtils';
 
 // ---------------------------------------------------------------------------
@@ -177,5 +178,40 @@ describe('formatMatchDate', () => {
 
   it('returns anything unreadable as it came', () => {
     expect(formatMatchDate('soon')).toBe('soon');
+  });
+});
+
+describe('formatInstant', () => {
+  const zoneBefore = process.env.TZ;
+  afterEach(() => {
+    process.env.TZ = zoneBefore;
+  });
+
+  it('shows date, time and zone in the viewer timezone, in English', () => {
+    process.env.TZ = 'America/New_York';
+    expect(formatInstant('2026-11-02T03:30:00.000Z', 'en-US')).toBe('Nov 1, 2026, 10:30 PM EST');
+  });
+
+  it('shows the same moment in German', () => {
+    process.env.TZ = 'Europe/Berlin';
+    expect(formatInstant('2026-11-02T03:30:00.000Z', 'de-DE')).toBe('2. Nov. 2026, 04:30 MEZ');
+  });
+
+  it('keeps a window exact across a daylight-saving change', () => {
+    process.env.TZ = 'America/New_York';
+    const issuedAt = Date.parse('2026-10-30T14:00:00.000Z');
+    const endsAt = new Date(issuedAt + 7 * 86_400_000).toISOString();
+    expect(formatInstant(new Date(issuedAt).toISOString(), 'en-US')).toBe('Oct 30, 2026, 10:00 AM EDT');
+    // 7 x 24 hours later. Clocks went back on Nov 1, so the local hour moves.
+    expect(formatInstant(endsAt, 'en-US')).toBe('Nov 6, 2026, 9:00 AM EST');
+  });
+
+  it('never shows the next UTC day for a late evening end', () => {
+    process.env.TZ = 'America/Los_Angeles';
+    expect(formatInstant('2026-11-03T02:00:00.000Z', 'en-US')).toContain('Nov 2, 2026');
+  });
+
+  it('returns the input when it is not a date', () => {
+    expect(formatInstant('soon', 'en-US')).toBe('soon');
   });
 });

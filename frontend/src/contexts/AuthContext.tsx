@@ -3,8 +3,12 @@ import { NO_PLAYER_ROW_KEY, PROFILE_SETUP_SNOOZE_KEY } from '../utils/profileSet
 import { ANNOUNCEMENTS_CLOSED_KEY } from '../utils/announcementDismissal';
 import { cognitoAuth, type UserRole } from '../services/cognito';
 import { profileApi } from '../services/api';
-import { AUTH_EXPIRED_EVENT } from '../services/api/apiClient';
+import { AUTH_EXPIRED_EVENT, SIGNUP_BLOCKED_EVENT } from '../services/api/apiClient';
+import { MAX_TIMER_MS, msUntilNextBoundary } from '../utils/discipline';
 import type { Player } from '../types';
+
+/** Refresh just after a window ends, so a slightly slow server clock has passed it too. */
+const DISCIPLINE_REFRESH_SLACK_MS = 1000;
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -228,17 +232,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshProfile = useCallback(async () => {
     try {
       const profile = await profileApi.getMyProfile();
-      setState(prev => ({
+      // Timers call this too, so a reply can land after signing out.
+      setState(prev => (prev.isAuthenticated ? {
         ...prev,
         playerId: profile.playerId,
         currentWrestler: profile.currentWrestler ?? null,
         alternateWrestler: profile.alternateWrestler ?? null,
         profile,
-      }));
+      } : prev));
     } catch {
       // Profile may not exist
     }
   }, []);
+
+  // A window can end, or a block begin, while the tab stays open.
+  const discipline = state.profile?.discipline;
+  useEffect(() => {
+    const delay = msUntilNextBoundary(discipline);
+    if (delay === null) return undefined;
+    const timer = window.setTimeout(
+      () => void refreshProfile(),
+      Math.min(delay + DISCIPLINE_REFRESH_SLACK_MS, MAX_TIMER_MS),
+    );
+    return () => window.clearTimeout(timer);
+  }, [discipline, refreshProfile]);
+
+  useEffect(() => {
+    const onSignupBlocked = () => {
+      void refreshProfile();
+    };
+    window.addEventListener(SIGNUP_BLOCKED_EVENT, onSignupBlocked);
+    return () => window.removeEventListener(SIGNUP_BLOCKED_EVENT, onSignupBlocked);
+  }, [refreshProfile]);
 
   const hasRole = useCallback((role: UserRole): boolean => {
     if (state.groups.includes('Admin')) return true;

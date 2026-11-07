@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import { playersApi, challengesApi, championshipsApi, profileApi, stipulationsApi, matchTypesApi, tagTeamsApi } from '../../services/api';
+import { useSignupBlock } from '../../hooks/useSignupBlock';
 import type { Championship, Player, Stipulation, MatchType } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
+import SuspensionNotice from '../discipline/SuspensionNotice';
 import Avatar from '../ui/Avatar';
 import Button from '../ui/Button';
 import PageHeader from '../ui/PageHeader';
@@ -14,6 +16,7 @@ const MAX_MESSAGE_LENGTH = 500;
 
 export default function IssueChallenge() {
   const { t } = useTranslation();
+  const signupBlock = useSignupBlock();
   const [opponentId, setOpponentId] = useState('');
   const [matchType, setMatchType] = useState('');
   const [stipulation, setStipulation] = useState('');
@@ -172,6 +175,8 @@ export default function IssueChallenge() {
       </Button>
 
       <PageHeader title={t('challenges.issue.title')} />
+
+      {signupBlock.until && <SuspensionNotice until={signupBlock.until} />}
 
       {error && (
         <div className="issue-error-message" role="alert">
@@ -386,7 +391,7 @@ export default function IssueChallenge() {
 
         <div className="issue-form-actions">
           <Button variant="secondary" to="/challenges">{t('common.cancel')}</Button>
-          <Button disabled={!isFormValid || submitting} onClick={handleSubmit}>
+          <Button disabled={!isFormValid || submitting || signupBlock.blocked} onClick={handleSubmit}>
             {submitting ? t('common.submitting') : t('challenges.issue.submit')}
           </Button>
         </div>

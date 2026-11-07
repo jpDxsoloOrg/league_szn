@@ -8,6 +8,8 @@ import {
   type ReactNode,
 } from 'react';
 import { useAuth } from './AuthContext';
+import { useSignupBlock } from '../hooks/useSignupBlock';
+import { ApiError } from '../services/api/apiClient';
 import { matchmakingApi } from '../services/api/matchmaking.api';
 
 const SESSION_STORAGE_KEY = 'wwe2k.presenceEnabled';
@@ -44,34 +46,13 @@ const readInitialPresenceEnabled = (): boolean => {
 
 export const PresenceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { isAuthenticated, isWrestler, playerId } = useAuth();
+  const { blocked } = useSignupBlock();
 
   const [presenceEnabled, setPresenceEnabled] = useState<boolean>(readInitialPresenceEnabled);
   const [lastHeartbeatAt, setLastHeartbeatAt] = useState<Date | null>(null);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const sendHeartbeat = useCallback(async (): Promise<void> => {
-    try {
-      await matchmakingApi.heartbeat();
-      setLastHeartbeatAt(new Date());
-    } catch (error) {
-      // Transient errors should not make the user disappear. Log and continue.
-      console.error('[PresenceContext] heartbeat failed', error);
-    }
-  }, []);
-
-  const enablePresence = useCallback(async (): Promise<void> => {
-    if (typeof window !== 'undefined') {
-      try {
-        window.sessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
-      } catch (error) {
-        console.error('[PresenceContext] failed to persist presenceEnabled', error);
-      }
-    }
-    setPresenceEnabled(true);
-    await sendHeartbeat();
-  }, [sendHeartbeat]);
 
   const disablePresence = useCallback(async (): Promise<void> => {
     if (typeof window !== 'undefined') {
@@ -90,9 +71,36 @@ export const PresenceProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   }, []);
 
+  const sendHeartbeat = useCallback(async (): Promise<void> => {
+    try {
+      await matchmakingApi.heartbeat();
+      setLastHeartbeatAt(new Date());
+    } catch (error) {
+      if (error instanceof ApiError && error.code === 'SIGNUP_BLOCKED') {
+        await disablePresence();
+        return;
+      }
+      // Transient errors should not make the user disappear. Log and continue.
+      console.error('[PresenceContext] heartbeat failed', error);
+    }
+  }, [disablePresence]);
+
+  const enablePresence = useCallback(async (): Promise<void> => {
+    if (blocked) return;
+    if (typeof window !== 'undefined') {
+      try {
+        window.sessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
+      } catch (error) {
+        console.error('[PresenceContext] failed to persist presenceEnabled', error);
+      }
+    }
+    setPresenceEnabled(true);
+    await sendHeartbeat();
+  }, [blocked, sendHeartbeat]);
+
   // Heartbeat loop + visibility/unload listeners + inactivity auto-offline
   useEffect(() => {
-    if (!presenceEnabled || !isAuthenticated || !isWrestler || !playerId) {
+    if (!presenceEnabled || !isAuthenticated || !isWrestler || !playerId || blocked) {
       return;
     }
 
@@ -170,7 +178,14 @@ export const PresenceProvider: React.FC<{ children: ReactNode }> = ({ children }
         window.removeEventListener(eventName, handleActivity);
       }
     };
-  }, [presenceEnabled, isAuthenticated, isWrestler, playerId, sendHeartbeat, disablePresence]);
+  }, [presenceEnabled, isAuthenticated, isWrestler, playerId, blocked, sendHeartbeat, disablePresence]);
+
+  // Turned off, not paused: when the block ends, going online is the player's choice.
+  useEffect(() => {
+    if (blocked && presenceEnabled) {
+      void disablePresence();
+    }
+  }, [blocked, presenceEnabled, disablePresence]);
 
   // Auto-disable on sign-out
   useEffect(() => {

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
+const signupBlock = vi.hoisted(() => ({ blocked: false, until: null as string | null }));
 const { mockGetAllPlayers, mockGetAllPromos, mockGetAllMatches, mockGetAllChampionships, mockCreatePromo, mockCreateChallenge, mockGetAllStipulations, mockGetAllMatchTypes, mockGetAllTagTeams, mockIsHiddenPlayer } =
   vi.hoisted(() => ({
     mockGetAllPlayers: vi.fn(),
@@ -31,6 +32,7 @@ vi.mock('../../../services/api', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string, fallbackOrOpts?: string | Record<string, unknown>, opts?: Record<string, unknown>) => {
       const t: Record<string, string> = {
         'promos.editor.title': 'Cut a Promo',
@@ -101,6 +103,7 @@ vi.mock('../../../hooks/useIsHiddenPlayer', () => ({
 }));
 
 vi.mock('../PromoEditor.css', () => ({}));
+vi.mock('../../../hooks/useSignupBlock', () => ({ useSignupBlock: () => signupBlock }));
 vi.mock('../PromoCard.css', () => ({}));
 vi.mock('../PromoReactions.css', () => ({}));
 
@@ -117,6 +120,8 @@ function renderEditor(initialEntry = '/promos/new') {
 describe('PromoEditor', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    signupBlock.blocked = false;
+    signupBlock.until = null;
     mockIsHiddenPlayer.mockReturnValue(false);
     mockGetAllPlayers.mockResolvedValue([
       { playerId: 'p-1', userId: 'u-1', name: 'John', currentWrestler: 'Stone Cold', wins: 0, losses: 0, draws: 0, createdAt: '', updatedAt: '' },
@@ -168,6 +173,18 @@ describe('PromoEditor', () => {
 
     await user.type(screen.getByPlaceholderText('Drop your promo here...'), 'x'.repeat(60));
     expect(screen.getByRole('button', { name: 'Drop the Mic' })).toBeDisabled();
+  });
+
+  it('stops a call-out while blocked but leaves other promos open', async () => {
+    signupBlock.blocked = true;
+    signupBlock.until = new Date(Date.now() + 86_400_000).toISOString();
+    const callOut = renderEditor('/promos/new?promoType=call-out');
+    expect(await screen.findByRole('timer')).toBeInTheDocument();
+    callOut.unmount();
+
+    renderEditor('/promos/new?promoType=open-mic');
+    await screen.findByRole('radiogroup');
+    expect(screen.queryByRole('timer')).not.toBeInTheDocument();
   });
 
   it('validates content minimum length and disables submit when too short', async () => {

@@ -18,6 +18,7 @@ vi.mock('../../../services/api', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string, fallback?: string) => {
       const t: Record<string, string> = {
         'promos.types.open-mic': 'Open Mic',
@@ -165,6 +166,26 @@ describe('PromoCard', () => {
       mockGetChallenges.mockResolvedValue([makeChallenge()]);
       renderCard(callOut());
       expect(await screen.findByText('Accept Challenge')).toBeInTheDocument();
+    });
+
+    it('turns accept off for a player blocked from signing up', async () => {
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true,
+        playerId: 'me',
+        profile: {
+          discipline: {
+            status: 'signup-blocked',
+            activeStrikeCount: 2,
+            activeStrikes: [],
+            cooldownEndsAt: new Date(Date.now() + 14 * 86400000).toISOString(),
+            signupBlockedUntil: new Date(Date.now() + 7 * 86400000).toISOString(),
+            deactivatedAt: null,
+          },
+        },
+      });
+      mockGetChallenges.mockResolvedValue([makeChallenge()]);
+      renderCard(callOut());
+      expect((await screen.findByText('Accept Challenge')).closest('button')).toBeDisabled();
     });
 
     it('shows accepted only for an accepted challenge', async () => {

@@ -146,7 +146,9 @@
     "welcomeSignInCta": "Zur Anmeldung",
     "needsWrestlerBannerTitle": "Wähle deinen Wrestler, um die Einrichtung abzuschließen",
     "needsWrestlerBannerBody": "Dein Profil hat noch keinen Wrestler aus dem Roster. Ein Admin weist dir einen zu — oder du bearbeitest dein Profil und wählst selbst einen verfügbaren Wrestler.",
-    "needsWrestlerBadge": "Wrestler fehlt"
+    "needsWrestlerBadge": "Wrestler fehlt",
+    "accountDisabled": "Dein Konto wurde deaktiviert oder gesperrt. Bitte wende dich an einen Administrator.",
+    "signupRefused": "Dieses Konto kann nicht registriert werden. Bitte wende dich an einen Administrator."
   },
   "profileModal": {
     "title": "Profil vervollständigen",
@@ -451,7 +453,9 @@
       "rivalries": "Rivalitäten",
       "adminRivalries": "Admin: Rivalitäten",
       "rateMatches": "Kämpfe bewerten",
-      "rivalryHeatExplained": "Wie Rivalitäts-Hitze funktioniert"
+      "rivalryHeatExplained": "Wie Rivalitäts-Hitze funktioniert",
+      "strikesAndSuspensions": "Strikes und Sperren",
+      "adminStrikes": "Admin: Strikes"
     },
     "navLabels": {
       "adminQuickstart": "Schnellstart",
@@ -471,7 +475,8 @@
       "adminContenderConfig": "Herausforderer-Ranglisten",
       "adminDataManagement": "Datenverwaltung",
       "adminWorkflow": "Typischer Wochenablauf",
-      "adminRivalries": "Rivalitäten"
+      "adminRivalries": "Rivalitäten",
+      "adminStrikes": "Strikes"
     },
     "articleNotFound": "Artikel nicht gefunden",
     "articleNotFoundHint": "Dieser Hilfeartikel wurde vielleicht verschoben. Sieh dir stattdessen die ganze Liste an.",
@@ -2474,7 +2479,8 @@
     "typeTagTeam": "Tag Team",
     "typeTransfer": "Transfer",
     "typeRivalry": "Rivalität",
-    "typeStoryline": "Storyline"
+    "typeStoryline": "Storyline",
+    "typeDiscipline": "Strikes"
   },
   "findMatch": {
     "title": "Match finden",
@@ -3482,5 +3488,115 @@
     "sixPack": "6-Pack Challenge",
     "battleRoyal": "Battle Royal",
     "royalRumble": "Royal Rumble"
+  },
+  "discipline": {
+    "status": {
+      "clear": "Keine aktiven Strikes",
+      "warned": "Verwarnung",
+      "signupBlocked": "Für Anmeldungen gesperrt",
+      "cooldown": "In Abklingzeit",
+      "deactivated": "Deaktiviert"
+    },
+    "errors": {
+      "SIGNUP_BLOCKED": "Du kannst dich erst wieder ab {{date}} anmelden.",
+      "SIGNUP_BLOCKED_NO_DATE": "Wegen eines Strikes auf deinem Konto kannst du dich gerade nicht anmelden.",
+      "PLAYER_DEACTIVATED": "Dieses Konto ist deaktiviert, daher ist das nicht möglich. Ein Admin kann es unter „Spieler verwalten“ reaktivieren.",
+      "PLAYER_UNAVAILABLE": "Dieser Spieler ist gerade nicht verfügbar.",
+      "ALREADY_DEACTIVATED": "Dieser Spieler ist bereits deaktiviert.",
+      "NOT_DEACTIVATED": "Dieser Spieler ist nicht deaktiviert.",
+      "STAFF_PROTECTED": "Admins und Moderatoren können keine Strikes erhalten. Entferne zuerst die Rolle.",
+      "DISCIPLINE_CONFLICT": "Der Datensatz dieses Spielers hat sich geändert, während er geöffnet war. Prüfe den aktuellen Stand unten und versuche es erneut.",
+      "STRIKE_NOT_ACTIVE": "Dieser Strike ist nicht mehr aktiv, es gibt also nichts zu entfernen.",
+      "DISCIPLINE_ACTIVE": "Dieser Spieler hat aktive Strikes und kann erst gelöscht werden, wenn diese abgelaufen sind."
+    },
+    "countdown": {
+      "days_one": "{{count}} Tag",
+      "days_other": "{{count}} Tagen",
+      "hours_one": "{{count}} Stunde",
+      "hours_other": "{{count}} Stunden",
+      "minutes_one": "{{count}} Minute",
+      "minutes_other": "{{count}} Minuten",
+      "seconds_one": "{{count}} Sekunde",
+      "seconds_other": "{{count}} Sekunden"
+    },
+    "notice": {
+      "title": "Strikes",
+      "suspendedTitle": "Für Anmeldungen gesperrt.",
+      "liftsIn": "Endet in {{time}}.",
+      "signupBlockedUntil": "Wieder möglich ab {{date}}.",
+      "cooldownTitle": "Strike-Abklingzeit",
+      "fallsOffIn_one": "Läuft ab in {{time}}",
+      "fallsOffIn_other": "Laufen ab in {{time}}",
+      "cooldownEnds": "Am {{date}}",
+      "strikeNumber": "Strike {{number}}",
+      "strikeReason": "Grund: {{reason}}",
+      "deactivated": "Dein Konto wurde deaktiviert. Bitte wende dich an einen Administrator.",
+      "learnMore": "So funktionieren Strikes"
+    },
+    "admin": {
+      "open": "Disziplin",
+      "title": "Disziplin: {{name}}",
+      "statusHeading": "Aktueller Status",
+      "until": "Bis {{date}}",
+      "signupBlockedUntil": "Für Anmeldungen gesperrt bis",
+      "cooldownEnds": "Strikes laufen ab",
+      "deactivatedOn": "Deaktiviert am",
+      "activeStrikes": "Aktive Strikes",
+      "history": "Verlauf",
+      "noHistory": "Dieser Spieler hatte noch nie einen Strike.",
+      "issueHeading": "Strike vergeben",
+      "outcome": {
+        "warned": "Das ist der erste Strike: eine Verwarnung für 7 Tage. Der Spieler kann sich weiter anmelden.",
+        "signup-blocked": "Das sperrt Anmeldungen für 7 Tage und setzt die Abklingzeit auf 14 Tage ab jetzt.",
+        "deactivated": "Dieser Strike deaktiviert das Konto. Der Spieler kann sich nicht einloggen, nicht anmelden und erscheint nicht in der Tabelle, bis ein Admin ihn reaktiviert."
+      },
+      "issueWarning": "Verwarnung vergeben",
+      "issueSecond": "Zweiten Strike vergeben",
+      "issueRestart": "Strike vergeben und Sperre neu starten",
+      "deactivateAccount": "Konto deaktivieren",
+      "remove": "Entfernen",
+      "confirmRemove": "Strike entfernen",
+      "removeReason": "Warum wird dieser Strike entfernt?",
+      "reactivate": "Reaktivieren",
+      "reactivateReason": "Warum wird dieser Spieler reaktiviert?",
+      "restorePriorStrikes": "Frühere Strikes wiederherstellen (der letzte Strike war ein Fehler)",
+      "reason": "Grund (der Spieler sieht ihn)",
+      "reasonHint": "{{min}} bis {{max}} Zeichen.",
+      "staffProtected": "Dieses Konto ist Admin oder Moderator und kann keine Strikes erhalten. Entferne zuerst die Rolle.",
+      "readOnly": "Du kannst diesen Datensatz lesen. Nur ein Admin kann ihn ändern.",
+      "manageUsers": "Benutzerverwaltung öffnen",
+      "accountSyncFailed": "Der Datensatz des Spielers wurde aktualisiert, sein Login aber nicht. Korrigiere das in der Benutzerverwaltung.",
+      "accountMismatch": "Der Login dieses Spielers passt nicht zu seinem Datensatz. Der Datensatz entscheidet über den Zugang, korrigiere also den Login in der Benutzerverwaltung.",
+      "loginAlreadyDisabled": "Der Login war schon vor der Deaktivierung gesperrt und bleibt deshalb gesperrt. Aktiviere ihn bei Bedarf in der Benutzerverwaltung.",
+      "softHoldsFailed": "Das Aufräumen von Warteschlange oder Herausforderungen wurde nicht abgeschlossen. Der Spieler bleibt gesperrt und aus den Listen ausgeblendet, manches muss aber eventuell von Hand entfernt werden.",
+      "notLinked": "Dieser Spieler hat keinen verknüpften Login, es gibt also kein Konto zum Sperren oder Aktivieren.",
+      "holdingsTitle": "Noch bei diesem Spieler",
+      "holdingsNotChanged": "Nichts davon wird automatisch geändert. Bearbeite jeden Punkt mit den hier verlinkten Werkzeugen.",
+      "holdingsNone": "Dieser Spieler hat keine Titel, Buchungen, angenommenen Herausforderungen oder offenen Turniere.",
+      "holdingTitle": "Titel: {{name}}",
+      "holdingMatch": "Match am {{date}}",
+      "holdingChallenge": "Angenommene Herausforderung mit {{name}}",
+      "holdingTournament": "Turnier: {{name}}",
+      "bookingWarning": "Für Anmeldungen gesperrt: {{names}}. Das Team kann sie trotzdem buchen.",
+      "tournamentForfeitWarning": "Deaktivierter Turnierteilnehmer: {{names}}. Das Match kann gebucht und als Aufgabe gewertet werden, damit das Turnier enden kann.",
+      "confirmDeactivateTitle": "Konto deaktivieren",
+      "confirmDeactivate": "{{name}} deaktivieren? Der Zugang endet sofort. Ein Admin kann das rückgängig machen.",
+      "loadFailed": "Der Disziplin-Datensatz dieses Spielers konnte nicht geladen werden.",
+      "staleDetail": "Dieser Datensatz konnte nicht neu geladen werden und ist eventuell veraltet.",
+      "actionFailed": "Das hat nicht geklappt. Prüfe den Datensatz unten, bevor du es erneut versuchst.",
+      "strikeActive": "Aktiv",
+      "strikeLapsed": "Abgelaufen",
+      "strikeCleared": "Entfernt",
+      "issuedBy": "{{date}}, vergeben von {{name}}",
+      "removedBy": "Entfernt am {{date}} von {{name}}",
+      "clearedByReactivation": "Durch Reaktivierung am {{date}} entfernt von {{name}}",
+      "deactivatedBy": "Deaktiviert am {{date}} von {{name}}",
+      "reactivatedBy": "Reaktiviert am {{date}} von {{name}}",
+      "done": {
+        "strike": "Strike vergeben.",
+        "remove": "Strike entfernt.",
+        "reactivate": "Spieler reaktiviert."
+      }
+    }
   }
 }

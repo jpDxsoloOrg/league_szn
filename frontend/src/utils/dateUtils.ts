@@ -61,6 +61,25 @@ export function formatMatchDate(
 }
 
 /**
+ * Format an exact moment, such as when a strike falls off, as date and time in
+ * the viewer's timezone with the zone shown. Discipline windows end at any
+ * hour, so these must never go through `formatCalendarDate`, which cuts the
+ * value to its UTC day and can show a day late.
+ */
+export function formatInstant(iso: string, locale?: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString(locale, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  });
+}
+
+/**
  * Formats a date string to a localized short date format.
  * Example: "Jan 15, 2024"
  *
