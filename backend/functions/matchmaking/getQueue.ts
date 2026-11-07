@@ -3,6 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, forbidden, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { isPlayerVisible } from '../../lib/needsWrestler';
+import { isSignupBlocked } from '../../lib/discipline';
 
 interface QueuePreferences {
   matchFormat?: string;
@@ -54,8 +55,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const row = activeRows[i];
       const player = playerResults[i];
       if (!player || !player.playerId) continue; // skip orphaned rows
-      // Hidden players drop off the board, but callers still see their own row.
-      if (!isPlayerVisible(player) && player.playerId !== callerPlayer.playerId) continue;
+      // Hidden and blocked players drop off the board, but callers still see
+      // their own row. Checking here keeps the board right even if clearing the
+      // queue failed or a late heartbeat brought a row back.
+      const isListed = isPlayerVisible(player) && !isSignupBlocked(player);
+      if (!isListed && player.playerId !== callerPlayer.playerId) continue;
 
       const entry: QueueEntryResponse = {
         playerId: player.playerId,

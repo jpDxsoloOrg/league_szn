@@ -1,9 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
-import { NotFoundError } from '../errors';
+import { ConcurrencyError, NotFoundError } from '../errors';
 import type {
   RosterRepository,
   PlayerCreateInput,
   PlayerPatch,
+  PlayerDisciplinePatch,
   TagTeamCreateInput,
   TagTeamPatch,
   StableCreateInput,
@@ -102,6 +103,29 @@ export class InMemoryRosterRepository implements RosterRepository {
 
     delete: async (playerId: string): Promise<void> => {
       this.playersStore.delete(playerId);
+    },
+
+    updateDiscipline: async (
+      playerId: string,
+      patch: PlayerDisciplinePatch,
+      expectedVersion: number,
+    ): Promise<Player> => {
+      const existing = this.playersStore.get(playerId);
+      if (!existing || existing.deletedAt || (existing.disciplineVersion ?? 0) !== expectedVersion) {
+        throw new ConcurrencyError('Player', playerId);
+      }
+      const { deactivatedAt: _removed, ...withoutDeactivatedAt } = existing;
+      const updated: Player = {
+        ...withoutDeactivatedAt,
+        strikes: patch.strikes,
+        deactivations: patch.deactivations,
+        ...(patch.deactivatedAt !== null ? { deactivatedAt: patch.deactivatedAt } : {}),
+        ...(patch.signupGuardKey !== undefined ? { signupGuardKey: patch.signupGuardKey } : {}),
+        disciplineVersion: expectedVersion + 1,
+        updatedAt: new Date().toISOString(),
+      };
+      this.playersStore.set(playerId, updated);
+      return updated;
     },
 
     findByUserId: async (userId: string): Promise<Player | null> => {

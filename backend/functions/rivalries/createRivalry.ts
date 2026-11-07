@@ -3,6 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, conflict, forbidden, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
+import { firstBookingRefusal } from '../../lib/disciplineGates';
 import type { RivalryHeat, RivalryParticipantRole, WrestlerVariant } from '../../lib/repositories';
 
 interface CreateRivalryBody {
@@ -90,6 +91,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (missing) {
       return badRequest(`Participant not found: ${missing.playerId}`);
     }
+    const bookingBlocked = firstBookingRefusal(playerLookups);
+    if (bookingBlocked) return bookingBlocked;
 
     // Duplicate-active check — keyed off the first participant so the
     // GM gets a 409 if either of these two wrestlers is already in

@@ -178,6 +178,12 @@ export default function SlotEditDialog({
           />
         </div>
 
+        {pickedPlayer?.discipline?.status === 'signup-blocked' && (
+          <p className="slot-edit-dialog__warning" role="status">
+            {t('discipline.admin.bookingWarning', { names: pickedPlayer.name })}
+          </p>
+        )}
+
         {showWrestlerRadio && pickedPlayer && (
           <fieldset className="slot-edit-dialog__row slot-edit-dialog__group">
             <legend>{t('matches.slots.editWrestlerLabel', { defaultValue: 'Wrestler' })}</legend>

@@ -19,6 +19,8 @@ Mögliche Strafen reichen von:
 3. Für einen bestimmten Zeitraum nicht gebucht zu werden
 4. In extremen Fällen: **kompletter Ausschluss aus der Liga**
 
+Unter [Strikes und Sperren](strikes-and-suspensions) steht, wie Strikes funktionieren und wo du deinen Status siehst.
+
 ## Divisionen & Rating-Obergrenzen
 
 | Division | Max. Overall-Rating |

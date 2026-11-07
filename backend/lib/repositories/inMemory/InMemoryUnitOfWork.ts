@@ -1,4 +1,5 @@
-import type { UnitOfWork, RecordDelta, MatchWriteCondition } from '../unitOfWork';
+import type { UnitOfWork, RecordDelta, MatchWriteCondition, PlayerWriteCondition } from '../unitOfWork';
+import type { ChallengeStatus } from '../types';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
 import type {
   Rivalry,
@@ -42,7 +43,15 @@ export class InMemoryUnitOfWork implements UnitOfWork {
 
   // Each method pushes a closure that mutates the in-memory stores
 
-  updatePlayer(playerId: string, patch: Record<string, unknown>): void {
+  updatePlayer(playerId: string, patch: Record<string, unknown>, condition?: PlayerWriteCondition): void {
+    if (condition) {
+      this.preconditions.push(() => {
+        const player = this.stores.players.get(playerId);
+        if (!player || (player.disciplineVersion ?? 0) !== condition.disciplineVersion) {
+          throw new ConcurrencyError('Player', playerId);
+        }
+      });
+    }
     this.staged.push(() => {
       const existing = this.stores.players.get(playerId);
       if (!existing) return;
@@ -155,7 +164,14 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     });
   }
 
-  updateChallenge(challengeId: string, patch: Record<string, unknown>): void {
+  updateChallenge(challengeId: string, patch: Record<string, unknown>, expectedStatus?: ChallengeStatus): void {
+    if (expectedStatus) {
+      this.preconditions.push(() => {
+        if (this.stores.challenges.get(challengeId)?.status !== expectedStatus) {
+          throw new ConcurrencyError('Challenge', challengeId);
+        }
+      });
+    }
     this.staged.push(() => {
       const existing = this.stores.challenges.get(challengeId);
       if (existing) {

@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
+import type { Player } from '../../../types';
 import type {
   InvitationListResponse,
   MatchInvitation,
@@ -31,6 +32,7 @@ const {
     isWrestler: true as boolean,
     playerId: 'me' as string | null,
     currentWrestler: 'My-Wrestler' as string | null,
+    profile: null as Pick<Player, 'discipline'> | null,
   },
   presenceState: {
     presenceEnabled: false as boolean,
@@ -47,6 +49,7 @@ const {
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string, options?: { count?: number; ago?: string }) => {
       if (options?.count != null) return `${key}:${options.count}`;
       if (options?.ago != null) return `${key}:${options.ago}`;
@@ -101,6 +104,7 @@ vi.mock('../../../services/api/stipulations.api', () => ({
 vi.mock('../FindMatchWidget.css', () => ({}));
 
 import FindMatchWidget from '../FindMatchWidget';
+import { ApiError } from '../../../services/api/apiClient';
 
 const futureIso = (): string => new Date(Date.now() + 60_000).toISOString();
 
@@ -139,6 +143,58 @@ describe('FindMatchWidget', () => {
     mockGetInvitations.mockResolvedValue(emptyInvitations);
     mockGetQueue.mockResolvedValue([]);
     mockGetStipulations.mockResolvedValue([]);
+  });
+
+  describe('while blocked from signing up', () => {
+    beforeEach(() => {
+      authState.profile = {
+        discipline: {
+          status: 'signup-blocked',
+          activeStrikeCount: 2,
+          activeStrikes: [],
+          cooldownEndsAt: new Date(Date.now() + 14 * 86_400_000).toISOString(),
+          signupBlockedUntil: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+          deactivatedAt: null,
+        },
+      };
+    });
+
+    afterEach(() => {
+      authState.profile = null;
+    });
+
+    it('turns off join, challenge and accept, keeps decline, and shows the end', async () => {
+      mockGetInvitations.mockResolvedValue({ incoming: [makeInvitation('inv-1')], outgoing: [] });
+      mockGetQueue.mockResolvedValue([makeQueueEntry('them', 'Them', 'Their Wrestler')]);
+      render(<MemoryRouter><FindMatchWidget /></MemoryRouter>);
+
+      expect(await screen.findByRole('button', { name: 'findMatch.widget.challenge' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'findMatch.widget.joinQueue' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'findMatch.invitations.accept' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'findMatch.invitations.decline' })).toBeEnabled();
+      expect(screen.getByRole('timer')).toBeInTheDocument();
+    });
+
+    it('still lets a player already in the queue leave it', async () => {
+      mockGetQueue.mockResolvedValue([makeQueueEntry('me', 'Me', 'My-Wrestler')]);
+      render(<MemoryRouter><FindMatchWidget /></MemoryRouter>);
+
+      expect(await screen.findByRole('button', { name: 'findMatch.widget.leaveQueue' })).toBeEnabled();
+    });
+  });
+
+  it('shows a refusal in place of the generic failure', async () => {
+    mockGetQueue.mockResolvedValue([]);
+    mockJoinQueue.mockRejectedValue(new ApiError('Translated refusal', 403, { code: 'SIGNUP_BLOCKED' }));
+    presenceState.presenceEnabled = true;
+    const user = userEvent.setup();
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    render(<MemoryRouter><FindMatchWidget /></MemoryRouter>);
+
+    await user.click(await screen.findByRole('button', { name: 'findMatch.widget.joinQueue' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Translated refusal');
+    consoleError.mockRestore();
   });
 
   it('renders nothing when not a wrestler', () => {

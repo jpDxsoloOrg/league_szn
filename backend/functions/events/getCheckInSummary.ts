@@ -2,6 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { badRequest, notFound, serverError, success, unauthorized } from '../../lib/response';
 import { getAuthContext } from '../../lib/auth';
+import { isDeactivated } from '../../lib/discipline';
 
 interface CheckInSummary {
   eventId: string;
@@ -26,7 +27,7 @@ export const handler = async (
       return badRequest('eventId is required');
     }
 
-    const { leagueOps: { events } } = getRepositories();
+    const { leagueOps: { events }, roster: { players } } = getRepositories();
 
     const eventItem = await events.findById(eventId);
     if (!eventItem) {
@@ -34,6 +35,11 @@ export const handler = async (
     }
 
     const checkIns = await events.listCheckIns(eventId);
+
+    // Same rule as getCheckIns, so the counts and the booking list agree.
+    const deactivatedIds = new Set(
+      (await players.list()).filter(isDeactivated).map((player) => player.playerId),
+    );
 
     const summary: CheckInSummary = {
       eventId,
@@ -44,6 +50,7 @@ export const handler = async (
     };
 
     for (const row of checkIns) {
+      if (deactivatedIds.has(row.playerId)) continue;
       if (row.status === 'available') {
         summary.available += 1;
       } else if (row.status === 'tentative') {

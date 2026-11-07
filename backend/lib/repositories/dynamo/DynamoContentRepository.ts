@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { dynamoDb, TableNames } from '../../dynamodb';
 import { NotFoundError } from '../errors';
 import { buildUpdateExpression } from './util';
+import { compareActiveAnnouncements } from '../ContentRepository';
 import type {
   ContentRepository,
   AnnouncementCreateInput,
@@ -61,7 +62,7 @@ function buildAnnouncementsMethods(): AnnouncementsCrud {
       const now = new Date().toISOString();
       const announcements = ((result.Items || []) as unknown as Announcement[])
         .filter((item) => !item.expiresAt || item.expiresAt > now)
-        .sort((a, b) => (b.priority ?? 1) - (a.priority ?? 1));
+        .sort(compareActiveAnnouncements);
 
       return announcements;
     },

@@ -40,6 +40,8 @@ Each row has an **Assigned Wrestler** and a **Division** dropdown, and both save
 
 In the **Manage** dialog, **Disable** stops the account signing in. **Enable** reverses it.
 
+A player deactivated by a third strike can't be enabled here, and an account whose player has active strikes can't be deleted. Reactivate the player or wait for the strikes to end first. See [Strikes](admin-strikes).
+
 An account must be disabled before **Delete** appears. Deleting is permanent and removes the login only. The player record stays, so use [Manage Players](admin-manage-players) if you want the player removed too.
 
 ## Sync Wrestler Roles

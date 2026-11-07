@@ -116,7 +116,7 @@ describe('players router', () => {
   it('PUT /players/me routes to updateMyProfile', async () => {
     mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'sub-1' }] });
     mockGet.mockResolvedValue({ Item: { playerId: 'p1' } });
-    mockUpdate.mockResolvedValue({});
+    mockUpdate.mockResolvedValue({ Attributes: { playerId: 'p1' } });
     const event = makeEvent({
       httpMethod: 'PUT',
       path: '/dev/players/me',

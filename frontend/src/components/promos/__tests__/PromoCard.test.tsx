@@ -18,6 +18,7 @@ vi.mock('../../../services/api', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string, fallback?: string) => {
       const t: Record<string, string> = {
         'promos.types.open-mic': 'Open Mic',
@@ -165,6 +166,39 @@ describe('PromoCard', () => {
       mockGetChallenges.mockResolvedValue([makeChallenge()]);
       renderCard(callOut());
       expect(await screen.findByText('Accept Challenge')).toBeInTheDocument();
+    });
+
+    const signedInBlocked = () => mockUseAuth.mockReturnValue({
+      isAuthenticated: true,
+      playerId: 'me',
+      profile: {
+        discipline: {
+          status: 'signup-blocked',
+          activeStrikeCount: 2,
+          activeStrikes: [],
+          cooldownEndsAt: new Date(Date.now() + 14 * 86400000).toISOString(),
+          signupBlockedUntil: new Date(Date.now() + 7 * 86400000).toISOString(),
+          deactivatedAt: null,
+        },
+      },
+    });
+
+    it('turns accept off for a player blocked from signing up, and shows the time left on the card', async () => {
+      signedInBlocked();
+      mockGetChallenges.mockResolvedValue([makeChallenge()]);
+      renderCard(callOut());
+      const accept = (await screen.findByText('Accept Challenge')).closest('button');
+      expect(accept).toBeDisabled();
+      expect(accept).not.toHaveAttribute('title');
+      expect(screen.getByRole('timer')).toBeInTheDocument();
+    });
+
+    it('shows no suspension time once there is nothing left to accept', async () => {
+      signedInBlocked();
+      mockGetChallenges.mockResolvedValue([makeChallenge({ status: 'accepted' })]);
+      renderCard(callOut());
+      expect(await screen.findByText('Challenge Accepted!')).toBeInTheDocument();
+      expect(screen.queryByRole('timer')).not.toBeInTheDocument();
     });
 
     it('shows accepted only for an accepted challenge', async () => {

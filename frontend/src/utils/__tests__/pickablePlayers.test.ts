@@ -11,6 +11,26 @@ const roster = [
 const ids = (players: { playerId: string }[]) => players.map((player) => player.playerId);
 
 describe('pickablePlayers', () => {
+  const disciplined = [
+    { playerId: 'gone', currentWrestler: 'Edge', discipline: { status: 'deactivated' as const } },
+    { playerId: 'blocked', currentWrestler: 'Christian', discipline: { status: 'signup-blocked' as const } },
+    { playerId: 'fine', currentWrestler: 'Kane' },
+  ];
+
+  it('drops a deactivated player but keeps a sign-up blocked one', () => {
+    expect(ids(pickablePlayers(disciplined))).toEqual(['blocked', 'fine']);
+  });
+
+  it('keeps a deactivated player already on the record, such as a tournament entrant', () => {
+    expect(ids(pickablePlayers(disciplined, ['gone']))).toEqual(['gone', 'blocked', 'fine']);
+  });
+
+  it('drops a tag team with a deactivated member unless that member is kept', () => {
+    const teams = [{ player1Id: 'gone', player2Id: 'fine' }];
+    expect(pickableTagTeams(teams, disciplined)).toEqual([]);
+    expect(pickableTagTeams(teams, disciplined, ['gone'])).toEqual(teams);
+  });
+
   it('drops every form of hidden player', () => {
     expect(ids(pickablePlayers(roster))).toEqual(['real']);
   });

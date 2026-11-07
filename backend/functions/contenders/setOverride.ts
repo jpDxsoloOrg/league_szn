@@ -4,6 +4,7 @@ import { created, badRequest, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { getAuthContext } from '../../lib/auth';
 import { isPlayerVisible, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
+import { bookingRefusal } from '../../lib/discipline';
 import { recalculateContenderRankings } from '../../lib/services/recalculateContenderRankings';
 
 interface SetOverrideBody {
@@ -85,6 +86,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (!player) {
       return badRequest('Player not found');
     }
+
+    const bookingBlocked = bookingRefusal(player);
+    if (bookingBlocked) return bookingBlocked;
 
     // A hidden player can't be ranked, so the override could never show
     if (!isPlayerVisible(player)) {

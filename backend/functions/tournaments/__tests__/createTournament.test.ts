@@ -3,16 +3,19 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // --- Mocks ---
 
-const { mockPut } = vi.hoisted(() => ({
+const { mockPut, mockGet } = vi.hoisted(() => ({
   mockPut: vi.fn(),
+  mockGet: vi.fn(),
 }));
 
 vi.mock('../../../lib/dynamodb', () => ({
   dynamoDb: {
     put: mockPut,
+    get: mockGet,
   },
   TableNames: {
     TOURNAMENTS: 'Tournaments',
+    PLAYERS: 'Players',
   },
 }));
 
@@ -48,7 +51,10 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
 // --- createTournament ---
 
 describe('createTournament', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGet.mockResolvedValue({});
+  });
 
   it('creates a single-elimination tournament with bracket and returns 201', async () => {
     mockPut.mockResolvedValue({});

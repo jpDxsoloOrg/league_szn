@@ -1,8 +1,8 @@
 // Shared utilities
-export { API_BASE_URL, AUTH_EXPIRED_EVENT, ApiError, getAuthToken, fetchWithAuth, isApiError } from './apiClient';
+export { API_BASE_URL, AUTH_EXPIRED_EVENT, SIGNUP_BLOCKED_EVENT, ApiError, getAuthToken, fetchWithAuth, isApiError } from './apiClient';
 
 // API modules
-export { playersApi } from './players.api';
+export { playersApi, disciplineApi } from './players.api';
 export { matchesApi } from './matches.api';
 export { championshipsApi } from './championships.api';
 export { tournamentsApi } from './tournaments.api';

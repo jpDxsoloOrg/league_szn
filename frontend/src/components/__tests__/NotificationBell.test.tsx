@@ -75,6 +75,7 @@ describe('NotificationBell source types', () => {
     ['rivalry', 'notifications.typeRivalry', '/rivalries/source-1'],
     ['storyline_request', 'notifications.typeStoryline', '/profile'],
     ['match_invitation', 'notifications.typeMatch', '/'],
+    ['discipline', 'notifications.typeDiscipline', '/profile'],
   ] as const)('labels and links a %s notification', async (sourceType, label, path) => {
     await openWith(notification({ sourceType }));
 

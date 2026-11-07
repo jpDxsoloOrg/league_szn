@@ -4,6 +4,7 @@ import { success, badRequest, notFound, forbidden, serverError } from '../../lib
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import type { EventCheckInStatus } from '../../lib/repositories/types';
+import { callerRefusal } from '../../lib/discipline';
 
 const VALID_STATUSES: ReadonlyArray<EventCheckInStatus> = ['available', 'tentative', 'unavailable'];
 
@@ -39,6 +40,12 @@ export const handler = async (
     const callerPlayer = await players.findByUserId(auth.sub);
     if (!callerPlayer) {
       return badRequest('No player profile linked to your account');
+    }
+
+    // Saying "unavailable" is not signing up, so it stays open.
+    if (status !== 'unavailable') {
+      const refusal = callerRefusal(callerPlayer);
+      if (refusal) return refusal;
     }
 
     const playerId = callerPlayer.playerId;

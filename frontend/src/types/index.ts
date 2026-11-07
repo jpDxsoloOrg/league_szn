@@ -40,6 +40,101 @@ export interface Player {
   recentForm?: ('W' | 'L' | 'D')[];
   /** Current consecutive result streak from most recent match */
   currentStreak?: { type: 'W' | 'L' | 'D'; count: number };
+  /** Sent only to staff and to the player themselves. */
+  discipline?: PlayerDisciplineSummary;
+}
+
+export type DisciplineStatus = 'clear' | 'warned' | 'signup-blocked' | 'cooldown' | 'deactivated';
+export type StrikeOutcome = 'warned' | 'signup-blocked' | 'deactivated';
+
+/** What the player and staff read. Issuer identity is left out on purpose. */
+export interface ActiveStrikeView {
+  strikeId: string;
+  issuedAt: string;
+  reason: string;
+}
+
+export interface PlayerDisciplineSummary {
+  status: DisciplineStatus;
+  activeStrikeCount: number;
+  /** Oldest first. */
+  activeStrikes: ActiveStrikeView[];
+  cooldownEndsAt: string | null;
+  /** Non-null only while status is 'signup-blocked'. */
+  signupBlockedUntil: string | null;
+  deactivatedAt: string | null;
+}
+
+export interface PlayerStrike {
+  strikeId: string;
+  issuedAt: string;
+  issuedBy: string;
+  issuedByName: string;
+  reason: string;
+  clearedAt?: string;
+  clearedBy?: string;
+  clearedByName?: string;
+  clearedReason?: string;
+  clearedKind?: 'removed' | 'reactivated';
+}
+
+export interface PlayerDeactivation {
+  deactivatedAt: string;
+  deactivatedBy: string;
+  deactivatedByName: string;
+  strikeId: string;
+  cognitoAlreadyDisabled?: boolean;
+  reactivatedAt?: string;
+  reactivatedBy?: string;
+  reactivatedByName?: string;
+  reactivationReason?: string;
+}
+
+/** What a deactivated player still holds. Nothing here is changed automatically. */
+export interface DisciplineHoldings {
+  titles: { championshipId: string; name: string }[];
+  matches: {
+    matchId: string;
+    date: string;
+    status: 'scheduled' | 'open-signups';
+    matchFormat?: string;
+    /** Names of the other side. Empty while the other spots are open. */
+    opponents: string[];
+    eventId?: string;
+    tournamentId?: string;
+  }[];
+  challenges: { challengeId: string; opponentName: string }[];
+  tournaments: { tournamentId: string; name: string; status: string }[];
+}
+
+/** GET /players/{playerId}/discipline. Staff only. */
+export interface PlayerDisciplineDetail {
+  playerId: string;
+  /** Send back as expectedVersion. */
+  version: number;
+  summary: PlayerDisciplineSummary;
+  /** Send back as expectedOutcome. Null while deactivated. */
+  nextStrikeOutcome: StrikeOutcome | null;
+  /** Full history, newest first. */
+  strikes: PlayerStrike[];
+  /** Newest first. */
+  deactivations: PlayerDeactivation[];
+  hasLinkedAccount: boolean;
+  /** Null on a Cognito error. */
+  isStaffAccount: boolean | null;
+  /** Null when unlinked or on a Cognito error. */
+  accountEnabled: boolean | null;
+  holdings: DisciplineHoldings;
+}
+
+export interface DisciplineActionResult {
+  playerId: string;
+  version: number;
+  summary: PlayerDisciplineSummary;
+  accountSync: 'ok' | 'failed' | 'not-linked' | 'not-needed';
+  softHoldsCleared: boolean;
+  /** Filled only when the action deactivated the player. */
+  holdings: DisciplineHoldings;
 }
 
 /**
@@ -426,7 +521,7 @@ export interface Video {
   updatedAt: string;
 }
 
-export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'transfer_reviewed' | 'match_invitation' | 'match_invitation_declined' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change';
+export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'transfer_reviewed' | 'match_invitation' | 'match_invitation_declined' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change' | 'strike_issued' | 'strike_removed' | 'account_reactivated';
 
 export interface AppNotification {
   notificationId: string;
@@ -434,7 +529,7 @@ export interface AppNotification {
   type: NotificationType;
   message: string;
   sourceId: string;
-  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'match_invitation' | 'match_invitation_declined' | 'rivalry' | 'storyline_request';
+  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'match_invitation' | 'match_invitation_declined' | 'rivalry' | 'storyline_request' | 'discipline';
   isRead: boolean;
   createdAt: string;
 }

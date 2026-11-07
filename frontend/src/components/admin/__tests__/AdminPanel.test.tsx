@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 // --- Hoisted mocks ---
@@ -29,7 +30,9 @@ vi.mock('react-router-dom', async () => {
 
 // Mock all child admin components to isolate AdminPanel logic
 vi.mock('../ManageTransfers', () => ({ default: () => <div data-testid="manage-transfers">ManageTransfers</div> }));
-vi.mock('../ManagePlayers', () => ({ default: () => <div data-testid="manage-players">ManagePlayers</div> }));
+vi.mock('../ManagePlayers', () => ({
+  default: () => <div data-testid="manage-players">ManagePlayers<input aria-label="Draft" /></div>,
+}));
 vi.mock('../ManageDivisions', () => ({ default: () => <div data-testid="manage-divisions">ManageDivisions</div> }));
 vi.mock('../ScheduleMatch', () => ({ default: () => <div data-testid="schedule-match">ScheduleMatch</div> }));
 vi.mock('../ManageChampionships', () => ({ default: () => <div data-testid="manage-championships">ManageChampionships</div> }));
@@ -78,7 +81,7 @@ describe('AdminPanel', () => {
     expect(screen.queryByTestId('manage-players')).not.toBeInTheDocument();
   });
 
-  it('defaults to players tab when no tab parameter', async () => {
+  it('opens the players tab at its own URL when no tab parameter', () => {
     mockUseAuth.mockReturnValue({
       isAuthenticated: true,
       isAdminOrModerator: true,
@@ -86,7 +89,63 @@ describe('AdminPanel', () => {
     });
 
     renderAdminPanel('/admin');
-    expect(await screen.findByTestId('manage-players')).toBeInTheDocument();
+    expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/admin/players');
+  });
+
+  describe('crossing the mobile breakpoint', () => {
+    const originalMatchMedia = window.matchMedia;
+    let listeners: Set<(event: MediaQueryListEvent) => void>;
+    let mobile: boolean;
+
+    const setMobile = (next: boolean) => {
+      mobile = next;
+      act(() => listeners.forEach((listener) => listener({ matches: next } as MediaQueryListEvent)));
+    };
+
+    beforeEach(() => {
+      listeners = new Set();
+      mobile = false;
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        get matches() { return mobile; },
+        media: query,
+        addEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => listeners.add(listener),
+        removeEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => listeners.delete(listener),
+      }));
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: true });
+    });
+
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    it('keeps the page mounted, so what was typed survives both ways', async () => {
+      const user = userEvent.setup();
+      const { container } = renderAdminPanel('/admin/players');
+      const draft = await screen.findByLabelText('Draft');
+      await user.type(draft, 'Missed the show');
+
+      setMobile(true);
+
+      expect(screen.getByLabelText('Draft')).toBe(draft);
+      expect(draft).toHaveValue('Missed the show');
+      expect(container.querySelector('.admin-layout')).toBeNull();
+      expect(container.querySelector('.admin-help')).toBeNull();
+
+      setMobile(false);
+
+      expect(screen.getByLabelText('Draft')).toBe(draft);
+      expect(container.querySelector('.admin-layout')).not.toBeNull();
+      expect(container.querySelector('.admin-help')).not.toBeNull();
+    });
+
+    it('still shows the hub on a phone at the admin root', () => {
+      mobile = true;
+
+      renderAdminPanel('/admin');
+
+      expect(screen.queryByTestId('navigate')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('manage-players')).not.toBeInTheDocument();
+    });
   });
 
   it('sends the old challenges tab to the call-outs view of promos', () => {

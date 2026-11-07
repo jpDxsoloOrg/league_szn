@@ -11,6 +11,8 @@ interface InvitationCardProps {
   onAccept?: (invitationId: string) => Promise<void>;
   onDecline?: (invitationId: string) => Promise<void>;
   onExpire?: (invitationId: string) => void;
+  /** Accept is off while the player is blocked from signing up. Decline stays on. */
+  acceptDisabled?: boolean;
 }
 
 const computeSecondsRemaining = (expiresAt: string): number => {
@@ -24,6 +26,7 @@ export default function InvitationCard({
   onAccept,
   onDecline,
   onExpire,
+  acceptDisabled = false,
 }: InvitationCardProps) {
   const { t } = useTranslation();
   const [secondsRemaining, setSecondsRemaining] = useState<number>(() =>
@@ -91,7 +94,7 @@ export default function InvitationCard({
       </div>
       {direction === 'incoming' ? (
         <div className="match-row__actions">
-          <Button size="sm" onClick={handleAccept} disabled={submitting || expired}>
+          <Button size="sm" onClick={handleAccept} disabled={submitting || expired || acceptDisabled}>
             {t('findMatch.invitations.accept')}
           </Button>
           <Button size="sm" variant="secondary" onClick={handleDecline} disabled={submitting || expired}>

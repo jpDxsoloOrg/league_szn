@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
@@ -10,10 +11,12 @@ export interface ConfirmModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   busy?: boolean;
+  /** Detail shown under the message. */
+  children?: ReactNode;
 }
 
 /** Yes or no question before a destructive action. */
-export default function ConfirmModal({ open, title, message, confirmLabel, onConfirm, onCancel, busy = false }: ConfirmModalProps) {
+export default function ConfirmModal({ open, title, message, confirmLabel, onConfirm, onCancel, busy = false, children }: ConfirmModalProps) {
   const { t } = useTranslation();
 
   return (
@@ -30,6 +33,7 @@ export default function ConfirmModal({ open, title, message, confirmLabel, onCon
       )}
     >
       <p>{message}</p>
+      {children}
     </Modal>
   );
 }

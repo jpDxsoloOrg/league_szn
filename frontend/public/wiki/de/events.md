@@ -32,6 +32,8 @@ Angemeldete Wrestler sehen auf der Event-Seite **Bist du dabei?**. Wähle **Verf
 
 Manche Matches haben offene Plätze. Angemeldete Wrestler können einen Platz belegen und wieder freigeben, pro Event ist ein Platz möglich.
 
+Solange dich ein [Strike](strikes-and-suspensions) für Anmeldungen sperrt, sind **Verfügbar**, **Vielleicht** und das Belegen eines Platzes aus, und die Seite zeigt, wann die Sperre endet. **Nicht verfügbar** bleibt möglich.
+
 ## Matches
 
 Der Tab **Matches** listet alle Matches. Suche nach Namen, wähle Alle, Abgeschlossen oder Geplant, oder nutze **Filter** für Spieler, Kampftyp, Stipulation, Meisterschaft, Saison und Datum. **Details** öffnet ein Match. Dort kannst du es nach dem Ende [bewerten](rate-matches). Die Liste zeigt jeweils 50 Matches, am Ende steht **Mehr anzeigen**.

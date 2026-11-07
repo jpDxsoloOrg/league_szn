@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories, NotFoundError } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
+import { championIdsOf, firstBookingRefusal, newlyAddedIds } from '../../lib/disciplineGates';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -27,6 +28,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const { competition: { championships } } = getRepositories();
+
+    if (body.currentChampion !== undefined) {
+      const existing = await championships.findById(championshipId);
+      if (!existing) return notFound('Championship not found');
+
+      const addedIds = newlyAddedIds(championIdsOf(body.currentChampion), championIdsOf(existing.currentChampion));
+      const { roster: { players } } = getRepositories();
+      const addedPlayers = await Promise.all(addedIds.map((id) => players.findById(id)));
+      const bookingBlocked = firstBookingRefusal(addedPlayers);
+      if (bookingBlocked) return bookingBlocked;
+    }
+
     const updated = await championships.update(championshipId, patch);
 
     return success(updated);

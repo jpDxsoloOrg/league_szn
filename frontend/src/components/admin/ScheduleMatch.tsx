@@ -15,6 +15,7 @@ import type { LeagueEvent, MatchDesignation } from '../../types/event';
 import type { ChallengeWithPlayers, TagTeamChallengeInfo } from '../../types/challenge';
 import type { PromoWithContext } from '../../types/promo';
 import { findChallengeToBook } from '../challenges/challengeUtils';
+import { formatCalendarDate } from '../../utils/dateUtils';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
 import { pickablePlayers, pickableTagTeams } from '../../utils/pickablePlayers';
 import { nameOrUnnamed } from '../../utils/playerName';
@@ -23,6 +24,7 @@ import Button from '../ui/Button';
 import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import AdminNotice from './AdminNotice';
+import { BookingDisciplineBadge } from './DisciplineBadge';
 import SourceLoadNotice from './SourceLoadNotice';
 import { settleSources } from './loadSources';
 import './adminRoster.css';
@@ -501,8 +503,18 @@ export default function ScheduleMatch() {
 
   // A challenge or promo can pre-fill someone who has since become hidden.
   const selectedPlayerIds = [...formData.participants, ...teams.flat(), ...slotRowPlayerIds];
-  const bookablePlayers = pickablePlayers(players, selectedPlayerIds);
-  const bookableTagTeams = pickableTagTeams(activeTagTeams, players, selectedPlayerIds);
+  // A deactivated entrant stays bookable, so a tournament can still finish.
+  const tournamentEntrantIds = tournaments.find(
+    (tournament) => tournament.tournamentId === formData.tournamentId,
+  )?.participants ?? [];
+  const keptPlayerIds = [...selectedPlayerIds, ...tournamentEntrantIds];
+  const bookablePlayers = pickablePlayers(players, keptPlayerIds);
+  const bookableTagTeams = pickableTagTeams(activeTagTeams, players, keptPlayerIds);
+  const selectedPlayers = players.filter((player) => selectedPlayerIds.includes(player.playerId));
+  const signupBlockedPicks = selectedPlayers.filter((player) => player.discipline?.status === 'signup-blocked');
+  const deactivatedEntrantPicks = selectedPlayers.filter(
+    (player) => player.discipline?.status === 'deactivated' && tournamentEntrantIds.includes(player.playerId),
+  );
 
   const filteredPlayers = divisionFilter === 'all'
     ? bookablePlayers
@@ -612,6 +624,16 @@ export default function ScheduleMatch() {
       {error && <AdminNotice tone="error">{error}</AdminNotice>}
       {success && <AdminNotice tone="success">{success}</AdminNotice>}
       {linkedTitleGone && <AdminNotice tone="warning">{t('scheduleMatch.linkedTitleGone')}</AdminNotice>}
+      {signupBlockedPicks.length > 0 && (
+        <AdminNotice tone="warning">
+          {t('discipline.admin.bookingWarning', { names: signupBlockedPicks.map((player) => player.name).join(', ') })}
+        </AdminNotice>
+      )}
+      {deactivatedEntrantPicks.length > 0 && (
+        <AdminNotice tone="warning">
+          {t('discipline.admin.tournamentForfeitWarning', { names: deactivatedEntrantPicks.map((player) => player.name).join(', ') })}
+        </AdminNotice>
+      )}
 
       <form onSubmit={handleSubmit} className="match-form am-form">
         <fieldset className="match-form__section">
@@ -725,7 +747,7 @@ export default function ScheduleMatch() {
                     { value: '', label: t('scheduleMatch.noEvent', 'No Event (Standalone Match)') },
                     ...events.map(ev => ({
                       value: ev.eventId,
-                      label: `${ev.name} (${new Date(ev.date).toLocaleDateString()})`,
+                      label: `${ev.name} (${formatCalendarDate(ev.date)})`,
                     })),
                   ]}
                 />
@@ -888,6 +910,7 @@ export default function ScheduleMatch() {
                           team.map(playerId => (
                             <span key={playerId} className="team-member-tag am-chip">
                               {getPlayerName(playerId)}
+                              <BookingDisciplineBadge discipline={players.find((player) => player.playerId === playerId)?.discipline} />
                               <button
                                 type="button"
                                 className="remove-member-btn am-chip-remove"
@@ -930,6 +953,7 @@ export default function ScheduleMatch() {
                                 {!isNeedsWrestler(player.currentWrestler) && (
                                   <span className="participant-wrestler">{player.currentWrestler}</span>
                                 )}
+                                <BookingDisciplineBadge discipline={player.discipline} />
                                 {isInOtherTeam && (
                                   <span className="other-team-label">
                                     {t('scheduleMatch.tagTeam.team', 'Team')} {playerTeamIndex + 1}
@@ -1034,6 +1058,7 @@ export default function ScheduleMatch() {
                           {player && hidden && displayName(player)}
                           {!player && playerId}
                         </span>
+                        <BookingDisciplineBadge discipline={player?.discipline} />
                         <button
                           type="button"
                           className="selected-participant-remove"

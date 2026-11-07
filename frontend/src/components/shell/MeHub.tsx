@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, EyeOff, Globe, LogOut } from 'lucide-react';
+import DisciplineNotice from '../discipline/DisciplineNotice';
 import Button from '../ui/Button';
 import PageHeader from '../ui/PageHeader';
 import LanguageSwitcher from '../LanguageSwitcher';
@@ -30,13 +32,18 @@ function HubRow({ to, icon, label, emphasis = false }: { to: string; icon: React
 export default function MeHub() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { signOut, playerId, currentWrestler } = useAuth();
+  const { signOut, playerId, currentWrestler, profile, refreshProfile } = useAuth();
   const navContext = useNavContext();
   useDocumentTitle(t('nav.sections.me'));
 
   const meSection = NAV_SECTIONS.find((section) => section.key === 'me');
   const tabs = meSection ? getVisibleTabs(meSection, navContext) : [];
   const isHidden = Boolean(playerId) && isNeedsWrestler(currentWrestler);
+
+  // The session's copy can predate a strike, and this panel is where it must show.
+  useEffect(() => {
+    if (playerId) void refreshProfile();
+  }, [playerId, refreshProfile]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -64,6 +71,8 @@ export default function MeHub() {
           </div>
         </section>
       )}
+
+      <DisciplineNotice discipline={profile?.discipline} />
 
       {navContext.isAdminOrModerator && (
         <div className="me-hub__group">

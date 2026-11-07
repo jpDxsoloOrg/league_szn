@@ -4,6 +4,7 @@ import { success, badRequest, forbidden, notFound, serverError } from '../../lib
 import { getAuthContext, hasRole } from '../../lib/auth';
 import type { EventCheckInStatus } from '../../lib/repositories/types';
 import { isNeedsWrestler } from '../../lib/needsWrestler';
+import { isDeactivated } from '../../lib/discipline';
 
 type RosterBucket = EventCheckInStatus | 'noResponse';
 
@@ -63,6 +64,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     for (const player of playerItems) {
       if (!player.playerId) continue;
+      // Staff book from this list. The row is kept, so it returns on reactivation.
+      if (isDeactivated(player)) continue;
       // List players with a wrestler assigned (not Fantasy-only users), plus
       // anyone who answered: a hidden player's real check-in still counts.
       const status = statusByPlayerId.get(player.playerId);

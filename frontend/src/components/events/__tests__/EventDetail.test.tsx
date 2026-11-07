@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import type { PlayerDisciplineSummary } from '../../../types';
 
 const { api, authState } = vi.hoisted(() => ({
   api: {
@@ -17,7 +18,12 @@ const { api, authState } = vi.hoisted(() => ({
     getBookingSummary: vi.fn(),
     getTagTeams: vi.fn(),
   },
-  authState: { isAdminOrModerator: true, isAuthenticated: true, isWrestler: false },
+  authState: {
+    isAdminOrModerator: true,
+    isAuthenticated: true,
+    isWrestler: false,
+    profile: null as { discipline: PlayerDisciplineSummary } | null,
+  },
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -42,6 +48,7 @@ vi.mock('../../../contexts/AuthContext', () => ({
     isAdminOrModerator: authState.isAdminOrModerator,
     isAuthenticated: authState.isAuthenticated,
     isWrestler: authState.isWrestler,
+    profile: authState.profile,
     playerId: null,
     currentWrestler: null,
     alternateWrestler: null,
@@ -50,6 +57,7 @@ vi.mock('../../../contexts/AuthContext', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string, fallback?: string | { defaultValue?: string; match?: string }) => {
       if (typeof fallback === 'string') return fallback;
       return (fallback?.defaultValue ?? key).replace('{{match}}', fallback?.match ?? '');
@@ -172,6 +180,7 @@ describe('EventDetail', () => {
     authState.isAdminOrModerator = true;
     authState.isAuthenticated = true;
     authState.isWrestler = false;
+    authState.profile = null;
     api.getEvent.mockResolvedValue(eventWithMatch);
     api.getScheduled.mockResolvedValue([scheduledMatch]);
     api.getRoster.mockResolvedValue([
@@ -235,6 +244,32 @@ describe('EventDetail', () => {
     await user.click(await screen.findByRole('button', { name: 'Claim spot' }));
 
     expect(await screen.findByTestId('return-path')).toHaveTextContent('/events/e1');
+  });
+
+  it('turns slot claims off and shows when the block lifts for a blocked player', async () => {
+    authState.isAdminOrModerator = false;
+    authState.profile = {
+      discipline: {
+        status: 'signup-blocked',
+        activeStrikeCount: 2,
+        activeStrikes: [],
+        cooldownEndsAt: new Date(Date.now() + 14 * 86_400_000).toISOString(),
+        signupBlockedUntil: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+        deactivatedAt: null,
+      },
+    };
+    const event = eventWithCard([['m1', 'opener']]);
+    api.getEvent.mockResolvedValue({
+      ...event,
+      enrichedMatches: event.enrichedMatches.map((entry) => ({
+        ...entry,
+        matchData: { ...entry.matchData, status: 'open-signups', slots: [{ slotId: 's1', position: 1 }] },
+      })),
+    });
+    renderDetail();
+
+    expect(await screen.findByRole('button', { name: 'Claim spot' })).toBeDisabled();
+    expect(screen.getByRole('timer')).toBeInTheDocument();
   });
 
   describe('a card whose match is gone', () => {

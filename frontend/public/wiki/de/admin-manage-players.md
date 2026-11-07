@@ -15,6 +15,10 @@ So holst du einen ausgeblendeten Spieler zurück:
 - Der Spieler gibt selbst einen Wrestler-Namen ein. Die Seite fordert ihn nach der Anmeldung dazu auf, und er erscheint, sobald er speichert.
 - Oder das Team weist einen Wrestler zu, hier über **Bearbeiten** oder in der Spalte **Zugewiesener Wrestler** der [Benutzerverwaltung](admin-user-management).
 
+## Strikes
+
+Die Schaltfläche **Disziplin** in jeder Zeile öffnet den Strike-Datensatz des Spielers, und die Statusspalte zeigt ein Abzeichen, solange er aktive Strikes hat. Deaktivierte Spieler fehlen in dieser Tabelle, bis du **Ausgeblendete anzeigen** ankreuzt. Siehe [Strikes](admin-strikes).
+
 ## Spieler bearbeiten
 
 1. Suche den Spieler in der Tabelle
@@ -30,7 +34,7 @@ Die Wrestler-Listen stammen aus **Wrestler verwalten**. Fehlt ein Wrestler, lege
 2. Klicke auf **Löschen**
 3. Bestätige die Aktion im Dialog
 
-**Hinweis:** Einen aktuellen Champion kannst du nicht löschen. Setze den Titel zuerst unter **Meisterschaften** vakant oder lass ihn den Titel in einem Titelkampf verlieren.
+**Hinweis:** Einen aktuellen Champion kannst du nicht löschen. Setze den Titel zuerst unter **Meisterschaften** vakant oder lass ihn den Titel in einem Titelkampf verlieren. Auch ein Spieler mit aktiven Strikes oder deaktiviertem Konto lässt sich nicht löschen. Siehe [Strikes](admin-strikes).
 
 Beim Löschen verlässt der Spieler das Roster sowie seine Faktion und sein Tag Team, und seine Wrestler werden wieder frei. Ein Tag Team, in dem er war, wird aufgelöst. Seine Einträge in den Saisontabellen werden entfernt.
 

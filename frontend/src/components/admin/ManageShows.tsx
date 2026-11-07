@@ -5,6 +5,7 @@ import { Plus, Tv } from 'lucide-react';
 import { showsApi, companiesApi, imagesApi, isApiError } from '../../services/api';
 import type { Show, Company, DayOfWeek } from '../../types';
 import { FILE_UPLOAD_LIMITS } from '../../constants';
+import { formatCalendarDate } from '../../utils/dateUtils';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import DataTable from '../ui/DataTable';
@@ -276,7 +277,7 @@ export default function ManageShows() {
               <span className="ac-badges">
                 <Badge tone="violet">{getScheduleLabel(show.schedule)}</Badge>
                 {show.dayOfWeek && show.schedule === 'weekly' && <span>{t(`shows.${show.dayOfWeek}`)}</span>}
-                {show.ppvDate && show.schedule === 'ppv' && <span>{new Date(show.ppvDate).toLocaleDateString()}</span>}
+                {show.ppvDate && show.schedule === 'ppv' && <span>{formatCalendarDate(show.ppvDate)}</span>}
               </span>
             ),
           },

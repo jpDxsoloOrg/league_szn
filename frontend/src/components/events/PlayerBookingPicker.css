@@ -39,6 +39,12 @@
   color: var(--color-text-muted);
 }
 
+.booking-picker-trigger .ui-badge {
+  flex: none;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
 .booking-picker-caret {
   flex: none;
   color: var(--color-text-muted);
@@ -115,10 +121,15 @@
   color: var(--color-text-secondary);
 }
 
+/* The basis sends a badge to its own line on a phone, rather than squeezing the name. */
 .booking-picker-option-text {
-  flex: 1;
+  flex: 1 1 10rem;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.booking-picker-option .ui-badge {
+  flex: none;
 }
 
 .booking-picker-option--booked .booking-picker-option-text {

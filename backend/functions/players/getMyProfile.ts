@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, notFound, serverError } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
+import { toOwnPlayer } from '../../lib/publicPlayer';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Wrestler');
@@ -45,7 +46,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
 
     return success({
-      ...player,
+      ...toOwnPlayer(player),
       seasonRecords,
     });
   } catch (err) {

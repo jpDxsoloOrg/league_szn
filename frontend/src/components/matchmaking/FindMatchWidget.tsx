@@ -3,10 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePresence } from '../../contexts/PresenceContext';
+import { useSignupBlock } from '../../hooks/useSignupBlock';
 import { matchmakingApi } from '../../services/api/matchmaking.api';
 import { stipulationsApi } from '../../services/api/stipulations.api';
 import type { MatchInvitation, QueueEntry } from '../../types/matchmaking';
+import { refusalOr } from '../../utils/discipline';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
+import SuspensionNotice from '../discipline/SuspensionNotice';
 import Avatar from '../ui/Avatar';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
@@ -35,6 +38,7 @@ const FindMatchWidget: React.FC = () => {
   const navigate = useNavigate();
   const { isWrestler, playerId, currentWrestler } = useAuth();
   const { presenceEnabled, enablePresence } = usePresence();
+  const signupBlock = useSignupBlock();
 
   const [queue, setQueue] = useState<QueueEntry[]>([]);
   const [stipulationNameById, setStipulationNameById] = useState<Map<string, string>>(
@@ -47,7 +51,7 @@ const FindMatchWidget: React.FC = () => {
   const [joiningQueue, setJoiningQueue] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionFailed, setActionFailed] = useState<boolean>(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Tick state to refresh "joined Xm ago" timestamps without refetching.
   const [, setNowTick] = useState<number>(0);
@@ -117,7 +121,7 @@ const FindMatchWidget: React.FC = () => {
     async (targetId: string): Promise<void> => {
       if (challengingId) return;
       setChallengingId(targetId);
-      setActionFailed(false);
+      setActionError(null);
       try {
         await matchmakingApi.createInvitation(targetId, {});
         setInvitedIds((prev) => {
@@ -127,19 +131,19 @@ const FindMatchWidget: React.FC = () => {
         });
       } catch (err) {
         console.error('[FindMatchWidget] challenge failed', err);
-        setActionFailed(true);
+        setActionError(refusalOr(err, t('me.matchmaking.actionFailed')));
       } finally {
         setChallengingId(null);
       }
     },
-    [challengingId]
+    [challengingId, t]
   );
 
   const handleAcceptInvitation = useCallback(
     async (invitationId: string): Promise<void> => {
       if (respondingId) return;
       setRespondingId(invitationId);
-      setActionFailed(false);
+      setActionError(null);
       try {
         const result = await matchmakingApi.acceptInvitation(invitationId);
         setIncomingInvitations((prev) =>
@@ -148,19 +152,19 @@ const FindMatchWidget: React.FC = () => {
         navigate('/matches', { state: { matchId: result.matchId } });
       } catch (err) {
         console.error('[FindMatchWidget] acceptInvitation failed', err);
-        setActionFailed(true);
+        setActionError(refusalOr(err, t('me.matchmaking.actionFailed')));
       } finally {
         setRespondingId(null);
       }
     },
-    [respondingId, navigate]
+    [respondingId, navigate, t]
   );
 
   const handleDeclineInvitation = useCallback(
     async (invitationId: string): Promise<void> => {
       if (respondingId) return;
       setRespondingId(invitationId);
-      setActionFailed(false);
+      setActionError(null);
       try {
         await matchmakingApi.declineInvitation(invitationId);
         setIncomingInvitations((prev) =>
@@ -168,12 +172,12 @@ const FindMatchWidget: React.FC = () => {
         );
       } catch (err) {
         console.error('[FindMatchWidget] declineInvitation failed', err);
-        setActionFailed(true);
+        setActionError(refusalOr(err, t('me.matchmaking.actionFailed')));
       } finally {
         setRespondingId(null);
       }
     },
-    [respondingId]
+    [respondingId, t]
   );
 
   const isSelfInQueue = useMemo(
@@ -184,7 +188,7 @@ const FindMatchWidget: React.FC = () => {
   const handleJoinOrLeaveQueue = useCallback(async (): Promise<void> => {
     if (joiningQueue) return;
     setJoiningQueue(true);
-    setActionFailed(false);
+    setActionError(null);
     try {
       if (isSelfInQueue) {
         await matchmakingApi.leaveQueue();
@@ -197,11 +201,11 @@ const FindMatchWidget: React.FC = () => {
       await fetchData();
     } catch (err) {
       console.error('[FindMatchWidget] join/leave queue failed', err);
-      setActionFailed(true);
+      setActionError(refusalOr(err, t('me.matchmaking.actionFailed')));
     } finally {
       setJoiningQueue(false);
     }
-  }, [joiningQueue, isSelfInQueue, presenceEnabled, enablePresence, fetchData]);
+  }, [joiningQueue, isSelfInQueue, presenceEnabled, enablePresence, fetchData, t]);
 
   // Sort queue entries with self on top so the user sees themselves immediately.
   const sortedQueue = useMemo(() => {
@@ -235,9 +239,9 @@ const FindMatchWidget: React.FC = () => {
         </Badge>
       </header>
 
-      {actionFailed && (
-        <p className="me-alert me-alert--error" role="alert">{t('me.matchmaking.actionFailed')}</p>
-      )}
+      {signupBlock.until && <SuspensionNotice until={signupBlock.until} />}
+
+      {actionError && <p className="me-alert me-alert--error" role="alert">{actionError}</p>}
 
       {incomingInvitations.length > 0 && (
         <>
@@ -258,7 +262,7 @@ const FindMatchWidget: React.FC = () => {
                   <div className="fm-widget__actions">
                     <Button
                       size="sm"
-                      disabled={responding}
+                      disabled={responding || signupBlock.blocked}
                       onClick={() => {
                         void handleAcceptInvitation(inv.invitationId);
                       }}
@@ -335,7 +339,7 @@ const FindMatchWidget: React.FC = () => {
                     onClick={() => {
                       void handleChallenge(entry.playerId);
                     }}
-                    disabled={invited || sending}
+                    disabled={invited || sending || signupBlock.blocked}
                   >
                     {invited
                       ? t('findMatch.widget.challenged')
@@ -356,7 +360,7 @@ const FindMatchWidget: React.FC = () => {
         onClick={() => {
           void handleJoinOrLeaveQueue();
         }}
-        disabled={joiningQueue}
+        disabled={joiningQueue || (signupBlock.blocked && !isSelfInQueue)}
       >
         {isSelfInQueue ? t('findMatch.widget.leaveQueue') : t('findMatch.widget.joinQueue')}
       </Button>

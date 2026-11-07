@@ -4,10 +4,14 @@ import { handler as updatePlayerHandler } from './updatePlayer';
 import { handler as deletePlayerHandler } from './deletePlayer';
 import { handler as getMyProfileHandler } from './getMyProfile';
 import { handler as updateMyProfileHandler } from './updateMyProfile';
-import { createRouter, type RouteConfig, STAFF } from '../../lib/router';
+import { ADMIN_ONLY, createRouter, type RouteConfig, STAFF } from '../../lib/router';
 import { handler as getPlayerHandler } from './getPlayer';
 import { handler as getBookingSummaryHandler } from './getBookingSummary';
 import { handler as getPlayerStatisticsHandler } from './getPlayerStatistics';
+import { handler as getPlayerDisciplineHandler } from './getPlayerDiscipline';
+import { handler as issueStrikeHandler } from './issueStrike';
+import { handler as removeStrikeHandler } from './removeStrike';
+import { handler as reactivatePlayerHandler } from './reactivatePlayer';
 
 
 /**
@@ -70,6 +74,30 @@ export const routes: ReadonlyArray<RouteConfig> = [
     method: 'DELETE',
     handler: deletePlayerHandler,
     access: STAFF,
+  },
+  {
+    resource: '/players/{playerId}/discipline',
+    method: 'GET',
+    handler: getPlayerDisciplineHandler,
+    access: STAFF,
+  },
+  {
+    resource: '/players/{playerId}/strikes',
+    method: 'POST',
+    handler: issueStrikeHandler,
+    access: ADMIN_ONLY,
+  },
+  {
+    resource: '/players/{playerId}/strikes/{strikeId}/remove',
+    method: 'POST',
+    handler: removeStrikeHandler,
+    access: ADMIN_ONLY,
+  },
+  {
+    resource: '/players/{playerId}/reactivate',
+    method: 'POST',
+    handler: reactivatePlayerHandler,
+    access: ADMIN_ONLY,
   },
 ];
 export const handler = createRouter(routes);

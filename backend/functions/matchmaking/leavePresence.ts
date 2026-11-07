@@ -3,7 +3,11 @@ import { getRepositories } from '../../lib/repositories';
 import { noContent, badRequest, forbidden, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 
-async function expirePendingInvitations(
+/**
+ * Expires only what is still pending when the write lands. An invitation that
+ * moved on in between, such as a racing accept, is left as it is.
+ */
+export async function expirePendingInvitations(
   direction: 'to' | 'from',
   playerId: string
 ): Promise<void> {
@@ -19,12 +23,14 @@ async function expirePendingInvitations(
   const updatedAt = new Date().toISOString();
 
   await Promise.all(
-    pending.map((item) =>
-      matchmaking.updateInvitation(item.invitationId, {
-        status: 'expired',
-        updatedAt,
-      })
-    )
+    pending.map(async (item) => {
+      try {
+        await matchmaking.updateInvitation(item.invitationId, { status: 'expired', updatedAt }, 'pending');
+      } catch (err) {
+        if (err instanceof Error && err.name === 'ConditionalCheckFailedException') return;
+        throw err;
+      }
+    })
   );
 }
 

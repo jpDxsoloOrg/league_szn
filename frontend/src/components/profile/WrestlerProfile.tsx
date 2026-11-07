@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { WRESTLER_NAME_ENTRY_MODE } from '../../config/wrestlerNameEntry';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
+import DisciplineNotice from '../discipline/DisciplineNotice';
 import EmbeddedPlayerStats from '../statistics/EmbeddedPlayerStats';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
@@ -155,6 +156,8 @@ export default function WrestlerProfile() {
           <Button onClick={startEditing}>{t('me.setup.enterName')}</Button>
         </div>
       )}
+
+      <DisciplineNotice discipline={player.discipline} />
 
       <ProfileHero
         player={player}

@@ -1,4 +1,10 @@
-import type { Player, PlayerBookingInfo } from '../../types';
+import type {
+  DisciplineActionResult,
+  Player,
+  PlayerBookingInfo,
+  PlayerDisciplineDetail,
+  StrikeOutcome,
+} from '../../types';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
 /** Public name lookup row. `currentWrestler` is null for a player with no wrestler. */
@@ -6,6 +12,8 @@ export interface PlayerDirectoryEntry {
   playerId: string;
   name: string;
   currentWrestler: string | null;
+  /** Kept in the directory so history resolves, but the profile is gone. */
+  deactivated?: true;
 }
 
 /** Staff edit of a player. The clear flags empty a slot, including one held by name alone. */
@@ -57,6 +65,47 @@ export const playersApi = {
   delete: async (playerId: string): Promise<void> => {
     return fetchWithAuth(`${API_BASE_URL}/players/${playerId}`, {
       method: 'DELETE',
+    });
+  },
+};
+
+export const disciplineApi = {
+  /** Staff only. */
+  get: async (playerId: string, signal?: AbortSignal): Promise<PlayerDisciplineDetail> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/${playerId}/discipline`, {}, signal);
+  },
+
+  /** Admin only. `expectedVersion` and `expectedOutcome` are what the Admin was shown. */
+  issueStrike: async (
+    playerId: string,
+    body: { reason: string; expectedVersion: number; expectedOutcome: StrikeOutcome },
+  ): Promise<DisciplineActionResult> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/${playerId}/strikes`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
+
+  /** Admin only. */
+  removeStrike: async (
+    playerId: string,
+    strikeId: string,
+    body: { reason: string; expectedVersion: number },
+  ): Promise<DisciplineActionResult> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/${playerId}/strikes/${strikeId}/remove`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
+
+  /** Admin only. */
+  reactivate: async (
+    playerId: string,
+    body: { reason: string; expectedVersion: number; restorePriorStrikes?: boolean },
+  ): Promise<DisciplineActionResult> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/${playerId}/reactivate`, {
+      method: 'POST',
+      body: JSON.stringify(body),
     });
   },
 };

@@ -2,10 +2,11 @@ import { APIGatewayProxyEvent, APIGatewayProxyHandler } from 'aws-lambda';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuidv4 } from 'uuid';
-import { success, badRequest, forbidden, serverError } from '../../lib/response';
+import { success, badRequest, forbidden, serverError, unauthorized } from '../../lib/response';
 import { getAuthContext, hasRole, requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { getRepositories } from '../../lib/repositories';
+import { isCallerDeactivated } from '../../lib/accountStatus';
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || 'us-east-1',
@@ -54,6 +55,13 @@ async function canUploadToVideosFolder(event: APIGatewayProxyEvent): Promise<boo
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
+  // This is the one gateway-authorized handler outside the router's dispatch,
+  // so it makes the same check, with the same 401.
+  const { sub } = getAuthContext(event);
+  if (process.env.IS_OFFLINE !== 'true' && sub && await isCallerDeactivated(event, sub)) {
+    return unauthorized();
+  }
+
   const denied = requireRole(event, 'Wrestler');
   if (denied) return denied;
 
