@@ -13,9 +13,9 @@ import type { BadgeTone } from '../ui/Badge';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import ChallengeStatusBadge from '../challenges/ChallengeStatusBadge';
+import SuspensionNotice from '../discipline/SuspensionNotice';
 import { findCallOutChallenge, getDisplayStatus } from '../challenges/challengeUtils';
 import { useSignupBlock } from '../../hooks/useSignupBlock';
-import { formatInstant } from '../../utils/dateUtils';
 import { refusalOr } from '../../utils/discipline';
 import PromoReactions from './PromoReactions';
 import './PromoCard.css';
@@ -57,7 +57,7 @@ function highlightMentions(content: string): (string | JSX.Element)[] {
 const TRUNCATE_LENGTH = 150;
 
 export default function PromoCard({ promo, compact = false, isRead, onView, onReact }: PromoCardProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { playerId } = useAuth();
   const signupBlock = useSignupBlock();
   const { features } = useSiteConfig();
@@ -127,9 +127,6 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
           size="sm"
           loading={acceptingChallenge}
           disabled={signupBlock.blocked}
-          title={signupBlock.until
-            ? t('discipline.notice.signupBlockedUntil', { date: formatInstant(signupBlock.until, i18n.language) })
-            : undefined}
           onClick={handleAcceptChallenge}
         >
           {acceptingChallenge
@@ -228,13 +225,18 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
       </div>
 
       {isTargetOfCallOut && challenge && (
-        <div className="promo-card__challenge">
-          {renderChallengeStatus(challenge)}
-          <Link to={`/challenges/${challenge.challengeId}`} className="promo-card__link">
-            {t('promos.card.viewChallenge', 'View Challenge')}
-          </Link>
-          {challengeError && <span className="promo-card__error" role="alert">{challengeError}</span>}
-        </div>
+        <>
+          {signupBlock.until && getDisplayStatus(challenge) === 'pending' && (
+            <SuspensionNotice until={signupBlock.until} />
+          )}
+          <div className="promo-card__challenge">
+            {renderChallengeStatus(challenge)}
+            <Link to={`/challenges/${challenge.challengeId}`} className="promo-card__link">
+              {t('promos.card.viewChallenge', 'View Challenge')}
+            </Link>
+            {challengeError && <span className="promo-card__error" role="alert">{challengeError}</span>}
+          </div>
+        </>
       )}
 
       <div className="promo-card__footer">
