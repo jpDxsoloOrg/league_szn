@@ -319,6 +319,42 @@ describe('PlayerDisciplineModal', () => {
     });
   });
 
+  describe('a failed action', () => {
+    const failWith = async (error: Error) => {
+      const user = userEvent.setup();
+      mockDiscipline.get.mockResolvedValue(detail());
+      mockDiscipline.issueStrike.mockRejectedValue(error);
+      await renderModal();
+      await user.type(reasonBox(), REASON);
+      await user.click(screen.getByRole('button', { name: 'discipline.admin.issueWarning' }));
+    };
+
+    it.each([
+      ['an uncoded API error', new ApiError('expectedVersion is required', 400)],
+      ['a network error', new TypeError('Failed to fetch')],
+    ])('shows the translated message for %s, not the raw text', async (_label, error) => {
+      await failWith(error);
+
+      expect(await screen.findByText('discipline.admin.actionFailed')).toBeInTheDocument();
+      expect(screen.queryByText(error.message)).not.toBeInTheDocument();
+    });
+
+    it('shows a coded refusal as it came', async () => {
+      await failWith(new ApiError('Translated refusal', 409, { code: 'STAFF_PROTECTED' }));
+
+      expect(await screen.findByText('Translated refusal')).toBeInTheDocument();
+    });
+  });
+
+  describe('the reason field', () => {
+    it('is described by its length hint', async () => {
+      mockDiscipline.get.mockResolvedValue(detail());
+      await renderModal();
+
+      expect(reasonBox()).toHaveAccessibleDescription('discipline.admin.reasonHint');
+    });
+  });
+
   describe('a conflict', () => {
     it('reloads and shows the new state with the typed reason kept', async () => {
       mockDiscipline.get.mockResolvedValueOnce(detail()).mockResolvedValue(inCooldown());
@@ -357,6 +393,20 @@ describe('PlayerDisciplineModal', () => {
         expectedVersion: 3,
       });
       expect(await screen.findByText('discipline.admin.done.remove')).toBeInTheDocument();
+    });
+
+    it('moves focus to the reason field, and back to Remove on cancel', async () => {
+      const user = userEvent.setup();
+      mockDiscipline.get.mockResolvedValue(inCooldown());
+      await renderModal();
+
+      await user.click(screen.getAllByRole('button', { name: 'discipline.admin.remove' })[0]);
+      expect(screen.getByLabelText('discipline.admin.removeReason')).toHaveFocus();
+
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+      await waitFor(() => {
+        expect(screen.getAllByRole('button', { name: 'discipline.admin.remove' })[0]).toHaveFocus();
+      });
     });
 
     it('is not offered while deactivated', async () => {

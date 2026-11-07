@@ -106,7 +106,10 @@
 }
 
 .strikes-panel__help {
+  display: inline-flex;
+  align-items: center;
   align-self: flex-start;
+  min-height: var(--touch-target);
   font-size: var(--text-dense);
 }
 

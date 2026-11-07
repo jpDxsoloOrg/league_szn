@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +12,7 @@ import type {
   PlayerStrike,
 } from '../../types';
 import { formatInstant } from '../../utils/dateUtils';
+import { refusalOr } from '../../utils/discipline';
 import { nameOrUnnamed } from '../../utils/playerName';
 import { DISCIPLINE_STATUS_KEYS } from '../discipline/disciplineStatus';
 import Badge from '../ui/Badge';
@@ -46,17 +47,27 @@ interface ReasonFieldProps {
   value: string;
   onChange: (value: string) => void;
   disabled: boolean;
+  /** Take focus on mount, for a field that replaces the button just pressed. */
+  focusOnMount?: boolean;
 }
 
-function ReasonField({ label, value, onChange, disabled }: ReasonFieldProps) {
+function ReasonField({ label, value, onChange, disabled, focusOnMount = false }: ReasonFieldProps) {
   const { t } = useTranslation();
   const fieldId = useId();
+  const hintId = `${fieldId}-hint`;
+  const fieldRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (focusOnMount) fieldRef.current?.focus();
+  }, [focusOnMount]);
 
   return (
     <div className="ar-field">
       <label className="ar-field__label" htmlFor={fieldId}>{label}</label>
       <textarea
+        ref={fieldRef}
         id={fieldId}
+        aria-describedby={hintId}
         className="ar-input discipline-modal__reason"
         rows={3}
         maxLength={MAX_REASON_LENGTH}
@@ -64,7 +75,7 @@ function ReasonField({ label, value, onChange, disabled }: ReasonFieldProps) {
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
       />
-      <p className="ar-hint">{t('discipline.admin.reasonHint', { min: MIN_REASON_LENGTH, max: MAX_REASON_LENGTH })}</p>
+      <p id={hintId} className="ar-hint">{t('discipline.admin.reasonHint', { min: MIN_REASON_LENGTH, max: MAX_REASON_LENGTH })}</p>
     </div>
   );
 }
@@ -155,6 +166,8 @@ function DisciplineBody({ player, onChanged, onClose }: DisciplineBodyProps) {
   const [confirmingDeactivation, setConfirmingDeactivation] = useState(false);
   const [removingStrikeId, setRemovingStrikeId] = useState<string | null>(null);
   const [removeReason, setRemoveReason] = useState('');
+  /** The strike whose Remove button takes focus back when its form closes. */
+  const refocusRemoveFor = useRef<string | null>(null);
   const [reactivateReason, setReactivateReason] = useState('');
   const [restorePriorStrikes, setRestorePriorStrikes] = useState(false);
 
@@ -193,7 +206,7 @@ function DisciplineBody({ player, onChanged, onClose }: DisciplineBodyProps) {
       await load();
       return true;
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : t('discipline.admin.actionFailed'));
+      setActionError(refusalOr(err, t('discipline.admin.actionFailed')));
       await load();
       return false;
     } finally {
@@ -333,6 +346,12 @@ function DisciplineBody({ player, onChanged, onClose }: DisciplineBodyProps) {
                   <strong>{formatDate(strike.issuedAt)}</strong>
                   {isSuperAdmin && !deactivated && removingStrikeId !== strike.strikeId && (
                     <Button
+                      ref={(button) => {
+                        if (button && refocusRemoveFor.current === strike.strikeId) {
+                          refocusRemoveFor.current = null;
+                          button.focus();
+                        }
+                      }}
                       variant="ghost"
                       size="sm"
                       disabled={busy}
@@ -353,9 +372,18 @@ function DisciplineBody({ player, onChanged, onClose }: DisciplineBodyProps) {
                       value={removeReason}
                       onChange={setRemoveReason}
                       disabled={busy}
+                      focusOnMount
                     />
                     <div className="ar-row-actions">
-                      <Button variant="ghost" size="sm" disabled={busy} onClick={() => setRemovingStrikeId(null)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={busy}
+                        onClick={() => {
+                          refocusRemoveFor.current = strike.strikeId;
+                          setRemovingStrikeId(null);
+                        }}
+                      >
                         {t('common.cancel', 'Cancel')}
                       </Button>
                       <Button type="submit" size="sm" loading={busy} disabled={!isValidReason(removeReason)}>
