@@ -1,5 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
+import { isConcurrentWriteError } from '../../lib/repositories/errors';
 import { success, badRequest, notFound, serverError, forbidden } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { getAuthContext, hasRole } from '../../lib/auth';
@@ -195,10 +196,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     };
     if (responseMessage) counterPatch.responseMessage = responseMessage;
 
-    await runInTransaction(async (tx) => {
-      tx.updateChallenge(challengeId, counterPatch);
-      tx.createChallenge(counterChallenge);
-    });
+    // Guarded like accept and decline, so a late counter cannot bring back a
+    // challenge a strike cancelled, or leave a new one behind.
+    try {
+      await runInTransaction(async (tx) => {
+        tx.updateChallenge(challengeId, counterPatch, 'pending');
+        tx.createChallenge(counterChallenge);
+      });
+    } catch (writeError) {
+      if (isConcurrentWriteError(writeError)) return badRequest('Challenge is no longer pending');
+      throw writeError;
+    }
 
     return success({
       original: { ...challenge, status: 'countered', responseMessage, counteredChallengeId: counterChallengeId, updatedAt: now },

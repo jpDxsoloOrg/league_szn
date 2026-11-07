@@ -327,6 +327,27 @@ describe.each<DisciplineState>(['blocked', 'deactivated'])('member actions by a 
   });
 });
 
+describe('a counter racing a strike', () => {
+  it('cannot bring back a challenge the strike cancelled, and creates nothing', async () => {
+    const challengeId = await addChallenge(rivalId, callerId);
+    const commit = repos.runInTransaction;
+    vi.spyOn(repos, 'runInTransaction').mockImplementationOnce(async (work) => {
+      await repos.user.challenges.updateIfStatus(challengeId, { status: 'cancelled' }, 'pending');
+      return commit(work);
+    });
+
+    const { statusCode, body } = await call<Refusal>(
+      respondToChallenge,
+      memberPost('caller-sub', { action: 'counter', counterMatchType: 'singles' }, { challengeId }),
+    );
+
+    expect(statusCode).toBe(400);
+    expect(body.message).toBe('Challenge is no longer pending');
+    expect((await repos.user.challenges.findById(challengeId))?.status).toBe('cancelled');
+    expect(await repos.user.challenges.list()).toHaveLength(1);
+  });
+});
+
 describe('member actions a blocked caller keeps', () => {
   beforeEach(() => setDiscipline(callerId, 'blocked'));
 

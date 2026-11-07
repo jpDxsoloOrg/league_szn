@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { APIGatewayProxyHandler } from 'aws-lambda';
+import type { APIGatewayProxyHandler, APIGatewayProxyResult, Context } from 'aws-lambda';
 
 const { mockSend, mockCreateNotification, cognitoCalls } = vi.hoisted(() => ({
   mockSend: vi.fn(),
@@ -34,6 +34,7 @@ import { handler as getPlayerDiscipline } from '../getPlayerDiscipline';
 import { handler as issueStrike, strikeMessage } from '../issueStrike';
 import { handler as removeStrike } from '../removeStrike';
 import { handler as reactivatePlayer } from '../reactivatePlayer';
+import { handler as deletePlayer } from '../deletePlayer';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EPOCH = Date.parse('2026-03-01T12:00:00.000Z');
@@ -829,6 +830,80 @@ describe('getPlayerDiscipline', () => {
     const result = await call(getPlayerDiscipline, authedEvent('w-sub', 'Wrestler', { pathParameters: { playerId } }));
 
     expect(result.statusCode).toBe(403);
+  });
+});
+
+describe('a delete racing a strike', () => {
+  // A successful delete has no body, so `call` cannot be used here.
+  const del = async () => {
+    const event = authedEvent('admin-sub', 'Admin', { httpMethod: 'DELETE', pathParameters: { playerId } });
+    const { statusCode, body } = (await deletePlayer(event, {} as Context, () => {})) as APIGatewayProxyResult;
+    return { statusCode, body: (body ? JSON.parse(body) : {}) as { code?: string } };
+  };
+
+  /** Lands `write` after the delete has checked the row, and before its last write. */
+  const duringDelete = (write: () => Promise<unknown>): void => {
+    vi.spyOn(repos.season.standings, 'listByPlayer').mockImplementationOnce(async () => {
+      await write();
+      return [];
+    });
+  };
+
+  it('keeps a live deactivation, so reactivation still has a row to work on', async () => {
+    // Two lapsed strikes read as clear, so the delete passes its first check.
+    seed({ psnId: 'Rock_PSN', strikes: [strikeRow(0), strikeRow(1)], deactivations: [], disciplineVersion: 2 });
+    setDay(40);
+    duringDelete(() => repos.roster.players.updateDiscipline(playerId, {
+      strikes: [strikeRow(0), strikeRow(1), strikeRow(40)],
+      deactivations: [openDeactivation(40)],
+      deactivatedAt: iso(40),
+    }, 2));
+
+    const { statusCode, body } = await del();
+
+    expect(statusCode).toBe(409);
+    expect(body.code).toBe('PLAYER_DEACTIVATED');
+    expect(row().deletedAt).toBeUndefined();
+    expect(row().userId).toBe(USER_SUB);
+    expect(row().psnId).toBe('Rock_PSN');
+    expect((await reactivate()).statusCode).toBe(200);
+  });
+
+  it('refuses for active strikes when a warning lands', async () => {
+    setDay(0);
+    duringDelete(() => repos.roster.players.updateDiscipline(playerId, {
+      strikes: [strikeRow(0)],
+      deactivations: [],
+      deactivatedAt: null,
+    }, 0));
+
+    const { statusCode, body } = await del();
+
+    expect(statusCode).toBe(409);
+    expect(body.code).toBe('DISCIPLINE_ACTIVE');
+    expect(row().deletedAt).toBeUndefined();
+  });
+
+  it('asks for a retry when the record changed but the player is clear again', async () => {
+    seed({ strikes: [strikeRow(0)], deactivations: [], disciplineVersion: 1 });
+    setDay(40);
+    duringDelete(() => repos.roster.players.updateDiscipline(playerId, {
+      strikes: [strikeRow(0, { clearedAt: iso(40) })],
+      deactivations: [],
+      deactivatedAt: null,
+    }, 1));
+
+    const { statusCode, body } = await del();
+
+    expect(statusCode).toBe(409);
+    expect(body.code).toBe('DISCIPLINE_CONFLICT');
+    expect(row().deletedAt).toBeUndefined();
+    expect((await del()).statusCode).toBe(204);
+  });
+
+  it('deletes as before when nothing changed', async () => {
+    expect((await del()).statusCode).toBe(204);
+    expect(row().deletedAt).toBeDefined();
   });
 });
 

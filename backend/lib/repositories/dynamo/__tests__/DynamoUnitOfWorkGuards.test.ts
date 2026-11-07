@@ -41,6 +41,68 @@ beforeEach(() => {
   mockTransactWrite.mockResolvedValue({});
 });
 
+describe('updatePlayer conditions', () => {
+  it('stays unconditional when no condition is passed', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updatePlayer('p1', { name: 'A' });
+    expect(lastUpdate(uow).ConditionExpression).toBeUndefined();
+  });
+
+  it('matches a stored version', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updatePlayer('p1', { name: 'A' }, { disciplineVersion: 4 });
+    const update = lastUpdate(uow);
+    expect(update.ConditionExpression).toBe('attribute_exists(playerId) AND #disciplineVersion = :expectedDisciplineVersion');
+    expect(update.ExpressionAttributeNames?.['#disciplineVersion']).toBe('disciplineVersion');
+    expect(update.ExpressionAttributeValues?.[':expectedDisciplineVersion']).toBe(4);
+  });
+
+  it('lets version 0 match a row that has no version yet', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updatePlayer('p1', { name: 'A' }, { disciplineVersion: 0 });
+    expect(lastUpdate(uow).ConditionExpression).toBe(
+      'attribute_exists(playerId) AND (attribute_not_exists(#disciplineVersion) OR #disciplineVersion = :expectedDisciplineVersion)',
+    );
+  });
+
+  it('surfaces a failed condition as a ConcurrencyError', async () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updatePlayer('p1', { name: 'A' }, { disciplineVersion: 4 });
+    mockTransactWrite.mockRejectedValue(cancelled(['ConditionalCheckFailed']));
+    await expect(uow.commit()).rejects.toBeInstanceOf(ConcurrencyError);
+  });
+});
+
+describe('updateChallenge conditions', () => {
+  it('stays unconditional when no status is expected', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updateChallenge('c1', { status: 'countered' });
+    expect(lastUpdate(uow).ConditionExpression).toBeUndefined();
+  });
+
+  it('requires the expected status', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updateChallenge('c1', { status: 'countered' }, 'pending');
+    const update = lastUpdate(uow);
+    expect(update.ConditionExpression).toBe('#s = :expectedStatus');
+    expect(update.ExpressionAttributeNames?.['#s']).toBe('status');
+    expect(update.ExpressionAttributeValues?.[':expectedStatus']).toBe('pending');
+  });
+
+  it('declares #s even when the patch does not set status', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updateChallenge('c1', { message: 'x' }, 'pending');
+    expect(lastUpdate(uow).ExpressionAttributeNames?.['#s']).toBe('status');
+  });
+
+  it('surfaces a failed condition as a ConcurrencyError', async () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updateChallenge('c1', { status: 'countered' }, 'pending');
+    mockTransactWrite.mockRejectedValue(cancelled(['ConditionalCheckFailed']));
+    await expect(uow.commit()).rejects.toBeInstanceOf(ConcurrencyError);
+  });
+});
+
 describe('updateMatch conditions', () => {
   it('stays unconditional when no condition is passed', () => {
     const uow = new DynamoUnitOfWork();

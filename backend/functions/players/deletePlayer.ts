@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories, type StablePatch } from '../../lib/repositories';
-import { noContent, badRequest, serverError, conflict, notFound } from '../../lib/response';
+import { isConcurrentWriteError } from '../../lib/repositories/errors';
+import { noContent, badRequest, serverError, conflict, notFound, refused } from '../../lib/response';
 import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
 import { deleteRefusal } from '../../lib/disciplineGates';
 import { filterExistingWrestlerIds } from './wrestlerAssignment';
@@ -158,9 +159,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       await seasonStandings.delete(standing.seasonId, playerId);
     }
 
-    await runInTransaction(async (tx) => {
-      tx.updatePlayer(playerId, softDeletePatch(new Date().toISOString()));
-    });
+    // Guarded, so a strike landing since the check above cannot be erased. The
+    // row would leave findById, and with it any way to reactivate the player.
+    try {
+      await runInTransaction(async (tx) => {
+        tx.updatePlayer(playerId, softDeletePatch(new Date().toISOString()), {
+          disciplineVersion: player.disciplineVersion ?? 0,
+        });
+      });
+    } catch (writeError) {
+      if (!isConcurrentWriteError(writeError)) throw writeError;
+      const latest = await players.findById(playerId);
+      if (!latest) return notFound('Player not found');
+      return deleteRefusal(latest)
+        ?? refused(409, 'DISCIPLINE_CONFLICT', 'This player changed during the delete. Try again.');
+    }
 
     return noContent();
   } catch (err) {
