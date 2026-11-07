@@ -27,7 +27,7 @@ import {
   type Repositories,
 } from '../../../lib/repositories';
 import { ConcurrencyError } from '../../../lib/repositories/errors';
-import type { Player, PlayerDeactivation, PlayerStrike } from '../../../lib/repositories/types';
+import type { Match, Player, PlayerDeactivation, PlayerStrike } from '../../../lib/repositories/types';
 import type { DisciplineActionResult, PlayerDisciplineDetail } from '../../../lib/disciplineActions';
 import { authedEvent, call } from '../../__tests__/visibilityTestHelpers';
 import { handler as getPlayerDiscipline } from '../getPlayerDiscipline';
@@ -788,6 +788,73 @@ describe('getPlayerDiscipline', () => {
     expect(body.version).toBe(2);
     expect(body.nextStrikeOutcome).toBe('deactivated');
     expect(body.strikes.map((entry) => entry.strikeId)).toEqual(['s5', 's0']);
+  });
+
+  describe('match holdings', () => {
+    const addPlayer = async (name: string): Promise<string> =>
+      (await repos.roster.players.create({ name, currentWrestler: name })).playerId;
+    const addMatch = (fields: Partial<Match>): void => {
+      const matchesStore = (repos.competition as unknown as { matchesStore: Map<string, Match> }).matchesStore;
+      const matchId = `m${matchesStore.size}`;
+      matchesStore.set(matchId, {
+        matchId,
+        date: '2026-12-20',
+        status: 'scheduled',
+        participants: [],
+        createdAt: iso(0),
+        ...fields,
+      });
+    };
+
+    it('tells bookings on one card apart by format and opponent', async () => {
+      const [rock, cena] = await Promise.all([addPlayer('Rock'), addPlayer('Cena')]);
+      addMatch({ matchFormat: 'singles', participants: [playerId, rock], eventId: 'e1' });
+      addMatch({ matchFormat: 'triple-threat', participants: [playerId, rock, cena], eventId: 'e1' });
+
+      const { body } = await readDetail();
+
+      expect(body.holdings.matches).toEqual(expect.arrayContaining([
+        expect.objectContaining({ matchFormat: 'singles', opponents: ['Rock'], eventId: 'e1' }),
+        expect.objectContaining({ matchFormat: 'triple-threat', opponents: ['Rock', 'Cena'], eventId: 'e1' }),
+      ]));
+    });
+
+    it('leaves partners out of the opponents on a team match', async () => {
+      const [partner, rock, cena] = await Promise.all([addPlayer('Partner'), addPlayer('Rock'), addPlayer('Cena')]);
+      addMatch({
+        matchFormat: 'Tag Team',
+        participants: [playerId, partner, rock, cena],
+        teams: [[playerId, partner], [rock, cena]],
+      });
+
+      expect((await readDetail()).body.holdings.matches[0].opponents).toEqual(['Rock', 'Cena']);
+    });
+
+    it('reads slots, leaves a labelled partner out, and has no name for an open spot', async () => {
+      const [partner, rock] = await Promise.all([addPlayer('Partner'), addPlayer('Rock')]);
+      addMatch({
+        status: 'open-signups',
+        matchType: 'Tag Team',
+        slots: [
+          { slotId: 'a', position: 1, playerId, teamLabel: 'A' },
+          { slotId: 'b', position: 2, playerId: partner, teamLabel: 'A' },
+          { slotId: 'c', position: 3, playerId: rock, teamLabel: 'B' },
+          { slotId: 'd', position: 4, teamLabel: 'B' },
+        ],
+      });
+
+      expect((await readDetail()).body.holdings.matches[0]).toMatchObject({
+        status: 'open-signups',
+        matchFormat: 'Tag Team',
+        opponents: ['Rock'],
+      });
+    });
+
+    it('skips an opponent whose row has gone', async () => {
+      addMatch({ participants: [playerId, 'gone'] });
+
+      expect((await readDetail()).body.holdings.matches[0].opponents).toEqual([]);
+    });
   });
 
   describe('staff names on stored rows', () => {

@@ -101,7 +101,7 @@ const deactivated = (): PlayerDisciplineDetail => detail({
 
 const fullHoldings: DisciplineHoldings = {
   titles: [{ championshipId: 'c1', name: 'World Title' }],
-  matches: [{ matchId: 'm1', date: '2026-11-20', status: 'scheduled', eventId: 'e1' }],
+  matches: [{ matchId: 'm1', date: '2026-11-20', status: 'scheduled', opponents: [], eventId: 'e1' }],
   challenges: [{ challengeId: 'ch1', opponentName: 'Christian' }],
   tournaments: [{ tournamentId: 't1', name: 'King of the Ring', status: 'in-progress' }],
 };

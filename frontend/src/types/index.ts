@@ -93,7 +93,16 @@ export interface PlayerDeactivation {
 /** What a deactivated player still holds. Nothing here is changed automatically. */
 export interface DisciplineHoldings {
   titles: { championshipId: string; name: string }[];
-  matches: { matchId: string; date: string; status: 'scheduled' | 'open-signups'; eventId?: string; tournamentId?: string }[];
+  matches: {
+    matchId: string;
+    date: string;
+    status: 'scheduled' | 'open-signups';
+    matchFormat?: string;
+    /** Names of the other side. Empty while the other spots are open. */
+    opponents: string[];
+    eventId?: string;
+    tournamentId?: string;
+  }[];
   challenges: { challengeId: string; opponentName: string }[];
   tournaments: { tournamentId: string; name: string; status: string }[];
 }

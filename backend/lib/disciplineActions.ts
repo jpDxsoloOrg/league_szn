@@ -33,7 +33,17 @@ const STAFF_GROUPS = new Set(['Admin', 'Moderator']);
 
 export interface DisciplineHoldings {
   titles: { championshipId: string; name: string }[];
-  matches: { matchId: string; date: string; status: 'scheduled' | 'open-signups'; eventId?: string; tournamentId?: string }[];
+  matches: {
+    matchId: string;
+    date: string;
+    status: 'scheduled' | 'open-signups';
+    /** Lets staff tell bookings on one card apart. */
+    matchFormat?: string;
+    /** Names of the other side, partners left out. Empty while the other spots are open. */
+    opponents: string[];
+    eventId?: string;
+    tournamentId?: string;
+  }[];
   /** Status 'accepted', tag team membership included. */
   challenges: { challengeId: string; opponentName: string }[];
   /** Any not completed that the player is in. */
@@ -263,6 +273,19 @@ function isOnMatch(match: Match, playerId: string): boolean {
     || (match.slots ?? []).some((slot) => slot.playerId === playerId);
 }
 
+/** Everyone on the match who is not on the player's side. */
+function opponentIdsOn(match: Match, playerId: string): string[] {
+  const slots = match.slots ?? [];
+  const ownTeamLabel = slots.find((slot) => slot.playerId === playerId)?.teamLabel;
+  const partners = new Set([
+    playerId,
+    ...(match.teams?.find((team) => team.includes(playerId)) ?? []),
+    ...slots.flatMap((slot) => (slot.playerId && ownTeamLabel && slot.teamLabel === ownTeamLabel ? [slot.playerId] : [])),
+  ]);
+  const everyone = [...(match.participants ?? []), ...slots.flatMap((slot) => (slot.playerId ? [slot.playerId] : []))];
+  return [...new Set(everyone)].filter((id) => !partners.has(id));
+}
+
 async function opponentNameFor(challenge: Challenge, onChallengerSide: boolean): Promise<string> {
   const { roster: { players, tagTeams } } = getRepositories();
   const opposingTeamId = onChallengerSide ? challenge.challengedTagTeamId : challenge.challengerTagTeamId;
@@ -276,6 +299,7 @@ async function opponentNameFor(challenge: Challenge, onChallengerSide: boolean):
 export async function getHoldings(playerId: string): Promise<DisciplineHoldings> {
   const {
     competition: { championships, matches, tournaments },
+    roster: { players },
     user: { challenges },
   } = getRepositories();
 
@@ -288,13 +312,24 @@ export async function getHoldings(playerId: string): Promise<DisciplineHoldings>
     challengeMembership(playerId),
   ]);
 
-  const toMatchHolding = (status: 'scheduled' | 'open-signups') => (match: Match): DisciplineHoldings['matches'][number] => ({
-    matchId: match.matchId,
-    date: match.date,
-    status,
-    ...(match.eventId ? { eventId: match.eventId } : {}),
-    ...(match.tournamentId ? { tournamentId: match.tournamentId } : {}),
-  });
+  const onScheduled = scheduled.filter((match) => isOnMatch(match, playerId));
+  const onOpenSignups = openSignups.filter((match) => isOnMatch(match, playerId));
+  const opponentIds = new Set([...onScheduled, ...onOpenSignups].flatMap((match) => opponentIdsOn(match, playerId)));
+  const opponentRows = await Promise.all([...opponentIds].map((id) => players.findByIdWithDeleted(id)));
+  const namesById = new Map(opponentRows.flatMap((row) => (row ? [[row.playerId, row.name] as const] : [])));
+
+  const toMatchHolding = (status: 'scheduled' | 'open-signups') => (match: Match): DisciplineHoldings['matches'][number] => {
+    const matchFormat = match.matchFormat ?? match.matchType;
+    return {
+      matchId: match.matchId,
+      date: match.date,
+      status,
+      ...(matchFormat ? { matchFormat } : {}),
+      opponents: opponentIdsOn(match, playerId).flatMap((id) => namesById.get(id) ?? []),
+      ...(match.eventId ? { eventId: match.eventId } : {}),
+      ...(match.tournamentId ? { tournamentId: match.tournamentId } : {}),
+    };
+  };
 
   return {
     titles: allChampionships
@@ -303,8 +338,8 @@ export async function getHoldings(playerId: string): Promise<DisciplineHoldings>
         : currentChampion === playerId))
       .map(({ championshipId, name }) => ({ championshipId, name })),
     matches: [
-      ...scheduled.filter((match) => isOnMatch(match, playerId)).map(toMatchHolding('scheduled')),
-      ...openSignups.filter((match) => isOnMatch(match, playerId)).map(toMatchHolding('open-signups')),
+      ...onScheduled.map(toMatchHolding('scheduled')),
+      ...onOpenSignups.map(toMatchHolding('open-signups')),
     ],
     challenges: await Promise.all(
       accepted.filter(membership.isInvolved).map(async (challenge) => ({

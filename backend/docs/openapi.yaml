@@ -189,6 +189,11 @@ components:
               matchId: { type: string }
               date: { type: string, format: date-time }
               status: { type: string, enum: [scheduled, open-signups] }
+              matchFormat: { type: string }
+              opponents:
+                type: array
+                description: Names of the other side, partners left out. Empty while the other spots are open.
+                items: { type: string }
               eventId: { type: string }
               tournamentId: { type: string }
         challenges:

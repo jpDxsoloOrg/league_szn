@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { DisciplineHoldings } from '../../types';
 import { formatMatchDate } from '../../utils/dateUtils';
+import { formatMatchType } from '../../utils/matchDisplay';
 
 interface DisciplineHoldingsListProps {
   holdings: DisciplineHoldings;
@@ -16,6 +17,16 @@ function hasHoldings({ titles, matches, challenges, tournaments }: DisciplineHol
 /** What a deactivated player still holds, with a way to reach each one. Nothing here changes on its own. */
 export default function DisciplineHoldingsList({ holdings, onNavigate }: DisciplineHoldingsListProps) {
   const { t, i18n } = useTranslation();
+
+  /** One card can hold several of a player's matches, so the date alone does not identify one. */
+  const matchLabel = ({ date, matchFormat, opponents }: DisciplineHoldings['matches'][number]) => {
+    const details = {
+      date: formatMatchDate(date, i18n.language),
+      format: formatMatchType(matchFormat, t) || t('discipline.admin.holdingMatchFallback'),
+      opponents: opponents.join(', '),
+    };
+    return t(opponents.length > 0 ? 'discipline.admin.holdingMatchVs' : 'discipline.admin.holdingMatch', details);
+  };
 
   if (!hasHoldings(holdings)) {
     return <p className="discipline-modal__muted">{t('discipline.admin.holdingsNone')}</p>;
@@ -39,7 +50,7 @@ export default function DisciplineHoldingsList({ holdings, onNavigate }: Discipl
               to={match.eventId ? `/events/${match.eventId}` : `/matches?matchId=${match.matchId}`}
               onClick={onNavigate}
             >
-              {t('discipline.admin.holdingMatch', { date: formatMatchDate(match.date, i18n.language) })}
+              {matchLabel(match)}
             </Link>
           </li>
         ))}
