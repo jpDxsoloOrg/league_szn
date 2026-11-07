@@ -37,6 +37,22 @@ export function firstBookingRefusal(
   return null;
 }
 
+/**
+ * The first refusal among a tag challenge's other members. Everyone on both
+ * teams would be signing up, so the caller's partner counts as well as the other
+ * side. The caller has their own refusal. Ids that found no row are skipped.
+ */
+export function firstTagMemberRefusal(
+  members: ReadonlyArray<(DisciplineFields & { playerId: string }) | null>,
+  callerId: string,
+): APIGatewayProxyResult | null {
+  for (const member of members) {
+    const refusal = member && member.playerId !== callerId ? targetRefusal(member) : null;
+    if (refusal) return refusal;
+  }
+  return null;
+}
+
 /** Booking refusals apply only to players an edit adds, never to those already there. */
 export function newlyAddedIds(nextIds: readonly string[], existingIds: readonly string[]): string[] {
   const existing = new Set(existingIds);

@@ -468,6 +468,45 @@ describe('tag challenges', () => {
     ));
   });
 
+  describe('tag call-out promos', () => {
+    const callOut = (extra: Record<string, unknown> = {}) => call<Refusal>(createPromo, memberPost('caller-sub', {
+      promoType: 'call-out',
+      content: promoContent,
+      challengeMode: 'tag_team',
+      challengerTagTeamName: 'Own',
+      targetTagTeamName: 'Other',
+      targetTagTeamId: otherTeam,
+      ...extra,
+    }));
+
+    it.each(['blocked', 'deactivated'] as const)('refuses with a %s partner, and publishes nothing', async (state) => {
+      await setDiscipline(partnerId, state);
+      expectUnavailable(await callOut());
+      expect(await repos.content.promos.list()).toEqual([]);
+    });
+
+    it.each(['blocked', 'deactivated'] as const)('refuses when the other team has a %s member', async (state) => {
+      await setDiscipline(otherPartnerId, state);
+      expectUnavailable(await callOut());
+      expect(await repos.content.promos.list()).toEqual([]);
+    });
+
+    it('publishes when all four are clear', async () => {
+      expect((await callOut()).statusCode).toBe(201);
+    });
+
+    it('keeps the team id off the stored promo', async () => {
+      await callOut();
+      const [promo] = await repos.content.promos.list();
+      expect(promo).not.toHaveProperty('targetTagTeamId');
+    });
+
+    it('does not gate a promo that is not a call-out', async () => {
+      await setDiscipline(otherPartnerId, 'blocked');
+      expect((await callOut({ promoType: 'open-mic' })).statusCode).toBe(201);
+    });
+  });
+
   it('allows the responder to decline with a blocked teammate', async () => {
     await setDiscipline(partnerId, 'blocked');
     const challengeId = await addTagChallenge();

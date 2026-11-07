@@ -565,6 +565,10 @@ components:
         targetPromoId: { type: string }
         matchId: { type: string }
         championshipId: { type: string }
+        challengeMode: { type: string, enum: [singles, tag_team] }
+        challengerTagTeamName: { type: string }
+        targetTagTeamName: { type: string }
+        targetTagTeamId: { type: string, description: 'The team a tag call-out names. Its members are checked before the promo is published. Not stored.' }
 
     ReactToPromoInput:
       type: object
@@ -1865,6 +1869,7 @@ paths:
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'A member of either team in a tag call-out is unavailable', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
 
   /promos/{promoId}:
     get:

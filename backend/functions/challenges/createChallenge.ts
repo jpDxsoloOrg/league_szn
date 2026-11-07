@@ -7,6 +7,7 @@ import { challengeExpiresAt } from '../../lib/challengeExpiry';
 import { challengeTitleFitError, titleAvailabilityError } from '../../lib/challengeTitle';
 import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
 import { callerRefusal, targetRefusal } from '../../lib/discipline';
+import { firstTagMemberRefusal } from '../../lib/disciplineGates';
 // Notifications intentionally not dispatched here while the challenge UI is hidden.
 
 interface CreateChallengeBody {
@@ -114,12 +115,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         [challengerTagTeam.player1Id, challengerTagTeam.player2Id].map((id) => players.findById(id)),
       );
 
-      // Everyone on both teams would be signing up, so the caller's partner
-      // counts as well as the other side.
-      for (const member of [...challengerMembers, ...challengedMembers]) {
-        const memberBlocked = member && member.playerId !== challengerId ? targetRefusal(member) : null;
-        if (memberBlocked) return memberBlocked;
-      }
+      const memberBlocked = firstTagMemberRefusal([...challengerMembers, ...challengedMembers], challengerId);
+      if (memberBlocked) return memberBlocked;
 
       if (challengedMembers.some((member) => member && !isPlayerVisible(member))) {
         return badRequest('A member of that tag team has not set a wrestler name yet');

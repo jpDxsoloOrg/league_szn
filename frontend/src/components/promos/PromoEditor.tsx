@@ -17,6 +17,7 @@ import PageHeader from '../ui/PageHeader';
 import Select from '../ui/Select';
 import { getChallengeTitleOptions } from '../challenges/challengeUtils';
 import { useSignupBlock } from '../../hooks/useSignupBlock';
+import { refusalOr } from '../../utils/discipline';
 import SuspensionNotice from '../discipline/SuspensionNotice';
 import PromoCard from './PromoCard';
 import './PromoEditor.css';
@@ -331,6 +332,7 @@ export default function PromoEditor() {
           challengeMode: 'tag_team',
           challengerTagTeamName: playerTagTeam.name,
           targetTagTeamName: selectedTeam.name,
+          targetTagTeamId: selectedTeam.tagTeamId,
         } : {}),
       });
 
@@ -359,9 +361,9 @@ export default function PromoEditor() {
             });
           }
           setChallengeCreated(true);
-        } catch {
+        } catch (err) {
           setChallengeWarning(
-            t('promos.editor.challengeFailed', 'Promo published, but the challenge could not be created. You can issue it separately.')
+            refusalOr(err, t('promos.editor.challengeFailed', 'Promo published, but the challenge could not be created. You can issue it separately.'))
           );
         }
       }
