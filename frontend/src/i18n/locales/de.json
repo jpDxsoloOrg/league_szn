@@ -246,7 +246,6 @@
     "admin": "Admin",
     "contenders": "Herausforderer",
     "matchSearch": "Kampf-Suche",
-    "findMatch": "Match suchen",
     "seasonAwards": "Saison-Auszeichnungen",
     "factions": "Faktionen",
     "tagTeams": "Tag Teams",
@@ -2101,78 +2100,6 @@
     "typeStable": "Stable",
     "typeTagTeam": "Tag Team",
     "typeTransfer": "Transfer"
-  },
-  "findMatch": {
-    "title": "Match finden",
-    "subtitle": "Werde in Echtzeit mit einem anderen Wrestler gematcht",
-    "appearOnline": {
-      "title": "Online erscheinen",
-      "description": "Andere Wrestler können dich sehen und zu Matches einladen.",
-      "on": "Online",
-      "off": "Offline",
-      "appearFirstHint": "Werde online, um das Matchmaking zu nutzen."
-    },
-    "queue": {
-      "title": "Auf der Suche nach einem Match",
-      "join": "Match finden",
-      "leave": "Suche stoppen",
-      "searching": "Suche nach einem Gegner…",
-      "queued": "Du bist in der Warteschlange.",
-      "you": "Du",
-      "matched": "Du wurdest gematcht!",
-      "joinError": "Beitritt zur Warteschlange fehlgeschlagen. Versuche es erneut.",
-      "championshipNotice": "Titelmatches werden hier nicht unterstützt. Nutze die Challenges- oder Admin-Planung."
-    },
-    "preferences": {
-      "matchFormat": "Match-Format",
-      "stipulation": "Stipulation",
-      "any": "Beliebig"
-    },
-    "online": {
-      "title": "Online-Spieler",
-      "empty": "Aktuell sind keine anderen Wrestler online.",
-      "invite": "Zu Match einladen",
-      "alreadyInvited": "Einladung ausstehend",
-      "inQueue": "Sucht ein Match"
-    },
-    "invitations": {
-      "title": "Offene Einladungen",
-      "incoming": "Eingehend",
-      "outgoing": "Ausgehend",
-      "accept": "Annehmen",
-      "decline": "Ablehnen",
-      "expiresIn": "Läuft in {{seconds}}s ab",
-      "expired": "Abgelaufen",
-      "noneIncoming": "Keine eingehenden Einladungen.",
-      "noneOutgoing": "Keine ausgehenden Einladungen."
-    },
-    "widget": {
-      "title": "Match finden",
-      "open": "Match finden öffnen",
-      "pendingCount": "{{count}} offene Einladung",
-      "pendingCount_plural": "{{count}} offene Einladungen",
-      "incomingHeader": "Eingehende Herausforderungen",
-      "lookingHeader": "Sucht nach einem Match",
-      "lookingCount": "{{count}} suchen",
-      "challenge": "Herausfordern",
-      "challenging": "Sende…",
-      "challenged": "Eingeladen",
-      "joinedAgo": "beigetreten {{ago}}",
-      "joinQueue": "Warteschlange beitreten",
-      "joinQueueSubtitle": "Werde mit dem nächsten verfügbaren Wrestler gematcht",
-      "leaveQueue": "Warteschlange verlassen",
-      "inQueueLabel": "Du bist in der Warteschlange",
-      "empty": "Aktuell sind keine Wrestler in der Warteschlange",
-      "emptyHint": "Sei der Erste — tritt der Warteschlange bei",
-      "you": "Du",
-      "loadFailed": "Warteschlange konnte nicht geladen werden. Erneuter Versuch…",
-      "ago": {
-        "justNow": "gerade eben",
-        "minutes": "vor {{count}} Min.",
-        "hours": "vor {{count}} Std."
-      }
-    },
-    "needsWrestler": "Du brauchst ein Wrestler-Profil, um das Matchmaking zu nutzen."
   },
   "overalls": {
     "admin": {

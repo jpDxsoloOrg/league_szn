@@ -73,10 +73,6 @@ export type {
   LocationPatch,
   LocationBulkImportResult,
   LocationsMethods,
-  PresenceRecord,
-  QueueRecord,
-  InvitationRecord,
-  MatchmakingMethods,
 } from './LeagueOpsRepository';
 
 export type {

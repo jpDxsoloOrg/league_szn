@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
-import { PresenceProvider } from './contexts/PresenceContext';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
 import { MenuModeProvider } from './contexts/MenuModeProvider';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -82,8 +81,6 @@ import RequestRivalry from './components/rivalries/RequestRivalry';
 import WrestlerProfile from './components/profile/WrestlerProfile';
 import PublicProfile from './components/profile/PublicProfile';
 import MyVideos from './components/profile/MyVideos';
-// Matchmaking components
-import FindMatchPage from './components/matchmaking/FindMatchPage';
 // Route guard
 import ProtectedRoute from './components/ProtectedRoute';
 import FeatureRoute from './components/FeatureRoute';
@@ -103,13 +100,11 @@ function App() {
       <Router>
         <ScrollToTop />
         <AuthProvider>
-          <PresenceProvider>
-            <SiteConfigProvider>
-              <MenuModeProvider>
-                <AppLayout />
-              </MenuModeProvider>
-            </SiteConfigProvider>
-          </PresenceProvider>
+          <SiteConfigProvider>
+            <MenuModeProvider>
+              <AppLayout />
+            </MenuModeProvider>
+          </SiteConfigProvider>
         </AuthProvider>
       </Router>
     </ErrorBoundary>
@@ -174,13 +169,6 @@ function AppLayout() {
             <Route path="/my-videos" element={
               <ProtectedRoute requiredRole="Wrestler">
                 <MyVideos />
-              </ProtectedRoute>
-            } />
-
-            {/* Find Match - Wrestler only */}
-            <Route path="/find-match" element={
-              <ProtectedRoute requiredRole="Wrestler">
-                <FindMatchPage />
               </ProtectedRoute>
             } />
 

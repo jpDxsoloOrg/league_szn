@@ -22,6 +22,28 @@ h2 {
   margin-bottom: 1rem;
 }
 
+/* Base for buttons using a variant class without .btn. Must stay above .btn so .btn still wins. */
+.btn-primary,
+.btn-secondary,
+.btn-accept,
+.btn-decline {
+  font-weight: 600;
+  padding: 0.55rem 1.1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-accept:disabled,
+.btn-decline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Button variant system: use .btn .btn-primary (or .btn-secondary, .btn-danger, .btn-ghost) on buttons */
 .btn {
   padding: 0.75rem 1.5rem;

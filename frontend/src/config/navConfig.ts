@@ -398,7 +398,6 @@ export function getPageInfo(path: string, t: TranslateFn): PageInfo {
     '/tag-teams': t('nav.tagTeams'),
     '/profile': t('nav.profile'),
     '/my-videos': t('nav.myVideos'),
-    '/find-match': t('nav.findMatch'),
     '/my-faction': t('nav.myFaction'),
     '/my-tag-team': t('nav.myTagTeam'),
     '/stats': t('statistics.playerStats.title'),

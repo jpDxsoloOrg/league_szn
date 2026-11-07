@@ -10,7 +10,6 @@ import {
   resolveImageSrc,
 } from '../constants/imageFallbacks';
 import Skeleton from './ui/Skeleton';
-import FindMatchWidget from './matchmaking/FindMatchWidget';
 import ChampionCarousel from './ChampionCarousel';
 import DashboardRivalries from './rivalries/DashboardRivalries';
 import { StarRating } from './matches/StarRating';
@@ -208,9 +207,6 @@ export default function Dashboard() {
           </div>
         </section>
       </div>
-
-      {/* Find Match widget — self-gates on wrestler + playerId */}
-      <FindMatchWidget />
 
       {/* My Active Rivalries — self-gates on wrestler + active rivalries */}
       <DashboardRivalries />

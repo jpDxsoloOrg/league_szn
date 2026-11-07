@@ -203,10 +203,6 @@ describe('Sidebar', () => {
 
     expect(screen.getByText('nav.promos')).toBeInTheDocument();
 
-    // Find-a-Match nav entry has been removed — matchmaking lives in the
-    // dashboard widget now.
-    expect(screen.queryByText('nav.findMatch')).not.toBeInTheDocument();
-
     // Challenges entry is hidden — UI removed
     expect(screen.queryByText('nav.challenges')).not.toBeInTheDocument();
   });

@@ -51,8 +51,6 @@ function getNavigationPath(notification: AppNotification, playerId: string | nul
     }
     case 'stable': return '/my-faction';
     case 'tag_team': return '/my-tag-team';
-    case 'match_invitation': return '/';
-    case 'match_invitation_declined': return '/';
     case 'announcement': return '/';
     case 'transfer': return '/profile';
     default: return '/';
