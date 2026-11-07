@@ -141,38 +141,37 @@ export default function AdminPanel() {
     );
   }
 
-  const ActiveTabContent = TAB_COMPONENTS[activeTab];
-  const content = (
-    <div className="admin-content">
-      <Suspense fallback={<Skeleton variant="block" />}>
-        <ActiveTabContent />
-      </Suspense>
-    </div>
-  );
-
-  if (isMobile) {
-    return (
-      <div className="admin-panel">
-        <AdminHubBackRow />
-        {content}
-      </div>
-    );
+  // Wider screens open the default tab at its own URL, so narrowing the window
+  // keeps the page rather than swapping it for the hub above.
+  if (!tab) {
+    return <Navigate to={getAdminPath(DEFAULT_TAB)} replace />;
   }
 
+  const ActiveTabContent = TAB_COMPONENTS[activeTab];
   const { parent } = getPageInfo(getAdminPath(activeTab), t);
 
+  // One tree for both widths. The page stays mounted when the window crosses the
+  // breakpoint, so an open dialog and anything typed into it survive.
   return (
-    <div className="admin-panel admin-layout">
-      <AdminNav activeTab={activeTab} isSuperAdmin={isSuperAdmin} features={features} />
+    <div className={isMobile ? 'admin-panel' : 'admin-panel admin-layout'}>
+      {isMobile
+        ? <AdminHubBackRow />
+        : <AdminNav activeTab={activeTab} isSuperAdmin={isSuperAdmin} features={features} />}
       <div className="admin-layout__main">
-        {parent && <p className="admin-breadcrumb">{parent}</p>}
-        {content}
-        <p className="admin-help">
-          {t('adminContent.panel.helpPrefix', 'New to admin workflows?')}{' '}
-          <Link to="/guide/wiki/admin-quickstart">{t('adminContent.panel.quickstart', 'Admin Quickstart')}</Link>
-          {' · '}
-          <Link to="/guide/wiki/admin-workflow">{t('adminContent.panel.weeklyWorkflow', 'Typical Weekly Workflow')}</Link>
-        </p>
+        {!isMobile && parent && <p className="admin-breadcrumb">{parent}</p>}
+        <div className="admin-content">
+          <Suspense fallback={<Skeleton variant="block" />}>
+            <ActiveTabContent />
+          </Suspense>
+        </div>
+        {!isMobile && (
+          <p className="admin-help">
+            {t('adminContent.panel.helpPrefix', 'New to admin workflows?')}{' '}
+            <Link to="/guide/wiki/admin-quickstart">{t('adminContent.panel.quickstart', 'Admin Quickstart')}</Link>
+            {' · '}
+            <Link to="/guide/wiki/admin-workflow">{t('adminContent.panel.weeklyWorkflow', 'Typical Weekly Workflow')}</Link>
+          </p>
+        )}
       </div>
     </div>
   );
