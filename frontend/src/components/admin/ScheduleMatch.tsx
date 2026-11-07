@@ -15,6 +15,7 @@ import type { LeagueEvent, MatchDesignation } from '../../types/event';
 import type { ChallengeWithPlayers, TagTeamChallengeInfo } from '../../types/challenge';
 import type { PromoWithContext } from '../../types/promo';
 import { findChallengeToBook } from '../challenges/challengeUtils';
+import { formatCalendarDate } from '../../utils/dateUtils';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
 import { pickablePlayers, pickableTagTeams } from '../../utils/pickablePlayers';
 import { nameOrUnnamed } from '../../utils/playerName';
@@ -746,7 +747,7 @@ export default function ScheduleMatch() {
                     { value: '', label: t('scheduleMatch.noEvent', 'No Event (Standalone Match)') },
                     ...events.map(ev => ({
                       value: ev.eventId,
-                      label: `${ev.name} (${new Date(ev.date).toLocaleDateString()})`,
+                      label: `${ev.name} (${formatCalendarDate(ev.date)})`,
                     })),
                   ]}
                 />

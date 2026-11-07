@@ -490,6 +490,16 @@ describe('ScheduleMatch', () => {
     });
   });
 
+  it('shows an event on its own calendar day in the event list, whatever the viewer timezone', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    renderScheduleMatch();
+
+    await user.click(await screen.findByLabelText('Add to Event (Optional)'));
+
+    expect(await screen.findByText('WrestleMania (Jul 1, 2024)')).toBeInTheDocument();
+  });
+
   it('keeps a hidden player pre-filled from a challenge', async () => {
     setupDefaultMocks();
     mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);
