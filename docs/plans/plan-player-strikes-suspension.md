@@ -30,7 +30,7 @@ Durations are exact 24-hour multiples added to a UTC instant, so there are no ca
 | `cooldown` | 2 or more | `T2 + 14d` | Yes | Yes | Yes |
 | `deactivated` | 3 or more | An Admin reactivates | **No** | **No** | **No** |
 
-`cooldown` is the "last week" of the 14 days, which is why a strike there deactivates and a strike in `signup-blocked` does not (owner decision 2).
+A third strike deactivates at any point in the 14 days, in `signup-blocked` or `cooldown` (owner decision 2, answered).
 
 ### Transitions
 
@@ -41,7 +41,7 @@ Durations are exact 24-hour multiples added to a UTC instant, so there are no ca
 | `warned` | Strike | `signup-blocked` | Cooldown refreshes to 14 days from this strike. 7-day block starts. Clear soft holds. Notify. |
 | `signup-blocked` | 7 days pass | `cooldown` | No write. |
 | `cooldown` | 7 more days pass | `clear` | Count returns to 0. No write. |
-| `signup-blocked` | Strike | `signup-blocked` | Strike recorded. `T2` restarts, so the block and the 14 days both run again from this strike. Clear soft holds. Notify. |
+| `signup-blocked` | Strike | `deactivated` | Set `deactivatedAt`. Disable Cognito user. Clear soft holds. |
 | `cooldown` | Strike | `deactivated` | Set `deactivatedAt`. Disable Cognito user. Clear soft holds. |
 | `deactivated` | Strike | refused | 409 `ALREADY_DEACTIVATED` |
 | `deactivated` | Admin reactivates | `clear` | Active strikes cleared, history kept, Cognito user enabled unless it was already disabled. Notify. |
@@ -64,7 +64,7 @@ Decision 2 needs the owner's answer before Stream A starts. The rest proceed on 
 | # | Question | Default | Why, or what the alternative costs |
 |---|---|---|---|
 | 1 | When do strikes stop counting? | Only while the cooldown runs. Its end clears the count, so a later strike is a fresh first strike. | Follows "remains on the account for a week". |
-| 2 | **Owner to answer before Stream A starts.** Does a third strike in the first week of the 14 days deactivate? | **No, as the request is written.** Only a strike in the last week (`T2 + 7d` up to `T2 + 14d`) deactivates. A strike in the first week is recorded and restarts `T2`, so the block and the 14 days both run again from that strike. | The request says "during that last week" and names no first-week outcome, so the restart is this plan's proposal. Cost: a player is safer re-offending early, though each first-week strike extends the block. To deactivate anywhere in the 14 days, set `DEACTIVATION_WINDOW_START_DAYS` to 0. The replay does not change; the marked test rows in §11, the §3 tables and the wiki wording do. |
+| 2 | **Answered by the owner.** Does a third strike in the first week of the 14 days deactivate? | **Yes.** A third strike at any point in the 14 days deactivates. It is unlikely in the first week, because the player is blocked then. `DEACTIVATION_WINDOW_START_DAYS` is 0. | Doing nothing on a first-week strike would be surprising. |
 | 3 | What does reactivating do to strikes? | Clears active strikes, keeps history, player returns to `clear`. For a mistaken third strike, the Admin ticks "restore earlier strikes": only the third strike is cleared and the others keep their own dates. | Re-issuing would restart the windows from today and send new notifications, so restoring is the correction path. |
 | 4 | Can a strike be removed? | Yes, by an Admin, with a reason. Not while deactivated. | Corrects mistakes. Kept in history as cleared. |
 | 5 | Is a reason required? | Yes, 3 to 500 characters, for strike, removal and reactivation. The player sees the strike reason. | Admins should word reasons knowing that. |
@@ -156,7 +156,7 @@ export const WARNING_DAYS = 7;
 export const COOLDOWN_DAYS = 14;
 export const SIGNUP_BLOCK_DAYS = 7;
 /** Days after T2 from which another strike deactivates. 7 is the request as written, 0 is anywhere in the 14 days. */
-export const DEACTIVATION_WINDOW_START_DAYS = 7;
+export const DEACTIVATION_WINDOW_START_DAYS = 0;
 export const MIN_REASON_LENGTH = 3;
 export const MAX_REASON_LENGTH = 500;
 
@@ -471,6 +471,8 @@ A deactivated caller of the remaining team and faction routes is stopped by §7.
 - **Manage Users** (`ManageUsers.tsx`): show the `PLAYER_DEACTIVATED` refusal on Enable and Delete; it arrives through §9's translated error.
 
 ## 9. Member UI (Stream C)
+
+**Owner requirement.** A player must always be able to see, on a Strikes panel in the Me section and on their own profile: each active strike with its date and reason; how long until their strikes fall off, as a live countdown ("Falls off in 5 days 3 hours") plus the exact date; and, while blocked, how long the suspension has left plus the date it lifts. The same suspension time shows wherever they would normally sign up. A player with no active strikes sees nothing. Past strikes are not shown to the player.
 
 - **Translated refusals in one place.** In `apiClient.ts`, add `code?: string` to `ApiError`, and map known codes to `t('discipline.errors.<code>', { date })` through the i18n instance. Call sites that show `err.message` then get a translated message with no edits. This was not confirmed for each one, so check the sites listed below during the build and fix any that hide the message: `EventDetail`, `FindMatchWidget`, `FindMatchPage`, `IssueChallenge`, `ChallengeDetail`, `MyChallenges`, `PromoCard`, `PromoEditor`, `CreateTagTeamModal`, `MyTagTeam`, `CreateFactionModal`, `MyFaction`, `InviteToFactionModal`, `FactionManage`.
 - **`DisciplineNotice`** (new): on `MeHub.tsx` beside the hidden-player notice, and on the player's own `WrestlerProfile.tsx`. Shows status, end dates, and each active strike's reason. Renders nothing for `clear`. Reads `profile.discipline` from `AuthContext`.
