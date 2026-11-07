@@ -7,6 +7,7 @@ import { createNotification } from '../../lib/notifications';
 import { recomputeRivalryHeat } from '../../lib/services/recomputeRivalryHeat';
 import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
 import { CHAMPIONSHIP_NOT_FOUND_MESSAGE } from '../../lib/challengeTitle';
+import { callerRefusal, targetRefusal } from '../../lib/discipline';
 import type { PromoType } from '../../lib/repositories/types';
 
 const VALID_PROMO_TYPES: PromoType[] = [
@@ -66,6 +67,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('No player profile linked to your account');
     }
 
+    // Only a call-out leads to a match. It is gated here rather than at the later
+    // challenge, because PromoEditor creates the promo first and would orphan it.
+    const isCallOut = promoType === 'call-out';
+    const callerBlocked = isCallOut ? callerRefusal(player) : null;
+    if (callerBlocked) return callerBlocked;
+
     if (!isPlayerVisible(player)) {
       return badRequest(SET_WRESTLER_NAME_MESSAGE);
     }
@@ -91,6 +98,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // that player's own promo, which is not a new call-out, so the promo named
     // has to exist and be theirs.
     const targetPlayer = targetPlayerId ? await players.findById(targetPlayerId) : null;
+    const targetBlocked = isCallOut && targetPlayer ? targetRefusal(targetPlayer) : null;
+    if (targetBlocked) return targetBlocked;
+
     if (targetPlayer && !isPlayerVisible(targetPlayer)) {
       const repliedPromo = promoType === 'response' && targetPromoId
         ? await promos.findById(targetPromoId)

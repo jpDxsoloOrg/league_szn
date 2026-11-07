@@ -1,4 +1,5 @@
 import { FORMER_MEMBER, realWrestlerName, resolveBilledName } from '../../lib/needsWrestler';
+import { bookablePsnId } from '../../lib/disciplineGates';
 import type { MatchSlot, Player } from '../../lib/repositories/types';
 
 export interface HydratedMatchSlot extends MatchSlot {
@@ -45,7 +46,7 @@ export function hydrateMatchSlots(
       ...(realWrestlerName(wrestlerNameSnapshot) ? { wrestlerNameSnapshot } : {}),
       playerName: player?.name?.trim() || FORMER_MEMBER,
       wrestlerName,
-      psnId: player?.psnId,
+      psnId: bookablePsnId(player),
     };
   });
 }

@@ -4,6 +4,7 @@ import type { MatchCardEntry, MatchDesignation } from '../../lib/repositories/ty
 import type { EventPatch } from '../../lib/repositories/LeagueOpsRepository';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
+import { firstBookingRefusal, newlyAddedIds } from '../../lib/disciplineGates';
 
 interface UpdateMatchBody {
   matchFormat?: string;
@@ -91,6 +92,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }
       }
     }
+
+    // `teams` is stored as given, so its ids are checked as well as `participants`.
+    // Only ids this edit adds count: a deactivated player already on the match
+    // must not stop staff editing it.
+    const addedIds = newlyAddedIds(
+      [...(body.participants ?? []), ...(body.teams ?? []).flat()],
+      [...(existingMatch.participants ?? []), ...(existingMatch.teams ?? []).flat()],
+    );
+    const addedPlayers = await Promise.all(addedIds.map((id) => repos.roster.players.findById(id)));
+    const bookingBlocked = firstBookingRefusal(addedPlayers);
+    if (bookingBlocked) return bookingBlocked;
 
     // Validate championship exists if provided
     if (body.championshipId) {

@@ -541,6 +541,39 @@ describe('calculateRankingsForChampionship', () => {
     expect(mockScanAll.mock.calls[0][0].ProjectionExpression).toContain('currentWrestler');
   });
 
+  it('gives a deactivated player no contender slot, and reads the flag to know', async () => {
+    const wins = (playerId: string) => [1, 2, 3].map((day) =>
+      makeMatch({
+        matchId: `${playerId}-${day}`,
+        date: daysAgo(day),
+        winners: [playerId],
+        losers: ['p2'],
+        participants: [playerId, 'p2'],
+      }),
+    );
+    mockTables(
+      [...wins('p1'), ...wins('gone')],
+      [
+        { playerId: 'p1', currentWrestler: 'Edge' },
+        { playerId: 'p2', currentWrestler: 'Kane' },
+        { playerId: 'gone', currentWrestler: 'Sting', deactivatedAt: '2026-01-01T00:00:00.000Z' },
+      ],
+    );
+
+    const results = await calculateRankingsForChampionship({
+      championshipId: 'champ-1',
+      championshipType: 'singles',
+      currentChampion: undefined,
+      seasonId: 'season-1',
+      minimumMatches: 3,
+      maxContenders: 10,
+    });
+
+    expect(results.map((r) => r.playerId)).toContain('p1');
+    expect(results.map((r) => r.playerId)).not.toContain('gone');
+    expect(mockScanAll.mock.calls[0][0].ProjectionExpression).toContain('deactivatedAt');
+  });
+
   it('counts a draw as neither a win nor a loss', async () => {
     const drawn = makeMatch({
       matchId: 'draw',

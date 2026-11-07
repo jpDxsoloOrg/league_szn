@@ -12,6 +12,7 @@ const mockChallengesRepo = {
   listByPlayer: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
+  updateIfStatus: vi.fn(),
   delete: vi.fn(),
 };
 
@@ -186,31 +187,31 @@ describe('respondToChallenge', () => {
 
   it('accepts a challenge and updates status to accepted', async () => {
     setupValidResponder();
-    mockChallengesRepo.update.mockResolvedValue({ ...pendingChallenge, status: 'accepted' });
+    mockChallengesRepo.updateIfStatus.mockResolvedValue(true);
     const result = await respondToChallenge(respondEvent({ action: 'accept' }), ctx, cb);
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     expect(body.status).toBe('accepted');
     expect(body.updatedAt).toBeDefined();
-    expect(mockChallengesRepo.update).toHaveBeenCalledWith('ch1', { status: 'accepted' });
+    expect(mockChallengesRepo.updateIfStatus).toHaveBeenCalledWith('ch1', { status: 'accepted' }, 'pending');
   });
 
   it('accepts with responseMessage', async () => {
     setupValidResponder();
-    mockChallengesRepo.update.mockResolvedValue({ ...pendingChallenge, status: 'accepted', responseMessage: 'Bring it!' });
+    mockChallengesRepo.updateIfStatus.mockResolvedValue(true);
     const result = await respondToChallenge(respondEvent({ action: 'accept', responseMessage: 'Bring it!' }), ctx, cb);
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body).responseMessage).toBe('Bring it!');
-    expect(mockChallengesRepo.update).toHaveBeenCalledWith('ch1', { status: 'accepted', responseMessage: 'Bring it!' });
+    expect(mockChallengesRepo.updateIfStatus).toHaveBeenCalledWith('ch1', { status: 'accepted', responseMessage: 'Bring it!' }, 'pending');
   });
 
   it('declines a challenge and updates status to declined', async () => {
     setupValidResponder();
-    mockChallengesRepo.update.mockResolvedValue({ ...pendingChallenge, status: 'declined' });
+    mockChallengesRepo.updateIfStatus.mockResolvedValue(true);
     const result = await respondToChallenge(respondEvent({ action: 'decline' }), ctx, cb);
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body).status).toBe('declined');
-    expect(mockChallengesRepo.update).toHaveBeenCalledOnce();
+    expect(mockChallengesRepo.updateIfStatus).toHaveBeenCalledOnce();
   });
 
   it('returns 400 when countering without counterMatchType', async () => {

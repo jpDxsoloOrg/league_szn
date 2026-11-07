@@ -7,6 +7,8 @@ import {
 import { success, badRequest, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
+import { findPlayerForCognitoUsername } from '../../lib/disciplineActions';
+import { deleteRefusal } from '../../lib/disciplineGates';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
@@ -27,6 +29,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (!username) {
       return badRequest('username is required');
     }
+
+    // A lookup error lands in the catch, so nothing is deleted without this check.
+    const player = await findPlayerForCognitoUsername(username);
+    const refusal = player && deleteRefusal(player);
+    if (refusal) return refusal;
 
     // Verify the user is disabled before allowing deletion
     const userResult = await cognitoClient.send(

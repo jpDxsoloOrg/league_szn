@@ -5,6 +5,7 @@ import type { MatchSlot, Player } from '../../lib/repositories/types';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { authenticate } from '../../lib/authenticate';
 import { getAuthContext } from '../../lib/auth';
+import { bookablePsnId } from '../../lib/disciplineGates';
 import { hydrateMatchSlots } from '../matches/hydrateSlots';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -118,7 +119,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
               playerId,
               playerName: player?.name || FORMER_MEMBER,
               wrestlerName: resolveBilledName(snapshot, player, FORMER_MEMBER),
-              psnId: player?.psnId,
+              psnId: bookablePsnId(player),
             };
           });
           participantData.push(...(await Promise.all(playerPromises)));

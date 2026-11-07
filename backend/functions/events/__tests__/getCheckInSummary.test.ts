@@ -3,9 +3,10 @@ import type { APIGatewayProxyEvent } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockGet, mockQueryAll } = vi.hoisted(() => ({
+const { mockGet, mockQueryAll, mockScan } = vi.hoisted(() => ({
   mockGet: vi.fn(),
   mockQueryAll: vi.fn(),
+  mockScan: vi.fn(),
 }));
 
 vi.mock('../../../lib/dynamodb', () => ({
@@ -13,7 +14,7 @@ vi.mock('../../../lib/dynamodb', () => ({
     get: mockGet,
     put: vi.fn(),
     query: vi.fn(),
-    scan: vi.fn(),
+    scan: mockScan,
     update: vi.fn(),
     delete: vi.fn(),
     queryAll: mockQueryAll,
@@ -22,6 +23,7 @@ vi.mock('../../../lib/dynamodb', () => ({
   TableNames: {
     EVENT_CHECK_INS: 'EventCheckIns',
     EVENTS: 'Events',
+    PLAYERS: 'Players',
   },
 }));
 
@@ -67,6 +69,7 @@ describe('getCheckInSummary', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGet.mockResolvedValue({ Item: { eventId: 'evt-1' } });
+    mockScan.mockResolvedValue({ Items: [] });
   });
 
   it('returns 404 for an event that does not exist', async () => {

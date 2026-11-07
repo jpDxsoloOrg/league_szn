@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories, type StablePatch } from '../../lib/repositories';
 import { noContent, badRequest, serverError, conflict, notFound } from '../../lib/response';
 import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
+import { deleteRefusal } from '../../lib/disciplineGates';
 import { filterExistingWrestlerIds } from './wrestlerAssignment';
 
 /**
@@ -46,6 +47,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Refuse before anything is written, so a blocked delete changes nothing.
+    const disciplineRefusal = deleteRefusal(player);
+    if (disciplineRefusal) return disciplineRefusal;
+
     const allChampionships = await championships.list();
     const heldChampionships = allChampionships.filter(c => {
       const champion = c.currentChampion;

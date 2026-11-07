@@ -72,6 +72,46 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe('a deactivated player', () => {
+  const deactivate = (playerId: string) => repos.roster.players.updateDiscipline(playerId, {
+    strikes: [],
+    deactivations: [],
+    deactivatedAt: new Date().toISOString(),
+  }, 0);
+
+  it('leaves getPromos, along with their promos', async () => {
+    const promo = await createPromo();
+    const { body: before } = await call<PromoRow[]>(getPromos, makeEvent());
+    expect(before.map((row) => row.promoId)).toEqual([promo.promoId]);
+
+    await deactivate(roster.visibleId);
+
+    const { body: after } = await call<PromoRow[]>(getPromos, makeEvent());
+    expect(after).toEqual([]);
+  });
+
+  it('leaves the public rivalry list', async () => {
+    const rival = await repos.roster.players.create({ name: 'R', currentWrestler: 'Kane' });
+    const { rivalryId } = await repos.rivalries.create({
+      title: 'Feud',
+      requestedBy: roster.visibleId,
+      participants: [
+        { playerId: roster.visibleId, role: 'instigator' },
+        { playerId: rival.playerId, role: 'rival' },
+      ],
+    });
+    await repos.rivalries.update(rivalryId, { status: 'active' });
+
+    const shown = await call<{ rivalries: Array<{ rivalryId: string }> }>(getRivalries, makeEvent());
+    expect(shown.body.rivalries.map((row) => row.rivalryId)).toContain(rivalryId);
+
+    await deactivate(rival.playerId);
+
+    const hidden = await call<{ rivalries: Array<{ rivalryId: string }> }>(getRivalries, makeEvent());
+    expect(hidden.body.rivalries.map((row) => row.rivalryId)).not.toContain(rivalryId);
+  });
+});
+
 describe('getPromo moderated promos', () => {
   const eventFor = (promoId: string, auth = {}) =>
     makeEvent({ ...auth, pathParameters: { promoId } });

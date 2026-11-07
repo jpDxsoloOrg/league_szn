@@ -2,10 +2,11 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
+import { isDeactivated } from '../../lib/discipline';
 
 interface SkippedMember {
   playerId: string;
-  reason: 'not-found' | 'in-other-stable';
+  reason: 'not-found' | 'in-other-stable' | 'deactivated';
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -41,6 +42,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const player = await playersRepo.findById(playerId);
         if (!player) {
           skippedMembers.push({ playerId, reason: 'not-found' });
+          return;
+        }
+        if (isDeactivated(player)) {
+          skippedMembers.push({ playerId, reason: 'deactivated' });
           return;
         }
         if (player.stableId && player.stableId !== stableId) {

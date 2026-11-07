@@ -6,6 +6,7 @@ import { parseBody } from '../../lib/parseBody';
 import { challengeExpiresAt } from '../../lib/challengeExpiry';
 import { challengeTitleFitError, titleAvailabilityError } from '../../lib/challengeTitle';
 import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
+import { callerRefusal, targetRefusal } from '../../lib/discipline';
 // Notifications intentionally not dispatched here while the challenge UI is hidden.
 
 interface CreateChallengeBody {
@@ -62,6 +63,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('No player profile linked to your account');
     }
 
+    const callerBlocked = callerRefusal(challengerPlayer);
+    if (callerBlocked) return callerBlocked;
+
     if (!isPlayerVisible(challengerPlayer)) {
       return badRequest(SET_WRESTLER_NAME_MESSAGE);
     }
@@ -106,14 +110,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const challengedMembers = await Promise.all(
         [challengedTeam.player1Id, challengedTeam.player2Id].map((id) => players.findById(id)),
       );
+      const challengerMembers = await Promise.all(
+        [challengerTagTeam.player1Id, challengerTagTeam.player2Id].map((id) => players.findById(id)),
+      );
+
+      // Everyone on both teams would be signing up, so the caller's partner
+      // counts as well as the other side.
+      for (const member of [...challengerMembers, ...challengedMembers]) {
+        const memberBlocked = member && member.playerId !== challengerId ? targetRefusal(member) : null;
+        if (memberBlocked) return memberBlocked;
+      }
+
       if (challengedMembers.some((member) => member && !isPlayerVisible(member))) {
         return badRequest('A member of that tag team has not set a wrestler name yet');
       }
 
       if (championship) {
-        const challengerMembers = await Promise.all(
-          [challengerTagTeam.player1Id, challengerTagTeam.player2Id].map((id) => players.findById(id)),
-        );
         const titleError = challengeTitleFitError(championship, {
           challengeMode: 'tag_team',
           matchType,
@@ -156,6 +168,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (!challengedPlayer) {
       return badRequest('Challenged player not found');
     }
+
+    const targetBlocked = targetRefusal(challengedPlayer);
+    if (targetBlocked) return targetBlocked;
 
     if (!isPlayerVisible(challengedPlayer)) {
       return badRequest(TARGET_NEEDS_WRESTLER_MESSAGE);

@@ -2,6 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, forbidden, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
+import { callerRefusal } from '../../lib/discipline';
 
 const PRESENCE_TTL_SECONDS = 5 * 60;
 
@@ -21,6 +22,9 @@ export const handler = async (
     if (!callerPlayer) {
       return badRequest('No player profile linked to your account');
     }
+
+    const refusal = callerRefusal(callerPlayer);
+    if (refusal) return refusal;
 
     const playerId = callerPlayer.playerId;
     const lastSeenAt = new Date().toISOString();

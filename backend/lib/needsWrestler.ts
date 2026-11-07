@@ -55,11 +55,12 @@ export function resolveBilledName(
 
 /**
  * True when a player may appear on public roster-facing screens: they must
- * have a real wrestler name. Computed from the name, never stored. Do not use
- * this for self-lookups, staff lists, or resolving names on historical records.
+ * have a real wrestler name and not be deactivated. Do not use this for
+ * self-lookups, staff lists, or resolving names on historical records. Callers
+ * must pass `deactivatedAt` along with the name, so a projection has to read it.
  */
-export function isPlayerVisible(player: { currentWrestler?: string | null }): boolean {
-  return !isNeedsWrestler(player.currentWrestler);
+export function isPlayerVisible(player: { currentWrestler?: string | null; deactivatedAt?: string }): boolean {
+  return !isNeedsWrestler(player.currentWrestler) && !player.deactivatedAt;
 }
 
 /**
@@ -68,7 +69,7 @@ export function isPlayerVisible(player: { currentWrestler?: string | null }): bo
  * work of someone hidden, so reads that see deleted rows keep those records.
  */
 export function isHiddenLivePlayer(
-  player: { currentWrestler?: string | null; deletedAt?: string },
+  player: { currentWrestler?: string | null; deletedAt?: string; deactivatedAt?: string },
 ): boolean {
   return !player.deletedAt && !isPlayerVisible(player);
 }
@@ -92,7 +93,7 @@ export function newPlayerName(
  */
 export async function findHiddenPlayerIds(
   playerIds: Iterable<string>,
-  findById: (playerId: string) => Promise<{ currentWrestler?: string | null } | null>,
+  findById: (playerId: string) => Promise<{ currentWrestler?: string | null; deactivatedAt?: string } | null>,
 ): Promise<Set<string>> {
   const uniqueIds = Array.from(new Set(playerIds));
   const players = await Promise.all(uniqueIds.map((playerId) => findById(playerId)));

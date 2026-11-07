@@ -4,6 +4,7 @@ import { created, badRequest, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { createNotification } from '../../lib/notifications';
+import { teamMemberRefusal } from '../../lib/disciplineGates';
 
 interface InviteBody {
   playerId: string;
@@ -62,6 +63,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (!invitedPlayer) {
       return notFound('Invited player not found');
     }
+
+    const invitedBlocked = teamMemberRefusal(invitedPlayer);
+    if (invitedBlocked) return invitedBlocked;
 
     if (invitedPlayer.stableId) {
       return badRequest('Player already belongs to a stable');

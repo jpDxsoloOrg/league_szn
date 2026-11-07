@@ -5,10 +5,12 @@ import {
   badRequest,
   notFound,
   forbidden,
+  refused,
   serverError,
 } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { createNotifications, CreateNotificationParams } from '../../lib/notifications';
+import { callerRefusal, targetRefusal } from '../../lib/discipline';
 import {
   scheduleMatchInternal,
   ScheduleMatchError,
@@ -83,6 +85,14 @@ export const handler = async (
       return badRequest('Invitation expired');
     }
 
+    // Refuse before the invitation is marked accepted, which cannot be undone.
+    const callerBlocked = callerRefusal(callerPlayer);
+    if (callerBlocked) return callerBlocked;
+
+    const inviter = await players.findById(invitation.fromPlayerId);
+    const inviterBlocked = inviter && targetRefusal(inviter);
+    if (inviterBlocked) return inviterBlocked;
+
     // Conditionally mark the invitation as accepted
     let updatedInvitation: InvitationRecord;
     try {
@@ -119,6 +129,9 @@ export const handler = async (
       matchId = scheduled.matchId;
     } catch (scheduleErr: unknown) {
       if (scheduleErr instanceof ScheduleMatchError) {
+        if (scheduleErr.code) {
+          return refused(scheduleErr.statusCode, scheduleErr.code, scheduleErr.message);
+        }
         if (scheduleErr.statusCode === 404) {
           return notFound(scheduleErr.message);
         }
