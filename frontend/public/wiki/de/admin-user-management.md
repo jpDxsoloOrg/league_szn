@@ -40,6 +40,8 @@ Jede Zeile hat eine Auswahl für **Zugewiesener Wrestler** und **Division**, und
 
 Im Dialog **Verwalten** sperrt **Deaktivieren** die Anmeldung für das Konto. **Aktivieren** macht das rückgängig.
 
+Ein durch einen dritten Strike deaktivierter Spieler lässt sich hier nicht aktivieren, und ein Konto, dessen Spieler aktive Strikes hat, lässt sich nicht löschen. Reaktiviere zuerst den Spieler oder warte, bis die Strikes abgelaufen sind. Siehe [Strikes](admin-strikes).
+
 Ein Konto muss deaktiviert sein, bevor **Löschen** erscheint. Das Löschen ist endgültig und entfernt nur den Zugang. Der Spielereintrag bleibt; nutze [Spieler verwalten](admin-manage-players), wenn auch der Spieler entfernt werden soll.
 
 ## Wrestler-Rollen synchronisieren
