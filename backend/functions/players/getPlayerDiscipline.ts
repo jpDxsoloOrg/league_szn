@@ -1,7 +1,12 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { requireRole } from '../../lib/auth';
 import { computeDiscipline, isDeactivated, nextStrikeOutcome } from '../../lib/discipline';
-import { getHoldings, readAccountView, type PlayerDisciplineDetail } from '../../lib/disciplineActions';
+import {
+  getHoldings,
+  readAccountView,
+  withReadableActors,
+  type PlayerDisciplineDetail,
+} from '../../lib/disciplineActions';
 import { getRepositories } from '../../lib/repositories';
 import { badRequest, notFound, serverError, success } from '../../lib/response';
 
@@ -18,15 +23,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (!player) return notFound('Player not found');
 
     const now = new Date();
-    const [account, holdings] = await Promise.all([readAccountView(player.userId), getHoldings(playerId)]);
+    const [account, holdings, history] = await Promise.all([
+      readAccountView(player.userId),
+      getHoldings(playerId),
+      withReadableActors(player.strikes ?? [], player.deactivations ?? []),
+    ]);
 
     const detail: PlayerDisciplineDetail = {
       playerId,
       version: player.disciplineVersion ?? 0,
       summary: computeDiscipline(player, now),
       nextStrikeOutcome: isDeactivated(player) ? null : nextStrikeOutcome(player, now),
-      strikes: [...(player.strikes ?? [])].sort((a, b) => b.issuedAt.localeCompare(a.issuedAt)),
-      deactivations: [...(player.deactivations ?? [])].sort((a, b) => b.deactivatedAt.localeCompare(a.deactivatedAt)),
+      strikes: history.strikes.sort((a, b) => b.issuedAt.localeCompare(a.issuedAt)),
+      deactivations: history.deactivations.sort((a, b) => b.deactivatedAt.localeCompare(a.deactivatedAt)),
       ...account,
       holdings,
     };

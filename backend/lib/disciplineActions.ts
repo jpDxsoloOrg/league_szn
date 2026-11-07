@@ -20,6 +20,7 @@ import type {
   PlayerStrike,
 } from './repositories/types';
 import { refused } from './response';
+import { createReviewerNameLookup, isCognitoId, UNKNOWN_REVIEWER } from './reviewerName';
 
 /**
  * The side effects of a discipline action: Cognito, soft holds, holdings and
@@ -81,11 +82,45 @@ export const disciplineConflict = (): APIGatewayProxyResult =>
 export const isValidVersion = (value: unknown): value is number =>
   typeof value === 'number' && Number.isInteger(value) && value >= 0;
 
-/** The name kept on a discipline record: the Admin's player name, else their username. */
+/**
+ * The name kept on a discipline record: the Admin's player name, else their
+ * username. In this pool a username can be the raw Cognito id, which is not a name.
+ */
 export async function resolveActorName(auth: AuthContext): Promise<string> {
-  if (!auth.sub) return auth.username;
+  const fallback = isCognitoId(auth.username) ? UNKNOWN_REVIEWER : auth.username;
+  if (!auth.sub) return fallback;
   const actor = await getRepositories().roster.players.findByUserId(auth.sub);
-  return actor?.name ?? auth.username;
+  return actor?.name ?? fallback;
+}
+
+/**
+ * History as staff should read it. Rows written before `resolveActorName` learned
+ * the fallback hold a Cognito id as the name, so those are resolved here.
+ */
+export async function withReadableActors(
+  strikes: PlayerStrike[],
+  deactivations: PlayerDeactivation[],
+): Promise<{ strikes: PlayerStrike[]; deactivations: PlayerDeactivation[] }> {
+  const stored = [
+    ...strikes.flatMap(({ issuedByName, clearedByName }) => [issuedByName, clearedByName]),
+    ...deactivations.flatMap(({ deactivatedByName, reactivatedByName }) => [deactivatedByName, reactivatedByName]),
+  ];
+  const players = stored.some(isCognitoId) ? await getRepositories().roster.players.list() : [];
+  const staffName = createReviewerNameLookup(players);
+  const readable = (name: string): string => staffName(name) ?? UNKNOWN_REVIEWER;
+
+  return {
+    strikes: strikes.map((strike) => ({
+      ...strike,
+      issuedByName: readable(strike.issuedByName),
+      ...(strike.clearedByName ? { clearedByName: readable(strike.clearedByName) } : {}),
+    })),
+    deactivations: deactivations.map((record) => ({
+      ...record,
+      deactivatedByName: readable(record.deactivatedByName),
+      ...(record.reactivatedByName ? { reactivatedByName: readable(record.reactivatedByName) } : {}),
+    })),
+  };
 }
 
 // ─── Cognito ────────────────────────────────────────────────────────

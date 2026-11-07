@@ -790,6 +790,55 @@ describe('getPlayerDiscipline', () => {
     expect(body.strikes.map((entry) => entry.strikeId)).toEqual(['s5', 's0']);
   });
 
+  describe('staff names on stored rows', () => {
+    const ADMIN_ID = 'b4281418-1081-7085-201f-a2a5c546b74e';
+    const LINKED_ID = '11111111-2222-3333-4444-555555555555';
+
+    it('shows League Staff for an account id with no player, in every name on the history', async () => {
+      seed({
+        strikes: [strikeRow(0, {
+          issuedByName: ADMIN_ID,
+          clearedAt: iso(1),
+          clearedByName: ADMIN_ID,
+          clearedKind: 'removed',
+        })],
+        deactivations: [openDeactivation(0, {
+          deactivatedByName: ADMIN_ID,
+          reactivatedAt: iso(1),
+          reactivatedByName: ADMIN_ID,
+        })],
+      });
+      setDay(2);
+
+      const { body } = await readDetail();
+
+      expect(body.strikes[0]).toMatchObject({ issuedByName: 'League Staff', clearedByName: 'League Staff' });
+      expect(body.deactivations[0]).toMatchObject({ deactivatedByName: 'League Staff', reactivatedByName: 'League Staff' });
+      expect(JSON.stringify(row())).toContain(ADMIN_ID);
+    });
+
+    it('names a staff member who has since linked a player, and keeps a readable name', async () => {
+      const staffPlayer = await repos.roster.players.create({ name: 'JP', currentWrestler: 'Sting' });
+      store().set(staffPlayer.playerId, { ...staffPlayer, userId: LINKED_ID });
+      seed({ strikes: [strikeRow(0, { issuedByName: LINKED_ID }), strikeRow(1, { issuedByName: 'Regal' })] });
+      setDay(2);
+
+      const { body } = await readDetail();
+
+      expect(body.strikes.map((entry) => entry.issuedByName)).toEqual(['Regal', 'JP']);
+    });
+
+    it('stores League Staff rather than an account id for an Admin with no player row', async () => {
+      await call(issueStrike, authedEvent(ADMIN_ID, 'Admin', {
+        httpMethod: 'POST',
+        pathParameters: { playerId },
+        body: JSON.stringify({ reason: REASON, expectedVersion: 0, expectedOutcome: 'warned' }),
+      }));
+
+      expect(row().strikes?.[0].issuedByName).toBe('League Staff');
+    });
+  });
+
   it('gives a null next outcome while deactivated', async () => {
     seedDeactivated([0, 5, 6]);
 

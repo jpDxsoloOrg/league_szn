@@ -126,7 +126,7 @@ export interface PlayerStrike {
   issuedAt: string;
   /** Cognito sub. */
   issuedBy: string;
-  /** Admin's player name, else username. */
+  /** Admin's player name, else username, else 'League Staff'. Older rows can hold a Cognito id. */
   issuedByName: string;
   reason: string;
   /** Set means it no longer counts. */
