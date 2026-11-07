@@ -123,8 +123,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // The signup guard reads the PSN ID off a blocked row, so moving it away
     // would free it for a new account. A row with none has nothing to move.
-    if (psnIdChanges && oldPsnId && isSignupBlocked(player)) {
-      return refused(403, 'PSN_ID_LOCKED', 'A PSN ID cannot be changed while sign-ups are blocked');
+    // Case counts as a change here. Surrounding spaces do not, because the profile
+    // form trims what it sends, but the stored value is still left as it is.
+    if (patch.psnId !== undefined && oldPsnId && isSignupBlocked(player)) {
+      if (patch.psnId.trim() !== (player.psnId ?? '').trim()) {
+        return refused(403, 'PSN_ID_LOCKED', 'A PSN ID cannot be changed while sign-ups are blocked');
+      }
+      delete patch.psnId;
     }
 
     // Claiming the PSN ID of someone blocked or deactivated would get round the

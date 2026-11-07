@@ -130,6 +130,8 @@ describe('PUT /players/me', () => {
 
     it.each([
       ['a different ID', 'other_psn'],
+      ['the same ID in another case', 'ROCK_PSN'],
+      ['the same ID in another case, with spaces', ' rock_psn '],
       ['nothing', ''],
     ])('refuses moving the PSN ID to %s, and writes nothing', async (_label, psnId) => {
       await block();
@@ -145,11 +147,21 @@ describe('PUT /players/me', () => {
 
     it.each([
       ['unchanged', 'Rock_PSN'],
-      ['changed only in case and spacing', ' rock_psn '],
-    ])('allows a save with the PSN ID %s', async (_label, psnId) => {
+      ['differing only in surrounding spaces', ' Rock_PSN '],
+    ])('allows a save with the PSN ID %s, and keeps the stored value', async (_label, psnId) => {
       await block();
 
       expect((await update({ psnId, name: 'Rocky' })).statusCode).toBe(200);
+      const row = await repos.roster.players.findById(playerId);
+      expect(row?.psnId).toBe('Rock_PSN');
+      expect(row?.name).toBe('Rocky');
+    });
+
+    it('saves a stored ID with spaces when the form sends it trimmed', async () => {
+      await block({ psnId: ' Rock_PSN ' });
+
+      expect((await update({ psnId: 'Rock_PSN' })).statusCode).toBe(200);
+      expect((await repos.roster.players.findById(playerId))?.psnId).toBe(' Rock_PSN ');
     });
 
     it('allows saves that leave the PSN ID out', async () => {
