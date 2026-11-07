@@ -36,7 +36,7 @@ export const error = (statusCode: number, message: string): APIGatewayProxyResul
 
 export type RefusalCode = 'SIGNUP_BLOCKED' | 'PLAYER_DEACTIVATED' | 'PLAYER_UNAVAILABLE'
   | 'ALREADY_DEACTIVATED' | 'NOT_DEACTIVATED' | 'STAFF_PROTECTED' | 'DISCIPLINE_CONFLICT' | 'STRIKE_NOT_ACTIVE'
-  | 'DISCIPLINE_ACTIVE';
+  | 'DISCIPLINE_ACTIVE' | 'PSN_ID_UNAVAILABLE' | 'PSN_ID_LOCKED';
 
 /** A refusal the frontend can translate by `code`. `message` stays English. */
 export const refused = (

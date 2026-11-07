@@ -107,6 +107,8 @@ components:
             - DISCIPLINE_CONFLICT
             - STRIKE_NOT_ACTIVE
             - DISCIPLINE_ACTIVE
+            - PSN_ID_UNAVAILABLE
+            - PSN_ID_LOCKED
         blockedUntil: { type: string, format: date-time }
 
     StrikeOutcome:

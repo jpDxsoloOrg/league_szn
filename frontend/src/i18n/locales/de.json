@@ -3507,7 +3507,9 @@
       "STAFF_PROTECTED": "Admins und Moderatoren können keine Strikes erhalten. Entferne zuerst die Rolle.",
       "DISCIPLINE_CONFLICT": "Der Datensatz dieses Spielers hat sich geändert, während er geöffnet war. Prüfe den aktuellen Stand unten und versuche es erneut.",
       "STRIKE_NOT_ACTIVE": "Dieser Strike ist nicht mehr aktiv, es gibt also nichts zu entfernen.",
-      "DISCIPLINE_ACTIVE": "Dieser Spieler hat aktive Strikes und kann erst gelöscht werden, wenn diese abgelaufen sind."
+      "DISCIPLINE_ACTIVE": "Dieser Spieler hat aktive Strikes und kann erst gelöscht werden, wenn diese abgelaufen sind.",
+      "PSN_ID_UNAVAILABLE": "Diese PSN ID kann nicht verwendet werden. Prüfe sie und versuche eine andere.",
+      "PSN_ID_LOCKED": "Du kannst deine PSN ID nicht ändern, solange du für Anmeldungen gesperrt bist."
     },
     "countdown": {
       "days_one": "{{count}} Tag",

@@ -234,7 +234,7 @@ Refusal body shape, built by a new helper in `backend/lib/response.ts`:
 ```ts
 export type RefusalCode = 'SIGNUP_BLOCKED' | 'PLAYER_DEACTIVATED' | 'PLAYER_UNAVAILABLE'
   | 'ALREADY_DEACTIVATED' | 'NOT_DEACTIVATED' | 'STAFF_PROTECTED' | 'DISCIPLINE_CONFLICT' | 'STRIKE_NOT_ACTIVE'
-  | 'DISCIPLINE_ACTIVE';
+  | 'DISCIPLINE_ACTIVE' | 'PSN_ID_UNAVAILABLE' | 'PSN_ID_LOCKED';
 export const refused = (statusCode: number, code: RefusalCode, message: string,
   extra?: { blockedUntil?: string }): APIGatewayProxyResult;
 // body: { message, code, blockedUntil? }
@@ -389,7 +389,7 @@ export async function findPlayerForCognitoUsername(username: string): Promise<Pl
 | `backend/functions/users/toggleUserEnabled.ts` | `enabled: true` on a deactivated player gives 409 `PLAYER_DEACTIVATED`. Stops two sources of truth. A lookup error gives 500 with no Cognito call. |
 | `backend/functions/users/deleteUser.ts`, `functions/players/deletePlayer.ts` | Refuse unless `computeDiscipline(...).status` is `clear`: 409 `PLAYER_DEACTIVATED` while deactivated, else 409 `DISCIPLINE_ACTIVE`. In `deleteUser` a lookup error gives 500 with no Cognito call. |
 | `backend/functions/auth/preSignUp.ts` | Before auto-confirming, throw if `isSignupRefused` for `email` and `custom:psn_id`. Message: "This account cannot be registered. Please contact an administrator." Update the file's removal comment and the note in `serverless.yml`: at the SES cutover **keep this handler and drop only the auto-confirm lines**. Handler code only, so no pool change. |
-| `backend/functions/players/updateMyProfile.ts` | When `psnId` changes, 409 `PLAYER_UNAVAILABLE` if `isSignupRefused` with `excludePlayerId` set to the caller. |
+| `backend/functions/players/updateMyProfile.ts` | When `psnId` changes, 409 `PSN_ID_UNAVAILABLE` if `isSignupRefused` with `excludePlayerId` set to the caller. While the caller is sign-up blocked, 403 `PSN_ID_LOCKED` for any change to a stored PSN ID, because moving it off the row would free it for a new account. |
 
 `functions/auth/authorizer.ts` is **not** changed. `dispatch` does the job, and leaving it alone keeps a slow lookup from failing the authorizer, which has the 6-second default timeout and would return 500 on every gateway route.
 
@@ -499,7 +499,7 @@ en and de in `frontend/src/i18n/locales/`; `localeParity.test.ts` fails on any o
 discipline.status.{clear,warned,signupBlocked,cooldown,deactivated}
 discipline.errors.{SIGNUP_BLOCKED,PLAYER_DEACTIVATED,PLAYER_UNAVAILABLE,ALREADY_DEACTIVATED,
                    NOT_DEACTIVATED,STAFF_PROTECTED,DISCIPLINE_CONFLICT,STRIKE_NOT_ACTIVE,
-                   DISCIPLINE_ACTIVE}
+                   DISCIPLINE_ACTIVE,PSN_ID_UNAVAILABLE,PSN_ID_LOCKED}
 discipline.notice.{title,cooldownEnds,signupBlockedUntil,strikeReason}
 discipline.admin.{title,history,issueWarning,issueSecond,issueRestart,deactivateAccount,remove,reactivate,
                   restorePriorStrikes,reason,reasonHint,staffProtected,readOnly,accountSyncFailed,

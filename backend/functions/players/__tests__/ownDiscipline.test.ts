@@ -88,7 +88,7 @@ describe('PUT /players/me', () => {
     const { statusCode, body } = await update({ psnId: 'taken_psn' });
 
     expect(statusCode).toBe(409);
-    expect(body.code).toBe('PLAYER_UNAVAILABLE');
+    expect(body.code).toBe('PSN_ID_UNAVAILABLE');
     expect(mockIsSignupRefused).toHaveBeenCalledWith({ psnId: 'taken_psn', excludePlayerId: playerId });
     expect((await repos.roster.players.findById(playerId))?.psnId).toBe('Rock_PSN');
   });
@@ -114,5 +114,54 @@ describe('PUT /players/me', () => {
     await update({ name: 'Rocky' });
 
     expect(mockIsSignupRefused).not.toHaveBeenCalled();
+  });
+
+  describe('while the caller is blocked from signing up', () => {
+    const block = async (fields: { psnId?: string } = {}) => {
+      const row = await repos.roster.players.findById(playerId);
+      if (fields.psnId !== undefined) await repos.roster.players.update(playerId, fields);
+      const second = { ...row!.strikes![0], strikeId: 's2' };
+      await repos.roster.players.updateDiscipline(playerId, {
+        strikes: [...row!.strikes!, second],
+        deactivations: [],
+        deactivatedAt: null,
+      }, 1);
+    };
+
+    it.each([
+      ['a different ID', 'other_psn'],
+      ['nothing', ''],
+    ])('refuses moving the PSN ID to %s, and writes nothing', async (_label, psnId) => {
+      await block();
+
+      const { statusCode, body } = await update({ psnId, name: 'Rocky' });
+
+      expect(statusCode).toBe(403);
+      expect(body.code).toBe('PSN_ID_LOCKED');
+      const row = await repos.roster.players.findById(playerId);
+      expect(row?.psnId).toBe('Rock_PSN');
+      expect(row?.name).toBe('Rock');
+    });
+
+    it.each([
+      ['unchanged', 'Rock_PSN'],
+      ['changed only in case and spacing', ' rock_psn '],
+    ])('allows a save with the PSN ID %s', async (_label, psnId) => {
+      await block();
+
+      expect((await update({ psnId, name: 'Rocky' })).statusCode).toBe(200);
+    });
+
+    it('allows saves that leave the PSN ID out', async () => {
+      await block();
+
+      expect((await update({ name: 'Rocky' })).statusCode).toBe(200);
+    });
+
+    it('lets a player with no PSN ID add one, which the guard then covers', async () => {
+      await block({ psnId: '' });
+
+      expect((await update({ psnId: 'first_psn' })).statusCode).toBe(200);
+    });
   });
 });

@@ -7,6 +7,7 @@ import { NEEDS_WRESTLER, isNeedsWrestler } from '../../lib/needsWrestler';
 import { applyMovesetFields } from './movesetFields';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import { isSignupRefused } from '../../lib/accountStatus';
+import { isSignupBlocked } from '../../lib/discipline';
 import { toOwnPlayer } from '../../lib/publicPlayer';
 import type { PlayerPatch } from '../../lib/repositories';
 import {
@@ -116,12 +117,20 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       hasChanges = true;
     }
 
+    const newPsnId = normalizePsnId(patch.psnId);
+    const oldPsnId = normalizePsnId(player.psnId);
+    const psnIdChanges = patch.psnId !== undefined && newPsnId !== oldPsnId;
+
+    // The signup guard reads the PSN ID off a blocked row, so moving it away
+    // would free it for a new account. A row with none has nothing to move.
+    if (psnIdChanges && oldPsnId && isSignupBlocked(player)) {
+      return refused(403, 'PSN_ID_LOCKED', 'A PSN ID cannot be changed while sign-ups are blocked');
+    }
+
     // Claiming the PSN ID of someone blocked or deactivated would get round the
     // signup guard, which checks the same IDs. The answer says nothing about why.
-    const newPsnId = normalizePsnId(patch.psnId);
-    if (newPsnId && newPsnId !== normalizePsnId(player.psnId)
-      && await isSignupRefused({ psnId: patch.psnId, excludePlayerId: playerId })) {
-      return refused(409, 'PLAYER_UNAVAILABLE', 'That PSN ID cannot be used');
+    if (psnIdChanges && newPsnId && await isSignupRefused({ psnId: patch.psnId, excludePlayerId: playerId })) {
+      return refused(409, 'PSN_ID_UNAVAILABLE', 'That PSN ID cannot be used');
     }
 
     const movesetError = applyMovesetFields(body, patch);

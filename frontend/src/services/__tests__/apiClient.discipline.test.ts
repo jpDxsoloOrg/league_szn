@@ -39,6 +39,16 @@ describe('ApiError refusal codes', () => {
     expect(error.message).toBe(en.discipline.errors.PLAYER_UNAVAILABLE);
   });
 
+  it.each(['PSN_ID_UNAVAILABLE', 'PSN_ID_LOCKED'] as const)('talks about the PSN ID for %s', async (code) => {
+    refuseWith(409, { message: 'English from the server', code });
+    const { message } = await failure();
+    expect(message).toBe(en.discipline.errors[code]);
+    expect(message).toContain('PSN ID');
+    await i18n.changeLanguage('de');
+    refuseWith(409, { message: 'English from the server', code });
+    expect((await failure()).message).toBe(de.discipline.errors[code]);
+  });
+
   it('translates in the viewer language', async () => {
     await i18n.changeLanguage('de');
     refuseWith(409, { message: 'stale', code: 'DISCIPLINE_CONFLICT' });

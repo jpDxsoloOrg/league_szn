@@ -3507,7 +3507,9 @@
       "STAFF_PROTECTED": "Admins and moderators can't receive strikes. Remove their role first.",
       "DISCIPLINE_CONFLICT": "This player's record changed while you had it open. Check the latest details below, then try again.",
       "STRIKE_NOT_ACTIVE": "That strike is no longer active, so there is nothing to remove.",
-      "DISCIPLINE_ACTIVE": "This player has active strikes, so they can't be deleted until those end."
+      "DISCIPLINE_ACTIVE": "This player has active strikes, so they can't be deleted until those end.",
+      "PSN_ID_UNAVAILABLE": "That PSN ID can't be used. Check it and try another.",
+      "PSN_ID_LOCKED": "You can't change your PSN ID while you're blocked from signing up."
     },
     "countdown": {
       "days_one": "{{count}} day",
