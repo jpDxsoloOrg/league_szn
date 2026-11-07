@@ -40,4 +40,4 @@ Ohne aktive Strikes gibt es kein Feld. Frühere Strikes werden nicht angezeigt.
 
 ## So wird die Zeit gezählt
 
-Ein Tag bedeutet hier 24 Stunden ab dem genauen Zeitpunkt des Strikes, nicht ein Kalendertag. Ein Strike am Montag um 21:40 Uhr beendet seine 7 Tage am nächsten Montag um 21:40 Uhr, ein Ende kann also zu jeder Uhrzeit liegen. Alle Zeiten erscheinen in deiner Zeitzone.
+Ein Tag bedeutet hier 24 Stunden ab dem genauen Zeitpunkt des Strikes, nicht ein Kalendertag. Ein Strike am Montag um 21:40 Uhr beendet seine 7 Tage am nächsten Montag um 21:40 Uhr, oder eine Stunde früher oder später, wenn dazwischen die Uhren umgestellt werden. Ein Ende kann zu jeder Uhrzeit liegen. Alle Zeiten erscheinen in deiner Zeitzone.

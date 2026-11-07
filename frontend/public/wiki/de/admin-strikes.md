@@ -31,8 +31,8 @@ Der Spieler verliert sofort den Zugang. Er bleibt in bestehenden Einträgen, und
 
 - **Titel** bleiben beim Spieler. Mache sie unter [Meisterschaften](admin-championships) frei, wenn du möchtest. Bei einem Tag-Titel verliert ihn dadurch auch der Partner.
 - **Geplante und offene Matches** bleiben auf der Card. Tausche den Spieler aus oder trage das Ergebnis wie gewohnt ein.
-- **Angenommene Herausforderungen** kannst du unter [Herausforderungen](admin-challenges) abbrechen.
-- **Turniere** behalten den Spieler als Teilnehmer. Du kannst seine Turniermatches weiter buchen, und die Buchungsseite weist darauf hin. Trage jedes davon unter [Ergebnisse eintragen](admin-record-results) als Aufgabe ein, indem du den Gegner als Sieger wählst, damit das Turnier enden kann.
+- **Angenommene Herausforderungen** kannst du unter **Admin → Promos** im Tab **Call-outs** abbrechen. Siehe [Herausforderungen](admin-challenges).
+- **Turniere** behalten den Spieler als Teilnehmer. Du kannst seine Turniermatches weiter buchen, und die Buchungsseite weist darauf hin. Trage jedes davon als Aufgabe ein, indem du beim Match auf **Ergebnis eintragen** klickst und den Gegner als Sieger wählst, damit das Turnier enden kann. Die Schaltfläche findest du auf der Kampfkarte des Events oder unter **Admin → Einzelne Matches**. Siehe [Ergebnisse eintragen](admin-record-results).
 
 Zu anderen Buchungen kann ein deaktivierter Spieler nicht hinzugefügt werden. Sein Tag-Team bleibt aktiv, verschwindet aber aus öffentlichen Listen. Der Partner kann es auflösen und ein neues gründen.
 

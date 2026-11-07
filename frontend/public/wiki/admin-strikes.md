@@ -31,8 +31,8 @@ The player loses access at once. They stay on existing records, and nothing they
 
 - **Titles** stay with the player. Vacate them under [Championships](admin-championships) if you want to. On a tag title, that also takes it from the partner.
 - **Scheduled and open matches** stay on the card. Swap the player out, or record the result as usual.
-- **Accepted challenges** can be cancelled in [Challenges](admin-challenges).
-- **Tournaments** keep the player entered. You can still book their tournament matches, and the booking screen says so. Record each one as a forfeit in [Record Results](admin-record-results) by picking the opponent as winner, so the tournament can finish.
+- **Accepted challenges** can be cancelled under **Admin → Promos**, on the **Call-outs** tab. See [Challenges](admin-challenges).
+- **Tournaments** keep the player entered. You can still book their tournament matches, and the booking screen says so. Record each one as a forfeit by clicking **Record Result** on the match and picking the opponent as winner, so the tournament can finish. The button is on the event card, or under **Admin → Standalone Matches**. See [Recording Results](admin-record-results).
 
 A deactivated player can't be added to any other booking. Their tag team stays active but leaves public lists. The partner can dissolve it and form a new one.
 

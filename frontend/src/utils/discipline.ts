@@ -51,7 +51,7 @@ export function msUntilNextBoundary(discipline: MaybeDiscipline, now: number = D
 
 type Translate = (key: string, options: { count: number }) => string;
 
-/** Two units, largest first: "5 days 3 hours", "3 hours 12 minutes", "12 minutes 5 seconds". */
+/** Up to two units, largest first, with no zero units: "5 days 3 hours", "1 day", "12 minutes 5 seconds", "4 seconds". */
 export function formatCountdown(remainingMs: number, t: Translate): string {
   const totalSeconds = Math.max(0, Math.ceil(remainingMs / SECOND_MS));
   const days = Math.floor(totalSeconds / DAY_S);
@@ -60,9 +60,14 @@ export function formatCountdown(remainingMs: number, t: Translate): string {
   const seconds = totalSeconds % MINUTE_S;
 
   const unit = (name: string, count: number) => t(`discipline.countdown.${name}`, { count });
-  if (days > 0) return `${unit('days', days)} ${unit('hours', hours)}`;
-  if (hours > 0) return `${unit('hours', hours)} ${unit('minutes', minutes)}`;
-  return `${unit('minutes', minutes)} ${unit('seconds', seconds)}`;
+  const units = [['days', days], ['hours', hours], ['minutes', minutes], ['seconds', seconds]] as const;
+  const first = units.findIndex(([, count]) => count > 0);
+  if (first < 0) return unit('seconds', 0);
+  return units
+    .slice(first, first + 2)
+    .filter(([, count]) => count > 0)
+    .map(([name, count]) => unit(name, count))
+    .join(' ');
 }
 
 /** The translated refusal when the server sent one, else the caller's generic message. */

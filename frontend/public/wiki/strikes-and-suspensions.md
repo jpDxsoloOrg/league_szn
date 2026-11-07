@@ -40,4 +40,4 @@ With no active strikes there is no panel. Past strikes aren't shown.
 
 ## How Time Is Counted
 
-A day here means 24 hours from the exact time of the strike, not a calendar day. A strike at 9:40 PM on a Monday ends its 7 days at 9:40 PM the next Monday, so an end can fall at any hour. All times show in your own time zone.
+A day here means 24 hours from the exact time of the strike, not a calendar day. A strike at 9:40 PM on a Monday ends its 7 days at 9:40 PM the next Monday, or an hour either side if the clocks change in between. An end can fall at any hour. All times show in your own time zone.

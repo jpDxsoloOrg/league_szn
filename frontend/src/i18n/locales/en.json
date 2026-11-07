@@ -3598,6 +3598,7 @@
       "reactivatedBy": "Reactivated {{date}} by {{name}}",
       "done": {
         "strike": "Strike issued.",
+        "strikeDeactivated": "Strike issued and account deactivated.",
         "remove": "Strike removed.",
         "reactivate": "Player reactivated."
       }

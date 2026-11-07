@@ -255,6 +255,8 @@ describe('PlayerDisciplineModal', () => {
         expectedOutcome: 'deactivated',
       });
       expect(await screen.findByRole('link', { name: /World Title/ })).toBeInTheDocument();
+      expect(screen.getByText('discipline.admin.done.strikeDeactivated')).toBeInTheDocument();
+      expect(screen.queryByText('discipline.admin.done.strike')).not.toBeInTheDocument();
     });
 
     const deactivateThroughConfirm = async () => {
@@ -274,7 +276,7 @@ describe('PlayerDisciplineModal', () => {
 
       await deactivateThroughConfirm();
 
-      expect(await screen.findByText('discipline.admin.done.strike')).toBeInTheDocument();
+      expect(await screen.findByText('discipline.admin.done.strikeDeactivated')).toBeInTheDocument();
       expect(await screen.findByRole('link', { name: /World Title/ })).toBeInTheDocument();
       expect(screen.queryByText('discipline.admin.holdingsNone')).not.toBeInTheDocument();
     });

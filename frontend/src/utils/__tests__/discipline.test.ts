@@ -92,8 +92,18 @@ describe('formatCountdown', () => {
   });
 
   it('rounds up, so it reads zero only at the end', () => {
-    expect(formatCountdown(1, t)).toBe('0 minutes 1 seconds');
-    expect(formatCountdown(-5000, t)).toBe('0 minutes 0 seconds');
+    expect(formatCountdown(1, t)).toBe('1 seconds');
+    expect(formatCountdown(-5000, t)).toBe('0 seconds');
+  });
+
+  it.each([
+    ['a leading unit', 4000, '4 seconds'],
+    ['seconds under a whole minute', 60_000, '1 minutes'],
+    ['minutes under a whole hour', HOUR, '1 hours'],
+    ['hours under a whole day', DAY, '1 days'],
+    ['a zero unit with a smaller one below it', DAY + 5 * 60_000, '1 days'],
+  ])('drops %s that reads zero', (_label, remainingMs, expected) => {
+    expect(formatCountdown(remainingMs, t)).toBe(expected);
   });
 });
 

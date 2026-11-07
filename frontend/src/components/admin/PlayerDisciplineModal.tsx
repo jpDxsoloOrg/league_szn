@@ -96,7 +96,7 @@ function ActionOutcome({ completed, holdings, onNavigate }: ActionOutcomeProps) 
 
   return (
     <>
-      <AdminNotice tone="success">{t(`discipline.admin.done.${action}`)}</AdminNotice>
+      <AdminNotice tone="success">{t(`discipline.admin.done.${deactivated ? 'strikeDeactivated' : action}`)}</AdminNotice>
       {accountSync === 'failed' && (
         <AdminNotice tone="warning">
           {t('discipline.admin.accountSyncFailed')} <Link to="/admin/users" onClick={onNavigate}>{t('discipline.admin.manageUsers')}</Link>
