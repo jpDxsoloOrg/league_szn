@@ -85,8 +85,8 @@ describe('DisciplineNotice', () => {
     renderNotice(blocked);
     expect(screen.getByText('discipline.status.signupBlocked')).toBeInTheDocument();
     const [suspension, cooldown] = screen.getAllByRole('timer');
-    expect(suspension).toHaveTextContent('liftsIn time=6 days 0 hours');
-    expect(cooldown).toHaveTextContent('fallsOffIn count=2 time=13 days 0 hours');
+    expect(suspension).toHaveTextContent('liftsIn time=6 days');
+    expect(cooldown).toHaveTextContent('fallsOffIn count=2 time=13 days');
     expect(within(screen.getByRole('list')).getAllByRole('listitem')).toHaveLength(2);
   });
 
@@ -104,11 +104,11 @@ describe('DisciplineNotice', () => {
 
   it('counts down live', () => {
     renderNotice({ ...warned, cooldownEndsAt: at(2 * HOUR) });
-    expect(screen.getByRole('timer')).toHaveTextContent('2 hours 0 minutes');
+    expect(screen.getByRole('timer')).toHaveTextContent('2 hours');
     act(() => {
       vi.advanceTimersByTime(HOUR + 60_000);
     });
-    expect(screen.getByRole('timer')).toHaveTextContent('59 minutes 0 seconds');
+    expect(screen.getByRole('timer')).toHaveTextContent('59 minutes');
   });
 
   it('moves on by itself when the block ends, and goes away with the cooldown', () => {
@@ -129,7 +129,7 @@ describe('SuspensionNotice', () => {
   it('shows the time left and the date, and goes when the block ends', () => {
     const until = at(HOUR);
     const { container } = render(<SuspensionNotice until={until} />);
-    expect(screen.getByRole('timer')).toHaveTextContent('time=1 hours 0 minutes');
+    expect(screen.getByRole('timer')).toHaveTextContent('time=1 hours');
     expect(screen.getByText(/signupBlockedUntil/)).toHaveAttribute('datetime', until);
     act(() => {
       vi.advanceTimersByTime(HOUR);

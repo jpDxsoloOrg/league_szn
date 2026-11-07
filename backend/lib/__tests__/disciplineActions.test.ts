@@ -197,8 +197,8 @@ describe('getHoldings', () => {
     const { matches } = await getHoldings('p1');
 
     expect(matches).toEqual(expect.arrayContaining([
-      { matchId: 'scheduled', date: '2026-05-01T00:00:00.000Z', status: 'scheduled', eventId: 'e1' },
-      { matchId: 'open', date: '2026-05-01T00:00:00.000Z', status: 'open-signups', tournamentId: 't1' },
+      { matchId: 'scheduled', date: '2026-05-01T00:00:00.000Z', status: 'scheduled', opponents: [], eventId: 'e1' },
+      { matchId: 'open', date: '2026-05-01T00:00:00.000Z', status: 'open-signups', opponents: [], tournamentId: 't1' },
     ]));
     expect(matches).toHaveLength(2);
   });
