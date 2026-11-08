@@ -157,8 +157,28 @@ jobs:
           aws s3 sync dist s3://dev.leagueszn.jpdxsolo.com --delete \
             --exclude "assets/*" \
             --exclude "index.html" \
+            --exclude "sw.js" \
+            --exclude "sw-kill.js" \
+            --exclude "manifest.webmanifest" \
             --exclude "*.map" \
             --cache-control "public, max-age=300"
+
+      # The service worker and manifest must never sit in a cache: browsers look
+      # for a new sw.js on every navigation. Without the right content type the
+      # browser refuses the worker, and CloudFront answers a missing /sw.js with
+      # index.html, so these are uploaded explicitly.
+      - name: Upload service worker and manifest as no-cache
+        working-directory: frontend
+        run: |
+          aws s3 cp dist/sw.js s3://dev.leagueszn.jpdxsolo.com/sw.js \
+            --cache-control "no-cache" \
+            --content-type "application/javascript"
+          aws s3 cp dist/sw-kill.js s3://dev.leagueszn.jpdxsolo.com/sw-kill.js \
+            --cache-control "no-cache" \
+            --content-type "application/javascript"
+          aws s3 cp dist/manifest.webmanifest s3://dev.leagueszn.jpdxsolo.com/manifest.webmanifest \
+            --cache-control "no-cache" \
+            --content-type "application/manifest+json"
 
       - name: Upload index.html as no-cache
         working-directory: frontend

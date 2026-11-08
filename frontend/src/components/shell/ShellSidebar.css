@@ -7,7 +7,9 @@
   z-index: var(--z-shell);
   display: flex;
   flex-direction: column;
-  width: var(--shell-sidebar-width);
+  width: calc(var(--shell-sidebar-width) + env(safe-area-inset-left, 0px));
+  /* Installed, the status bar and a side notch overlay the page. */
+  padding: env(safe-area-inset-top) 0 0 env(safe-area-inset-left);
   background-color: var(--color-surface);
   border-right: 1px solid var(--color-hairline);
 }

@@ -12,8 +12,12 @@ import '@fontsource/chakra-petch/700.css';
 import App from './App';
 import './index.css';
 import { installPreloadRecovery } from './utils/preloadRecovery';
+import { registerServiceWorker } from './pwa/registerServiceWorker';
+import { captureInstallPrompt } from './pwa/useInstallPrompt';
 
 installPreloadRecovery();
+captureInstallPrompt();
+registerServiceWorker();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

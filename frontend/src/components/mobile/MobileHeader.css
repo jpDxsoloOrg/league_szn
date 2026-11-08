@@ -3,8 +3,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  min-height: 56px;
-  padding: env(safe-area-inset-top) 1rem 0;
+  /* Installed on iOS the status bar overlays the page (black-translucent), so
+     the bar grows by the top inset and keeps its 56px of content below it. */
+  min-height: calc(56px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) max(1rem, env(safe-area-inset-right)) 0 max(1rem, env(safe-area-inset-left));
   background-color: var(--color-bg);
   border-bottom: 1px solid var(--color-hairline);
 }

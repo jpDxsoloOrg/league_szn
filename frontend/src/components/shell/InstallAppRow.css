@@ -1,0 +1,23 @@
+/* Sits in a Me hub group and reuses its row styles; this only adds the second line. */
+.install-app-row {
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+}
+
+.install-app-row__icon {
+  flex: none;
+  color: var(--color-primary);
+}
+
+.install-app-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.install-app-row__hint {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+}

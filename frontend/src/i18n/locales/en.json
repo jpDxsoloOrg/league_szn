@@ -452,7 +452,8 @@
       "rivalries": "Rivalries",
       "adminRivalries": "Admin: Rivalries",
       "rateMatches": "Rate Matches",
-      "rivalryHeatExplained": "How Rivalry Heat Works"
+      "rivalryHeatExplained": "How Rivalry Heat Works",
+      "installApp": "Install the App"
     },
     "navLabels": {
       "adminQuickstart": "Quickstart",
@@ -3522,6 +3523,13 @@
     "notFound": {
       "title": "Story not found",
       "description": "This story was removed or has expired."
+    }
+  },
+  "pwa": {
+    "install": {
+      "action": "Install app",
+      "description": "Open League SZN from your home screen, full screen like an app.",
+      "iosHint": "Tap Share (or •••, then Share), then Add to Home Screen."
     }
   }
 }

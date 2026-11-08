@@ -452,7 +452,8 @@
       "rivalries": "Rivalitäten",
       "adminRivalries": "Admin: Rivalitäten",
       "rateMatches": "Kämpfe bewerten",
-      "rivalryHeatExplained": "Wie Rivalitäts-Hitze funktioniert"
+      "rivalryHeatExplained": "Wie Rivalitäts-Hitze funktioniert",
+      "installApp": "App installieren"
     },
     "navLabels": {
       "adminQuickstart": "Schnellstart",
@@ -3522,6 +3523,13 @@
     "notFound": {
       "title": "Meldung nicht gefunden",
       "description": "Diese Meldung wurde entfernt oder ist abgelaufen."
+    }
+  },
+  "pwa": {
+    "install": {
+      "action": "App installieren",
+      "description": "Öffne League SZN vom Startbildschirm aus, im Vollbild wie eine App.",
+      "iosHint": "Tippe auf Teilen (oder auf ••• und dann Teilen) und dann auf „Zum Home-Bildschirm“."
     }
   }
 }

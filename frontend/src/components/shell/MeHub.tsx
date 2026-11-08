@@ -5,6 +5,7 @@ import { ChevronRight, EyeOff, Globe, LogOut } from 'lucide-react';
 import Button from '../ui/Button';
 import PageHeader from '../ui/PageHeader';
 import LanguageSwitcher from '../LanguageSwitcher';
+import InstallAppRow from './InstallAppRow';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavContext } from '../../hooks/useNavContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
@@ -86,6 +87,7 @@ export default function MeHub() {
       </div>
 
       <div className="me-hub__group">
+        <InstallAppRow />
         <div className="me-hub__row me-hub__row--static">
           <span className="me-hub__row-leading">
             <Globe aria-hidden="true" size={20} />

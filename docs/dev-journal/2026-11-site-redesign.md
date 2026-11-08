@@ -277,6 +277,43 @@ deletion protection blocks in the revert. Expired challenges and recalculated ra
 stay as they are unless restored from point-in-time recovery. Players soft-deleted
 after the release look to the old code like live players with no wrestler.
 
+### Service worker and rollback
+
+The site installs as an app and registers a service worker, `frontend/public/sw.js`,
+served at `/sw.js`. Once a browser has it, the worker stays until the browser is told
+to remove it, so a rollback has to deal with it.
+
+- **What it caches.** Page loads always go to the network first, so a stale worker
+  never pins an old `index.html`: online users get whatever build is deployed, rolled
+  back or not. Only when the network fails does it show `/offline.html`. Hashed files
+  under `/assets/` are cached by name, which is safe because a name never changes
+  content. API, Cognito, S3 images and wiki markdown are not touched.
+- **Why a rollback still needs care.** A build from before this change has no `sw.js`,
+  and its deploy's `--delete` sync removes ours. CloudFront then answers `/sw.js` with
+  `index.html` and status 200. Browsers reject that as a worker script, so they keep the
+  old worker, which keeps running against the rolled-back site. That is harmless with
+  network-first pages, but it never goes away.
+- **The kill switch.** `frontend/public/sw-kill.js` is published with every build at
+  `/sw-kill.js` and is not registered by anything. Deployed as `/sw.js`, it deletes
+  every cache and unregisters itself on each browser's next visit. After rolling back to
+  a build without a service worker, keep it there:
+
+  ```bash
+  # Prod. Use dev.leagueszn.jpdxsolo.com for dev. Get sw-kill.js from any build of
+  # this change (frontend/public/sw-kill.js) if the rolled-back dist lacks it.
+  aws s3 cp frontend/public/sw-kill.js s3://leagueszn.jpdxsolo.com/sw.js \
+    --cache-control "no-cache" --content-type "application/javascript" \
+    --profile league-szn
+  aws cloudfront create-invalidation --distribution-id <id> --paths "/sw.js"
+  ```
+
+  The next deploy from an old build deletes it again (`--delete`), so repeat this after
+  each such deploy until the service worker is back on `main`.
+- **Rolling back to a build that has a service worker** needs nothing special. To force
+  every browser to drop its caches, bump `CACHE_VERSION` in `sw.js`.
+- **Deploy headers.** `sw.js`, `sw-kill.js` and `manifest.webmanifest` are uploaded with
+  `no-cache` and explicit content types after the main sync, in both workflows.
+
 ### Optional one-off jobs
 
 None of these blocks the release. Each one writes to prod, so each is the owner's call.
