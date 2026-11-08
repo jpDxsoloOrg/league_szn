@@ -1,8 +1,9 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import type { MatchCardEntry, MatchDesignation } from '../../lib/repositories/types';
+import type { Match, MatchCardEntry, MatchDesignation, MatchSlot } from '../../lib/repositories/types';
 import type { EventPatch } from '../../lib/repositories/LeagueOpsRepository';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { success, badRequest, notFound, conflict, serverError } from '../../lib/response';
+import { isConcurrentWriteError } from '../../lib/repositories/errors';
 import { parseBody } from '../../lib/parseBody';
 import { firstBookingRefusal, newlyAddedIds } from '../../lib/disciplineGates';
 
@@ -17,6 +18,40 @@ interface UpdateMatchBody {
   seasonId?: string | null;
   eventId?: string | null;
   designation?: string | null;
+  /**
+   * Close an open-signups match with whoever has signed up: the empty spots
+   * are dropped and the match becomes scheduled. Sent on its own.
+   */
+  closeSignups?: boolean;
+}
+
+/** The fewest wrestlers a match can be closed with. */
+const MIN_CLOSED_PARTICIPANTS = 2;
+
+/**
+ * Patch that closes sign-ups on an open-signups match, or the reason it
+ * cannot be closed. Filled spots keep their order and are renumbered 1..N.
+ */
+export function buildCloseSignupsPatch(match: Match): { patch: Record<string, unknown> } | { error: string } {
+  if (match.status !== 'open-signups') {
+    return { error: 'Only a match with open sign-ups can be closed' };
+  }
+  const filledSlots: MatchSlot[] = (match.slots ?? [])
+    .filter((slot) => Boolean(slot.playerId))
+    .sort((first, second) => first.position - second.position)
+    .map((slot, index) => ({ ...slot, position: index + 1 }));
+  const participants = [...new Set(filledSlots.map((slot) => slot.playerId as string))];
+  if (participants.length < MIN_CLOSED_PARTICIPANTS) {
+    return { error: `At least ${MIN_CLOSED_PARTICIPANTS} wrestlers must have signed up to close sign-ups` };
+  }
+  return {
+    patch: {
+      slots: filledSlots,
+      slotsRequired: filledSlots.length,
+      participants,
+      status: 'scheduled',
+    },
+  };
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -37,6 +72,44 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const existingRecord = existingMatch as unknown as Record<string, unknown>;
+
+    if (body.closeSignups !== undefined) {
+      if (body.closeSignups !== true) {
+        return badRequest('closeSignups must be true');
+      }
+      const otherFields = Object.keys(body).filter((key) => key !== 'closeSignups');
+      if (otherFields.length > 0) {
+        return badRequest('closeSignups cannot be combined with other changes');
+      }
+      const closing = buildCloseSignupsPatch(existingMatch);
+      if ('error' in closing) {
+        return badRequest(closing.error);
+      }
+      // The slots array is written whole, so the write is guarded on the
+      // version read above, as claimSlot and releaseSlot do: a sign-up or
+      // release that lands in between fails this close instead of being lost.
+      try {
+        await repos.runInTransaction(async (tx) => {
+          tx.updateMatch(
+            matchId,
+            existingMatch.date,
+            closing.patch,
+            { kind: 'unchangedSince', updatedAt: existingMatch.updatedAt },
+          );
+        });
+      } catch (writeError: unknown) {
+        if (isConcurrentWriteError(writeError)) {
+          return conflict('This match changed while you were closing sign-ups. Refresh and try again.');
+        }
+        throw writeError;
+      }
+      const closed: Match = {
+        ...existingMatch,
+        ...closing.patch,
+        updatedAt: new Date().toISOString(),
+      } as Match;
+      return success(closed);
+    }
 
     // Only allow editing scheduled matches
     if (existingMatch.status !== 'scheduled') {

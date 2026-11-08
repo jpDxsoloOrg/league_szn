@@ -6,6 +6,7 @@ import type { Company, Season, Show } from '../../types';
 import type { CreateEventInput, EventType } from '../../types/event';
 import { eventsApi, seasonsApi } from '../../services/api';
 import { dateToCalendarDate } from '../../utils/dateUtils';
+import { getPlannedShows } from '../../utils/showSchedule';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import Select from '../ui/Select';
@@ -13,13 +14,13 @@ import './CreateEventModal.css';
 
 const EVENT_TYPES: EventType[] = ['ppv', 'weekly', 'special', 'house'];
 
-/** Values a calendar show pre-fills. */
+/** Values a calendar show or a picked calendar day pre-fills. */
 export interface CreateEventPreset {
-  name: string;
-  eventType: EventType;
+  name?: string;
+  eventType?: EventType;
   date: string;
-  showId: string;
-  companyId: string;
+  showId?: string;
+  companyId?: string;
 }
 
 interface CreateEventModalProps {
@@ -28,6 +29,8 @@ interface CreateEventModalProps {
   shows: Show[];
   companies: Company[];
   preset?: CreateEventPreset | null;
+  /** Events already booked, so picking a show suggests its next open date. */
+  existingEvents?: { showId?: string; date: string }[];
 }
 
 interface EventDraft {
@@ -55,19 +58,38 @@ function emptyDraft(preset?: CreateEventPreset | null): EventDraft {
 }
 
 /** Staff form that creates an event of any type and opens its match card. */
-export default function CreateEventModal({ open, onClose, shows, companies, preset }: CreateEventModalProps) {
+export default function CreateEventModal({
+  open,
+  onClose,
+  shows,
+  companies,
+  preset,
+  existingEvents = [],
+}: CreateEventModalProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [draft, setDraft] = useState<EventDraft>(() => emptyDraft(preset));
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A date that came from the calendar or was typed is never overwritten.
+  const [dateChosen, setDateChosen] = useState(false);
+  const [seasonChosen, setSeasonChosen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setDraft(emptyDraft(preset));
+    setDateChosen(!!preset?.date);
+    setSeasonChosen(false);
     setError(null);
   }, [open, preset]);
+
+  // New events belong to the running season unless staff pick otherwise.
+  const activeSeasonId = seasons.find((season) => season.status === 'active')?.seasonId ?? '';
+  useEffect(() => {
+    if (!open || seasonChosen || !activeSeasonId) return;
+    setDraft((previous) => (previous.seasonId ? previous : { ...previous, seasonId: activeSeasonId }));
+  }, [open, seasonChosen, activeSeasonId]);
 
   useEffect(() => {
     if (!open) return;
@@ -95,12 +117,14 @@ export default function CreateEventModal({ open, onClose, shows, companies, pres
       updateDraft({ showId: '' });
       return;
     }
+    const nextShowDate = dateChosen ? undefined : getPlannedShows([show], existingEvents, new Date())[0]?.date;
     setDraft((previous) => ({
       ...previous,
       showId,
       name: previous.name.trim() ? previous.name : show.name,
       companyId: show.companyId,
       eventType: show.schedule ?? previous.eventType,
+      date: nextShowDate ?? previous.date,
     }));
   };
 
@@ -218,7 +242,10 @@ export default function CreateEventModal({ open, onClose, shows, companies, pres
             className="create-event__input"
             type="date"
             value={draft.date}
-            onChange={(changeEvent) => updateDraft({ date: changeEvent.target.value })}
+            onChange={(changeEvent) => {
+              setDateChosen(true);
+              updateDraft({ date: changeEvent.target.value });
+            }}
           />
         </div>
 
@@ -263,7 +290,10 @@ export default function CreateEventModal({ open, onClose, shows, companies, pres
               <Select
                 label={t('events.admin.season', 'Season')}
                 value={draft.seasonId}
-                onValueChange={(seasonId) => updateDraft({ seasonId })}
+                onValueChange={(seasonId) => {
+                  setSeasonChosen(true);
+                  updateDraft({ seasonId });
+                }}
                 options={seasonOptions}
               />
             </div>

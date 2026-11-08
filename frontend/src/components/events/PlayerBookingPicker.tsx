@@ -16,6 +16,7 @@ import {
 } from '../../utils/checkInStatus';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
 import { nameOrUnnamed } from '../../utils/playerName';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { BookingDisciplineBadge } from '../admin/DisciplineBadge';
 import './PlayerBookingPicker.css';
 
@@ -81,6 +82,8 @@ export default function PlayerBookingPicker({
   const [search, setSearch] = useState('');
   const [showAll, setShowAll] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   const statusOf = useMemo(
     () => (playerId: string): CheckInStatus =>
@@ -241,6 +244,16 @@ export default function PlayerBookingPicker({
     };
   }, [open]);
 
+  // On a phone the menu opens in the page flow, so bring all of it, Done
+  // included, into view above the bottom bars (see scroll-margin in the CSS).
+  useEffect(() => {
+    if (!open || !isMobile) return;
+    const menu = menuRef.current;
+    if (menu && typeof menu.scrollIntoView === 'function') {
+      menu.scrollIntoView({ block: 'nearest' });
+    }
+  }, [open, isMobile]);
+
   const handleSelect = (playerId: string) => {
     if (multi) {
       // Booking several people in a row is the normal case, so the menu
@@ -306,7 +319,7 @@ export default function PlayerBookingPicker({
       </button>
 
       {open && (
-        <div className="booking-picker-menu" role="listbox">
+        <div className="booking-picker-menu" role="listbox" ref={menuRef}>
           <input
             type="search"
             className="booking-picker-search"

@@ -284,6 +284,26 @@
   color: var(--color-draw);
 }
 
+/*
+ * On a phone a floating menu runs under the sticky action bar and the bottom
+ * tab bar, where Done can't be reached. In the page flow it scrolls like the
+ * rest of the form, and scroll-margin keeps it clear of those bars.
+ */
+@media (max-width: 768px) {
+  .booking-picker-menu {
+    position: static;
+    min-width: 0;
+    max-height: min(340px, 55dvh);
+    margin-top: 0.25rem;
+    scroll-margin-bottom: calc(var(--shell-bottom-bar-height) + env(safe-area-inset-bottom) + 5rem);
+  }
+
+  /* 16px or iOS Safari zooms the page when the search is focused. */
+  .booking-picker-search {
+    font-size: 1rem;
+  }
+}
+
 @media (max-width: 480px) {
   .booking-picker-meta {
     flex-basis: 100%;

@@ -1542,7 +1542,13 @@
       "typeFilter": "Event type",
       "viewCard": "View the card",
       "plannedShow": "Planned show, card to come",
-      "plannedLegend": "Planned"
+      "plannedLegend": "Planned",
+      "calendarTab": "Calendar",
+      "plannedShowCreate": "Planned show. Create the event",
+      "dayHasEvent": "event booked",
+      "dayHasPlanned": "planned show",
+      "nothingOnDay": "Nothing booked on this day.",
+      "createOnDay": "Create event on this day"
     },
     "designations": {
       "preShow": "Pre-Show",
@@ -1567,7 +1573,7 @@
       "winner": "W",
       "addMatch": "Add Match",
       "scheduleFirstMatch": "Schedule First Match",
-      "backToEvent": "← Back to {{name}}",
+      "backToEvent": "Back to {{name}}",
       "recordResult": "Record Result",
       "editMatch": "Edit",
       "deleteMatch": "Delete",
@@ -1593,7 +1599,14 @@
       "editMatchTitle": "Edit match",
       "manage": "Manage event",
       "statusError": "Failed to update status.",
-      "statusLabel": "Event status"
+      "statusLabel": "Event status",
+      "closeSignups": {
+        "action": "Close sign-ups",
+        "title": "Close sign-ups for this match?",
+        "message": "The open spots are removed and the match is booked with the wrestlers who signed up. Nobody else can claim a spot.",
+        "confirm": "Close sign-ups",
+        "error": "Could not close sign-ups for this match."
+      }
     },
     "commentary": {
       "title": "Commentary View",

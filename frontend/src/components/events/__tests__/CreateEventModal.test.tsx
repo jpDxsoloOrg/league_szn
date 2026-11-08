@@ -119,4 +119,60 @@ describe('CreateEventModal', () => {
     expect(mockNavigate).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Create Event' })).toBeEnabled();
   });
+
+  it('suggests the next open date of a picked show', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date(2026, 10, 7, 12));
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      renderModal({
+        shows: [{ ...shows[0]!, dayOfWeek: 'monday' }],
+        companies,
+        existingEvents: [{ showId: 'show1', date: '2026-11-09' }],
+      });
+
+      await user.click(screen.getByRole('combobox', { name: 'Show' }));
+      await user.click(await screen.findByRole('option', { name: 'Raw' }));
+
+      expect(screen.getByLabelText('Date')).toHaveValue('2026-11-16');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps a date staff already picked when they choose a show', async () => {
+    const user = userEvent.setup();
+    renderModal({
+      shows: [{ ...shows[0]!, dayOfWeek: 'monday' }],
+      companies,
+      preset: { date: '2026-12-25' },
+    });
+
+    await user.click(screen.getByRole('combobox', { name: 'Show' }));
+    await user.click(await screen.findByRole('option', { name: 'Raw' }));
+
+    expect(screen.getByLabelText('Date')).toHaveValue('2026-12-25');
+  });
+
+  it('puts the event in the active season by default', async () => {
+    const user = userEvent.setup();
+    mockGetSeasons.mockResolvedValue([
+      { seasonId: 'old', name: 'Season 1', startDate: '', status: 'completed', createdAt: '', updatedAt: '' },
+      { seasonId: 'now', name: 'Season 2', startDate: '', status: 'active', createdAt: '', updatedAt: '' },
+    ]);
+    renderModal({ preset: { date: '2026-11-20' } });
+
+    expect(await screen.findByRole('combobox', { name: 'Season' })).toHaveTextContent('Season 2');
+    await user.type(screen.getByLabelText('Event Name'), 'Fight Night');
+    await user.click(screen.getByRole('button', { name: 'Create Event' }));
+
+    await waitFor(() => {
+      expect(mockCreateEvent).toHaveBeenCalledWith({
+        name: 'Fight Night',
+        eventType: 'ppv',
+        date: '2026-11-20',
+        seasonId: 'now',
+      });
+    });
+  });
 });

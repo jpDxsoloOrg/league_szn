@@ -1542,7 +1542,13 @@
       "typeFilter": "Event-Typ",
       "viewCard": "Zur Match Card",
       "plannedShow": "Geplante Show, Card folgt",
-      "plannedLegend": "Geplant"
+      "plannedLegend": "Geplant",
+      "calendarTab": "Kalender",
+      "plannedShowCreate": "Geplante Show. Event erstellen",
+      "dayHasEvent": "Event gebucht",
+      "dayHasPlanned": "geplante Show",
+      "nothingOnDay": "An diesem Tag ist nichts gebucht.",
+      "createOnDay": "Event an diesem Tag erstellen"
     },
     "designations": {
       "preShow": "Vorshow",
@@ -1567,7 +1573,7 @@
       "winner": "S",
       "addMatch": "Match hinzufügen",
       "scheduleFirstMatch": "Erstes Match planen",
-      "backToEvent": "← Zurück zu {{name}}",
+      "backToEvent": "Zurück zu {{name}}",
       "recordResult": "Ergebnis eintragen",
       "editMatch": "Bearbeiten",
       "deleteMatch": "Löschen",
@@ -1593,7 +1599,14 @@
       "editMatchTitle": "Match bearbeiten",
       "manage": "Event verwalten",
       "statusError": "Status konnte nicht aktualisiert werden.",
-      "statusLabel": "Event-Status"
+      "statusLabel": "Event-Status",
+      "closeSignups": {
+        "action": "Anmeldungen schließen",
+        "title": "Anmeldungen für dieses Match schließen?",
+        "message": "Die offenen Plätze werden entfernt und das Match wird mit den Wrestlern gebucht, die sich angemeldet haben. Niemand sonst kann sich noch einen Platz sichern.",
+        "confirm": "Anmeldungen schließen",
+        "error": "Anmeldungen für dieses Match konnten nicht geschlossen werden."
+      }
     },
     "commentary": {
       "title": "Kommentator-Ansicht",

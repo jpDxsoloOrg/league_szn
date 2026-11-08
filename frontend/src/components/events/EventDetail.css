@@ -96,6 +96,23 @@
   margin-left: auto;
 }
 
+.event-manage__notice {
+  display: flex;
+  flex-basis: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-control);
+  background-color: var(--tint-warn);
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.event-manage__notice svg {
+  flex: none;
+}
+
 .event-rsvp {
   display: flex;
   flex-direction: column;
@@ -370,5 +387,10 @@
   .event-manage .ui-btn {
     flex: 1 1 40%;
     margin-left: 0;
+  }
+
+  /* 16px or iOS Safari zooms the page when the field is focused. */
+  .event-details-form__field input {
+    font-size: 1rem;
   }
 }

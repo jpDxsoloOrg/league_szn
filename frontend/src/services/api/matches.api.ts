@@ -66,6 +66,14 @@ export const matchesApi = {
     });
   },
 
+  /** Closes an open-signups match with whoever signed up; its empty spots are dropped. */
+  closeSignups: async (matchId: string): Promise<Match> => {
+    return fetchWithAuth(`${API_BASE_URL}/matches/${matchId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ closeSignups: true }),
+    });
+  },
+
   delete: async (matchId: string): Promise<void> => {
     await fetchWithAuth(`${API_BASE_URL}/matches/${matchId}`, {
       method: 'DELETE',

@@ -405,4 +405,42 @@ describe('PlayerBookingPicker', () => {
       expect(screen.queryByText('Never booked')).not.toBeInTheDocument();
     });
   });
+
+  describe('on a phone', () => {
+    it('scrolls the opened menu into view so Done clears the bottom bars', async () => {
+      const matchMediaSpy = vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+        matches: query.includes('max-width: 768px'),
+        media: query,
+        onchange: null,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        dispatchEvent: () => false,
+      }));
+      const scrollSpy = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => undefined);
+      try {
+        renderPicker();
+        await openMenu();
+
+        expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' });
+        expect(scrollSpy.mock.contexts[0]).toBe(screen.getByRole('listbox'));
+      } finally {
+        matchMediaSpy.mockRestore();
+        scrollSpy.mockRestore();
+      }
+    });
+
+    it('leaves the page alone on a desktop', async () => {
+      const scrollSpy = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => undefined);
+      try {
+        renderPicker();
+        await openMenu();
+
+        expect(scrollSpy).not.toHaveBeenCalled();
+      } finally {
+        scrollSpy.mockRestore();
+      }
+    });
+  });
 });

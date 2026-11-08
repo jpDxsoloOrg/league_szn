@@ -98,6 +98,23 @@
   background-color: transparent;
 }
 
+/* Staff tap a planned show to create its event. */
+button.event-card--create {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.event-card--create:hover {
+  border-color: var(--color-cyan);
+  background-color: var(--color-surface-raised);
+}
+
+.event-card--create .event-card__chevron {
+  color: var(--color-cyan);
+}
+
 @media (max-width: 768px) {
   .event-card {
     flex-wrap: wrap;

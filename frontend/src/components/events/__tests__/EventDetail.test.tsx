@@ -17,6 +17,7 @@ const { api, authState } = vi.hoisted(() => ({
     getPublicPlayers: vi.fn(),
     getBookingSummary: vi.fn(),
     getTagTeams: vi.fn(),
+    closeSignups: vi.fn(),
   },
   authState: {
     isAdminOrModerator: true,
@@ -33,7 +34,12 @@ vi.mock('../../../services/api', () => ({
     delete: api.deleteEvent,
     getCheckIns: api.getCheckIns,
   },
-  matchesApi: { getAll: api.getScheduled, delete: api.deleteMatch, claimSlot: api.claimSlot },
+  matchesApi: {
+    getAll: api.getScheduled,
+    delete: api.deleteMatch,
+    claimSlot: api.claimSlot,
+    closeSignups: api.closeSignups,
+  },
   playersApi: {
     getAll: api.getPublicPlayers,
     getAllIncludingHidden: api.getRoster,
@@ -270,6 +276,104 @@ describe('EventDetail', () => {
 
     expect(await screen.findByRole('button', { name: 'Claim spot' })).toBeDisabled();
     expect(screen.getByRole('timer')).toBeInTheDocument();
+  });
+
+  describe('closing sign-ups on one match', () => {
+    const openSignupsEvent = (filledSlots: number) => {
+      const event = eventWithCard([['m1', 'opener']]);
+      const slots = [1, 2, 3].map((position) => ({
+        slotId: `s${position}`,
+        position,
+        ...(position <= filledSlots
+          ? { playerId: `p${position}`, playerName: `Player ${position}`, wrestlerName: `Wrestler ${position}` }
+          : {}),
+      }));
+      return {
+        ...event,
+        enrichedMatches: event.enrichedMatches.map((entry) => ({
+          ...entry,
+          matchData: { ...entry.matchData, status: 'open-signups', slots },
+        })),
+      };
+    };
+
+    it('books the match with whoever signed up once staff confirm', async () => {
+      api.getEvent.mockResolvedValue(openSignupsEvent(2));
+      api.closeSignups.mockResolvedValue({});
+      const user = userEvent.setup();
+      renderDetail();
+
+      await user.click(await screen.findByRole('button', { name: 'Close sign-ups' }));
+      const dialog = await screen.findByRole('dialog', { name: 'Close sign-ups for this match?' });
+      expect(api.closeSignups).not.toHaveBeenCalled();
+      await user.click(within(dialog).getByRole('button', { name: 'Close sign-ups' }));
+
+      await waitFor(() => expect(api.closeSignups).toHaveBeenCalledWith('m1'));
+      await waitFor(() => expect(api.getEvent).toHaveBeenCalledTimes(2));
+    });
+
+    it('moves focus to the booked match once its sign-ups close', async () => {
+      const event = openSignupsEvent(2);
+      api.getEvent.mockResolvedValueOnce(event);
+      api.getEvent.mockResolvedValue({
+        ...event,
+        enrichedMatches: event.enrichedMatches.map((entry) => ({
+          ...entry,
+          matchData: { ...entry.matchData, status: 'scheduled' },
+        })),
+      });
+      api.closeSignups.mockResolvedValue({});
+      const user = userEvent.setup();
+      renderDetail();
+
+      await user.click(await screen.findByRole('button', { name: 'Close sign-ups' }));
+      const dialog = await screen.findByRole('dialog', { name: 'Close sign-ups for this match?' });
+      await user.click(within(dialog).getByRole('button', { name: 'Close sign-ups' }));
+
+      await waitFor(() => {
+        const focused = document.activeElement;
+        expect(focused?.closest('.event-match__actions')).not.toBeNull();
+        expect(focused).toHaveAccessibleName('Edit');
+      });
+    });
+
+    it('shows the error when the close fails', async () => {
+      api.getEvent.mockResolvedValue(openSignupsEvent(2));
+      api.closeSignups.mockRejectedValue(new Error('At least 2 wrestlers must have signed up'));
+      const user = userEvent.setup();
+      renderDetail();
+
+      await user.click(await screen.findByRole('button', { name: 'Close sign-ups' }));
+      const dialog = await screen.findByRole('dialog');
+      await user.click(within(dialog).getByRole('button', { name: 'Close sign-ups' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('At least 2 wrestlers must have signed up');
+    });
+
+    it('is not offered until two wrestlers have signed up', async () => {
+      api.getEvent.mockResolvedValue(openSignupsEvent(1));
+      renderDetail();
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Summer Slam' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Close sign-ups' })).not.toBeInTheDocument();
+    });
+
+    it('is not offered to the public', async () => {
+      authState.isAdminOrModerator = false;
+      api.getEvent.mockResolvedValue(openSignupsEvent(2));
+      renderDetail();
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Summer Slam' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Close sign-ups' })).not.toBeInTheDocument();
+    });
+  });
+
+  it('says sign-ups are closed while the event is locked', async () => {
+    api.getEvent.mockResolvedValue({ ...eventWithMatch, checkInsLocked: true });
+    renderDetail();
+
+    const notice = await screen.findByText('Sign-ups are closed for this event.');
+    expect(notice).toHaveAttribute('role', 'status');
   });
 
   describe('a card whose match is gone', () => {

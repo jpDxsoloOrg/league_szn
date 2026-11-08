@@ -313,6 +313,93 @@ button.calendar-item {
     padding: 1.25rem;
   }
 
+  /* Phone month: tappable days with dots, the picked day listed below. */
+  .calendar-phone-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.25rem;
+  }
+
+  .calendar-phone-grid__header {
+    padding-bottom: 0.25rem;
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .calendar-phone-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.125rem;
+    min-width: 0;
+    min-height: var(--touch-target);
+    padding: 0.25rem 0;
+    border: 1px solid transparent;
+    border-radius: var(--radius-control);
+    background-color: transparent;
+    color: var(--color-text);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .calendar-phone-day--today {
+    border-color: var(--color-hairline);
+  }
+
+  .calendar-phone-day--selected {
+    border-color: var(--color-cyan);
+    background-color: var(--tint-cyan);
+  }
+
+  .calendar-phone-day__number {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .calendar-phone-day__marks {
+    display: flex;
+    gap: 0.1875rem;
+    height: 6px;
+  }
+
+  .calendar-phone-day__mark {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .calendar-phone-day__mark--event {
+    background-color: var(--color-cyan);
+  }
+
+  .calendar-phone-day__mark--planned {
+    border: 1px dashed var(--color-text-secondary);
+  }
+
+  .calendar-phone-day-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-hairline);
+  }
+
+  .calendar-phone-day-panel__title {
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 700;
+  }
+
+  .calendar-phone-day-panel__create {
+    width: 100%;
+  }
+
   .events-hero__content .ui-btn {
     width: 100%;
   }

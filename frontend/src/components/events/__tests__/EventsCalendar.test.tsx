@@ -90,8 +90,10 @@ vi.mock('../../../contexts/AuthContext', () => ({
 vi.mock('../EventsCalendar.css', () => ({}));
 vi.mock('../EventCard.css', () => ({}));
 vi.mock('../CreateEventModal', () => ({
-  default: ({ open, preset }: { open: boolean; preset?: { name: string } | null }) => (
-    open ? <div data-testid="create-event-modal">{preset?.name ?? 'blank'}</div> : null
+  default: ({ open, preset }: { open: boolean; preset?: { name?: string; date?: string } | null }) => (
+    open ? (
+      <div data-testid="create-event-modal" data-date={preset?.date ?? ''}>{preset?.name ?? 'blank'}</div>
+    ) : null
   ),
 }));
 
@@ -397,5 +399,102 @@ describe('EventsCalendar', () => {
     renderEventsCalendar();
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Saturday Night Special' })).toBeInTheDocument();
+  });
+
+  it('lets staff create the event for a planned show from the upcoming list', async () => {
+    authState.isAdminOrModerator = true;
+    mockGetAllEvents.mockResolvedValue([]);
+    mockGetAllShows.mockResolvedValue([
+      { showId: 'sh1', companyId: 'c1', name: 'Toxic Tuesday', schedule: 'weekly', dayOfWeek: 'tuesday' },
+    ]);
+    renderEventsCalendar();
+
+    const row = await screen.findByText('Toxic Tuesday', { selector: '.event-card__name' });
+    const planned = row.closest('button');
+    expect(planned).not.toBeNull();
+    fireEvent.click(planned!);
+
+    const modal = screen.getByTestId('create-event-modal');
+    expect(modal).toHaveTextContent('Toxic Tuesday');
+    expect(modal).toHaveAttribute('data-date', '2025-06-17');
+  });
+
+  it('keeps planned shows as plain rows for the public', async () => {
+    mockGetAllEvents.mockResolvedValue([]);
+    mockGetAllShows.mockResolvedValue([
+      { showId: 'sh1', companyId: 'c1', name: 'Toxic Tuesday', schedule: 'weekly', dayOfWeek: 'tuesday' },
+    ]);
+    renderEventsCalendar();
+
+    const row = await screen.findByText('Toxic Tuesday', { selector: '.event-card__name' });
+    expect(row.closest('button')).toBeNull();
+  });
+
+  describe('on a phone', () => {
+    beforeEach(() => {
+      vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+        matches: query.includes('max-width: 768px'),
+        media: query,
+        onchange: null,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        dispatchEvent: () => false,
+      }));
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    const fridayShow = {
+      showId: 's1',
+      name: 'Friday Show',
+      companyId: 'c1',
+      schedule: 'weekly',
+      dayOfWeek: 'friday',
+      createdAt: '',
+      updatedAt: '',
+    };
+
+    it('shows a month calendar where staff create the event for any planned date', async () => {
+      authState.isAdminOrModerator = true;
+      mockGetAllEvents.mockResolvedValue([]);
+      mockGetAllShows.mockResolvedValue([fridayShow]);
+      renderEventsCalendar();
+
+      fireEvent.mouseDown(await screen.findByRole('tab', { name: 'events.calendar.calendarTab' }));
+      fireEvent.click(screen.getByRole('tab', { name: 'events.calendar.calendarTab' }));
+
+      // A later Friday, not just the next one the upcoming list offers.
+      const lastFriday = await screen.findByRole('button', { name: /June 27.*events\.calendar\.dayHasPlanned/ });
+      fireEvent.click(lastFriday);
+      expect(lastFriday).toHaveAttribute('aria-pressed', 'true');
+
+      const planned = screen.getByText('Friday Show', { selector: '.calendar-phone-day-panel .event-card__name' });
+      fireEvent.click(planned.closest('button')!);
+
+      const modal = screen.getByTestId('create-event-modal');
+      expect(modal).toHaveTextContent('Friday Show');
+      expect(modal).toHaveAttribute('data-date', '2025-06-27');
+    });
+
+    it('creates an event on a picked day with nothing planned', async () => {
+      authState.isAdminOrModerator = true;
+      mockGetAllEvents.mockResolvedValue([]);
+      mockGetAllShows.mockResolvedValue([fridayShow]);
+      renderEventsCalendar();
+
+      fireEvent.mouseDown(await screen.findByRole('tab', { name: 'events.calendar.calendarTab' }));
+      fireEvent.click(screen.getByRole('tab', { name: 'events.calendar.calendarTab' }));
+      fireEvent.click(screen.getByRole('button', { name: 'events.calendar.nextMonth' }));
+      fireEvent.click(await screen.findByRole('button', { name: /^Wednesday, July 9$/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'events.calendar.createOnDay' }));
+
+      const modal = screen.getByTestId('create-event-modal');
+      expect(modal).toHaveTextContent('blank');
+      expect(modal).toHaveAttribute('data-date', '2025-07-09');
+    });
   });
 });

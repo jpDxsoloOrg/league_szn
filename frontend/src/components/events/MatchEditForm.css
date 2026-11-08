@@ -241,4 +241,28 @@
     max-width: none;
     width: 100%;
   }
+
+  /* 16px or iOS Safari zooms the page when a select is focused. */
+  .match-edit-form select {
+    font-size: 1rem;
+  }
+
+  /* One scroll, the modal's: a list scrolling inside it traps the swipe.
+     Inline (StandaloneMatches) the list keeps its own capped scroll. */
+  .ui-modal__body .match-edit-form__players {
+    grid-template-columns: minmax(0, 1fr);
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  /* In a dialog, Save stays in reach however long the player list is. */
+  .ui-modal__body .match-edit-form__actions {
+    position: sticky;
+    bottom: -1.25rem;
+    z-index: 1;
+    margin: 0 -1.25rem -1.25rem;
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid var(--color-hairline);
+    background-color: var(--color-surface);
+  }
 }
