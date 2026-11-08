@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0d0a1a" />
+    <meta name="robots" content="noindex" />
+    <title>Offline | League SZN</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/brand/icon-32.png" />
+    <!--
+      Shown by the service worker when a page can't be loaded. It has to work
+      without the app, so it is self-contained: inline styles, no scripts.
+    -->
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0d0a1a;
+        --surface: #17112b;
+        --hairline: rgba(255, 255, 255, 0.1);
+        --text: #f6f3ff;
+        --muted: #c9c2dc;
+        --accent: #22d3ee;
+        --accent-strong: #67e8f9;
+        --on-accent: #0d0a1a;
+        --focus: #d946ef;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+      }
+
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: calc(env(safe-area-inset-top) + 24px) 16px calc(env(safe-area-inset-bottom) + 24px);
+        background-color: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.5;
+      }
+
+      .offline {
+        width: 100%;
+        max-width: 420px;
+        padding: 32px 24px;
+        background-color: var(--surface);
+        border: 1px solid var(--hairline);
+        border-radius: 12px;
+        text-align: center;
+      }
+
+      .offline__logo {
+        display: block;
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 20px;
+      }
+
+      .offline__title {
+        margin-bottom: 8px;
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      .offline__text {
+        margin-bottom: 24px;
+        color: var(--muted);
+      }
+
+      .offline__retry {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        padding: 0 28px;
+        border-radius: 999px;
+        background-color: var(--accent);
+        color: var(--on-accent);
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .offline__retry:hover {
+        background-color: var(--accent-strong);
+      }
+
+      .offline__retry:focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 3px;
+      }
+
+      .offline__alt {
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 1px solid var(--hairline);
+        color: var(--muted);
+        font-size: 0.875rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="offline">
+      <img class="offline__logo" src="/images/brand/icon-192.png" alt="League SZN" width="72" height="72" />
+      <h1 class="offline__title">You're offline</h1>
+      <p class="offline__text">League SZN needs an internet connection. Check your connection, then try again.</p>
+      <!-- An empty href reloads the address this page was shown for. -->
+      <a class="offline__retry" href="">Retry · <span lang="de">Erneut versuchen</span></a>
+      <p class="offline__alt" lang="de">Du bist offline. League SZN braucht eine Internetverbindung. Prüfe deine Verbindung und tippe auf „Erneut versuchen“.</p>
+    </main>
+  </body>
+</html>

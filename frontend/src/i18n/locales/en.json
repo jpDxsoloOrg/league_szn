@@ -455,7 +455,8 @@
       "rateMatches": "Rate Matches",
       "rivalryHeatExplained": "How Rivalry Heat Works",
       "strikesAndSuspensions": "Strikes and suspensions",
-      "adminStrikes": "Admin: Strikes"
+      "adminStrikes": "Admin: Strikes",
+      "installApp": "Install the App"
     },
     "navLabels": {
       "adminQuickstart": "Quickstart",
@@ -3608,6 +3609,13 @@
         "remove": "Strike removed.",
         "reactivate": "Player reactivated."
       }
+    }
+  },
+  "pwa": {
+    "install": {
+      "action": "Install app",
+      "description": "Open League SZN from your home screen, full screen like an app.",
+      "iosHint": "Tap Share (or •••, then Share), then Add to Home Screen."
     }
   }
 }

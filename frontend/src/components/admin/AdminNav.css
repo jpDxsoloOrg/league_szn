@@ -1,10 +1,10 @@
 .admin-nav {
   position: sticky;
-  top: calc(var(--shell-header-height) + 1rem);
+  top: calc(var(--shell-header-offset) + 1rem);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  max-height: calc(100vh - var(--shell-header-height) - 2rem);
+  max-height: calc(100vh - var(--shell-header-offset) - 2rem);
   padding-right: 0.5rem;
   overflow-y: auto;
 }

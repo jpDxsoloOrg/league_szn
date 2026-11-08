@@ -213,7 +213,7 @@
 @media (max-width: 768px) {
   .faction-messages {
     grid-template-columns: minmax(0, 1fr);
-    height: calc(100dvh - var(--shell-header-height) - var(--shell-bottom-bar-height) - 2rem);
+    height: calc(100dvh - var(--shell-header-offset) - var(--shell-bottom-bar-height) - 2rem);
     min-height: 26rem;
   }
 

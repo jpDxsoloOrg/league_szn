@@ -108,6 +108,9 @@
   --touch-target: 44px;
   --shell-max-width: 1280px;
   --shell-header-height: 64px;
+  /* Real height of the sticky header: installed on iOS (black-translucent status
+     bar) the header also pads by the top safe-area inset, which is 0 in a tab. */
+  --shell-header-offset: calc(var(--shell-header-height) + env(safe-area-inset-top, 0px));
   --shell-bottom-bar-height: 64px;
   --section-tabs-height: 46px;
   --focus-ring: 2px solid var(--color-cyan);

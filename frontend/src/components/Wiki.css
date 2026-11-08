@@ -72,8 +72,8 @@
 
 .wiki-sidebar {
   position: sticky;
-  top: calc(var(--shell-header-height) + var(--section-tabs-height) + 1rem);
-  max-height: calc(100vh - var(--shell-header-height) - var(--section-tabs-height) - 2rem);
+  top: calc(var(--shell-header-offset) + var(--section-tabs-height) + 1rem);
+  max-height: calc(100vh - var(--shell-header-offset) - var(--section-tabs-height) - 2rem);
   overflow-y: auto;
 }
 
@@ -258,7 +258,7 @@
 .wiki-content h2,
 .wiki-content h3 {
   color: var(--color-text);
-  scroll-margin-top: calc(var(--shell-header-height) + 1rem);
+  scroll-margin-top: calc(var(--shell-header-offset) + 1rem);
 }
 
 .wiki-content h1 {
