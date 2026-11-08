@@ -1686,6 +1686,13 @@
       "bookedUpcoming": "Gebucht {{when}}",
       "lastBooked": "Zuletzt gebucht {{when}}",
       "streakTitle": "{{count}} Matches in Serie: {{type}}",
+      "seasonRecordTitle": "{{season}}: {{wins}}, {{losses}}, {{draws}}",
+      "recordWins_one": "{{count}} Sieg",
+      "recordWins_other": "{{count}} Siege",
+      "recordLosses_one": "{{count}} Niederlage",
+      "recordLosses_other": "{{count}} Niederlagen",
+      "recordDraws_one": "{{count}} Unentschieden",
+      "recordDraws_other": "{{count}} Unentschieden",
       "streakType": {
         "W": "Siege",
         "L": "Niederlagen",

@@ -39,9 +39,22 @@ export const playersApi = {
     return fetchWithAuth(`${API_BASE_URL}/players?view=directory`, {}, signal);
   },
 
-  /** Staff only. Keyed by playerId. */
-  getBookingSummary: async (signal?: AbortSignal): Promise<Record<string, PlayerBookingInfo>> => {
-    return fetchWithAuth(`${API_BASE_URL}/players/booking-summary`, {}, signal);
+  /**
+   * Staff only. Keyed by playerId. `seasonId` picks the season for each
+   * row's `seasonRecord`; without it the server uses the active season.
+   */
+  getBookingSummary: async (
+    options: { seasonId?: string } = {},
+    signal?: AbortSignal,
+  ): Promise<Record<string, PlayerBookingInfo>> => {
+    const params = new URLSearchParams();
+    if (options.seasonId) params.set('seasonId', options.seasonId);
+    const query = params.toString();
+    return fetchWithAuth(
+      `${API_BASE_URL}/players/booking-summary${query ? `?${query}` : ''}`,
+      {},
+      signal,
+    );
   },
 
   create: async (player: Omit<Player, 'playerId' | 'createdAt' | 'updatedAt'>): Promise<Player> => {

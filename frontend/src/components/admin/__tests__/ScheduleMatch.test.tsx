@@ -17,6 +17,7 @@ const {
   mockGetAllDivisions,
   mockGetCheckIns,
   mockGetChallenges,
+  mockGetBookingSummary,
 } = vi.hoisted(() => ({
   mockGetAllPlayers: vi.fn(),
   mockGetAllChampionships: vi.fn(),
@@ -30,12 +31,13 @@ const {
   mockGetAllDivisions: vi.fn(),
   mockGetCheckIns: vi.fn(),
   mockGetChallenges: vi.fn(),
+  mockGetBookingSummary: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
   challengesApi: { getAll: mockGetChallenges },
   matchesApi: { schedule: mockScheduleMatch },
-  playersApi: { getAllIncludingHidden: mockGetAllPlayers, getBookingSummary: vi.fn().mockResolvedValue({}) },
+  playersApi: { getAllIncludingHidden: mockGetAllPlayers, getBookingSummary: mockGetBookingSummary },
   championshipsApi: { getAll: mockGetAllChampionships },
   tournamentsApi: { getAll: mockGetAllTournaments },
   seasonsApi: { getAll: mockGetAllSeasons },
@@ -155,6 +157,7 @@ function setupDefaultMocks() {
   mockGetAllTagTeams.mockResolvedValue([]);
   mockGetAllDivisions.mockResolvedValue([]);
   mockGetChallenges.mockResolvedValue([]);
+  mockGetBookingSummary.mockResolvedValue({});
   mockGetCheckIns.mockResolvedValue({
     available: [{ playerId: 'p1', name: 'John Cena', currentWrestler: 'The Champ' }],
     tentative: [{ playerId: 'p2', name: 'Dwayne Johnson', currentWrestler: 'The Rock' }],
@@ -1107,6 +1110,78 @@ describe('ScheduleMatch', () => {
 
       expect(screen.getByText('Undertaker (Mark Calaway)')).toBeInTheDocument();
       expect(screen.getByText('Triple H (Paul Levesque)')).toBeInTheDocument();
+    });
+  });
+
+  describe('season record in the participant picker', () => {
+    const completedSeason = {
+      seasonId: 's0', name: 'Season 0', startDate: '2023-01-01', status: 'completed' as const,
+      createdAt: '2023-01-01', updatedAt: '2023-01-01',
+    };
+    const summaryFor = (seasonId: string, seasonName: string, wins: number) => ({
+      p1: {
+        lastBookedAt: null,
+        currentStreak: { type: 'L' as const, count: 4 },
+        seasonRecord: { seasonId, seasonName, wins, losses: 3, draws: 1 },
+      },
+    });
+
+    async function openParticipants(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(screen.getByRole('button', { name: /Add participants…|\d+ selected/ }));
+      return () => screen.getAllByRole('option').find((o) => o.textContent?.includes('The Champ'))!;
+    }
+
+    it('fetches the summary once, for the default (active) season', async () => {
+      setupDefaultMocks();
+      mockGetBookingSummary.mockResolvedValue(summaryFor('s1', 'Season 1', 5));
+      const user = userEvent.setup();
+      renderScheduleMatch();
+
+      await waitFor(() => expect(screen.getByLabelText('Season')).toHaveValue('s1'));
+      await waitFor(() => expect(mockGetBookingSummary).toHaveBeenCalled());
+      expect(mockGetBookingSummary).toHaveBeenCalledTimes(1);
+      expect(mockGetBookingSummary).toHaveBeenCalledWith({ seasonId: 's1' }, expect.any(AbortSignal));
+
+      const champRow = await openParticipants(user);
+      await waitFor(() => expect(within(champRow()).getByText('5-3-1')).toBeInTheDocument());
+      expect(within(champRow()).getByText('L4')).toBeInTheDocument();
+    });
+
+    it('refetches for the chosen season', async () => {
+      setupDefaultMocks();
+      mockGetAllSeasons.mockResolvedValue([...mockSeasons, completedSeason]);
+      mockGetBookingSummary.mockImplementation(async (options: { seasonId?: string }) =>
+        options.seasonId === 's0' ? summaryFor('s0', 'Season 0', 9) : summaryFor('s1', 'Season 1', 5));
+      const user = userEvent.setup();
+      renderScheduleMatch();
+
+      await waitFor(() => expect(screen.getByLabelText('Season')).toHaveValue('s1'));
+      await user.selectOptions(screen.getByLabelText('Season'), 's0');
+
+      await waitFor(() =>
+        expect(mockGetBookingSummary).toHaveBeenLastCalledWith({ seasonId: 's0' }, expect.any(AbortSignal)));
+      const champRow = await openParticipants(user);
+      await waitFor(() => expect(within(champRow()).getByText('9-3-1')).toBeInTheDocument());
+    });
+
+    it('keeps streak and last-booked but drops the stale record when a refetch fails', async () => {
+      setupDefaultMocks();
+      mockGetAllSeasons.mockResolvedValue([...mockSeasons, completedSeason]);
+      mockGetBookingSummary.mockImplementation(async (options: { seasonId?: string }) => {
+        if (options.seasonId === 's0') throw new Error('boom');
+        return summaryFor('s1', 'Season 1', 5);
+      });
+      const user = userEvent.setup();
+      renderScheduleMatch();
+
+      await waitFor(() => expect(screen.getByLabelText('Season')).toHaveValue('s1'));
+      await waitFor(() => expect(mockGetBookingSummary).toHaveBeenCalledTimes(1));
+      await user.selectOptions(screen.getByLabelText('Season'), 's0');
+      await waitFor(() => expect(mockGetBookingSummary).toHaveBeenCalledTimes(2));
+
+      const champRow = await openParticipants(user);
+      await waitFor(() => expect(within(champRow()).queryByText('5-3-1')).not.toBeInTheDocument());
+      expect(within(champRow()).getByText('L4')).toBeInTheDocument();
     });
   });
 });

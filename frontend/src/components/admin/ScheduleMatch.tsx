@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Plus, X } from 'lucide-react';
 import { challengesApi, matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi, eventsApi, stipulationsApi, matchTypesApi, tagTeamsApi, divisionsApi } from '../../services/api';
+import { isAbortError, withoutSeasonRecords } from '../../utils/bookingSummary';
 import type { Player, Championship, Tournament, Season, Stipulation, MatchType, Division, PlayerBookingInfo } from '../../types';
 import type { EventCheckInRoster } from '../../types/event';
 import PlayerBookingPicker from '../events/PlayerBookingPicker';
@@ -184,6 +185,33 @@ export default function ScheduleMatch() {
   }, []);
 
   /**
+   * Optional last-booked, streak and season-record detail for the pickers,
+   * fetched for the selected season (none selected = the active season).
+   * Waits for the initial load so the active-season default is already in
+   * place, rather than fetching twice. A failure only drops the detail it
+   * can no longer vouch for: the records, which belong to another season.
+   */
+  const bookingSeasonId = formData.seasonId;
+  useEffect(() => {
+    if (loading) return;
+    const controller = new AbortController();
+    const loadBookingInfo = async () => {
+      try {
+        const summary = await playersApi.getBookingSummary(
+          bookingSeasonId ? { seasonId: bookingSeasonId } : {},
+          controller.signal,
+        );
+        if (!controller.signal.aborted) setBookingInfo(new Map(Object.entries(summary)));
+      } catch (err) {
+        if (controller.signal.aborted || isAbortError(err)) return;
+        setBookingInfo((previous) => previous && withoutSeasonRecords(previous));
+      }
+    };
+    void loadBookingInfo();
+    return () => controller.abort();
+  }, [loading, bookingSeasonId]);
+
+  /**
    * The title fields for a linked title. One that no longer exists books as a
    * non-title match and says so, rather than opening on a blank required field.
    * With no list to check against, the title is kept.
@@ -314,18 +342,7 @@ export default function ScheduleMatch() {
     }
   };
 
-  /** Optional last-booked and streak detail, so a failure only drops that detail. */
-  const loadBookingInfo = async () => {
-    try {
-      const summary = await playersApi.getBookingSummary();
-      setBookingInfo(new Map(Object.entries(summary)));
-    } catch {
-      setBookingInfo(undefined);
-    }
-  };
-
   const loadInitialData = async () => {
-    void loadBookingInfo();
     await loadData();
     setLoading(false);
   };

@@ -160,6 +160,16 @@ export interface PlayerBookingInfo {
   lastBookedEventId?: string;
   /** Current run of identical results, newest first. count 0 = no completed matches. */
   currentStreak: { type: 'W' | 'L' | 'D'; count: number };
+  /** W-L-D in the requested (or active) season; absent when there is no season. */
+  seasonRecord?: PlayerSeasonRecord;
+}
+
+export interface PlayerSeasonRecord {
+  seasonId: string;
+  seasonName: string;
+  wins: number;
+  losses: number;
+  draws: number;
 }
 
 export type MatchStatus = 'scheduled' | 'completed' | 'cancelled' | 'open-signups';

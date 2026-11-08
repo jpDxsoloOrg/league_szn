@@ -668,4 +668,42 @@ describe('EventDetail', () => {
       expect(screen.queryByRole('button', { name: /^Move / })).not.toBeInTheDocument();
     });
   });
+
+  describe('booking summary season', () => {
+    it("asks for the event's season", async () => {
+      api.getEvent.mockResolvedValue({ ...eventWithMatch, seasonId: 's4' });
+      renderDetail();
+
+      await waitFor(() => expect(api.getBookingSummary).toHaveBeenCalled());
+      expect(api.getBookingSummary).toHaveBeenCalledTimes(1);
+      expect(api.getBookingSummary).toHaveBeenCalledWith({ seasonId: 's4' }, expect.any(AbortSignal));
+    });
+
+    it('uses the default (active) season when the event has none', async () => {
+      renderDetail();
+
+      await waitFor(() => expect(api.getBookingSummary).toHaveBeenCalled());
+      expect(api.getBookingSummary).toHaveBeenCalledTimes(1);
+      expect(api.getBookingSummary).toHaveBeenCalledWith({}, expect.any(AbortSignal));
+    });
+
+    it("falls back to the default season when the event's season is gone", async () => {
+      api.getEvent.mockResolvedValue({ ...eventWithMatch, seasonId: 'deleted' });
+      api.getBookingSummary.mockImplementation(async (options: { seasonId?: string }) => {
+        if (options.seasonId) throw Object.assign(new Error('Season deleted not found'), { status: 400 });
+        return {};
+      });
+      renderDetail();
+
+      await waitFor(() => expect(api.getBookingSummary).toHaveBeenCalledTimes(2));
+      expect(api.getBookingSummary).toHaveBeenLastCalledWith({}, expect.any(AbortSignal));
+    });
+
+    it('is not fetched for the public', async () => {
+      authState.isAdminOrModerator = false;
+      renderDetail();
+      expect(await screen.findByRole('heading', { level: 1, name: 'Summer Slam' })).toBeInTheDocument();
+      expect(api.getBookingSummary).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -1686,6 +1686,13 @@
       "bookedUpcoming": "Booked {{when}}",
       "lastBooked": "Last booked {{when}}",
       "streakTitle": "On a {{count}}-match {{type}} streak",
+      "seasonRecordTitle": "{{season}}: {{wins}}, {{losses}}, {{draws}}",
+      "recordWins_one": "{{count}} win",
+      "recordWins_other": "{{count}} wins",
+      "recordLosses_one": "{{count}} loss",
+      "recordLosses_other": "{{count}} losses",
+      "recordDraws_one": "{{count}} draw",
+      "recordDraws_other": "{{count}} draws",
       "streakType": {
         "W": "winning",
         "L": "losing",

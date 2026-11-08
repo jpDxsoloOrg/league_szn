@@ -148,8 +148,29 @@ export default function PlayerBookingPicker({
     const info = bookingInfoByPlayerId?.get(playerId);
     if (!info) return null;
     const streak = info.currentStreak;
+    const record = info.seasonRecord;
+    const recordLabel = record
+      ? t('events.booking.seasonRecordTitle', {
+          season: record.seasonName,
+          wins: t('events.booking.recordWins', { count: record.wins }),
+          losses: t('events.booking.recordLosses', { count: record.losses }),
+          draws: t('events.booking.recordDraws', { count: record.draws }),
+          defaultValue: `${record.seasonName}: ${record.wins} W, ${record.losses} L, ${record.draws} D`,
+        })
+      : '';
+    const isEmptyRecord = record !== undefined && record.wins + record.losses + record.draws === 0;
     return (
       <span className="booking-picker-meta">
+        {record && (
+          <span
+            className={`booking-picker-record${isEmptyRecord ? ' booking-picker-record--empty' : ''}`}
+            title={recordLabel}
+            aria-label={recordLabel}
+            role="img"
+          >
+            {record.wins}-{record.losses}-{record.draws}
+          </span>
+        )}
         {streak.count >= 2 && (
           <span
             className={`booking-picker-streak booking-picker-streak--${streak.type}`}

@@ -19,6 +19,7 @@ import type {
   EventCheckInSummary,
   EventCheckInRoster,
 } from '../../types/event';
+import { isAbortError, withoutSeasonRecords } from '../../utils/bookingSummary';
 import type { Match, Player, MatchStatus, PlayerBookingInfo } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
 import Badge from '../ui/Badge';
@@ -141,18 +142,43 @@ export default function EventDetail() {
     }
   }, [eventId]);
 
-  // Last-booked / streak for the slot picker. Loaded once per admin visit —
-  // it changes rarely and the current card's own bookings are already
-  // covered by bookedPlayerIds. Optional: without it the picker sorts by name.
+  // Last-booked / streak / season record for the slot picker. Loaded once per
+  // admin visit (per event season) — it changes rarely and the current card's
+  // own bookings are already covered by bookedPlayerIds. Optional: without it
+  // the picker sorts by name. Waits for the event so the record is for the
+  // event's season (or the active one when the event has none).
+  const bookingSeasonId = eventData ? (eventData.seasonId ?? '') : null;
   useEffect(() => {
-    if (!isAdminOrModerator) return;
-    let mounted = true;
-    playersApi
-      .getBookingSummary()
-      .then((summary) => { if (mounted) setBookingInfo(new Map(Object.entries(summary))); })
-      .catch(() => { if (mounted) setBookingInfo(undefined); });
-    return () => { mounted = false; };
-  }, [isAdminOrModerator]);
+    if (!isAdminOrModerator || bookingSeasonId === null) return;
+    const controller = new AbortController();
+    const loadBookingInfo = async () => {
+      try {
+        const summary = await playersApi.getBookingSummary(
+          bookingSeasonId ? { seasonId: bookingSeasonId } : {},
+          controller.signal,
+        );
+        if (!controller.signal.aborted) setBookingInfo(new Map(Object.entries(summary)));
+      } catch (err) {
+        if (controller.signal.aborted || isAbortError(err)) return;
+        if (!bookingSeasonId) {
+          setBookingInfo(undefined);
+          return;
+        }
+        // The event's season may have been deleted (400): keep last-booked
+        // and streak, but drop records that would be for another season.
+        try {
+          const fallback = await playersApi.getBookingSummary({}, controller.signal);
+          if (!controller.signal.aborted) {
+            setBookingInfo(withoutSeasonRecords(new Map(Object.entries(fallback))));
+          }
+        } catch {
+          if (!controller.signal.aborted) setBookingInfo(undefined);
+        }
+      }
+    };
+    void loadBookingInfo();
+    return () => controller.abort();
+  }, [isAdminOrModerator, bookingSeasonId]);
 
   const loadAdminData = useCallback(async () => {
     if (!isAdminOrModerator) return;
