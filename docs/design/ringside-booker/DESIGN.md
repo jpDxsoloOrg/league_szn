@@ -33,3 +33,8 @@ The token names in `frontend/src/variables.css` are unchanged from Main Event Ar
 
 ## Rules carried over
 Touch targets at least 44px, visible focus rings, reduced motion respected, colours from tokens only.
+
+## Installable app
+- The PWA from `feat/pwa` is carried on this branch: manifest, service worker, offline page and the Install row in Me.
+- Theme and offline-page colours match this look. The app icon is still the violet "S" from Main Event Arena.
+- The sidebar, top bar and ticker pad for the status bar, side notch and home indicator when installed.

@@ -249,8 +249,8 @@
     left: 0;
     right: 0;
     width: auto;
-    max-height: calc(100vh - 56px - env(safe-area-inset-top) - var(--shell-bottom-bar-height) - env(safe-area-inset-bottom));
-    max-height: calc(100dvh - 56px - env(safe-area-inset-top) - var(--shell-bottom-bar-height) - env(safe-area-inset-bottom));
+    max-height: calc(100vh - 56px - env(safe-area-inset-top) - var(--shell-bottom-bar-height) - var(--shell-ticker-height) - env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 56px - env(safe-area-inset-top) - var(--shell-bottom-bar-height) - var(--shell-ticker-height) - env(safe-area-inset-bottom));
     border-radius: 0;
     border-left: none;
     border-right: none;

@@ -73,7 +73,7 @@
 .wiki-sidebar {
   position: sticky;
   top: calc(var(--shell-header-offset) + var(--section-tabs-height) + 1rem);
-  max-height: calc(100vh - var(--shell-header-offset) - var(--section-tabs-height) - 2rem);
+  max-height: calc(100vh - var(--shell-header-offset) - var(--section-tabs-height) - var(--shell-ticker-height) - 2rem);
   overflow-y: auto;
 }
 

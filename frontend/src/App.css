@@ -27,10 +27,12 @@ main:focus {
 /* Desktop: the sidebar is fixed on the left, the ticker along the bottom. */
 .app-layout--desktop {
   padding-left: var(--shell-sidebar-width);
+  /* The sidebar lists the section's pages, so there is no tab row to clear. */
+  --section-tabs-height: 0px;
 }
 
 .app-layout--desktop main {
-  padding-bottom: calc(var(--shell-ticker-height) + 2rem);
+  padding-bottom: calc(var(--shell-ticker-height) + env(safe-area-inset-bottom, 0px) + 2rem);
 }
 
 .app-layout--mobile main {

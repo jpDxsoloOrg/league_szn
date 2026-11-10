@@ -124,7 +124,8 @@
      bar) the header also pads by the top safe-area inset, which is 0 in a tab. */
   --shell-header-offset: calc(var(--shell-header-height) + env(safe-area-inset-top, 0px));
   --shell-bottom-bar-height: 64px;
-  --shell-sidebar-width: 248px;
+  /* Installed in landscape, a side notch pushes the rail's content in. */
+  --shell-sidebar-width: calc(248px + env(safe-area-inset-left, 0px));
   --shell-ticker-height: 36px;
   --section-tabs-height: 46px;
   --focus-ring: 2px solid var(--color-cyan);

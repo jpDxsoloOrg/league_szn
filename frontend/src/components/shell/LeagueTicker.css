@@ -7,6 +7,12 @@
   z-index: var(--z-shell);
 }
 
+/* Installed on a tablet, the strip stays above the home indicator. */
+.app-layout--desktop .league-ticker {
+  box-sizing: content-box;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 .app-layout--mobile .league-ticker {
   left: 0;
   bottom: calc(var(--shell-bottom-bar-height) + env(safe-area-inset-bottom));
