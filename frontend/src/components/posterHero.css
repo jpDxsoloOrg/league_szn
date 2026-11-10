@@ -1,5 +1,5 @@
 /*
- * Hero on the violet to magenta gradient. Event posters and faction banners are
+ * Hero on the dark ember to teal gradient. Event posters and faction banners are
  * title artwork, so they sit whole in their own frame and text never goes over them.
  */
 .poster-hero {
@@ -9,10 +9,11 @@
   justify-content: space-between;
   gap: clamp(1.25rem, 3vw, 2.5rem);
   overflow: hidden;
+  border: 1px solid var(--color-hairline);
+  border-left: 4px solid var(--color-pink);
   border-radius: var(--radius-card);
-  background-color: var(--color-violet);
-  /* Keeps light text at 4.5:1 or better at the magenta end of the gradient. */
-  background-image: linear-gradient(var(--poster-hero-scrim), var(--poster-hero-scrim)), var(--gradient-hero);
+  background-color: var(--color-surface);
+  background-image: var(--hatch), linear-gradient(var(--poster-hero-scrim), var(--poster-hero-scrim)), var(--gradient-hero);
   color: var(--color-text);
 }
 

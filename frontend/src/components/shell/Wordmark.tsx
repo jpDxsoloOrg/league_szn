@@ -3,21 +3,19 @@ import './Wordmark.css';
 
 /** Product name, a proper noun in every language. */
 const BRAND_NAME = 'League SZN';
-const WORDMARK_SRC = '/images/brand/logo-wordmark.png';
-/** The file's pixel size. CSS sets the shown size; these reserve its shape before it loads. */
-const WORDMARK_WIDTH = 662;
-const WORDMARK_HEIGHT = 120;
+const BRAND_MARK = 'SZN';
+const BRAND_LEAD = 'League';
 
+/** Booking-desk wordmark: a slanted plate with the mark, then the name. */
 export default function Wordmark() {
   return (
-    <Link to="/" className="wordmark">
-      <img
-        className="wordmark__image"
-        src={WORDMARK_SRC}
-        alt={BRAND_NAME}
-        width={WORDMARK_WIDTH}
-        height={WORDMARK_HEIGHT}
-      />
+    <Link to="/" className="wordmark" aria-label={BRAND_NAME}>
+      <span className="wordmark__plate" aria-hidden="true">
+        <span className="wordmark__mark">{BRAND_MARK}</span>
+      </span>
+      <span className="wordmark__name" aria-hidden="true">
+        {BRAND_LEAD} <span className="wordmark__name-accent">{BRAND_MARK}</span>
+      </span>
     </Link>
   );
 }

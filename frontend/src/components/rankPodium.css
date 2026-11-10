@@ -1,8 +1,8 @@
 /* Page dressing for the shared Podium on the standings pages. */
 .rank-podium .ui-podium__slot--first .ui-podium__card {
-  --rank-podium-scrim: color-mix(in srgb, var(--color-bg) 30%, transparent);
-  border-color: transparent;
-  background-image: linear-gradient(var(--rank-podium-scrim), var(--rank-podium-scrim)), var(--gradient-hero);
+  /* Ringside Booker: number one is the chosen winner, framed in title gold. */
+  border-color: var(--rim-world);
+  background-image: var(--hatch), var(--gradient-podium-first);
   box-shadow: none;
 }
 

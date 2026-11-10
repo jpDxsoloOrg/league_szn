@@ -23,9 +23,11 @@
   border-radius: var(--radius-pill);
   background-color: transparent;
   color: var(--color-text-secondary);
-  font-family: var(--font-body);
-  font-size: 0.9375rem;
+  font-family: var(--font-label);
+  font-size: 0.8125rem;
   font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
   cursor: pointer;
 }
 

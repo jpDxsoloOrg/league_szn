@@ -2,26 +2,65 @@
   flex: none;
   display: inline-flex;
   align-items: center;
+  gap: 0.625rem;
   min-height: var(--touch-target);
+  color: var(--color-text);
   text-decoration: none;
 }
 
-.wordmark__image {
-  display: block;
-  width: auto;
-  height: 38px;
+.wordmark__plate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 0.5rem;
+  transform: skewX(-9deg);
+  background-color: var(--color-pink);
+  color: var(--color-on-accent);
+}
+
+.wordmark__mark {
+  font-family: var(--font-heading);
+  font-size: 1.375rem;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.wordmark__name {
+  font-family: var(--font-heading);
+  font-size: 1.625rem;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.wordmark__name-accent {
+  color: var(--color-pink);
 }
 
 /* The desktop nav and search need the room until the header is wide enough for both. */
 @media (min-width: 769px) and (max-width: 1279px) {
-  .wordmark__image {
+  .wordmark__name {
+    font-size: 1.375rem;
+  }
+
+  .wordmark__plate {
     height: 30px;
   }
 }
 
 /* At 320 the phone header keeps 184px beside search and the bell. */
 @media (max-width: 359px) {
-  .wordmark__image {
-    height: 32px;
+  .wordmark__name {
+    font-size: 1.25rem;
+  }
+
+  .wordmark__plate {
+    height: 28px;
   }
 }

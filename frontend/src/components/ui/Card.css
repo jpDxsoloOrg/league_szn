@@ -43,3 +43,9 @@
   border-color: var(--color-cyan);
   background-color: var(--color-surface-raised);
 }
+
+/* Ringside Booker: every card is a slot on the run sheet, flagged at the left edge. */
+.ui-card--default,
+.ui-card--raised {
+  border-left: 3px solid var(--section-accent);
+}

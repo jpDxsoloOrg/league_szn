@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-radius: 50%;
+  border-radius: var(--radius-control);
   background-color: var(--color-surface-raised);
   color: var(--color-text-secondary);
   font-family: var(--font-heading);

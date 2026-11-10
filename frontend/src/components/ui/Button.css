@@ -95,3 +95,57 @@
     transform: rotate(360deg);
   }
 }
+
+/* Ringside Booker: buttons are slanted plates. The slant leans the label, so
+   the label itself is set upright; icons are leaned back to stand straight. */
+.ui-btn {
+  transform: skewX(-9deg);
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.ui-btn > svg {
+  transform: skewX(9deg);
+}
+
+.ui-btn--sm {
+  font-size: 1rem;
+}
+
+.ui-btn--lg {
+  font-size: 1.3125rem;
+}
+
+/* Skewing a full-width plate would push its corners past the column. */
+.ui-btn--full {
+  transform: none;
+}
+
+.ui-btn--primary,
+.ui-btn--hero {
+  background-color: var(--color-pink);
+  color: var(--color-on-accent);
+}
+
+.ui-btn--primary:hover:not(:disabled),
+.ui-btn--hero:hover:not(:disabled) {
+  background-color: var(--color-pink-bright);
+}
+
+.ui-btn--hero {
+  box-shadow: var(--glow-pink);
+}
+
+.ui-btn--secondary {
+  border-color: var(--color-cyan);
+  background-color: var(--tint-cyan);
+  color: var(--color-cyan-bright);
+}
+
+.ui-btn--secondary:hover:not(:disabled) {
+  background-color: var(--color-surface-raised);
+  border-color: var(--color-cyan-bright);
+}

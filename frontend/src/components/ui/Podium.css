@@ -41,7 +41,7 @@
 .ui-podium__slot--first .ui-podium__card {
   padding-top: 2.5rem;
   background: var(--gradient-podium-first);
-  border-color: transparent;
+  border-color: var(--rim-world);
 
   --color-text-muted: var(--color-on-band-secondary);
   --color-hairline: var(--color-on-band-hairline);

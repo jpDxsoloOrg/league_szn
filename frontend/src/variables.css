@@ -1,5 +1,9 @@
 /*
- * Main Event Arena design tokens (docs/design/site-redesign/DESIGN.md).
+ * Ringside Booker design tokens (docs/design/ringside-booker/DESIGN.md).
+ * An alternative look for the Main Event Arena redesign: same structure and
+ * token names, a booking-desk palette. Some names (violet, pink, magenta) are
+ * kept from that design so no page has to change; here they hold the
+ * signal-red family.
  * This is the only stylesheet that should contain raw colour values.
  *
  * Section 1 holds the design tokens. Section 2 maps every legacy variable
@@ -11,76 +15,76 @@
   /* 1. Design tokens ------------------------------------------------------ */
 
   /* Surfaces */
-  --color-bg: #0d0a1a;
-  --color-surface: #17112b;
-  --color-surface-raised: #211939;
-  --color-hairline: rgba(255, 255, 255, 0.1);
-  --color-scrim: rgba(7, 5, 15, 0.72);
-  --color-overlay-soft: rgba(255, 255, 255, 0.06);
+  --color-bg: #0a0d13;
+  --color-surface: #111620;
+  --color-surface-raised: #19202d;
+  --color-hairline: rgba(150, 172, 210, 0.18);
+  --color-scrim: rgba(4, 6, 10, 0.78);
+  --color-overlay-soft: rgba(150, 172, 210, 0.08);
 
   /* Text */
-  --color-text: #f6f3ff;
-  --color-text-secondary: #c9c2dc;
-  --color-text-muted: #a49cbb;
+  --color-text: #f1f4f9;
+  --color-text-secondary: #b8c1d2;
+  --color-text-muted: #919db3;
 
   /* Brand */
-  --color-violet: #7c3aed;
-  --color-magenta: #d946ef;
-  --color-pink: #ff2e63;
-  --color-cyan: #22d3ee;
-  --color-cyan-bright: #67e8f9;
-  --color-on-accent: #0d0a1a;
-  --gradient-hero: linear-gradient(120deg, #7c3aed, #d946ef);
-  --gradient-wordmark: linear-gradient(90deg, #ff2e63, #d946ef 45%, #22d3ee);
-  --gradient-tile-scrim: linear-gradient(180deg, rgba(13, 10, 26, 0) 35%, rgba(13, 10, 26, 0.92) 100%);
-  --gradient-tile-scrim-strong: linear-gradient(180deg, rgba(13, 10, 26, 0) 25%, rgba(13, 10, 26, 0.88) 62%, rgba(13, 10, 26, 0.96) 100%);
-  --gradient-podium-first: linear-gradient(160deg, #7c3aed, #a21caf);
-  --color-violet-bright: #a78bfa;
-  --color-pink-bright: #ff6b92;
+  --color-violet: #c2371c;
+  --color-magenta: #f2c230;
+  --color-pink: #ff4d2e;
+  --color-cyan: #1fd5f9;
+  --color-cyan-bright: #7be7ff;
+  --color-on-accent: #0a0d13;
+  --gradient-hero: linear-gradient(120deg, #33160f, #161c29 48%, #0d2a36);
+  --gradient-wordmark: linear-gradient(90deg, #ff4d2e, #f2c230 55%, #1fd5f9);
+  --gradient-tile-scrim: linear-gradient(180deg, rgba(10, 13, 19, 0) 35%, rgba(10, 13, 19, 0.92) 100%);
+  --gradient-tile-scrim-strong: linear-gradient(180deg, rgba(10, 13, 19, 0) 25%, rgba(10, 13, 19, 0.88) 62%, rgba(10, 13, 19, 0.96) 100%);
+  --gradient-podium-first: linear-gradient(160deg, #3a2c08, #1c1a14 60%, #19202d);
+  --color-violet-bright: #ff7a5c;
+  --color-pink-bright: #ff7a5c;
   /* Pink text on a tint: the tint lifts the background, so it needs a lighter pink for 4.5:1. */
-  --color-pink-on-tint: #ff8fab;
-  --color-magenta-bright: #f472b6;
+  --color-pink-on-tint: #ff9d85;
+  --color-magenta-bright: #f7d154;
 
   /* Section identity: one colour per section, picked by data-section below.
      Every band stop keeps --color-text and --color-on-band-secondary at 4.5:1 or better. */
-  --band-home: linear-gradient(115deg, #3b1590, #5b21b6 55%, #7c3aed);
-  --band-events: linear-gradient(115deg, #7a0f3f, #a8124f 55%, #c2134d);
-  --band-rankings: linear-gradient(115deg, #0b6478, #2a4a9e 55%, #5b21b6);
-  --band-storylines: linear-gradient(115deg, #b5124c, #8a1a8f 55%, #4c1d95);
-  --band-me: linear-gradient(115deg, #1e1b4b, #4c1d95 55%, #6d28d9);
-  --color-on-band-secondary: #ece7fb;
-  --color-on-band-hairline: rgba(255, 255, 255, 0.35);
+  --band-home: linear-gradient(100deg, rgba(255, 77, 46, 0.2), rgba(255, 77, 46, 0) 42%), #141a26;
+  --band-events: linear-gradient(100deg, rgba(255, 77, 46, 0.2), rgba(255, 77, 46, 0) 42%), #141a26;
+  --band-rankings: linear-gradient(100deg, rgba(31, 213, 249, 0.16), rgba(31, 213, 249, 0) 42%), #141a26;
+  --band-storylines: linear-gradient(100deg, rgba(242, 194, 48, 0.16), rgba(242, 194, 48, 0) 42%), #141a26;
+  --band-me: linear-gradient(100deg, rgba(31, 213, 249, 0.16), rgba(31, 213, 249, 0) 42%), #141a26;
+  --color-on-band-secondary: #c5cddc;
+  --color-on-band-hairline: rgba(150, 172, 210, 0.32);
 
   /* Photo tile fallbacks: deep at the foot, so the caption stays readable. */
-  --tile-wash-none: linear-gradient(165deg, #7c3aed, #be185d 70%);
-  --tile-wash-world: linear-gradient(165deg, #d97706, #92400e 70%);
-  --tile-wash-us: linear-gradient(165deg, #0891b2, #1e3a8a 70%);
-  --tile-wash-ic: linear-gradient(165deg, #059669, #065f46 70%);
-  --tile-wash-tag: linear-gradient(165deg, #c026d3, #581c87 70%);
+  --tile-wash-none: linear-gradient(165deg, #a8361f, #1c2433 70%);
+  --tile-wash-world: linear-gradient(165deg, #b98a12, #2b2413 70%);
+  --tile-wash-us: linear-gradient(165deg, #0e8fa8, #13283a 70%);
+  --tile-wash-ic: linear-gradient(165deg, #1f9d6b, #12291f 70%);
+  --tile-wash-tag: linear-gradient(165deg, #b0471f, #2a1a14 70%);
 
   /* Status */
-  --color-win: #34d399;
-  --color-loss: #fb7185;
-  --color-draw: #a49cbb;
-  --color-warn: #fbbf24;
+  --color-win: #3ddc97;
+  --color-loss: #ff6b6b;
+  --color-draw: #919db3;
+  --color-warn: #f2c230;
 
   /* Title rim lights */
-  --rim-world: #fbbf24;
-  --rim-us: #22d3ee;
-  --rim-ic: #34d399;
-  --rim-tag: #e879f9;
+  --rim-world: #f2c230;
+  --rim-us: #1fd5f9;
+  --rim-ic: #3ddc97;
+  --rim-tag: #ff7a5c;
 
   /* Tints for badges and selected states */
-  --tint-violet: rgba(124, 58, 237, 0.22);
-  --tint-pink: rgba(255, 46, 99, 0.16);
-  --tint-cyan: rgba(34, 211, 238, 0.14);
-  --tint-win: rgba(52, 211, 153, 0.14);
-  --tint-loss: rgba(251, 113, 133, 0.14);
-  --tint-warn: rgba(251, 191, 36, 0.14);
+  --tint-violet: rgba(255, 77, 46, 0.16);
+  --tint-pink: rgba(255, 77, 46, 0.14);
+  --tint-cyan: rgba(31, 213, 249, 0.12);
+  --tint-win: rgba(61, 220, 151, 0.13);
+  --tint-loss: rgba(255, 107, 107, 0.14);
+  --tint-warn: rgba(242, 194, 48, 0.13);
 
   /* Selected pills and in-page tabs. Section tabs use an underline instead. */
-  --color-selected: #6d28d9;
-  --color-on-selected: var(--color-text);
+  --color-selected: #ff4d2e;
+  --color-on-selected: var(--color-on-accent);
 
   /* Edge fades for tab rows that scroll sideways. */
   --fade-mask-end: linear-gradient(to right, black calc(100% - 2.5rem), transparent);
@@ -88,18 +92,26 @@
   --fade-mask-both: linear-gradient(to right, transparent, black 2.5rem, black calc(100% - 2.5rem), transparent);
 
   /* Glow: live and active items only */
-  --glow-pink: 0 0 18px rgba(255, 46, 99, 0.45);
-  --glow-cyan: 0 0 18px rgba(34, 211, 238, 0.4);
-  --shadow-overlay: 0 18px 48px rgba(0, 0, 0, 0.55);
+  --glow-pink: 0 0 0 1px rgba(255, 77, 46, 0.55), 0 0 16px rgba(255, 77, 46, 0.35);
+  --glow-cyan: 0 0 0 1px rgba(31, 213, 249, 0.5), 0 0 16px rgba(31, 213, 249, 0.28);
+  --shadow-overlay: 0 18px 48px rgba(0, 0, 0, 0.65);
 
   /* Shape */
-  --radius-card: 12px;
-  --radius-control: 10px;
-  --radius-pill: 999px;
+  --radius-card: 2px;
+  --radius-control: 2px;
+  --radius-pill: 2px;
 
   /* Type */
-  --font-heading: 'Sora Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-heading: 'Barlow Condensed', 'Arial Narrow', 'Segoe UI', system-ui, sans-serif;
   --font-body: 'Inter Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  /* Small uppercase HUD labels: eyebrows, badges, tabs, table heads. */
+  --font-label: 'Chakra Petch', 'Segoe UI', system-ui, sans-serif;
+  --tracking-label: 0.08em;
+  /* Corner cuts for buttons and tags. */
+  --cut-button: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  --cut-tag: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  /* Faint hazard hatching for bands and heroes. */
+  --hatch: repeating-linear-gradient(135deg, rgba(150, 172, 210, 0.05) 0 2px, transparent 2px 10px);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --text-body: 1rem;
   --text-dense: 0.9375rem;
@@ -121,9 +133,9 @@
 
   /* Defaults for anything outside a section, such as dialogs. */
   --section-band: var(--band-home);
-  --section-accent: var(--color-violet-bright);
-  --section-tint: rgba(124, 58, 237, 0.1);
-  --section-wash: radial-gradient(ellipse 75% 360px at 50% 100px, rgba(124, 58, 237, 0.2), transparent 72%);
+  --section-accent: var(--color-pink);
+  --section-tint: rgba(255, 77, 46, 0.06);
+  --section-wash: none;
   --page-header-padding: 1.25rem 1.5rem;
 
   /* 2. Legacy names --------------------------------------------------------- */
@@ -134,8 +146,8 @@
   --color-surface-hover: var(--color-surface-raised);
   --color-border: var(--color-hairline);
   --color-success: var(--color-win);
-  --color-danger: #d3123f;
-  --color-danger-hover: #be123c;
+  --color-danger: #c81e3a;
+  --color-danger-hover: #a8182f;
   --color-danger-alt: var(--color-loss);
   --color-warning: var(--color-warn);
   --color-info: var(--color-cyan);
@@ -184,41 +196,31 @@
 }
 
 [data-section='home'] {
-  --color-surface: #1d1337;
-  --color-surface-raised: #261b44;
+  --section-band: var(--band-home);
 }
 
 [data-section='events'] {
-  --color-surface: #27132f;
-  --color-surface-raised: #311a3c;
   --section-band: var(--band-events);
-  --section-accent: var(--color-pink-bright);
-  --section-tint: rgba(255, 46, 99, 0.1);
-  --section-wash: radial-gradient(ellipse 75% 360px at 50% 100px, rgba(255, 46, 99, 0.16), transparent 72%);
+  --section-accent: var(--color-pink);
+  --section-tint: rgba(255, 77, 46, 0.06);
 }
 
 [data-section='rankings'] {
-  --color-surface: #181d37;
-  --color-surface-raised: #212444;
   --section-band: var(--band-rankings);
   --section-accent: var(--color-cyan);
-  --section-tint: rgba(34, 211, 238, 0.08);
-  --section-wash: radial-gradient(ellipse 75% 360px at 50% 100px, rgba(34, 211, 238, 0.13), transparent 72%);
+  --section-tint: rgba(31, 213, 249, 0.05);
 }
 
 [data-section='storylines'] {
-  --color-surface: #251539;
-  --color-surface-raised: #2e1c46;
   --section-band: var(--band-storylines);
-  --section-accent: var(--color-magenta-bright);
-  --section-tint: rgba(217, 70, 239, 0.1);
-  --section-wash: radial-gradient(ellipse 75% 360px at 50% 100px, rgba(217, 70, 239, 0.16), transparent 72%);
+  --section-accent: var(--color-magenta);
+  --section-tint: rgba(242, 194, 48, 0.05);
 }
 
 [data-section='me'] {
-  --color-surface: #1b1333;
-  --color-surface-raised: #251a40;
   --section-band: var(--band-me);
+  --section-accent: var(--color-cyan);
+  --section-tint: rgba(31, 213, 249, 0.05);
 }
 
 /* Admin stays plain: dense tools, no page band. */
