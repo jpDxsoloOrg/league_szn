@@ -254,6 +254,7 @@
     "dashboard": "Dashboard",
     "standings": "Tabelle",
     "activity": "Aktivität",
+    "news": "News",
     "championships": "Meisterschaften",
     "tournaments": "Turniere",
     "events": "Veranstaltungen",
@@ -3482,5 +3483,45 @@
     "sixPack": "6-Pack Challenge",
     "battleRoyal": "Battle Royal",
     "royalRumble": "Royal Rumble"
+  },
+  "ticker": {
+    "label": "Liga-Ticker",
+    "ariaLabel": "Nachrichtenticker der Liga",
+    "pause": "Ticker anhalten",
+    "resume": "Ticker fortsetzen",
+    "tags": {
+      "live": "Live",
+      "nextUp": "Als Nächstes",
+      "news": "News",
+      "result": "Ergebnis",
+      "titleMatch": "Titelmatch",
+      "champion": "Champion"
+    }
+  },
+  "shell": {
+    "status": {
+      "season": "Saison",
+      "nextShow": "Nächste Show",
+      "live": "Live"
+    }
+  },
+  "news": {
+    "eyebrow": "Ligabüro",
+    "title": "News",
+    "subtitle": "Artikel und Ankündigungen aus dem Ligabüro.",
+    "topStory": "Topmeldung",
+    "breaking": "Eilmeldung",
+    "readStory": "Ganze Meldung lesen",
+    "moreStories": "Weitere Meldungen",
+    "backToNews": "Alle News",
+    "loadFailed": "Die News konnten nicht geladen werden. Versuche es gleich noch einmal.",
+    "empty": {
+      "title": "Noch keine News",
+      "description": "Artikel und Ankündigungen erscheinen hier, sobald das Ligabüro sie veröffentlicht."
+    },
+    "notFound": {
+      "title": "Meldung nicht gefunden",
+      "description": "Diese Meldung wurde entfernt oder ist abgelaufen."
+    }
   }
 }

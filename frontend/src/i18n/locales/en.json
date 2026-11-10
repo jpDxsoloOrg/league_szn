@@ -254,6 +254,7 @@
     "dashboard": "Dashboard",
     "standings": "Standings",
     "activity": "Activity",
+    "news": "News",
     "championships": "Championships",
     "tournaments": "Tournaments",
     "events": "Events",
@@ -3482,5 +3483,45 @@
     "sixPack": "6-Pack Challenge",
     "battleRoyal": "Battle Royal",
     "royalRumble": "Royal Rumble"
+  },
+  "ticker": {
+    "label": "League Wire",
+    "ariaLabel": "League news ticker",
+    "pause": "Pause ticker",
+    "resume": "Resume ticker",
+    "tags": {
+      "live": "Live",
+      "nextUp": "Next up",
+      "news": "News",
+      "result": "Result",
+      "titleMatch": "Title match",
+      "champion": "Champion"
+    }
+  },
+  "shell": {
+    "status": {
+      "season": "Season",
+      "nextShow": "Next show",
+      "live": "Live"
+    }
+  },
+  "news": {
+    "eyebrow": "League desk",
+    "title": "News",
+    "subtitle": "Articles and announcements from the league office.",
+    "topStory": "Top story",
+    "breaking": "Breaking",
+    "readStory": "Read the story",
+    "moreStories": "More stories",
+    "backToNews": "All news",
+    "loadFailed": "The news could not be loaded. Try again in a moment.",
+    "empty": {
+      "title": "No news yet",
+      "description": "Articles and announcements will appear here when the league office posts them."
+    },
+    "notFound": {
+      "title": "Story not found",
+      "description": "This story was removed or has expired."
+    }
   }
 }

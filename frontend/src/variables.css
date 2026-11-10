@@ -121,6 +121,8 @@
   --shell-max-width: 1280px;
   --shell-header-height: 64px;
   --shell-bottom-bar-height: 64px;
+  --shell-sidebar-width: 248px;
+  --shell-ticker-height: 36px;
   --section-tabs-height: 46px;
   --focus-ring: 2px solid var(--color-cyan);
 

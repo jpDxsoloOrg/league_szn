@@ -24,9 +24,18 @@ main:focus {
   outline: none;
 }
 
+/* Desktop: the sidebar is fixed on the left, the ticker along the bottom. */
+.app-layout--desktop {
+  padding-left: var(--shell-sidebar-width);
+}
+
+.app-layout--desktop main {
+  padding-bottom: calc(var(--shell-ticker-height) + 2rem);
+}
+
 .app-layout--mobile main {
   padding: 1rem;
-  padding-bottom: calc(var(--shell-bottom-bar-height) + env(safe-area-inset-bottom) + 1rem);
+  padding-bottom: calc(var(--shell-bottom-bar-height) + var(--shell-ticker-height) + env(safe-area-inset-bottom) + 1rem);
 }
 
 .shell-top {
@@ -200,6 +209,10 @@ tr:hover {
 
 /* Print: hide app chrome and ensure readable contrast */
 @media print {
+  .app-layout--desktop {
+    padding-left: 0;
+  }
+
   .shell-top,
   .section-nav,
   .bottom-tab-bar {

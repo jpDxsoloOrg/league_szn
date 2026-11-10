@@ -28,6 +28,8 @@ const { mockIsMobile } = vi.hoisted(() => ({ mockIsMobile: { value: false } }));
 vi.mock('../../hooks/useIsMobile', () => ({ useIsMobile: () => mockIsMobile.value }));
 vi.mock('../mobile/MobileHeader', () => ({ default: () => <header data-testid="mobile-header">MobileHeader</header> }));
 vi.mock('../shell/ShellHeader', () => ({ default: () => <nav data-testid="shell-header">ShellHeader</nav> }));
+vi.mock('../shell/ShellSidebar', () => ({ default: () => <aside data-testid="shell-sidebar">ShellSidebar</aside> }));
+vi.mock('../shell/LeagueTicker', () => ({ default: () => <section data-testid="league-ticker">LeagueTicker</section> }));
 vi.mock('../shell/SectionNav', () => ({ default: () => <div data-testid="section-nav">SectionNav</div> }));
 vi.mock('../Dashboard', () => ({ default: () => <div data-testid="dashboard">Dashboard</div> }));
 vi.mock('../Standings', () => ({ default: () => <div data-testid="standings">Standings</div> }));
@@ -139,8 +141,10 @@ describe('App', () => {
     mockUseAuth.mockReturnValue(authenticatedAuth());
     render(<App />);
 
+    expect(screen.getByTestId('shell-sidebar')).toBeInTheDocument();
     expect(screen.getByTestId('shell-header')).toBeInTheDocument();
     expect(screen.getByTestId('section-nav')).toBeInTheDocument();
+    expect(screen.getByTestId('league-ticker')).toBeInTheDocument();
     expect(await screen.findByTestId('dashboard')).toBeInTheDocument();
     expect(screen.getByRole('main')).toContainElement(screen.getByTestId('dashboard'));
   });
@@ -158,6 +162,8 @@ describe('App', () => {
     const pinned = phone.container.querySelector('.shell-top');
     expect(pinned).toContainElement(screen.getByTestId('mobile-header'));
     expect(pinned).not.toContainElement(screen.getByTestId('section-nav'));
+    expect(screen.queryByTestId('shell-sidebar')).not.toBeInTheDocument();
+    expect(screen.getByTestId('league-ticker')).toBeInTheDocument();
   });
 
   it('renders public routes without authentication', async () => {

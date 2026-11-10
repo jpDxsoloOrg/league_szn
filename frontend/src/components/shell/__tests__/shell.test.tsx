@@ -3,10 +3,13 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 
-const { mockUseAuth, mockUseSiteConfig } = vi.hoisted(() => ({
+const { mockUseAuth, mockUseSiteConfig, mockUseLeaguePulse } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
   mockUseSiteConfig: vi.fn(),
+  mockUseLeaguePulse: vi.fn(),
 }));
+
+vi.mock('../../../hooks/useLeaguePulse', () => ({ useLeaguePulse: mockUseLeaguePulse }));
 
 vi.mock('../../../contexts/AuthContext', () => ({ useAuth: mockUseAuth }));
 vi.mock('../../../contexts/SiteConfigContext', () => ({ useSiteConfig: mockUseSiteConfig }));
@@ -19,6 +22,7 @@ vi.mock('../../search/SearchLauncher', () => ({ default: () => <button>search</b
 import MeHub from '../MeHub';
 import SectionNav from '../SectionNav';
 import ShellHeader from '../ShellHeader';
+import ShellSidebar from '../ShellSidebar';
 
 const FEATURES = { challenges: true, promos: true, contenders: true, statistics: true, stables: true, notifications: true, rivalries: true, transfers: true };
 const SIGNED_OUT = { isAuthenticated: false, isWrestler: false, isAdminOrModerator: false, isSuperAdmin: false };
@@ -40,54 +44,97 @@ function linkNames() {
 beforeEach(() => {
   mockUseSiteConfig.mockReturnValue({ features: FEATURES });
   mockUseAuth.mockReturnValue({ ...WRESTLER, signOut: vi.fn() });
+  mockUseLeaguePulse.mockReturnValue({ dashboard: null, news: [] });
 });
 
-describe('ShellHeader', () => {
+describe('ShellSidebar', () => {
   it('shows the wordmark as a named link home', () => {
     mockUseAuth.mockReturnValue(SIGNED_OUT);
-    mockUseSiteConfig.mockReturnValue({ features: FEATURES });
-    renderAt('/standings', <ShellHeader />);
+    renderAt('/standings', <ShellSidebar />);
 
     expect(screen.getByRole('link', { name: 'League SZN' })).toHaveAttribute('href', '/');
   });
 
-  it('shows the five sections, bell, search, and no Admin for a wrestler', () => {
-    renderAt('/standings', <ShellHeader />);
+  it('lists every section with its pages, and no Admin for a wrestler', () => {
+    renderAt('/standings', <ShellSidebar />);
     const nav = screen.getByRole('navigation', { name: 'mobileNav.ariaLabel' });
     expect(nav).toHaveTextContent('nav.sections.home');
-    expect(nav).toHaveTextContent('nav.sections.me');
     expect(nav).not.toHaveTextContent('nav.admin');
-    expect(screen.getByRole('link', { name: 'nav.sections.rankings' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByTestId('bell')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'search' })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'nav.sections.rankings' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'nav.standings' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'nav.news' })).toHaveAttribute('href', '/news');
+    expect(screen.getByRole('link', { name: 'nav.tabs.matches' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: 'nav.sections.me' })).toHaveAttribute('href', '/me');
   });
 
-  it('adds Admin as a sixth item for staff', () => {
+  it('keeps a page lit on its drill-downs', () => {
+    renderAt('/events/e1/results', <ShellSidebar />);
+    expect(screen.getByRole('link', { name: 'nav.tabs.calendar' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('hides a page when its flag is off', () => {
+    mockUseSiteConfig.mockReturnValue({ features: { ...FEATURES, contenders: false } });
+    renderAt('/standings', <ShellSidebar />);
+    expect(screen.queryByRole('link', { name: 'nav.contenders' })).not.toBeInTheDocument();
+  });
+
+  it('adds Admin for staff', () => {
     mockUseAuth.mockReturnValue(MODERATOR);
-    renderAt('/admin/players', <ShellHeader />);
+    renderAt('/admin/players', <ShellSidebar />);
     const admin = screen.getByRole('link', { name: 'nav.admin' });
     expect(admin).toHaveAttribute('href', '/admin');
     expect(admin).toHaveAttribute('aria-current', 'page');
   });
 
-  it('offers sign-in instead of Me when signed out', () => {
+  it('offers sign-in instead of Me when signed out, lit only on the sign-in page', () => {
     mockUseAuth.mockReturnValue(SIGNED_OUT);
-    renderAt('/', <ShellHeader />);
+    const first = renderAt('/guide/wiki', <ShellSidebar />);
     expect(screen.getByRole('link', { name: 'common.signIn' })).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('link', { name: 'common.signIn' })).not.toHaveAttribute('aria-current');
     expect(screen.queryByRole('link', { name: 'nav.sections.me' })).not.toBeInTheDocument();
+    first.unmount();
+
+    renderAt('/login', <ShellSidebar />);
+    expect(screen.getByRole('link', { name: 'common.signIn' })).toHaveAttribute('aria-current', 'page');
+  });
+});
+
+describe('ShellHeader', () => {
+  it('names the section and page, with the bell, search and help', () => {
+    renderAt('/standings', <ShellHeader />);
+    const banner = screen.getByRole('banner');
+    expect(banner).toHaveTextContent('nav.sections.rankings');
+    expect(banner).toHaveTextContent('nav.standings');
+    expect(screen.getByTestId('bell')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'search' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'common.signIn' })).not.toBeInTheDocument();
   });
 
-  it('does not light Sign In for a guest reading help, and marks the help icon instead', () => {
+  it('shows the season, the next show and a live flag from league data', () => {
+    mockUseLeaguePulse.mockReturnValue({
+      news: [],
+      dashboard: {
+        seasonInfo: { seasonId: 's4', name: 'Season 4', status: 'active' },
+        upcomingEvents: [{ eventId: 'e2', name: 'Mayhem Monday', date: '2026-11-09', eventType: 'weekly' }],
+        inProgressEvents: [{ eventId: 'e1', name: 'Fallout Friday', date: '2026-11-06', eventType: 'weekly' }],
+      },
+    });
+    renderAt('/', <ShellHeader />);
+    expect(screen.getByText('Season 4')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Mayhem Monday/ })).toHaveAttribute('href', '/events/e2');
+    expect(screen.getByRole('link', { name: 'shell.status.live: Fallout Friday' })).toHaveAttribute('href', '/events/e1');
+  });
+
+  it('shows no status strip items before league data arrives', () => {
+    renderAt('/', <ShellHeader />);
+    expect(screen.queryByText('shell.status.season')).not.toBeInTheDocument();
+  });
+
+  it('offers guests sign-in and marks the help icon on help pages', () => {
     mockUseAuth.mockReturnValue(SIGNED_OUT);
     renderAt('/guide/wiki', <ShellHeader />);
-    expect(screen.getByRole('link', { name: 'common.signIn' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: 'common.signIn' })).toHaveAttribute('href', '/login');
     expect(screen.getByRole('link', { name: 'nav.help' })).toHaveAttribute('aria-current', 'page');
-  });
-
-  it('lights Sign In on the sign-in page', () => {
-    mockUseAuth.mockReturnValue(SIGNED_OUT);
-    renderAt('/login', <ShellHeader />);
-    expect(screen.getByRole('link', { name: 'common.signIn' })).toHaveAttribute('aria-current', 'page');
   });
 });
 
@@ -102,6 +149,16 @@ describe('SectionNav', () => {
     mockUseSiteConfig.mockReturnValue({ features: { ...FEATURES, contenders: false } });
     renderAt('/standings', <SectionNav />);
     expect(screen.queryByRole('link', { name: 'nav.contenders' })).not.toBeInTheDocument();
+  });
+
+  it('shows only the third-level bar when the sidebar lists the pages', () => {
+    const stats = renderAt('/stats/records', <SectionNav childTabsOnly />);
+    expect(screen.getByRole('navigation', { name: 'nav.statistics' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'nav.sections.rankings' })).not.toBeInTheDocument();
+    stats.unmount();
+
+    renderAt('/standings', <SectionNav childTabsOnly />);
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 
   it('adds the third-level bar on stats pages only', () => {

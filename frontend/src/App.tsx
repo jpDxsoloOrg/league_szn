@@ -8,7 +8,9 @@ import { SiteConfigProvider } from './contexts/SiteConfigContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ScrollToTop from './components/ScrollToTop';
 import NotFound from './components/NotFound';
+import LeagueTicker from './components/shell/LeagueTicker';
 import ShellHeader from './components/shell/ShellHeader';
+import ShellSidebar from './components/shell/ShellSidebar';
 import SectionNav from './components/shell/SectionNav';
 import MobileHeader from './components/mobile/MobileHeader';
 import BottomTabBar from './components/mobile/BottomTabBar';
@@ -16,7 +18,7 @@ import Skeleton from './components/ui/Skeleton';
 import { ToastProvider } from './components/ui/Toast';
 import { useIsMobile } from './hooks/useIsMobile';
 import { useRouteTitle } from './hooks/useDocumentTitle';
-import { getPageInfo, getSectionTheme } from './config/navConfig';
+import { getPageInfo, getSectionTheme, isAdminPath } from './config/navConfig';
 // Route guards
 import ProtectedRoute from './components/ProtectedRoute';
 import FeatureRoute from './components/FeatureRoute';
@@ -28,6 +30,8 @@ import './App.css';
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const Standings = lazy(() => import('./components/Standings'));
 const ActivityFeed = lazy(() => import('./components/ActivityFeed'));
+const News = lazy(() => import('./components/news/News'));
+const NewsArticle = lazy(() => import('./components/news/NewsArticle'));
 const Championships = lazy(() => import('./components/Championships'));
 const Tournaments = lazy(() => import('./components/Tournaments'));
 const MatchSearch = lazy(() => import('./components/MatchSearch'));
@@ -119,7 +123,7 @@ const PROMOS_GUEST_PROMPT = {
 
 function getLayoutClass(isMobile: boolean, pathname: string): string {
   const classes = ['App'];
-  if (isMobile) classes.push('app-layout--mobile');
+  classes.push(isMobile ? 'app-layout--mobile' : 'app-layout--desktop');
   if (pathname === '/admin' || pathname.startsWith('/admin/')) classes.push('app-layout--wide');
   return classes.join(' ');
 }
@@ -134,9 +138,10 @@ function AppLayout() {
   return (
     <div className={getLayoutClass(isMobile, pathname)} data-section={getSectionTheme(pathname)}>
       <a href="#main" className="skip-link">{t('nav.skipToContent')}</a>
+      {!isMobile && <ShellSidebar />}
       <div className="shell-top">
         {isMobile ? <MobileHeader /> : <ShellHeader />}
-        {!isMobile && <SectionNav />}
+        {!isMobile && <SectionNav childTabsOnly />}
       </div>
       {/* On phones the tab rows scroll away, so only the slim header stays pinned. */}
       {isMobile && <SectionNav />}
@@ -161,6 +166,8 @@ function AppLayout() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/standings" element={<Standings />} />
             <Route path="/activity" element={<ActivityFeed />} />
+            <Route path="/news" element={<News />} />
+            <Route path="/news/:newsId" element={<NewsArticle />} />
             <Route path="/championships" element={<Championships />} />
             <Route path="/matches" element={<MatchSearch />} />
             <Route path="/tournaments" element={<Tournaments />} />
@@ -353,6 +360,7 @@ function AppLayout() {
           </Suspense>
         </ErrorBoundary>
       </main>
+      {!isAdminPath(pathname) && <LeagueTicker />}
       {isMobile && <BottomTabBar />}
     </div>
   );

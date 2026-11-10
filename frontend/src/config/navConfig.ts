@@ -31,6 +31,7 @@ import {
   Medal,
   Megaphone,
   Mic,
+  Newspaper,
   RefreshCw,
   Shield,
   SlidersHorizontal,
@@ -114,6 +115,7 @@ export const NAV_SECTIONS: NavSection[] = [
     path: '/',
     tabs: [
       { path: '/', labelKey: 'nav.dashboard', icon: House },
+      { path: '/news', labelKey: 'nav.news', icon: Newspaper },
       { path: '/activity', labelKey: 'nav.activity', icon: Activity },
     ],
   },
