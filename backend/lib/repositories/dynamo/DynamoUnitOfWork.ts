@@ -1,6 +1,7 @@
 import { TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
 import { dynamoDb, TableNames } from '../../dynamodb';
-import type { UnitOfWork, RecordDelta, MatchWriteCondition } from '../unitOfWork';
+import type { UnitOfWork, RecordDelta, MatchWriteCondition, PlayerWriteCondition } from '../unitOfWork';
+import type { ChallengeStatus } from '../types';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
 import {
   participantSk,
@@ -45,7 +46,7 @@ export class DynamoUnitOfWork implements UnitOfWork {
   }
 
   // ── Players ──────────────────────────────────────────────────────
-  updatePlayer(playerId: string, patch: Record<string, unknown>): void {
+  updatePlayer(playerId: string, patch: Record<string, unknown>, condition?: PlayerWriteCondition): void {
     const now = new Date().toISOString();
     const sets: string[] = ['#fUpdatedAt = :updatedAt'];
     const removes: string[] = [];
@@ -71,6 +72,16 @@ export class DynamoUnitOfWork implements UnitOfWork {
     if (removes.length > 0) {
       expr += ` REMOVE ${removes.join(', ')}`;
     }
+    let conditionExpression: string | undefined;
+    if (condition) {
+      names['#disciplineVersion'] = 'disciplineVersion';
+      values[':expectedDisciplineVersion'] = condition.disciplineVersion;
+      // Only version 0 may match a row with no version, as in updateDiscipline.
+      const matchesVersion = '#disciplineVersion = :expectedDisciplineVersion';
+      conditionExpression = condition.disciplineVersion === 0
+        ? `attribute_exists(playerId) AND (attribute_not_exists(#disciplineVersion) OR ${matchesVersion})`
+        : `attribute_exists(playerId) AND ${matchesVersion}`;
+    }
     this.staged.push({
       Update: {
         TableName: TableNames.PLAYERS,
@@ -78,8 +89,12 @@ export class DynamoUnitOfWork implements UnitOfWork {
         UpdateExpression: expr,
         ExpressionAttributeNames: names,
         ExpressionAttributeValues: values,
+        ...(conditionExpression && { ConditionExpression: conditionExpression }),
       },
     });
+    if (conditionExpression) {
+      this.tagLastStaged({ kind: 'guarded', entityName: 'Player', id: playerId });
+    }
   }
 
   incrementPlayerRecord(playerId: string, delta: RecordDelta): void {
@@ -245,7 +260,7 @@ export class DynamoUnitOfWork implements UnitOfWork {
   }
 
   // ── Challenges ───────────────────────────────────────────────────
-  updateChallenge(challengeId: string, patch: Record<string, unknown>): void {
+  updateChallenge(challengeId: string, patch: Record<string, unknown>, expectedStatus?: ChallengeStatus): void {
     const now = new Date().toISOString();
     const sets: string[] = [];
     const names: Record<string, string> = {};
@@ -267,6 +282,10 @@ export class DynamoUnitOfWork implements UnitOfWork {
     names[`#f${i}`] = 'updatedAt';
     values[`:v${i}`] = now;
     sets.push(`#f${i} = :v${i}`);
+    if (expectedStatus) {
+      names['#s'] = 'status';
+      values[':expectedStatus'] = expectedStatus;
+    }
     this.staged.push({
       Update: {
         TableName: TableNames.CHALLENGES,
@@ -274,8 +293,12 @@ export class DynamoUnitOfWork implements UnitOfWork {
         UpdateExpression: `SET ${sets.join(', ')}`,
         ExpressionAttributeNames: names,
         ExpressionAttributeValues: values,
+        ...(expectedStatus && { ConditionExpression: '#s = :expectedStatus' }),
       },
     });
+    if (expectedStatus) {
+      this.tagLastStaged({ kind: 'guarded', entityName: 'Challenge', id: challengeId });
+    }
   }
 
   createChallenge(challenge: Record<string, unknown>): void {

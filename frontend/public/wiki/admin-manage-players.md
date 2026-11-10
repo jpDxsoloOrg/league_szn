@@ -15,6 +15,10 @@ To bring a hidden player back:
 - The player enters a wrestler name themselves. The site prompts them to do this when they sign in, and they appear as soon as they save.
 - Or staff assign a wrestler, either here under **Edit** or in the **Assigned Wrestler** column of [User Management](admin-user-management).
 
+## Strikes
+
+The **Discipline** button on each row opens the player's strike record, and the status column shows a badge while they have active strikes. Deactivated players are hidden from this table until you tick **Show hidden**. See [Strikes](admin-strikes).
+
 ## Editing a Player
 
 1. Find the player in the table
@@ -30,7 +34,7 @@ The wrestler lists come from **Manage Wrestlers**, so add a wrestler there first
 2. Click **Delete**
 3. Confirm the action in the dialog
 
-**Note:** You cannot delete a player who is currently a champion. Vacate the title under **Championships** first, or let them lose it in a title match.
+**Note:** You cannot delete a player who is currently a champion. Vacate the title under **Championships** first, or let them lose it in a title match. You also cannot delete a player with active strikes or a deactivated account. See [Strikes](admin-strikes).
 
 Deleting removes the player from the roster and from their faction and tag team, and frees their wrestlers. A tag team they were in is dissolved. Their season standings rows are removed.
 

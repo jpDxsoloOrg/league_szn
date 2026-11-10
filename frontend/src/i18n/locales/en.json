@@ -146,7 +146,9 @@
     "welcomeSignInCta": "Go to sign in",
     "needsWrestlerBannerTitle": "Pick your wrestler to finish setting up",
     "needsWrestlerBannerBody": "Your profile doesn't have a wrestler from the roster yet. An admin will set you up with one — or edit your profile to pick an available wrestler yourself.",
-    "needsWrestlerBadge": "Needs wrestler"
+    "needsWrestlerBadge": "Needs wrestler",
+    "accountDisabled": "Your account has been deactivated or disabled. Please contact an administrator.",
+    "signupRefused": "This account cannot be registered. Please contact an administrator."
   },
   "profileModal": {
     "title": "Complete Your Profile",
@@ -453,6 +455,8 @@
       "adminRivalries": "Admin: Rivalries",
       "rateMatches": "Rate Matches",
       "rivalryHeatExplained": "How Rivalry Heat Works",
+      "strikesAndSuspensions": "Strikes and suspensions",
+      "adminStrikes": "Admin: Strikes",
       "installApp": "Install the App",
       "news": "News and the League Wire"
     },
@@ -474,7 +478,8 @@
       "adminContenderConfig": "Contender Rankings",
       "adminDataManagement": "Data Management",
       "adminWorkflow": "Typical Workflow",
-      "adminRivalries": "Rivalries"
+      "adminRivalries": "Rivalries",
+      "adminStrikes": "Strikes"
     },
     "articleNotFound": "Article not found",
     "articleNotFoundHint": "This help article may have moved. Browse the full list instead.",
@@ -1539,7 +1544,13 @@
       "typeFilter": "Event type",
       "viewCard": "View the card",
       "plannedShow": "Planned show, card to come",
-      "plannedLegend": "Planned"
+      "plannedLegend": "Planned",
+      "calendarTab": "Calendar",
+      "plannedShowCreate": "Planned show. Create the event",
+      "dayHasEvent": "event booked",
+      "dayHasPlanned": "planned show",
+      "nothingOnDay": "Nothing booked on this day.",
+      "createOnDay": "Create event on this day"
     },
     "designations": {
       "preShow": "Pre-Show",
@@ -1564,7 +1575,7 @@
       "winner": "W",
       "addMatch": "Add Match",
       "scheduleFirstMatch": "Schedule First Match",
-      "backToEvent": "← Back to {{name}}",
+      "backToEvent": "Back to {{name}}",
       "recordResult": "Record Result",
       "editMatch": "Edit",
       "deleteMatch": "Delete",
@@ -1590,7 +1601,14 @@
       "editMatchTitle": "Edit match",
       "manage": "Manage event",
       "statusError": "Failed to update status.",
-      "statusLabel": "Event status"
+      "statusLabel": "Event status",
+      "closeSignups": {
+        "action": "Close sign-ups",
+        "title": "Close sign-ups for this match?",
+        "message": "The open spots are removed and the match is booked with the wrestlers who signed up. Nobody else can claim a spot.",
+        "confirm": "Close sign-ups",
+        "error": "Could not close sign-ups for this match."
+      }
     },
     "commentary": {
       "title": "Commentary View",
@@ -1684,6 +1702,13 @@
       "bookedUpcoming": "Booked {{when}}",
       "lastBooked": "Last booked {{when}}",
       "streakTitle": "On a {{count}}-match {{type}} streak",
+      "seasonRecordTitle": "{{season}}: {{wins}}, {{losses}}, {{draws}}",
+      "recordWins_one": "{{count}} win",
+      "recordWins_other": "{{count}} wins",
+      "recordLosses_one": "{{count}} loss",
+      "recordLosses_other": "{{count}} losses",
+      "recordDraws_one": "{{count}} draw",
+      "recordDraws_other": "{{count}} draws",
       "streakType": {
         "W": "winning",
         "L": "losing",
@@ -2477,7 +2502,8 @@
     "typeTagTeam": "Tag Team",
     "typeTransfer": "Transfer",
     "typeRivalry": "Rivalry",
-    "typeStoryline": "Storyline"
+    "typeStoryline": "Storyline",
+    "typeDiscipline": "Strikes"
   },
   "findMatch": {
     "title": "Find a Match",
@@ -3486,6 +3512,127 @@
     "battleRoyal": "Battle Royal",
     "royalRumble": "Royal Rumble"
   },
+  "discipline": {
+    "status": {
+      "clear": "No active strikes",
+      "warned": "Warning",
+      "signupBlocked": "Blocked from sign-ups",
+      "cooldown": "On cooldown",
+      "deactivated": "Deactivated"
+    },
+    "errors": {
+      "SIGNUP_BLOCKED": "You can't sign up until {{date}}.",
+      "SIGNUP_BLOCKED_NO_DATE": "You can't sign up right now because of a strike on your account.",
+      "PLAYER_DEACTIVATED": "This account is deactivated, so that can't be done. An admin can reactivate it in Manage Players.",
+      "PLAYER_UNAVAILABLE": "That player isn't available right now.",
+      "ALREADY_DEACTIVATED": "This player is already deactivated.",
+      "NOT_DEACTIVATED": "This player is not deactivated.",
+      "STAFF_PROTECTED": "Admins and moderators can't receive strikes. Remove their role first.",
+      "DISCIPLINE_CONFLICT": "This player's record changed while you had it open. Check the latest details below, then try again.",
+      "STRIKE_NOT_ACTIVE": "That strike is no longer active, so there is nothing to remove.",
+      "DISCIPLINE_ACTIVE": "This player has active strikes, so they can't be deleted until those end.",
+      "PSN_ID_UNAVAILABLE": "That PSN ID can't be used. Check it and try another.",
+      "PSN_ID_LOCKED": "You can't change your PSN ID while you're blocked from signing up."
+    },
+    "countdown": {
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "hours_one": "{{count}} hour",
+      "hours_other": "{{count}} hours",
+      "minutes_one": "{{count}} minute",
+      "minutes_other": "{{count}} minutes",
+      "seconds_one": "{{count}} second",
+      "seconds_other": "{{count}} seconds"
+    },
+    "notice": {
+      "title": "Strikes",
+      "suspendedTitle": "Suspended from signing up.",
+      "liftsIn": "Lifts in {{time}}.",
+      "signupBlockedUntil": "Back on {{date}}.",
+      "cooldownTitle": "Strike cooldown",
+      "fallsOffIn_one": "Falls off in {{time}}",
+      "fallsOffIn_other": "Fall off in {{time}}",
+      "cooldownEnds": "On {{date}}",
+      "strikeNumber": "Strike {{number}}",
+      "strikeReason": "Reason: {{reason}}",
+      "deactivated": "Your account has been deactivated. Please contact an administrator.",
+      "learnMore": "How strikes work"
+    },
+    "admin": {
+      "open": "Discipline",
+      "title": "Discipline: {{name}}",
+      "statusHeading": "Current status",
+      "until": "Until {{date}}",
+      "signupBlockedUntil": "Blocked from sign-ups until",
+      "cooldownEnds": "Strikes fall off",
+      "deactivatedOn": "Deactivated on",
+      "activeStrikes": "Active strikes",
+      "history": "History",
+      "noHistory": "This player has never had a strike.",
+      "issueHeading": "Issue a strike",
+      "outcome": {
+        "warned": "This is a first strike: a 7-day warning. The player can still sign up.",
+        "signup-blocked": "This blocks sign-ups for 7 days and sets the cooldown to 14 days from now.",
+        "deactivated": "This strike deactivates the account. The player can't log in, sign up or appear in standings until an Admin reactivates them."
+      },
+      "issueWarning": "Issue warning",
+      "issueSecond": "Issue second strike",
+      "deactivateAccount": "Deactivate account",
+      "remove": "Remove",
+      "confirmRemove": "Remove strike",
+      "removeReason": "Why is this strike being removed?",
+      "reactivate": "Reactivate",
+      "reactivateReason": "Why is this player being reactivated?",
+      "restorePriorStrikes": "Restore earlier strikes (the last strike was a mistake)",
+      "reason": "Reason (the player will see this)",
+      "reasonHint": "{{min}} to {{max}} characters.",
+      "staffProtected": "This account is an Admin or Moderator, so it can't receive strikes. Remove the role first.",
+      "readOnly": "You can read this record. Only an Admin can change it.",
+      "manageUsers": "Open Manage Users",
+      "accountSyncFailed": "The player's record was updated, but their login could not be changed. Fix it in Manage Users.",
+      "accountMismatch": "This player's login doesn't match their record: the record decides access, so fix the login in Manage Users.",
+      "loginAlreadyDisabled": "The login was already disabled before the deactivation, so it was left disabled. Enable it in Manage Users if that is wanted.",
+      "softHoldsFailed": "Queue or challenge cleanup did not finish. The player is still refused and hidden from listings, but some of it may need clearing by hand.",
+      "notLinked": "This player has no linked login, so there is no account to disable or enable.",
+      "holdingsTitle": "Still held by this player",
+      "holdingsNotChanged": "None of these are changed automatically. Handle each one with the tools linked here.",
+      "holdingsNone": "This player holds no titles, bookings, accepted challenges or open tournament entries.",
+      "holdingTitle": "Title: {{name}}",
+      "holdingMatch": "{{format}} on {{date}}",
+      "holdingMatchVs": "{{format}} vs {{opponents}} on {{date}}",
+      "holdingMatchFallback": "Match",
+      "holdingChallenge": "Accepted challenge with {{name}}",
+      "holdingTournament": "Tournament: {{name}}",
+      "bookingWarning": "Blocked from signing up: {{names}}. Staff can still book them.",
+      "tournamentForfeitWarning": "Deactivated tournament entrant: {{names}}. The match can be booked so the tournament can finish, and recorded as a forfeit.",
+      "confirmDeactivateTitle": "Deactivate account",
+      "confirmDeactivate": "Deactivate {{name}}? They will lose access at once. An Admin can reverse this.",
+      "loadFailed": "Could not load this player's discipline record.",
+      "staleDetail": "Could not reload this record, so it may be out of date.",
+      "actionFailed": "That action failed. Check the record below before trying again.",
+      "strikeActive": "Active",
+      "strikeLapsed": "Lapsed",
+      "strikeCleared": "Cleared",
+      "issuedBy": "{{date}}, issued by {{name}}",
+      "removedBy": "Removed {{date}} by {{name}}",
+      "clearedByReactivation": "Cleared by reactivation {{date}} by {{name}}",
+      "deactivatedBy": "Deactivated {{date}} by {{name}}",
+      "reactivatedBy": "Reactivated {{date}} by {{name}}",
+      "done": {
+        "strike": "Strike issued.",
+        "strikeDeactivated": "Strike issued and account deactivated.",
+        "remove": "Strike removed.",
+        "reactivate": "Player reactivated."
+      }
+    }
+  },
+  "pwa": {
+    "install": {
+      "action": "Install app",
+      "description": "Open League SZN from your home screen, full screen like an app.",
+      "iosHint": "Tap Share (or •••, then Share), then Add to Home Screen."
+    }
+  },
   "ticker": {
     "label": "League Wire",
     "ariaLabel": "League news ticker",
@@ -3521,13 +3668,6 @@
     "notFound": {
       "title": "Story not found",
       "description": "This story was removed or has expired."
-    }
-  },
-  "pwa": {
-    "install": {
-      "action": "Install app",
-      "description": "Open League SZN from your home screen, full screen like an app.",
-      "iosHint": "Tap Share (or •••, then Share), then Add to Home Screen."
     }
   }
 }

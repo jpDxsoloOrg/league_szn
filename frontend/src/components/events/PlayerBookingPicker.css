@@ -39,6 +39,12 @@
   color: var(--color-text-muted);
 }
 
+.booking-picker-trigger .ui-badge {
+  flex: none;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
 .booking-picker-caret {
   flex: none;
   color: var(--color-text-muted);
@@ -115,10 +121,15 @@
   color: var(--color-text-secondary);
 }
 
+/* The basis sends a badge to its own line on a phone, rather than squeezing the name. */
 .booking-picker-option-text {
-  flex: 1;
+  flex: 1 1 10rem;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.booking-picker-option .ui-badge {
+  flex: none;
 }
 
 .booking-picker-option--booked .booking-picker-option-text {
@@ -228,6 +239,25 @@
   font-size: 0.8125rem;
 }
 
+/* Season W-L-D: tabular figures so a column of records lines up. */
+.booking-picker-record {
+  flex: none;
+  padding: 0 0.375rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 0-0-0 still tells the booker something, so it stays, just quieter. */
+.booking-picker-record--empty {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
 .booking-picker-last--never {
   color: var(--color-win);
 }
@@ -254,9 +284,30 @@
   color: var(--color-draw);
 }
 
+/*
+ * On a phone a floating menu runs under the sticky action bar and the bottom
+ * tab bar, where Done can't be reached. In the page flow it scrolls like the
+ * rest of the form, and scroll-margin keeps it clear of those bars.
+ */
+@media (max-width: 768px) {
+  .booking-picker-menu {
+    position: static;
+    min-width: 0;
+    max-height: min(340px, 55dvh);
+    margin-top: 0.25rem;
+    scroll-margin-bottom: calc(var(--shell-bottom-bar-height) + env(safe-area-inset-bottom) + 5rem);
+  }
+
+  /* 16px or iOS Safari zooms the page when the search is focused. */
+  .booking-picker-search {
+    font-size: 1rem;
+  }
+}
+
 @media (max-width: 480px) {
   .booking-picker-meta {
     flex-basis: 100%;
+    flex-wrap: wrap;
     padding-left: 1rem;
   }
 }

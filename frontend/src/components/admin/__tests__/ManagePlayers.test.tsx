@@ -26,6 +26,12 @@ vi.mock('../../../services/api', () => ({
   wrestlersApi: mockWrestlersApi,
 }));
 
+vi.mock('../PlayerDisciplineModal', () => ({
+  default: ({ player }: { player: { name: string } | null }) => (
+    player ? <div data-testid="discipline-modal">{player.name}</div> : null
+  ),
+}));
+
 import ManagePlayers from '../ManagePlayers';
 import type { Player, Division, Wrestler } from '../../../types';
 
@@ -589,6 +595,56 @@ describe('ManagePlayers', () => {
     expect(within(newbieRow).getByText('Hidden')).toBeInTheDocument();
     expect(screen.queryByText('Needs Wrestler')).not.toBeInTheDocument();
     expect(within(screen.getByText('John').closest('tr')!).queryByText('Hidden')).not.toBeInTheDocument();
+  });
+
+  describe('discipline', () => {
+    const summary = (status: string) => ({
+      status,
+      activeStrikeCount: 2,
+      activeStrikes: [],
+      cooldownEndsAt: status === 'deactivated' ? null : new Date(Date.now() + 86_400_000).toISOString(),
+      signupBlockedUntil: null,
+      deactivatedAt: status === 'deactivated' ? '2026-11-01T00:00:00.000Z' : null,
+    });
+
+    it('hides a deactivated player until Show hidden is on, counting them', async () => {
+      const user = userEvent.setup();
+      mockPlayersApi.getAllIncludingHidden.mockResolvedValue([
+        ...mockPlayers,
+        { ...mockPlayers[0], playerId: 'p9', name: 'Banned', discipline: summary('deactivated') },
+      ]);
+      renderComponent();
+
+      await screen.findByText('John');
+      expect(screen.queryByText('Banned')).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('checkbox', { name: 'Show hidden (1)' }));
+
+      const row = screen.getByText('Banned').closest('tr')!;
+      expect(within(row).getByText('discipline.status.deactivated')).toBeInTheDocument();
+    });
+
+    it('badges a struck player and shows nothing for a clear one', async () => {
+      mockPlayersApi.getAllIncludingHidden.mockResolvedValue([
+        { ...mockPlayers[0], discipline: summary('cooldown') },
+        { ...mockPlayers[1], discipline: { ...summary('clear'), cooldownEndsAt: null } },
+      ]);
+      renderComponent();
+
+      await screen.findByText('John');
+      expect(screen.getAllByText(/^discipline\.status\./)).toHaveLength(1);
+      expect(screen.getByText('discipline.status.cooldown')).toBeInTheDocument();
+    });
+
+    it('opens the record for the row', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      const row = (await screen.findByText('John')).closest('tr')!;
+      await user.click(within(row).getByRole('button', { name: 'discipline.admin.open' }));
+
+      expect(await screen.findByTestId('discipline-modal')).toHaveTextContent('John');
+    });
   });
 
   it('offers no Show hidden filter when nobody is hidden', async () => {

@@ -1,4 +1,4 @@
-import { APIGatewayProxyHandler } from 'aws-lambda';
+import type { APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, forbidden, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
@@ -7,6 +7,8 @@ import { createNotification } from '../../lib/notifications';
 import { recomputeRivalryHeat } from '../../lib/services/recomputeRivalryHeat';
 import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
 import { CHAMPIONSHIP_NOT_FOUND_MESSAGE } from '../../lib/challengeTitle';
+import { callerRefusal, targetRefusal } from '../../lib/discipline';
+import { firstTagMemberRefusal } from '../../lib/disciplineGates';
 import type { PromoType } from '../../lib/repositories/types';
 
 const VALID_PROMO_TYPES: PromoType[] = [
@@ -27,7 +29,22 @@ interface CreatePromoBody {
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamName?: string;
   targetTagTeamName?: string;
+  /** The team a tag call-out names. Only used to check its members, not stored. */
+  targetTagTeamId?: string;
   rivalryId?: string;
+}
+
+/** The refusal createChallenge would give this tag call-out, checked before the promo exists. */
+async function tagCallOutRefusal(callerId: string, targetTagTeamId: string): Promise<APIGatewayProxyResult | null> {
+  const { roster: { players, tagTeams } } = getRepositories();
+  const [callerTeams, targetTeam] = await Promise.all([
+    tagTeams.listByPlayer(callerId),
+    tagTeams.findById(targetTagTeamId),
+  ]);
+  const teams = [callerTeams.find((team) => team.status === 'active'), targetTeam];
+  const memberIds = teams.flatMap((team) => (team ? [team.player1Id, team.player2Id] : []));
+  const members = await Promise.all(memberIds.map((id) => players.findById(id)));
+  return firstTagMemberRefusal(members, callerId);
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -39,7 +56,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const { data: body, error: parseError } = parseBody<CreatePromoBody>(event);
     if (parseError) return parseError;
-    const { promoType, title, content, targetPlayerId, targetPromoId, matchId, championshipId, challengeMode, challengerTagTeamName, targetTagTeamName, rivalryId } = body;
+    const { promoType, title, content, targetPlayerId, targetPromoId, matchId, championshipId, challengeMode, challengerTagTeamName, targetTagTeamName, targetTagTeamId, rivalryId } = body;
 
     if (!promoType || !VALID_PROMO_TYPES.includes(promoType as PromoType)) {
       return badRequest('Valid promoType is required');
@@ -66,6 +83,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('No player profile linked to your account');
     }
 
+    // Only a call-out leads to a match. It is gated here rather than at the later
+    // challenge, because PromoEditor creates the promo first and would orphan it.
+    const isCallOut = promoType === 'call-out';
+    const callerBlocked = isCallOut ? callerRefusal(player) : null;
+    if (callerBlocked) return callerBlocked;
+
     if (!isPlayerVisible(player)) {
       return badRequest(SET_WRESTLER_NAME_MESSAGE);
     }
@@ -91,6 +114,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // that player's own promo, which is not a new call-out, so the promo named
     // has to exist and be theirs.
     const targetPlayer = targetPlayerId ? await players.findById(targetPlayerId) : null;
+    const targetBlocked = isCallOut && targetPlayer ? targetRefusal(targetPlayer) : null;
+    if (targetBlocked) return targetBlocked;
+
+    if (isCallOut && challengeMode === 'tag_team' && targetTagTeamId) {
+      const tagBlocked = await tagCallOutRefusal(player.playerId, targetTagTeamId);
+      if (tagBlocked) return tagBlocked;
+    }
+
     if (targetPlayer && !isPlayerVisible(targetPlayer)) {
       const repliedPromo = promoType === 'response' && targetPromoId
         ? await promos.findById(targetPromoId)

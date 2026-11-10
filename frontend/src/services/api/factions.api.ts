@@ -107,7 +107,7 @@ export const factionsApi = {
     stableId: string;
     status: 'active';
     restoredMemberIds: string[];
-    skippedMembers: { playerId: string; reason: 'not-found' | 'in-other-stable' }[];
+    skippedMembers: { playerId: string; reason: 'not-found' | 'in-other-stable' | 'deactivated' }[];
   }> => {
     return fetchWithAuth(`${API_BASE_URL}/stables/${stableId}/reactivate`, {
       method: 'POST',

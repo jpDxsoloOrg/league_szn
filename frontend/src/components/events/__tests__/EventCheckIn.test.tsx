@@ -5,6 +5,7 @@ import type { EventCheckInSummary } from '../../../types/event';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string, options?: Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'events.checkIn.available': 'Available',
@@ -37,6 +38,44 @@ const summary: EventCheckInSummary = {
 describe('EventCheckIn', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe('while blocked from signing up', () => {
+    const until = () => new Date(Date.now() + 86_400_000).toISOString();
+
+    it('turns off available and tentative, leaves unavailable on, and shows the end', () => {
+      render(
+        <EventCheckIn
+          eventStatus="upcoming"
+          currentStatus={null}
+          summary={summary}
+          onChange={vi.fn()}
+          signupBlockedUntil={until()}
+        />,
+      );
+      expect(screen.getByRole('button', { name: 'Available' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Tentative' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Unavailable' })).toBeEnabled();
+      expect(screen.getByRole('timer')).toBeInTheDocument();
+    });
+
+    it('still lets the player answer unavailable or clear a response', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn().mockResolvedValue(undefined);
+      render(
+        <EventCheckIn
+          eventStatus="upcoming"
+          currentStatus="available"
+          summary={summary}
+          onChange={onChange}
+          signupBlockedUntil={until()}
+        />,
+      );
+      await user.click(screen.getByRole('button', { name: 'Unavailable' }));
+      await user.click(screen.getByRole('button', { name: 'Clear my response' }));
+      expect(onChange).toHaveBeenNthCalledWith(1, 'unavailable');
+      expect(onChange).toHaveBeenNthCalledWith(2, null);
+    });
   });
 
   it('renders three RSVP buttons', () => {

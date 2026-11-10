@@ -1,6 +1,10 @@
 import { Amplify } from 'aws-amplify';
 import { signIn, signUp, signOut, confirmSignUp, resendSignUpCode, fetchAuthSession, getCurrentUser, resetPassword, confirmResetPassword } from 'aws-amplify/auth';
 import { logger } from '../utils/logger';
+import { translateOutsideReact } from '../utils/translateOutsideReact';
+
+/** Cognito wraps the PreSignUp error, so the refusal is recognised by this text. */
+const SIGNUP_REFUSED_TEXT = 'cannot be registered';
 
 /**
  * Thrown by signIn when the account exists but the email was never verified.
@@ -142,7 +146,10 @@ export const cognitoAuth = {
         if (cognitoError.name === 'NotAuthorizedException') {
           // Check if user is disabled (Cognito returns this for disabled users)
           if (error.message?.toLowerCase().includes('disabled')) {
-            throw new Error('Your account is currently disabled. Please contact an administrator.');
+            throw new Error(translateOutsideReact(
+              'auth.accountDisabled',
+              'Your account has been deactivated or disabled. Please contact an administrator.',
+            ));
           }
           throw new Error('Invalid email or password');
         } else if (cognitoError.name === 'UserNotFoundException') {
@@ -206,6 +213,11 @@ export const cognitoAuth = {
           throw new Error('An account with this email already exists');
         } else if (cognitoError.name === 'InvalidPasswordException') {
           throw new Error('Password does not meet requirements (min 8 chars, uppercase, lowercase, number)');
+        } else if (cognitoError.name === 'UserLambdaValidationException' && error.message.includes(SIGNUP_REFUSED_TEXT)) {
+          throw new Error(translateOutsideReact(
+            'auth.signupRefused',
+            'This account cannot be registered. Please contact an administrator.',
+          ));
         }
         throw new Error(error.message || 'Sign up failed');
       }

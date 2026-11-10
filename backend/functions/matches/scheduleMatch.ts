@@ -2,11 +2,12 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
 import { getRepositories } from '../../lib/repositories';
 import type { Championship, MatchDesignation, MatchCardEntry, MatchSlot, MatchStatus } from '../../lib/repositories/types';
-import { created, badRequest, notFound, serverError, error as errorResponse } from '../../lib/response';
+import { created, badRequest, notFound, refused, serverError, error as errorResponse, type RefusalCode } from '../../lib/response';
 import { createNotifications } from '../../lib/notifications';
 import { parseBody } from '../../lib/parseBody';
 import { CHALLENGE_NEEDS_CHAMPION_MESSAGE, championIsOnASide, titleFormatError } from '../../lib/challengeTitle';
 import { findPromoChallenge, followCounters } from '../../lib/callOutChallenge';
+import { bookingRefusal } from '../../lib/discipline';
 
 /** The frontend matches this wording to show its translation, in ScheduleMatch.tsx. */
 export const ALREADY_BOOKED_MESSAGE = 'This call-out or challenge already has a match booked';
@@ -68,11 +69,14 @@ export interface ScheduleMatchResult {
  */
 export class ScheduleMatchError extends Error {
   public readonly statusCode: number;
+  /** Set when the frontend should translate the error by code. */
+  public readonly code?: RefusalCode;
 
-  constructor(statusCode: number, message: string) {
+  constructor(statusCode: number, message: string, code?: RefusalCode) {
     super(message);
     this.name = 'ScheduleMatchError';
     this.statusCode = statusCode;
+    this.code = code;
   }
 }
 
@@ -179,7 +183,7 @@ export async function scheduleMatchInternal(
   // in legacy mode it's the full participants array.
   const playerValidationPromises = derivedParticipants.map(async (playerId) => {
     const player = await roster.players.findById(playerId);
-    return { playerId, exists: !!player, player: player as unknown as Record<string, unknown> | null };
+    return { playerId, exists: !!player, player };
   });
 
   const playerResults = await Promise.all(playerValidationPromises);
@@ -210,8 +214,7 @@ export async function scheduleMatchInternal(
     const champDivisionId = (championship as unknown as Record<string, unknown>).divisionId as string | undefined;
     if (champDivisionId) {
       const wrongDivision = playerResults.filter((p) => {
-        const playerDivision = p.player?.divisionId as string | undefined;
-        return playerDivision !== champDivisionId;
+        return p.player?.divisionId !== champDivisionId;
       });
 
       if (wrongDivision.length > 0) {
@@ -224,6 +227,7 @@ export async function scheduleMatchInternal(
   }
 
   // Validate tournament exists if provided
+  let tournamentEntrants: ReadonlySet<string> = new Set();
   if (input.tournamentId) {
     const tournament = await competition.tournaments.findById(input.tournamentId);
 
@@ -233,6 +237,19 @@ export async function scheduleMatchInternal(
 
     if (tournament.status === 'completed') {
       throw new ScheduleMatchError(400, 'Cannot schedule match for a completed tournament');
+    }
+
+    tournamentEntrants = new Set(tournament.participants);
+  }
+
+  // A deactivated player cannot be booked, except by staff inside a tournament
+  // they already entered, so that it can finish on a forfeit (owner decision 20).
+  // A sign-up block does not stop staff booking.
+  for (const { playerId, player } of playerResults) {
+    const refusal = player && !tournamentEntrants.has(playerId) ? bookingRefusal(player) : null;
+    if (refusal) {
+      const { message, code } = JSON.parse(refusal.body) as { message: string; code: RefusalCode };
+      throw new ScheduleMatchError(refusal.statusCode, message, code);
     }
   }
 
@@ -438,6 +455,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return created(result);
   } catch (err) {
     if (err instanceof ScheduleMatchError) {
+      if (err.code) return refused(err.statusCode, err.code, err.message);
       if (err.statusCode === 400) return badRequest(err.message);
       if (err.statusCode === 404) return notFound(err.message);
       return errorResponse(err.statusCode, err.message);

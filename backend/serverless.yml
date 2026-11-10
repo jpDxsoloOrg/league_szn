@@ -238,10 +238,11 @@ functions:
   postConfirmation:
     handler: functions/auth/postConfirmation.handler
 
-  # TEMPORARY: auto-confirms signups so no verification email is sent
-  # (account-wide Cognito email cap workaround). Remove after the SES
-  # cutover — see functions/auth/preSignUp.ts. Attached to the pool via
-  # setup-cognito.sh, same as postConfirmation.
+  # Refuses signups from blocked or deactivated players, and auto-confirms
+  # signups so no verification email is sent (account-wide Cognito email cap
+  # workaround). At the SES cutover keep this function and drop only the
+  # auto-confirm lines — see functions/auth/preSignUp.ts. Attached to the pool
+  # via setup-cognito.sh, same as postConfirmation.
   preSignUp:
     handler: functions/auth/preSignUp.handler
 
@@ -361,6 +362,23 @@ functions:
       - http:
           path: players/{playerId}/statistics
           method: get
+          cors: *corsConfig
+      # Strikes. Access is declared per route in functions/players/handler.ts.
+      - http:
+          path: players/{playerId}/discipline
+          method: get
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/strikes
+          method: post
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/strikes/{strikeId}/remove
+          method: post
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/reactivate
+          method: post
           cors: *corsConfig
 
   # Overalls (Wrestler Overalls: submit, get own, admin get all)

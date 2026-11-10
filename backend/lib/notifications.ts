@@ -16,7 +16,10 @@ export type NotificationType =
   | 'rivalry_reviewed'
   | 'rivalry_message'
   | 'rivalry_request'
-  | 'rivalry_status_change';
+  | 'rivalry_status_change'
+  | 'strike_issued'
+  | 'strike_removed'
+  | 'account_reactivated';
 
 /** Set of notification types scoped to a rivalry source. */
 export type RivalryNotificationType =
@@ -25,7 +28,7 @@ export type RivalryNotificationType =
   | 'rivalry_status_change'
   | 'rivalry_reviewed';
 
-export type NotificationSourceType = 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'storyline_request' | 'match_invitation' | 'rivalry';
+export type NotificationSourceType = 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'storyline_request' | 'match_invitation' | 'rivalry' | 'discipline';
 
 export interface CreateNotificationParams {
   userId: string;

@@ -33,7 +33,9 @@ import PageHeader from '../ui/PageHeader';
 import Select from '../ui/Select';
 import AdminNotice from './AdminNotice';
 import ConfirmModal from './ConfirmModal';
+import DisciplineBadge from './DisciplineBadge';
 import HiddenBadge from './HiddenBadge';
+import PlayerDisciplineModal from './PlayerDisciplineModal';
 import SourceLoadNotice from './SourceLoadNotice';
 import { settleSources } from './loadSources';
 import './adminRoster.css';
@@ -51,6 +53,11 @@ const PLAYER_SOURCES = {
 };
 
 type PlayerSource = keyof typeof PLAYER_SOURCES;
+
+/** Players the table leaves out until "Show hidden" is on. */
+function isHiddenFromTable(player: Player): boolean {
+  return isNeedsWrestler(player.currentWrestler) || player.discipline?.status === 'deactivated';
+}
 
 /** What a wrestler select opens on, so an untouched slot can be told from a cleared one. */
 function initialSlotValue(
@@ -80,6 +87,7 @@ export default function ManagePlayers() {
   const [submitting, setSubmitting] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Player | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [disciplinePlayer, setDisciplinePlayer] = useState<Player | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   // Form state — FK-backed. The legacy `currentWrestler` / `alternateWrestler`
@@ -103,7 +111,7 @@ export default function ManagePlayers() {
   // Division filter for the players table. Special values: 'all' = no filter,
   // 'none' = players with no division assigned.
   const [divisionFilter, setDivisionFilter] = useState('all');
-  // Players with no wrestler stay out of the table until asked for.
+  // Players with no wrestler, and deactivated players, stay out of the table until asked for.
   const [showHidden, setShowHidden] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -119,6 +127,15 @@ export default function ManagePlayers() {
     if (values.wrestlers) setWrestlers(values.wrestlers);
     setFailedSources(failed);
     setLoading(false);
+  };
+
+  // No loading state: the table sits behind the open discipline dialog.
+  const refreshPlayers = async () => {
+    try {
+      setPlayers(await playersApi.getAllIncludingHidden());
+    } catch {
+      logger.error('Failed to refresh players after a discipline action');
+    }
   };
 
   const getDivisionName = (divisionId?: string) => {
@@ -155,14 +172,14 @@ export default function ManagePlayers() {
   const unnamedLabel = t('common.unnamedPlayer', 'Unnamed player');
 
   const hiddenCount = useMemo(
-    () => players.filter((player) => isNeedsWrestler(player.currentWrestler)).length,
+    () => players.filter(isHiddenFromTable).length,
     [players],
   );
 
   const filteredPlayers = useMemo(() => {
     const term = search.trim().toLowerCase();
     return players.filter((player) => {
-      if (!showHidden && isNeedsWrestler(player.currentWrestler)) return false;
+      if (!showHidden && isHiddenFromTable(player)) return false;
       if (divisionFilter === 'none' && player.divisionId) return false;
       if (!['all', 'none'].includes(divisionFilter) && player.divisionId !== divisionFilter) return false;
       if (!term) return true;
@@ -486,6 +503,7 @@ export default function ManagePlayers() {
       header: t('adminRoster.players.status', 'Status'),
       render: (player) => (
         <span className="ar-badges">
+          <DisciplineBadge discipline={player.discipline} />
           {player.alignment && <Badge tone="violet">{alignmentLabels[player.alignment]}</Badge>}
           {player.userId ? (
             <Badge
@@ -510,6 +528,7 @@ export default function ManagePlayers() {
       render: (player) => (
         <div className="ar-row-actions">
           <Button variant="secondary" size="sm" onClick={() => handleEdit(player)}>{t('common.edit', 'Edit')}</Button>
+          <Button variant="ghost" size="sm" onClick={() => setDisciplinePlayer(player)}>{t('discipline.admin.open')}</Button>
           <Button variant="ghost" size="sm" onClick={() => setPendingDelete(player)}>{t('common.delete', 'Delete')}</Button>
         </div>
       ),
@@ -739,6 +758,12 @@ export default function ManagePlayers() {
           </div>
         </form>
       </Modal>
+
+      <PlayerDisciplineModal
+        player={disciplinePlayer}
+        onClose={() => setDisciplinePlayer(null)}
+        onChanged={() => void refreshPlayers()}
+      />
 
       <ConfirmModal
         open={pendingDelete !== null}

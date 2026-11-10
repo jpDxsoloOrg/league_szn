@@ -4,9 +4,11 @@ import {
   AdminDisableUserCommand,
   AdminEnableUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
-import { success, badRequest, serverError } from '../../lib/response';
+import { success, badRequest, refused, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
+import { isDeactivated } from '../../lib/discipline';
+import { findPlayerForCognitoUsername } from '../../lib/disciplineActions';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
@@ -30,6 +32,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     if (enabled) {
+      // The Player row decides access, so a login cannot be turned back on
+      // around it. A lookup error lands in the catch, with nothing enabled.
+      const player = await findPlayerForCognitoUsername(username);
+      if (player && isDeactivated(player)) {
+        return refused(409, 'PLAYER_DEACTIVATED', 'This player is deactivated. Reactivate them from Manage Players.');
+      }
+
       await cognitoClient.send(
         new AdminEnableUserCommand({
           UserPoolId: USER_POOL_ID,

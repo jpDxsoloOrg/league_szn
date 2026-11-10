@@ -16,6 +16,8 @@ import {
 } from '../../utils/checkInStatus';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
 import { nameOrUnnamed } from '../../utils/playerName';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { BookingDisciplineBadge } from '../admin/DisciplineBadge';
 import './PlayerBookingPicker.css';
 
 /** @deprecated Use CheckInStatus from utils/checkInStatus. Kept for callers. */
@@ -80,6 +82,8 @@ export default function PlayerBookingPicker({
   const [search, setSearch] = useState('');
   const [showAll, setShowAll] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   const statusOf = useMemo(
     () => (playerId: string): CheckInStatus =>
@@ -147,8 +151,29 @@ export default function PlayerBookingPicker({
     const info = bookingInfoByPlayerId?.get(playerId);
     if (!info) return null;
     const streak = info.currentStreak;
+    const record = info.seasonRecord;
+    const recordLabel = record
+      ? t('events.booking.seasonRecordTitle', {
+          season: record.seasonName,
+          wins: t('events.booking.recordWins', { count: record.wins }),
+          losses: t('events.booking.recordLosses', { count: record.losses }),
+          draws: t('events.booking.recordDraws', { count: record.draws }),
+          defaultValue: `${record.seasonName}: ${record.wins} W, ${record.losses} L, ${record.draws} D`,
+        })
+      : '';
+    const isEmptyRecord = record !== undefined && record.wins + record.losses + record.draws === 0;
     return (
       <span className="booking-picker-meta">
+        {record && (
+          <span
+            className={`booking-picker-record${isEmptyRecord ? ' booking-picker-record--empty' : ''}`}
+            title={recordLabel}
+            aria-label={recordLabel}
+            role="img"
+          >
+            {record.wins}-{record.losses}-{record.draws}
+          </span>
+        )}
         {streak.count >= 2 && (
           <span
             className={`booking-picker-streak booking-picker-streak--${streak.type}`}
@@ -219,6 +244,16 @@ export default function PlayerBookingPicker({
     };
   }, [open]);
 
+  // On a phone the menu opens in the page flow, so bring all of it, Done
+  // included, into view above the bottom bars (see scroll-margin in the CSS).
+  useEffect(() => {
+    if (!open || !isMobile) return;
+    const menu = menuRef.current;
+    if (menu && typeof menu.scrollIntoView === 'function') {
+      menu.scrollIntoView({ block: 'nearest' });
+    }
+  }, [open, isMobile]);
+
   const handleSelect = (playerId: string) => {
     if (multi) {
       // Booking several people in a row is the normal case, so the menu
@@ -279,11 +314,12 @@ export default function PlayerBookingPicker({
             {placeholder ?? openLabel}
           </span>
         )}
+        {selectedPlayer && <BookingDisciplineBadge discipline={selectedPlayer.discipline} />}
         <ChevronDown className="booking-picker-caret" aria-hidden="true" size={18} />
       </button>
 
       {open && (
-        <div className="booking-picker-menu" role="listbox">
+        <div className="booking-picker-menu" role="listbox" ref={menuRef}>
           <input
             type="search"
             className="booking-picker-search"
@@ -350,6 +386,7 @@ export default function PlayerBookingPicker({
                     <span className="booking-picker-option-text">
                       {playerLabel(player, unnamedLabel)}
                     </span>
+                    <BookingDisciplineBadge discipline={player.discipline} />
                     {multi && isSelected(player.playerId) && (
                       <Check className="booking-picker-check" aria-hidden="true" size={16} />
                     )}

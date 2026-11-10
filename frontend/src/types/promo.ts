@@ -60,5 +60,7 @@ export interface CreatePromoInput {
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamName?: string;
   targetTagTeamName?: string;
+  /** The team a tag call-out names, so the server can check its members first. */
+  targetTagTeamId?: string;
   rivalryId?: string;
 }

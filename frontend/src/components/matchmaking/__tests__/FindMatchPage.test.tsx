@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { MatchType, Stipulation } from '../../../types';
+import type { MatchType, Player, Stipulation } from '../../../types';
 import type {
   InvitationListResponse,
   JoinQueueResponse,
@@ -37,6 +37,7 @@ const {
     isWrestler: true as boolean,
     playerId: 'me' as string | null,
     currentWrestler: 'My-Wrestler' as string | null,
+    profile: null as Pick<Player, 'discipline'> | null,
   },
   presenceState: {
     presenceEnabled: false as boolean,
@@ -57,6 +58,7 @@ const {
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string, options?: { count?: number; seconds?: number }) => {
       if (options?.count != null) return `${key}:${options.count}`;
       if (options?.seconds != null) return `${key}:${options.seconds}`;
@@ -115,6 +117,7 @@ vi.mock('../../../services/api/stipulations.api', () => ({
 vi.mock('../FindMatchPage.css', () => ({}));
 
 import FindMatchPage from '../FindMatchPage';
+import { ApiError } from '../../../services/api/apiClient';
 
 const futureIso = (): string => new Date(Date.now() + 60_000).toISOString();
 
@@ -149,12 +152,62 @@ describe('FindMatchPage', () => {
     authState.isWrestler = true;
     authState.playerId = 'me';
     authState.currentWrestler = 'My-Wrestler';
+    authState.profile = null;
     presenceState.presenceEnabled = false;
     mockGetQueue.mockResolvedValue(emptyQueue);
     mockGetOnline.mockResolvedValue(emptyOnline);
     mockGetInvitations.mockResolvedValue(emptyInvitations);
     mockGetMatchTypes.mockResolvedValue(emptyMatchTypes);
     mockGetStipulations.mockResolvedValue(emptyStipulations);
+  });
+
+  it('turns going online, joining and inviting off while blocked, and shows the end', async () => {
+    authState.profile = {
+      discipline: {
+        status: 'signup-blocked',
+        activeStrikeCount: 2,
+        activeStrikes: [],
+        cooldownEndsAt: new Date(Date.now() + 14 * 86_400_000).toISOString(),
+        signupBlockedUntil: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+        deactivatedAt: null,
+      },
+    };
+    render(<FindMatchPage />);
+
+    expect(await screen.findByRole('button', { name: 'me.matchmaking.goOnline' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'findMatch.queue.join' })).toBeDisabled();
+    expect(screen.getByRole('timer')).toBeInTheDocument();
+  });
+
+  it('lets a blocked player who is still online go offline', async () => {
+    authState.profile = {
+      discipline: {
+        status: 'signup-blocked',
+        activeStrikeCount: 2,
+        activeStrikes: [],
+        cooldownEndsAt: new Date(Date.now() + 14 * 86_400_000).toISOString(),
+        signupBlockedUntil: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+        deactivatedAt: null,
+      },
+    };
+    presenceState.presenceEnabled = true;
+    render(<FindMatchPage />);
+
+    expect(await screen.findByRole('button', { name: 'me.matchmaking.goOffline' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'findMatch.queue.join' })).toBeDisabled();
+  });
+
+  it('shows a refusal when joining the queue is refused', async () => {
+    presenceState.presenceEnabled = true;
+    mockJoinQueue.mockRejectedValue(new ApiError('Translated refusal', 403, { code: 'SIGNUP_BLOCKED' }));
+    const user = userEvent.setup();
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    render(<FindMatchPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'findMatch.queue.join' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Translated refusal');
+    consoleError.mockRestore();
   });
 
   it('shows self in queue and displays queued match preferences', async () => {

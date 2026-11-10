@@ -43,10 +43,10 @@ function hasWrestler(wrestler: string | null): wrestler is string {
   return Boolean(normalized) && normalized !== NO_WRESTLER_PLACEHOLDER;
 }
 
-/** Players are listed by wrestler. Anyone without a real wrestler stays out. */
+/** Players are listed by wrestler. Anyone without a real wrestler, or deactivated, stays out. */
 export function toWrestlerEntries(players: PlayerDirectoryEntry[]): SearchEntry[] {
   return players.flatMap((player) => (
-    hasWrestler(player.currentWrestler)
+    hasWrestler(player.currentWrestler) && !player.deactivated
       ? [{
         id: `wrestler-${player.playerId}`,
         kind: 'wrestler' as const,

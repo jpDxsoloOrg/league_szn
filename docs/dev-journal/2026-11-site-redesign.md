@@ -443,7 +443,7 @@ German:
 
 Dev site:
 
-- Disposable `qa-*` accounts on the devtest pool, and the data QA created, need removing.
+- Done 2026-11-07: dev was re-copied from prod (backups `pre-prod-recopy-20261107`), and the disposable `qa-*` accounts and QA data are gone.
 - QA left false movement arrows on one dev title. They clear as rankings recalculate.
 
 ## Verification

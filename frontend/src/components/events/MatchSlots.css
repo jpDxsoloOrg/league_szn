@@ -157,6 +157,13 @@
 }
 
 @media (max-width: 768px) {
+  /* A bigger target, so a tap on the name doesn't land on Edit beside it. */
+  .match-slot-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--touch-target);
+  }
+
   .match-slot-actions {
     width: 100%;
     justify-content: flex-end;

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
+const signupBlock = vi.hoisted(() => ({ blocked: false, until: null as string | null }));
 const { mockGetAllPlayers, mockGetAllPromos, mockGetAllMatches, mockGetAllChampionships, mockCreatePromo, mockCreateChallenge, mockGetAllStipulations, mockGetAllMatchTypes, mockGetAllTagTeams, mockIsHiddenPlayer } =
   vi.hoisted(() => ({
     mockGetAllPlayers: vi.fn(),
@@ -31,6 +32,7 @@ vi.mock('../../../services/api', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string, fallbackOrOpts?: string | Record<string, unknown>, opts?: Record<string, unknown>) => {
       const t: Record<string, string> = {
         'promos.editor.title': 'Cut a Promo',
@@ -101,9 +103,11 @@ vi.mock('../../../hooks/useIsHiddenPlayer', () => ({
 }));
 
 vi.mock('../PromoEditor.css', () => ({}));
+vi.mock('../../../hooks/useSignupBlock', () => ({ useSignupBlock: () => signupBlock }));
 vi.mock('../PromoCard.css', () => ({}));
 vi.mock('../PromoReactions.css', () => ({}));
 
+import { ApiError } from '../../../services/api/apiClient';
 import PromoEditor from '../PromoEditor';
 
 function renderEditor(initialEntry = '/promos/new') {
@@ -117,6 +121,8 @@ function renderEditor(initialEntry = '/promos/new') {
 describe('PromoEditor', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    signupBlock.blocked = false;
+    signupBlock.until = null;
     mockIsHiddenPlayer.mockReturnValue(false);
     mockGetAllPlayers.mockResolvedValue([
       { playerId: 'p-1', userId: 'u-1', name: 'John', currentWrestler: 'Stone Cold', wins: 0, losses: 0, draws: 0, createdAt: '', updatedAt: '' },
@@ -168,6 +174,18 @@ describe('PromoEditor', () => {
 
     await user.type(screen.getByPlaceholderText('Drop your promo here...'), 'x'.repeat(60));
     expect(screen.getByRole('button', { name: 'Drop the Mic' })).toBeDisabled();
+  });
+
+  it('stops a call-out while blocked but leaves other promos open', async () => {
+    signupBlock.blocked = true;
+    signupBlock.until = new Date(Date.now() + 86_400_000).toISOString();
+    const callOut = renderEditor('/promos/new?promoType=call-out');
+    expect(await screen.findByRole('timer')).toBeInTheDocument();
+    callOut.unmount();
+
+    renderEditor('/promos/new?promoType=open-mic');
+    await screen.findByRole('radiogroup');
+    expect(screen.queryByRole('timer')).not.toBeInTheDocument();
   });
 
   it('validates content minimum length and disables submit when too short', async () => {
@@ -347,6 +365,58 @@ describe('PromoEditor', () => {
         expect(mockCreateChallenge).toHaveBeenCalledWith(expect.objectContaining({
           challengeMode: 'tag_team', challengedTagTeamId: 'team-2', matchType: 'Tag Team', championshipId: 'tag-belts',
         }));
+      });
+    });
+
+    describe('a tag team call-out the server refuses', () => {
+      const callOutTeam = async (user: ReturnType<typeof userEvent.setup>) => {
+        mockGetAllTagTeams.mockResolvedValue([
+          { tagTeamId: 'team-1', name: 'Us', player1Id: 'p-1', player2Id: 'p-5', status: 'active' },
+          { tagTeamId: 'team-2', name: 'Them', player1Id: 'p-3', player2Id: 'p-4', status: 'active' },
+        ]);
+        const { container } = renderEditor('/promos/new?promoType=call-out');
+        await writePromo(user);
+        await user.click(await screen.findByRole('radio', { name: 'Tag Team' }));
+        pickOption(container, 'team-2');
+        pickOption(container, 'Tag Team');
+        await user.click(screen.getByText('Drop the Mic'));
+      };
+
+      it('names the team to the promo, so the server can check its members first', async () => {
+        const user = userEvent.setup();
+        mockCreatePromo.mockResolvedValue({ promoId: 'promo-1' });
+        mockCreateChallenge.mockResolvedValue({});
+
+        await callOutTeam(user);
+
+        await waitFor(() => {
+          expect(mockCreatePromo).toHaveBeenCalledWith(expect.objectContaining({
+            challengeMode: 'tag_team', targetTagTeamId: 'team-2',
+          }));
+        });
+      });
+
+      it('shows the refusal when the challenge is refused', async () => {
+        const user = userEvent.setup();
+        mockCreatePromo.mockResolvedValue({ promoId: 'promo-1' });
+        mockCreateChallenge.mockRejectedValue(
+          new ApiError("That player isn't available right now.", 409, { code: 'PLAYER_UNAVAILABLE' }),
+        );
+
+        await callOutTeam(user);
+
+        expect(await screen.findByText("That player isn't available right now.")).toBeInTheDocument();
+        expect(screen.queryByText(/You can issue it separately/)).not.toBeInTheDocument();
+      });
+
+      it('keeps the general warning for any other failure', async () => {
+        const user = userEvent.setup();
+        mockCreatePromo.mockResolvedValue({ promoId: 'promo-1' });
+        mockCreateChallenge.mockRejectedValue(new Error('Network down'));
+
+        await callOutTeam(user);
+
+        expect(await screen.findByText(/You can issue it separately/)).toBeInTheDocument();
       });
     });
   });

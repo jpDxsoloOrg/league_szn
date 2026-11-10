@@ -99,13 +99,16 @@ export async function calculateRankingsForChampionship(
   // ------------------------------------------------------------------
   const allPlayers = await dynamoDb.scanAll({
     TableName: TableNames.PLAYERS,
-    ProjectionExpression: 'playerId, divisionId, deletedAt, currentWrestler',
+    ProjectionExpression: 'playerId, divisionId, deletedAt, currentWrestler, deactivatedAt',
   });
   const eligiblePlayerIds = new Set(
     allPlayers
       .filter((p) => (
         !p.deletedAt
-        && isPlayerVisible({ currentWrestler: p.currentWrestler as string | undefined })
+        && isPlayerVisible({
+          currentWrestler: p.currentWrestler as string | undefined,
+          deactivatedAt: p.deactivatedAt as string | undefined,
+        })
         && (!divisionId || p.divisionId === divisionId)
       ))
       .map((p) => p.playerId as string),

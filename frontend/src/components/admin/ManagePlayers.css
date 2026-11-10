@@ -10,3 +10,10 @@
   object-fit: cover;
   border-radius: var(--radius-control);
 }
+
+/* Three row actions: keep them on one line once the table has the room. */
+@media (min-width: 1200px) {
+  .manage-players .ar-row-actions {
+    flex-wrap: nowrap;
+  }
+}

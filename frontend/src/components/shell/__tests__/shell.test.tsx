@@ -190,14 +190,38 @@ describe('MeHub', () => {
   });
 
   it('tells a hidden player why and how to fix it', () => {
-    mockUseAuth.mockReturnValue({ ...WRESTLER, playerId: 'p1', currentWrestler: 'Needs Wrestler', signOut: vi.fn() });
+    mockUseAuth.mockReturnValue({ ...WRESTLER, playerId: 'p1', currentWrestler: 'Needs Wrestler', signOut: vi.fn(), refreshProfile: vi.fn() });
     renderAt('/me', <MeHub />);
     expect(screen.getByRole('heading', { name: 'me.setup.hiddenTitle' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'me.setup.enterName' })).toHaveAttribute('href', '/profile');
   });
 
+  it('shows the Strikes panel from the session profile, and refreshes it on opening', () => {
+    const refreshProfile = vi.fn();
+    mockUseAuth.mockReturnValue({
+      ...WRESTLER,
+      playerId: 'p1',
+      currentWrestler: 'Edge',
+      signOut: vi.fn(),
+      refreshProfile,
+      profile: {
+        discipline: {
+          status: 'warned',
+          activeStrikeCount: 1,
+          activeStrikes: [{ strikeId: 's1', issuedAt: '2026-11-01T10:00:00.000Z', reason: 'No-show' }],
+          cooldownEndsAt: new Date(Date.now() + 86_400_000).toISOString(),
+          signupBlockedUntil: null,
+          deactivatedAt: null,
+        },
+      },
+    });
+    renderAt('/me', <MeHub />);
+    expect(screen.getByRole('heading', { name: 'discipline.notice.title' })).toBeInTheDocument();
+    expect(refreshProfile).toHaveBeenCalledTimes(1);
+  });
+
   it('opens the wrestler form in one tap from the hidden notice', async () => {
-    mockUseAuth.mockReturnValue({ ...WRESTLER, playerId: 'p1', currentWrestler: 'Needs Wrestler', signOut: vi.fn() });
+    mockUseAuth.mockReturnValue({ ...WRESTLER, playerId: 'p1', currentWrestler: 'Needs Wrestler', signOut: vi.fn(), refreshProfile: vi.fn() });
     const RouterState = () => <span data-testid="router-state">{JSON.stringify(useLocation().state)}</span>;
     render(<MemoryRouter initialEntries={['/me']}><MeHub /><RouterState /></MemoryRouter>);
 
@@ -207,7 +231,7 @@ describe('MeHub', () => {
   });
 
   it('shows no hidden notice to a player with a wrestler, or to staff with no player', () => {
-    mockUseAuth.mockReturnValue({ ...WRESTLER, playerId: 'p1', currentWrestler: 'Edge', signOut: vi.fn() });
+    mockUseAuth.mockReturnValue({ ...WRESTLER, playerId: 'p1', currentWrestler: 'Edge', signOut: vi.fn(), refreshProfile: vi.fn() });
     const view = renderAt('/me', <MeHub />);
     expect(screen.queryByRole('heading', { name: 'me.setup.hiddenTitle' })).not.toBeInTheDocument();
     view.unmount();

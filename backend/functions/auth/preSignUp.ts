@@ -1,8 +1,15 @@
 import { PreSignUpTriggerHandler } from 'aws-lambda';
+import { isSignupRefused } from '../../lib/accountStatus';
+
+const SIGNUP_REFUSED_MESSAGE = 'This account cannot be registered. Please contact an administrator.';
 
 /**
- * TEMPORARY — Pre-SignUp trigger that auto-confirms new users so Cognito
- * never sends a verification email.
+ * Pre-SignUp trigger. It does two jobs:
+ *
+ * 1. Refuses a signup that matches a blocked or deactivated player's email or
+ *    PSN ID. This is permanent. It stays after the SES cutover.
+ * 2. TEMPORARY: auto-confirms new users so Cognito never sends a verification
+ *    email.
  *
  * Why: the AWS account is capped at 50 Cognito-sent emails/day (shared
  * across every user pool in the region), so signup verification emails
@@ -10,19 +17,21 @@ import { PreSignUpTriggerHandler } from 'aws-lambda';
  * is granted and the pool's email sender is switched to SES
  * (no-reply@jpdxsolo.com), we skip email verification entirely.
  *
- * REMOVE THIS TRIGGER as part of the SES cutover:
- *   1. Delete this file and the `preSignUp` function in serverless.yml.
- *   2. Detach the trigger from the pool — setup-cognito.sh merges the
- *      pool's existing LambdaConfig on every run, so the PreSignUp entry
- *      must be explicitly cleared there (see Step 2b in that script).
+ * At the SES cutover KEEP THIS HANDLER and the trigger, and drop only the
+ * auto-confirm lines below.
  *
  * The PostConfirmation trigger still fires for auto-confirmed users, so
  * Wrestler-group assignment and Player creation are unaffected. Users
  * created while this trigger is live have unverified-but-trusted emails.
  */
 export const handler: PreSignUpTriggerHandler = async (event) => {
+  const { email, 'custom:psn_id': psnId } = event.request.userAttributes;
+  if (await isSignupRefused({ email, psnId })) {
+    throw new Error(SIGNUP_REFUSED_MESSAGE);
+  }
+
   event.response.autoConfirmUser = true;
-  if (event.request.userAttributes['email']) {
+  if (email) {
     event.response.autoVerifyEmail = true;
   }
   return event;

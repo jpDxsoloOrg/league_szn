@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Swords, UserRoundPen } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePresence } from '../../contexts/PresenceContext';
+import { useSignupBlock } from '../../hooks/useSignupBlock';
 import { matchmakingApi } from '../../services/api/matchmaking.api';
 import { matchTypesApi } from '../../services/api/matchTypes.api';
 import { stipulationsApi } from '../../services/api/stipulations.api';
@@ -14,7 +15,9 @@ import type {
   OnlinePlayer,
   QueueEntry,
 } from '../../types/matchmaking';
+import { refusalOr } from '../../utils/discipline';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
+import SuspensionNotice from '../discipline/SuspensionNotice';
 import Avatar from '../ui/Avatar';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
@@ -36,6 +39,7 @@ export default function FindMatchPage() {
   const navigate = useNavigate();
   const { isWrestler, playerId, currentWrestler } = useAuth();
   const { presenceEnabled, enablePresence, disablePresence } = usePresence();
+  const signupBlock = useSignupBlock();
 
   const [queueStatus, setQueueStatus] = useState<QueueStatus>('idle');
   const [matchedMatchId, setMatchedMatchId] = useState<string | null>(null);
@@ -159,7 +163,7 @@ export default function FindMatchPage() {
       void fetchAll();
     } catch (err) {
       console.error('[FindMatchPage] joinQueue failed', err);
-      setError(t('findMatch.queue.joinError'));
+      setError(refusalOr(err, t('findMatch.queue.joinError')));
     } finally {
       setLoading(false);
     }
@@ -312,6 +316,7 @@ export default function FindMatchPage() {
             <Button
               variant={presenceEnabled ? 'secondary' : 'primary'}
               loading={presenceBusy}
+              disabled={signupBlock.blocked && !presenceEnabled}
               onClick={presenceEnabled ? handleDisablePresence : handleEnablePresence}
             >
               {presenceEnabled ? t('me.matchmaking.goOffline') : t('me.matchmaking.goOnline')}
@@ -320,6 +325,7 @@ export default function FindMatchPage() {
         }
       />
 
+      {signupBlock.until && <SuspensionNotice until={signupBlock.until} />}
       {error && <p className="me-alert me-alert--error" role="alert">{error}</p>}
 
       {incomingInvitations.length > 0 && (
@@ -335,6 +341,7 @@ export default function FindMatchPage() {
                   onAccept={handleAccept}
                   onDecline={handleDecline}
                   onExpire={handleInvitationExpired}
+                  acceptDisabled={signupBlock.blocked}
                 />
               ))}
             </ul>
@@ -379,7 +386,7 @@ export default function FindMatchPage() {
           )}
 
           {queueStatus === 'idle' && (
-            <Button fullWidth disabled={disabledByPresence || loading} onClick={handleJoinQueue}>
+            <Button fullWidth disabled={disabledByPresence || loading || signupBlock.blocked} onClick={handleJoinQueue}>
               {t('findMatch.queue.join')}
             </Button>
           )}
@@ -462,7 +469,7 @@ export default function FindMatchPage() {
                         <Button
                           size="sm"
                           variant="secondary"
-                          disabled={disabledByPresence || alreadyInvited}
+                          disabled={disabledByPresence || alreadyInvited || signupBlock.blocked}
                           onClick={() => void handleInvite(player.playerId)}
                         >
                           {alreadyInvited ? t('findMatch.online.alreadyInvited') : t('findMatch.online.invite')}

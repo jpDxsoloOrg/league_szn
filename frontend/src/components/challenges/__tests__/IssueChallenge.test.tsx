@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import type { Player } from '../../../types';
 
 // --- Hoisted mocks ---
+const authState = vi.hoisted(() => ({ profile: null as Pick<Player, 'discipline'> | null }));
 const { mockGetAllPlayers, mockGetMyProfile, mockCreateChallenge, mockGetAllStipulations, mockGetAllMatchTypes, mockGetAllTagTeams, mockGetAllChampionships } = vi.hoisted(() => ({
   mockGetAllPlayers: vi.fn(),
   mockGetMyProfile: vi.fn(),
@@ -25,8 +26,11 @@ vi.mock('../../../services/api', () => ({
   championshipsApi: { getAll: mockGetAllChampionships },
 }));
 
+vi.mock('../../../contexts/AuthContext', () => ({ useAuth: () => authState }));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string) => {
       const t: Record<string, string> = {
         'challenges.issue.title': 'Issue a Challenge',
@@ -87,6 +91,7 @@ function renderIssue() {
 describe('IssueChallenge', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    authState.profile = null;
     mockGetAllPlayers.mockResolvedValue(players);
     mockGetAllChampionships.mockResolvedValue([]);
     mockGetMyProfile.mockResolvedValue({ playerId: 'p-1' });
@@ -118,6 +123,29 @@ describe('IssueChallenge', () => {
     expect(screen.getByText('Stipulation')).toBeInTheDocument();
     expect(screen.getByText('Message')).toBeInTheDocument();
     expect(screen.getByText('Submit Challenge')).toBeInTheDocument();
+  });
+
+  it('turns submit off and shows when the block lifts while blocked', async () => {
+    const user = userEvent.setup();
+    authState.profile = {
+      discipline: {
+        status: 'signup-blocked',
+        activeStrikeCount: 2,
+        activeStrikes: [],
+        cooldownEndsAt: new Date(Date.now() + 14 * 86_400_000).toISOString(),
+        signupBlockedUntil: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+        deactivatedAt: null,
+      },
+    };
+    renderIssue();
+
+    await waitFor(() => expect(screen.getByRole('option', { name: /Singles/ })).toBeInTheDocument());
+    const [opponentSelect, matchTypeSelect] = screen.getAllByRole('combobox');
+    await user.selectOptions(opponentSelect as HTMLElement, 'p-2');
+    await user.selectOptions(matchTypeSelect as HTMLElement, 'Singles');
+
+    expect(screen.getByText('discipline.notice.suspendedTitle')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Submit Challenge' })).toBeDisabled();
   });
 
   it('filters opponents to only linked users, excluding self', async () => {

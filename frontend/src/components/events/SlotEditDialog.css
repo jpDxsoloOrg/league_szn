@@ -68,3 +68,12 @@
   max-height: 45dvh;
   margin-top: 0.375rem;
 }
+
+.slot-edit-dialog__warning {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--color-warn);
+  border-radius: var(--radius-control);
+  background-color: var(--tint-warn);
+  font-size: var(--text-dense);
+}

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Plus, X } from 'lucide-react';
 import { challengesApi, matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi, eventsApi, stipulationsApi, matchTypesApi, tagTeamsApi, divisionsApi } from '../../services/api';
+import { isAbortError, withoutSeasonRecords } from '../../utils/bookingSummary';
 import type { Player, Championship, Tournament, Season, Stipulation, MatchType, Division, PlayerBookingInfo } from '../../types';
 import type { EventCheckInRoster } from '../../types/event';
 import PlayerBookingPicker from '../events/PlayerBookingPicker';
@@ -15,6 +16,7 @@ import type { LeagueEvent, MatchDesignation } from '../../types/event';
 import type { ChallengeWithPlayers, TagTeamChallengeInfo } from '../../types/challenge';
 import type { PromoWithContext } from '../../types/promo';
 import { findChallengeToBook } from '../challenges/challengeUtils';
+import { formatCalendarDate } from '../../utils/dateUtils';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
 import { pickablePlayers, pickableTagTeams } from '../../utils/pickablePlayers';
 import { nameOrUnnamed } from '../../utils/playerName';
@@ -23,6 +25,7 @@ import Button from '../ui/Button';
 import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import AdminNotice from './AdminNotice';
+import { BookingDisciplineBadge } from './DisciplineBadge';
 import SourceLoadNotice from './SourceLoadNotice';
 import { settleSources } from './loadSources';
 import './adminRoster.css';
@@ -182,6 +185,33 @@ export default function ScheduleMatch() {
   }, []);
 
   /**
+   * Optional last-booked, streak and season-record detail for the pickers,
+   * fetched for the selected season (none selected = the active season).
+   * Waits for the initial load so the active-season default is already in
+   * place, rather than fetching twice. A failure only drops the detail it
+   * can no longer vouch for: the records, which belong to another season.
+   */
+  const bookingSeasonId = formData.seasonId;
+  useEffect(() => {
+    if (loading) return;
+    const controller = new AbortController();
+    const loadBookingInfo = async () => {
+      try {
+        const summary = await playersApi.getBookingSummary(
+          bookingSeasonId ? { seasonId: bookingSeasonId } : {},
+          controller.signal,
+        );
+        if (!controller.signal.aborted) setBookingInfo(new Map(Object.entries(summary)));
+      } catch (err) {
+        if (controller.signal.aborted || isAbortError(err)) return;
+        setBookingInfo((previous) => previous && withoutSeasonRecords(previous));
+      }
+    };
+    void loadBookingInfo();
+    return () => controller.abort();
+  }, [loading, bookingSeasonId]);
+
+  /**
    * The title fields for a linked title. One that no longer exists books as a
    * non-title match and says so, rather than opening on a blank required field.
    * With no list to check against, the title is kept.
@@ -312,18 +342,7 @@ export default function ScheduleMatch() {
     }
   };
 
-  /** Optional last-booked and streak detail, so a failure only drops that detail. */
-  const loadBookingInfo = async () => {
-    try {
-      const summary = await playersApi.getBookingSummary();
-      setBookingInfo(new Map(Object.entries(summary)));
-    } catch {
-      setBookingInfo(undefined);
-    }
-  };
-
   const loadInitialData = async () => {
-    void loadBookingInfo();
     await loadData();
     setLoading(false);
   };
@@ -501,8 +520,18 @@ export default function ScheduleMatch() {
 
   // A challenge or promo can pre-fill someone who has since become hidden.
   const selectedPlayerIds = [...formData.participants, ...teams.flat(), ...slotRowPlayerIds];
-  const bookablePlayers = pickablePlayers(players, selectedPlayerIds);
-  const bookableTagTeams = pickableTagTeams(activeTagTeams, players, selectedPlayerIds);
+  // A deactivated entrant stays bookable, so a tournament can still finish.
+  const tournamentEntrantIds = tournaments.find(
+    (tournament) => tournament.tournamentId === formData.tournamentId,
+  )?.participants ?? [];
+  const keptPlayerIds = [...selectedPlayerIds, ...tournamentEntrantIds];
+  const bookablePlayers = pickablePlayers(players, keptPlayerIds);
+  const bookableTagTeams = pickableTagTeams(activeTagTeams, players, keptPlayerIds);
+  const selectedPlayers = players.filter((player) => selectedPlayerIds.includes(player.playerId));
+  const signupBlockedPicks = selectedPlayers.filter((player) => player.discipline?.status === 'signup-blocked');
+  const deactivatedEntrantPicks = selectedPlayers.filter(
+    (player) => player.discipline?.status === 'deactivated' && tournamentEntrantIds.includes(player.playerId),
+  );
 
   const filteredPlayers = divisionFilter === 'all'
     ? bookablePlayers
@@ -612,6 +641,16 @@ export default function ScheduleMatch() {
       {error && <AdminNotice tone="error">{error}</AdminNotice>}
       {success && <AdminNotice tone="success">{success}</AdminNotice>}
       {linkedTitleGone && <AdminNotice tone="warning">{t('scheduleMatch.linkedTitleGone')}</AdminNotice>}
+      {signupBlockedPicks.length > 0 && (
+        <AdminNotice tone="warning">
+          {t('discipline.admin.bookingWarning', { names: signupBlockedPicks.map((player) => player.name).join(', ') })}
+        </AdminNotice>
+      )}
+      {deactivatedEntrantPicks.length > 0 && (
+        <AdminNotice tone="warning">
+          {t('discipline.admin.tournamentForfeitWarning', { names: deactivatedEntrantPicks.map((player) => player.name).join(', ') })}
+        </AdminNotice>
+      )}
 
       <form onSubmit={handleSubmit} className="match-form am-form">
         <fieldset className="match-form__section">
@@ -725,7 +764,7 @@ export default function ScheduleMatch() {
                     { value: '', label: t('scheduleMatch.noEvent', 'No Event (Standalone Match)') },
                     ...events.map(ev => ({
                       value: ev.eventId,
-                      label: `${ev.name} (${new Date(ev.date).toLocaleDateString()})`,
+                      label: `${ev.name} (${formatCalendarDate(ev.date)})`,
                     })),
                   ]}
                 />
@@ -888,6 +927,7 @@ export default function ScheduleMatch() {
                           team.map(playerId => (
                             <span key={playerId} className="team-member-tag am-chip">
                               {getPlayerName(playerId)}
+                              <BookingDisciplineBadge discipline={players.find((player) => player.playerId === playerId)?.discipline} />
                               <button
                                 type="button"
                                 className="remove-member-btn am-chip-remove"
@@ -930,6 +970,7 @@ export default function ScheduleMatch() {
                                 {!isNeedsWrestler(player.currentWrestler) && (
                                   <span className="participant-wrestler">{player.currentWrestler}</span>
                                 )}
+                                <BookingDisciplineBadge discipline={player.discipline} />
                                 {isInOtherTeam && (
                                   <span className="other-team-label">
                                     {t('scheduleMatch.tagTeam.team', 'Team')} {playerTeamIndex + 1}
@@ -1034,6 +1075,7 @@ export default function ScheduleMatch() {
                           {player && hidden && displayName(player)}
                           {!player && playerId}
                         </span>
+                        <BookingDisciplineBadge discipline={player?.discipline} />
                         <button
                           type="button"
                           className="selected-participant-remove"

@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
+import { firstBookingRefusal } from '../../lib/disciplineGates';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -37,6 +38,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (!player2) {
       return badRequest('Player 2 no longer exists');
     }
+    const memberBlocked = firstBookingRefusal([player1, player2]);
+    if (memberBlocked) return memberBlocked;
     if (player1.tagTeamId) {
       return badRequest('Player 1 is already in a tag team');
     }

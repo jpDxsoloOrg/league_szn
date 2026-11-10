@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
+import { firstBookingRefusal } from '../../lib/disciplineGates';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -23,6 +24,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (stable.status !== 'pending') {
       return badRequest(`Stable is already ${stable.status}, cannot approve`);
     }
+
+    const leaderBlocked = firstBookingRefusal([await playersRepo.findById(stable.leaderId)]);
+    if (leaderBlocked) return leaderBlocked;
 
     // Update stable status to approved
     await stablesRepo.update(stableId, { status: 'approved' });

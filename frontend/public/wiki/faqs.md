@@ -27,6 +27,12 @@ You can't cut promos, issue or counter call-outs, find a match or claim a spot o
 **Why is someone missing from the standings?**  
 Players with no wrestler name are hidden from public pages. Staff can still find them in Manage Players with **Show hidden**.
 
+**I got a strike. What does it mean?**  
+A first strike is a warning for 7 days. A second blocks sign-ups for 7 days and stays for 14. A third within those 14 days deactivates your account. The **Strikes** panel on the Me page and your [Profile](profile) shows the reason and the time left. See [Strikes and Suspensions](strikes-and-suspensions).
+
+**Why can't I log in any more?**  
+Your account may have been deactivated after a third strike. Only an Admin can reverse that, so contact one.
+
 **What does "Former member" mean?**  
 A player removed by staff leaves the roster, but their results stay in the history. Past records keep the name on file. If no name can be found, the record shows **Former member**.
 

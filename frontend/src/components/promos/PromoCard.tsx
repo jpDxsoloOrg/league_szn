@@ -13,7 +13,10 @@ import type { BadgeTone } from '../ui/Badge';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import ChallengeStatusBadge from '../challenges/ChallengeStatusBadge';
+import SuspensionNotice from '../discipline/SuspensionNotice';
 import { findCallOutChallenge, getDisplayStatus } from '../challenges/challengeUtils';
+import { useSignupBlock } from '../../hooks/useSignupBlock';
+import { refusalOr } from '../../utils/discipline';
 import PromoReactions from './PromoReactions';
 import './PromoCard.css';
 
@@ -56,6 +59,7 @@ const TRUNCATE_LENGTH = 150;
 export default function PromoCard({ promo, compact = false, isRead, onView, onReact }: PromoCardProps) {
   const { t } = useTranslation();
   const { playerId } = useAuth();
+  const signupBlock = useSignupBlock();
   const { features } = useSiteConfig();
   const [acceptingChallenge, setAcceptingChallenge] = useState(false);
   const [challenge, setChallenge] = useState<ChallengeWithPlayers | null>(null);
@@ -108,8 +112,8 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
     try {
       await challengesApi.respond(challenge.challengeId, 'accept');
       setChallenge({ ...challenge, status: 'accepted' });
-    } catch {
-      setChallengeError(t('promos.card.acceptFailed', 'Could not accept the challenge. Try again.'));
+    } catch (err) {
+      setChallengeError(refusalOr(err, t('promos.card.acceptFailed', 'Could not accept the challenge. Try again.')));
     } finally {
       setAcceptingChallenge(false);
     }
@@ -119,7 +123,12 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
     const status = getDisplayStatus(current);
     if (status === 'pending') {
       return (
-        <Button size="sm" loading={acceptingChallenge} onClick={handleAcceptChallenge}>
+        <Button
+          size="sm"
+          loading={acceptingChallenge}
+          disabled={signupBlock.blocked}
+          onClick={handleAcceptChallenge}
+        >
           {acceptingChallenge
             ? t('promos.card.accepting', 'Accepting...')
             : t('promos.card.acceptChallenge', 'Accept Challenge')}
@@ -216,13 +225,18 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
       </div>
 
       {isTargetOfCallOut && challenge && (
-        <div className="promo-card__challenge">
-          {renderChallengeStatus(challenge)}
-          <Link to={`/challenges/${challenge.challengeId}`} className="promo-card__link">
-            {t('promos.card.viewChallenge', 'View Challenge')}
-          </Link>
-          {challengeError && <span className="promo-card__error" role="alert">{challengeError}</span>}
-        </div>
+        <>
+          {signupBlock.until && getDisplayStatus(challenge) === 'pending' && (
+            <SuspensionNotice until={signupBlock.until} />
+          )}
+          <div className="promo-card__challenge">
+            {renderChallengeStatus(challenge)}
+            <Link to={`/challenges/${challenge.challengeId}`} className="promo-card__link">
+              {t('promos.card.viewChallenge', 'View Challenge')}
+            </Link>
+            {challengeError && <span className="promo-card__error" role="alert">{challengeError}</span>}
+          </div>
+        </>
       )}
 
       <div className="promo-card__footer">

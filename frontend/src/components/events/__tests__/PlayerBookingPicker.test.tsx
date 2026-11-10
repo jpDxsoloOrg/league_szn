@@ -1,10 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Player, PlayerBookingInfo } from '../../../types';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en-US' },
     t: (key: string, options?: string | { defaultValue?: string; count?: number }) => {
       if (typeof options === 'string') return options;
       const value = options?.defaultValue ?? key;
@@ -152,6 +153,45 @@ describe('PlayerBookingPicker', () => {
 
     expect(screen.getByText('Bravo (Bob)')).toBeInTheDocument();
     expect(screen.queryByText('Alpha (Alice)')).not.toBeInTheDocument();
+  });
+
+  describe('discipline flags', () => {
+    const until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const blocked: Player['discipline'] = {
+      status: 'signup-blocked',
+      activeStrikeCount: 2,
+      activeStrikes: [],
+      cooldownEndsAt: until,
+      signupBlockedUntil: until,
+      deactivatedAt: null,
+    };
+    const flag = 'discipline.status.signupBlocked';
+
+    it('flags a blocked player in the list and on the trigger once picked', async () => {
+      renderPicker({
+        players: [{ ...player('p1', 'Rock', 'Rocky'), discipline: blocked }, player('p2', 'Cena', 'Champ')],
+        value: 'p1',
+      });
+
+      const trigger = screen.getByRole('button', { expanded: false });
+      expect(within(trigger).getByText(flag)).toBeInTheDocument();
+
+      await userEvent.click(trigger);
+
+      expect(within(screen.getByRole('option', { name: /Rocky/ })).getByText(flag)).toBeInTheDocument();
+      expect(within(screen.getByRole('option', { name: /Champ/ })).queryByText(flag)).not.toBeInTheDocument();
+    });
+
+    it('does not flag a block that has already ended', async () => {
+      const past = new Date(Date.now() - 1000).toISOString();
+      renderPicker({
+        players: [{ ...player('p1', 'Rock', 'Rocky'), discipline: { ...blocked, signupBlockedUntil: past } }],
+      });
+
+      await openMenu();
+
+      expect(screen.queryByText(flag)).not.toBeInTheDocument();
+    });
   });
 
   it('flags players already booked elsewhere on the card', async () => {
@@ -363,6 +403,44 @@ describe('PlayerBookingPicker', () => {
       const names = screen.getAllByRole('option').map((o) => o.textContent ?? '');
       expect(names.findIndex((n) => n.includes('Alpha'))).toBeLessThan(names.findIndex((n) => n.includes('Bravo')));
       expect(screen.queryByText('Never booked')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('on a phone', () => {
+    it('scrolls the opened menu into view so Done clears the bottom bars', async () => {
+      const matchMediaSpy = vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+        matches: query.includes('max-width: 768px'),
+        media: query,
+        onchange: null,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        dispatchEvent: () => false,
+      }));
+      const scrollSpy = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => undefined);
+      try {
+        renderPicker();
+        await openMenu();
+
+        expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' });
+        expect(scrollSpy.mock.contexts[0]).toBe(screen.getByRole('listbox'));
+      } finally {
+        matchMediaSpy.mockRestore();
+        scrollSpy.mockRestore();
+      }
+    });
+
+    it('leaves the page alone on a desktop', async () => {
+      const scrollSpy = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => undefined);
+      try {
+        renderPicker();
+        await openMenu();
+
+        expect(scrollSpy).not.toHaveBeenCalled();
+      } finally {
+        scrollSpy.mockRestore();
+      }
     });
   });
 });

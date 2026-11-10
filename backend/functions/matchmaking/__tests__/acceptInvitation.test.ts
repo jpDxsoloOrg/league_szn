@@ -121,6 +121,10 @@ describe('matchmaking/acceptInvitation', () => {
         expiresAt: futureIso,
       },
     });
+    // inviter, read before the invitation is marked accepted
+    mockGet.mockResolvedValueOnce({
+      Item: { playerId: 'p1', userId: 'user-sub-1', name: 'Inviter' },
+    });
     mockUpdate.mockResolvedValueOnce({
       Attributes: {
         invitationId: 'inv-1',
@@ -216,6 +220,9 @@ describe('matchmaking/acceptInvitation', () => {
         createdAt: pastIso,
         expiresAt: futureIso,
       },
+    });
+    mockGet.mockResolvedValueOnce({
+      Item: { playerId: 'p1', userId: 'user-sub-1', name: 'Inviter' },
     });
     const condErr = new Error('condition failed');
     condErr.name = 'ConditionalCheckFailedException';

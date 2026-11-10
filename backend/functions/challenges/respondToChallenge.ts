@@ -1,5 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
+import { isConcurrentWriteError } from '../../lib/repositories/errors';
 import { success, badRequest, notFound, serverError, forbidden } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { getAuthContext, hasRole } from '../../lib/auth';
@@ -7,8 +8,29 @@ import { v4 as uuidv4 } from 'uuid';
 import { challengeExpiresAt, isChallengeExpired } from '../../lib/challengeExpiry';
 import { CHAMPIONSHIP_NOT_FOUND_MESSAGE, challengeTitleFitError, titleAvailabilityError } from '../../lib/challengeTitle';
 import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
+import { callerRefusal, targetRefusal } from '../../lib/discipline';
+import type { Challenge } from '../../lib/repositories/types';
 
 type ChallengeAction = 'accept' | 'decline' | 'counter';
+
+/** Everyone else in the match this challenge would lead to, tag partners included. */
+async function otherPartyIds(challenge: Challenge, responderId: string): Promise<string[]> {
+  const { roster: { tagTeams } } = getRepositories();
+  const ids = new Set<string>([challenge.challengerId]);
+  if (challenge.challengeMode === 'tag_team') {
+    const teams = await Promise.all(
+      [challenge.challengerTagTeamId, challenge.challengedTagTeamId].map((id) => (id ? tagTeams.findById(id) : null)),
+    );
+    for (const team of teams) {
+      if (team) {
+        ids.add(team.player1Id);
+        ids.add(team.player2Id);
+      }
+    }
+  }
+  ids.delete(responderId);
+  return Array.from(ids);
+}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -75,14 +97,29 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Challenge expired');
     }
 
+    // Accepting and countering both lead to a match. Declining stays open.
+    if (action !== 'decline') {
+      const callerBlocked = callerRefusal(responderPlayer);
+      if (callerBlocked) return callerBlocked;
+
+      const otherIds = await otherPartyIds(challenge, responderPlayer.playerId);
+      const otherParties = await Promise.all(otherIds.map((id) => players.findById(id)));
+      for (const otherParty of otherParties) {
+        const otherBlocked = otherParty && targetRefusal(otherParty);
+        if (otherBlocked) return otherBlocked;
+      }
+    }
+
     const now = new Date().toISOString();
 
     if (action === 'accept' || action === 'decline') {
       const newStatus = action === 'accept' ? 'accepted' : 'declined';
-      const patch: Record<string, unknown> = { status: newStatus };
+      const patch: Partial<Challenge> = { status: newStatus };
       if (responseMessage) patch.responseMessage = responseMessage;
 
-      await challenges.update(challengeId, patch);
+      // Guarded, so a late answer cannot bring back a challenge a strike cancelled.
+      const written = await challenges.updateIfStatus(challengeId, patch, 'pending');
+      if (!written) return badRequest('Challenge is no longer pending');
 
       return success({ ...challenge, status: newStatus, responseMessage, updatedAt: now });
     }
@@ -93,8 +130,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // A counter is a new challenge aimed at the original challenger, so both
-    // ends follow the same rule as createChallenge. Accepting or declining
-    // stays open, because neither one issues anything.
+    // ends follow the same rule as createChallenge. A hidden player can still
+    // accept or decline, because neither one issues anything. A sign-up block
+    // or deactivation is a different rule, and stops accepting too (see above).
     if (!isPlayerVisible(responderPlayer)) {
       return badRequest(SET_WRESTLER_NAME_MESSAGE);
     }
@@ -158,10 +196,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     };
     if (responseMessage) counterPatch.responseMessage = responseMessage;
 
-    await runInTransaction(async (tx) => {
-      tx.updateChallenge(challengeId, counterPatch);
-      tx.createChallenge(counterChallenge);
-    });
+    // Guarded like accept and decline, so a late counter cannot bring back a
+    // challenge a strike cancelled, or leave a new one behind.
+    try {
+      await runInTransaction(async (tx) => {
+        tx.updateChallenge(challengeId, counterPatch, 'pending');
+        tx.createChallenge(counterChallenge);
+      });
+    } catch (writeError) {
+      if (isConcurrentWriteError(writeError)) return badRequest('Challenge is no longer pending');
+      throw writeError;
+    }
 
     return success({
       original: { ...challenge, status: 'countered', responseMessage, counteredChallengeId: counterChallengeId, updatedAt: now },

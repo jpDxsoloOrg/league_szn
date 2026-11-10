@@ -7,6 +7,8 @@ import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { useIsHiddenPlayer } from '../../hooks/useIsHiddenPlayer';
 import type { Stipulation, MatchType } from '../../types';
 import type { ChallengeWithPlayers } from '../../types/challenge';
+import { useSignupBlock } from '../../hooks/useSignupBlock';
+import SuspensionNotice from '../discipline/SuspensionNotice';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
@@ -37,6 +39,7 @@ async function loadViewerPlayerId(signal: AbortSignal): Promise<string | null> {
 
 export default function ChallengeDetail() {
   const { t } = useTranslation();
+  const signupBlock = useSignupBlock();
   const { challengeId } = useParams<{ challengeId: string }>();
   const navigate = useNavigate();
   const { features } = useSiteConfig();
@@ -171,18 +174,20 @@ export default function ChallengeDetail() {
         <ChallengeVersus challenge={challenge} size="lg" showRoles />
       </section>
 
+      {canRespond && signupBlock.until && <SuspensionNotice until={signupBlock.until} />}
+
       {(canRespond || canCancel) && (
         <div className="challenge-detail__actions">
           {canRespond && (
             <>
-              <Button disabled={submitting} onClick={() => handleAction('accept')}>
+              <Button disabled={submitting || signupBlock.blocked} onClick={() => handleAction('accept')}>
                 {t('challenges.detail.accept')}
               </Button>
               <Button variant="secondary" disabled={submitting} onClick={() => handleAction('decline')}>
                 {t('challenges.detail.decline')}
               </Button>
               {!isHiddenPlayer && (
-                <Button variant="secondary" disabled={submitting} onClick={() => setShowCounterForm(true)}>
+                <Button variant="secondary" disabled={submitting || signupBlock.blocked} onClick={() => setShowCounterForm(true)}>
                   {t('challenges.detail.counter')}
                 </Button>
               )}

@@ -37,7 +37,19 @@ describe('isPlayerVisible', () => {
   });
 });
 
+describe('isPlayerVisible with deactivation', () => {
+  it('hides a deactivated player who has a real wrestler name', () => {
+    expect(isPlayerVisible({ currentWrestler: 'Kane', deactivatedAt: '2026-01-01T00:00:00.000Z' })).toBe(false);
+  });
+});
+
 describe('isHiddenLivePlayer', () => {
+  it('counts a deactivated player, unless deleted', () => {
+    const deactivatedAt = '2026-01-01T00:00:00.000Z';
+    expect(isHiddenLivePlayer({ currentWrestler: 'Kane', deactivatedAt })).toBe(true);
+    expect(isHiddenLivePlayer({ currentWrestler: 'Kane', deactivatedAt, deletedAt: '2026-02-01' })).toBe(false);
+  });
+
   it('is true only for a live player without a wrestler', () => {
     expect(isHiddenLivePlayer({ currentWrestler: NEEDS_WRESTLER })).toBe(true);
     expect(isHiddenLivePlayer({ currentWrestler: 'Kane' })).toBe(false);
@@ -58,6 +70,14 @@ describe('newPlayerName', () => {
 });
 
 describe('findHiddenPlayerIds', () => {
+  it('includes a deactivated player', async () => {
+    const hidden = await findHiddenPlayerIds(['p1'], async () => ({
+      currentWrestler: 'Kane',
+      deactivatedAt: '2026-01-01T00:00:00.000Z',
+    }));
+    expect([...hidden]).toEqual(['p1']);
+  });
+
   it('returns only existing hidden players and looks each ID up once', async () => {
     const records: Record<string, { currentWrestler: string } | null> = {
       real: { currentWrestler: 'The Rock' },

@@ -11,6 +11,10 @@ import type {
 
 // ─── Announcement input types ───────────────────────────────────────
 
+/** Order of the popup queue: highest priority, then newest, so a new post is not behind older ones. */
+export const compareActiveAnnouncements = (a: Announcement, b: Announcement): number =>
+  (b.priority ?? 1) - (a.priority ?? 1) || (b.createdAt ?? '').localeCompare(a.createdAt ?? '');
+
 export interface AnnouncementCreateInput {
   title: string;
   body: string;

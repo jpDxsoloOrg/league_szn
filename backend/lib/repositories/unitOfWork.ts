@@ -6,6 +6,7 @@ import type {
   RivalryParticipant,
   RivalryPatch,
 } from './rivalries';
+import type { ChallengeStatus } from './types';
 
 /**
  * Record delta for player/season standings.
@@ -29,6 +30,11 @@ export type MatchWriteCondition =
   | { kind: 'notCompleted' }
   | { kind: 'unchangedSince'; updatedAt: string | undefined };
 
+/** Refuse the write unless the stored `disciplineVersion` still equals this value. */
+export interface PlayerWriteCondition {
+  disciplineVersion: number;
+}
+
 /**
  * A unit of work that stages mutations across multiple aggregates and commits
  * them atomically (within the limits of the underlying store).
@@ -44,8 +50,8 @@ export type MatchWriteCondition =
  * across staged operations.
  */
 export interface UnitOfWork {
-  /** Stage a player field update (SET fields). */
-  updatePlayer(playerId: string, patch: Record<string, unknown>): void;
+  /** Stage a player field update (SET fields), optionally guarded by `condition`. */
+  updatePlayer(playerId: string, patch: Record<string, unknown>, condition?: PlayerWriteCondition): void;
 
   /**
    * Stage a player record increment/decrement. The player must exist or the
@@ -81,8 +87,8 @@ export interface UnitOfWork {
   /** Stage incrementing defense count on a reign. */
   incrementDefenses(championshipId: string, wonDate: string): void;
 
-  /** Stage a challenge field update. */
-  updateChallenge(challengeId: string, patch: Record<string, unknown>): void;
+  /** Stage a challenge field update, refused unless the status is still `expectedStatus` when given. */
+  updateChallenge(challengeId: string, patch: Record<string, unknown>, expectedStatus?: ChallengeStatus): void;
 
   /** Stage creating a new challenge. */
   createChallenge(challenge: Record<string, unknown>): void;

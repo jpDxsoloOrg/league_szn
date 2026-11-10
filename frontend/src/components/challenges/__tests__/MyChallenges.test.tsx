@@ -6,6 +6,7 @@ import { ApiError } from '../../../services/api/apiClient';
 import type { ChallengeWithPlayers } from '../../../types/challenge';
 
 // --- Hoisted mocks ---
+const signupBlock = vi.hoisted(() => ({ blocked: false, until: null as string | null }));
 const { mockGetAll, mockRespond, mockCancelChallenge, mockGetMyProfile, mockNavigate, mockIsHiddenPlayer } = vi.hoisted(() => ({
   mockGetAll: vi.fn(),
   mockRespond: vi.fn(),
@@ -34,6 +35,7 @@ vi.mock('react-router-dom', async () => {
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string, opts?: Record<string, string>) => {
       const t: Record<string, string> = {
         'challenges.my.title': 'My Challenges',
@@ -73,6 +75,7 @@ vi.mock('../../../hooks/useIsHiddenPlayer', () => ({
 }));
 
 vi.mock('../MyChallenges.css', () => ({}));
+vi.mock('../../../hooks/useSignupBlock', () => ({ useSignupBlock: () => signupBlock }));
 
 import MyChallenges from '../MyChallenges';
 
@@ -105,6 +108,8 @@ function renderMyChallenges() {
 describe('MyChallenges', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    signupBlock.blocked = false;
+    signupBlock.until = null;
     mockIsHiddenPlayer.mockReturnValue(false);
     mockGetMyProfile.mockResolvedValue({ playerId: currentPlayerId });
   });
@@ -165,6 +170,18 @@ describe('MyChallenges', () => {
     });
     expect(screen.getByText('Decline')).toBeInTheDocument();
     expect(screen.getByText('Counter')).toBeInTheDocument();
+  });
+
+  it('turns accept and counter off while blocked, keeps decline, and shows the end', async () => {
+    signupBlock.blocked = true;
+    signupBlock.until = new Date(Date.now() + 86_400_000).toISOString();
+    mockGetAll.mockResolvedValue([makeChallenge({ challengerId: 'p-3', challengedId: 'p-1' })]);
+    renderMyChallenges();
+
+    await waitFor(() => expect(screen.getByText('Accept').closest('button')).toBeDisabled());
+    expect(screen.getByText('Decline').closest('button')).toBeEnabled();
+    expect(screen.getByText('Counter').closest('button')).toBeDisabled();
+    expect(screen.getByRole('timer')).toBeInTheDocument();
   });
 
   it('shows cancel button for sent pending challenges', async () => {

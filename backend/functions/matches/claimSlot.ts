@@ -12,6 +12,7 @@ import {
 import { getAuthContext, requireRole } from '../../lib/auth';
 import { isConcurrentWriteError } from '../../lib/repositories/errors';
 import { isPlayerVisible, realWrestlerName, SET_WRESTLER_NAME_MESSAGE } from '../../lib/needsWrestler';
+import { callerRefusal } from '../../lib/discipline';
 
 interface ClaimSlotBody {
   wrestlerChoice?: 'main' | 'alternate';
@@ -65,6 +66,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (!callerPlayer) {
       return forbidden('No player profile is linked to this account');
     }
+    const refusal = callerRefusal(callerPlayer);
+    if (refusal) return refusal;
     if (!isPlayerVisible(callerPlayer)) {
       return badRequest(SET_WRESTLER_NAME_MESSAGE);
     }

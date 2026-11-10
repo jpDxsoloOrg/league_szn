@@ -107,6 +107,8 @@ export interface UserRepository {
      * pending. Leaves `updatedAt` alone: expiring is not new activity.
      */
     expireIfPending(challengeId: string): Promise<boolean>;
+    /** Writes only if the status still matches. Resolves false when it has moved on. */
+    updateIfStatus(challengeId: string, patch: Partial<Challenge>, expectedStatus: ChallengeStatus): Promise<boolean>;
   };
   fantasy: FantasyMethods;
   siteConfig: SiteConfigMethods;

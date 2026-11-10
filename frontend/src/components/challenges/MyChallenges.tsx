@@ -8,6 +8,8 @@ import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { useIsHiddenPlayer } from '../../hooks/useIsHiddenPlayer';
 import type { Player } from '../../types';
 import type { ChallengeWithPlayers } from '../../types/challenge';
+import { useSignupBlock } from '../../hooks/useSignupBlock';
+import SuspensionNotice from '../discipline/SuspensionNotice';
 import Avatar from '../ui/Avatar';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
@@ -39,6 +41,7 @@ async function loadOwnProfile(signal: AbortSignal): Promise<Player | null> {
 
 export default function MyChallenges() {
   const { t } = useTranslation();
+  const signupBlock = useSignupBlock();
   const navigate = useNavigate();
   const isHiddenPlayer = useIsHiddenPlayer();
   const { features } = useSiteConfig();
@@ -150,13 +153,13 @@ export default function MyChallenges() {
           <div className="my-challenge__actions">
             {!isSent && isOpen && (
               <>
-                <Button size="sm" disabled={busy} onClick={() => handleAction('accept', challenge)}>
+                <Button size="sm" disabled={busy || signupBlock.blocked} onClick={() => handleAction('accept', challenge)}>
                   {t('challenges.detail.accept')}
                 </Button>
                 <Button size="sm" variant="secondary" disabled={busy} onClick={() => handleAction('decline', challenge)}>
                   {t('challenges.detail.decline')}
                 </Button>
-                <Button size="sm" variant="secondary" disabled={busy} onClick={() => navigate(`/challenges/${challenge.challengeId}`)}>
+                <Button size="sm" variant="secondary" disabled={busy || signupBlock.blocked} onClick={() => navigate(`/challenges/${challenge.challengeId}`)}>
                   {t('challenges.detail.counter')}
                 </Button>
               </>
@@ -230,6 +233,7 @@ export default function MyChallenges() {
       {isHiddenPlayer && (
         <HiddenPlayerNotice title={t('me.setup.cannotCallOutTitle')} body={t('me.setup.cannotCallOutBody')} />
       )}
+      {signupBlock.until && <SuspensionNotice until={signupBlock.until} />}
       <Tabs
         label={t('challenges.my.title')}
         value={activeTab}

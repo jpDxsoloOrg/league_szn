@@ -29,7 +29,7 @@ const PAST_PAGE_SIZE = 10;
 const PLANNED_SHOWN = 5;
 
 type FilterTab = 'all' | EventType;
-type EventsView = 'upcoming' | 'past';
+type EventsView = 'upcoming' | 'calendar' | 'past';
 
 interface ShowCalendarEntry {
   show: Show;
@@ -58,6 +58,8 @@ export default function EventsCalendar() {
   const [pastLimit, setPastLimit] = useState(PAST_PAGE_SIZE);
   const isMobile = useIsMobile();
   const [mobileEventsView, setMobileEventsView] = useState<EventsView>('upcoming');
+  // The day picked on the phone calendar; null shows the first day with anything on.
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   // Other pages link here with ?create=1 to open the form directly.
   const createRequested = searchParams.get('create') === '1';
@@ -273,6 +275,7 @@ export default function EventsCalendar() {
   }, [calendarEntries]);
 
   const goToPreviousMonth = () => {
+    setSelectedDay(null);
     if (currentMonth === 0) {
       setCurrentMonth(11);
       setCurrentYear((y) => y - 1);
@@ -282,6 +285,7 @@ export default function EventsCalendar() {
   };
 
   const goToNextMonth = () => {
+    setSelectedDay(null);
     if (currentMonth === 11) {
       setCurrentMonth(0);
       setCurrentYear((y) => y + 1);
@@ -314,6 +318,16 @@ export default function EventsCalendar() {
     });
   }, [openCreate]);
 
+  const handlePlannedShowClick = useCallback((show: Show, date: string) => {
+    openCreate({
+      name: show.name,
+      eventType: show.schedule ?? 'weekly',
+      date,
+      showId: show.showId,
+      companyId: show.companyId,
+    });
+  }, [openCreate]);
+
   const filterTabs: { value: FilterTab; label: string }[] = [
     { value: 'all', label: t('events.filters.all') },
     ...EVENT_TYPES.map((eventType) => ({ value: eventType, label: t(`events.filters.${eventType}`) })),
@@ -332,6 +346,7 @@ export default function EventsCalendar() {
       shows={allShows}
       companies={companies}
       preset={createPreset}
+      existingEvents={calendarEntries}
     />
   ) : null;
 
@@ -384,10 +399,119 @@ export default function EventsCalendar() {
   }
 
   const showUpcoming = !isMobile || mobileEventsView === 'upcoming';
+  const showCalendar = !isMobile || mobileEventsView === 'calendar';
   const showPast = !isMobile || mobileEventsView === 'past';
   const otherLiveEvents = inProgressEvents.filter((event) => event.eventId !== heroEvent?.eventId);
   const otherUpcomingEvents = upcomingEvents.filter((event) => event.eventId !== heroEvent?.eventId);
   const heroCoversUpcoming = upcomingEvents.length > 0;
+
+  /**
+   * Phone month view: day buttons too narrow for names, marked with dots, and
+   * the picked day's events and planned shows listed below the grid.
+   */
+  const renderPhoneMonth = () => {
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === currentYear && today.getMonth() === currentMonth;
+    const busyDays = calendarDays.filter((day): day is number => (
+      day !== null && (!!eventsByDay[day]?.length || !!showEntriesByDay[day]?.length)
+    ));
+    const fallbackDay = isCurrentMonth ? today.getDate() : (busyDays[0] ?? 1);
+    const pickedDay = selectedDay ?? fallbackDay;
+    const pickedDate = dateToCalendarDate(new Date(currentYear, currentMonth, pickedDay));
+    const pickedEvents = eventsByDay[pickedDay] ?? [];
+    const pickedShows = showEntriesByDay[pickedDay] ?? [];
+    const pickedLabel = formatCalendarDate(pickedDate, undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+
+    return (
+      <>
+        <div className="calendar-phone-grid">
+          {dayNames.map((day) => (
+            <div key={day} className="calendar-phone-grid__header" aria-hidden="true">{day.slice(0, 2)}</div>
+          ))}
+          {calendarDays.map((day, idx) => {
+            if (day === null) return <span key={`blank-${idx}`} aria-hidden="true" />;
+            const dayDate = dateToCalendarDate(new Date(currentYear, currentMonth, day));
+            const hasEvent = !!eventsByDay[day]?.length;
+            const hasPlanned = !!showEntriesByDay[day]?.length;
+            const isToday = isCurrentMonth && today.getDate() === day;
+            const dayClass = [
+              'calendar-phone-day',
+              day === pickedDay ? 'calendar-phone-day--selected' : '',
+              isToday ? 'calendar-phone-day--today' : '',
+            ].filter(Boolean).join(' ');
+            const marks = [
+              hasEvent ? t('events.calendar.dayHasEvent', 'event booked') : '',
+              hasPlanned ? t('events.calendar.dayHasPlanned', 'planned show') : '',
+            ].filter(Boolean).join(', ');
+            const dayLabel = formatCalendarDate(dayDate, undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+            return (
+              <button
+                key={day}
+                type="button"
+                className={dayClass}
+                aria-pressed={day === pickedDay}
+                aria-label={marks ? `${dayLabel}, ${marks}` : dayLabel}
+                onClick={() => setSelectedDay(day)}
+              >
+                <span className="calendar-phone-day__number">{day}</span>
+                <span className="calendar-phone-day__marks" aria-hidden="true">
+                  {hasEvent && <span className="calendar-phone-day__mark calendar-phone-day__mark--event" />}
+                  {hasPlanned && <span className="calendar-phone-day__mark calendar-phone-day__mark--planned" />}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="calendar-phone-day-panel" aria-live="polite">
+          <h3 className="calendar-phone-day-panel__title">{pickedLabel}</h3>
+          {pickedEvents.length === 0 && pickedShows.length === 0 && (
+            <p className="events-section__empty">{t('events.calendar.nothingOnDay', 'Nothing booked on this day.')}</p>
+          )}
+          <div className="events-list">
+            {pickedEvents.map((event) => (
+              <EventCard key={event.eventId} event={event} />
+            ))}
+            {pickedShows.map((entry) => (
+              isAdminOrModerator ? (
+                <button
+                  key={`show-${entry.show.showId}-${entry.date}`}
+                  type="button"
+                  className="event-card event-card--planned event-card--create"
+                  onClick={() => handleShowClick(entry)}
+                >
+                  <span className="event-card__body">
+                    <span className="event-card__name">{entry.show.name}</span>
+                    <span className="event-card__meta">
+                      {t('events.calendar.plannedShowCreate', 'Planned show. Create the event')}
+                    </span>
+                  </span>
+                  <CalendarPlus className="event-card__chevron" aria-hidden="true" size={20} />
+                </button>
+              ) : (
+                <div key={`show-${entry.show.showId}-${entry.date}`} className="event-card event-card--planned">
+                  <span className="event-card__body">
+                    <span className="event-card__name">{entry.show.name}</span>
+                    <span className="event-card__meta">{t('events.calendar.plannedShow', 'Planned show, card to come')}</span>
+                  </span>
+                </div>
+              )
+            ))}
+          </div>
+          {isAdminOrModerator && (
+            <Button
+              className="calendar-phone-day-panel__create"
+              variant="secondary"
+              icon={<CalendarPlus aria-hidden="true" size={18} />}
+              onClick={() => openCreate({ date: pickedDate })}
+            >
+              {t('events.calendar.createOnDay', 'Create event on this day')}
+            </Button>
+          )}
+        </div>
+      </>
+    );
+  };
 
   return (
     <div className="events-page">
@@ -422,6 +546,7 @@ export default function EventsCalendar() {
             onValueChange={(value) => setMobileEventsView(value as EventsView)}
             items={[
               { value: 'upcoming', label: t('events.status.upcoming') },
+              { value: 'calendar', label: t('events.calendar.calendarTab', 'Calendar') },
               { value: 'past', label: t('events.calendar.past', 'Past') },
             ]}
           />
@@ -468,28 +593,47 @@ export default function EventsCalendar() {
                   {otherUpcomingEvents.map((event) => (
                     <EventCard key={event.eventId} event={event} showStatus={false} />
                   ))}
-                  {plannedShows.map(({ show, date }) => (
-                    <div key={`${show.showId}-${date}`} className="event-card event-card--planned">
-                      <span className="event-card__date" aria-hidden="true">
-                        <span className="event-card__month">{formatCalendarDate(date, undefined, { month: 'short' })}</span>
-                        <span className="event-card__day">{formatCalendarDate(date, undefined, { day: '2-digit' })}</span>
-                      </span>
-                      <span className="event-card__body">
-                        <span className="event-card__name">{show.name}</span>
-                        <span className="event-card__meta">
-                          <span className="sr-only">{formatCalendarDate(date)}</span>
-                          {t('events.calendar.plannedShow', 'Planned show, card to come')}
+                  {plannedShows.map(({ show, date }) => {
+                    const cardContent = (
+                      <>
+                        <span className="event-card__date" aria-hidden="true">
+                          <span className="event-card__month">{formatCalendarDate(date, undefined, { month: 'short' })}</span>
+                          <span className="event-card__day">{formatCalendarDate(date, undefined, { day: '2-digit' })}</span>
                         </span>
-                      </span>
-                    </div>
-                  ))}
+                        <span className="event-card__body">
+                          <span className="event-card__name">{show.name}</span>
+                          <span className="event-card__meta">
+                            <span className="sr-only">{formatCalendarDate(date)}</span>
+                            {isAdminOrModerator
+                              ? t('events.calendar.plannedShowCreate', 'Planned show. Create the event')
+                              : t('events.calendar.plannedShow', 'Planned show, card to come')}
+                          </span>
+                        </span>
+                        {isAdminOrModerator && <CalendarPlus className="event-card__chevron" aria-hidden="true" size={20} />}
+                      </>
+                    );
+                    return isAdminOrModerator ? (
+                      <button
+                        key={`${show.showId}-${date}`}
+                        type="button"
+                        className="event-card event-card--planned event-card--create"
+                        onClick={() => handlePlannedShowClick(show, date)}
+                      >
+                        {cardContent}
+                      </button>
+                    ) : (
+                      <div key={`${show.showId}-${date}`} className="event-card event-card--planned">
+                        {cardContent}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </section>
           )}
         </div>
 
-        {!isMobile && (
+        {showCalendar && (
           <section className="calendar" aria-label={`${monthNames[currentMonth]} ${currentYear}`}>
             <div className="calendar-nav">
               <button
@@ -511,6 +655,8 @@ export default function EventsCalendar() {
               </button>
             </div>
 
+            {isMobile ? renderPhoneMonth() : (
+            <>
             <div className="calendar-grid">
               {dayNames.map((day) => (
                 <div key={day} className="calendar-day-header">{day}</div>
@@ -582,6 +728,8 @@ export default function EventsCalendar() {
                 <span>{t('events.status.cancelled')}</span>
               </div>
             </div>
+            </>
+            )}
           </section>
         )}
 

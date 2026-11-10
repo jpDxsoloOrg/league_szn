@@ -28,6 +28,25 @@ function renderDialog(playerId?: string) {
 }
 
 describe('SlotEditDialog', () => {
+  it('warns but does not stop staff booking a player blocked from signing up', () => {
+    const blocked = {
+      ...player('p9', 'Blocked', 'Kane'),
+      discipline: {
+        status: 'signup-blocked' as const,
+        activeStrikeCount: 2,
+        activeStrikes: [],
+        cooldownEndsAt: null,
+        signupBlockedUntil: null,
+        deactivatedAt: null,
+      },
+    };
+    const slot = { slotId: 's1', position: 1, playerId: 'p9' } as HydratedMatchSlot;
+    render(<SlotEditDialog slot={slot} players={[...roster, blocked]} onSave={vi.fn()} onClose={vi.fn()} />);
+
+    expect(screen.getByText('discipline.admin.bookingWarning')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+  });
+
   it('keeps hidden players out of the picker for an open slot', async () => {
     renderDialog();
 

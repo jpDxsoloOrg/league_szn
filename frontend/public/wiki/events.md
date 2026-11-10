@@ -32,6 +32,8 @@ Signed-in wrestlers see **Will you be there?** on the event page. Choose **Avail
 
 Some matches have open spots. Signed-in wrestlers can claim a spot and release it again, with one spot per event.
 
+While a [strike](strikes-and-suspensions) blocks you from signing up, **Available**, **Tentative** and claiming a spot are off, and the page shows when the block lifts. **Unavailable** stays on.
+
 ## Matches
 
 The **Matches** tab lists every match. Search by name, choose All, Completed or Scheduled, or use **Filters** for player, match type, stipulation, championship, season and dates. **Details** opens a match, and that's where you can [rate it](rate-matches) once it's completed. The list shows 50 matches at a time, with **Show more** at the bottom.

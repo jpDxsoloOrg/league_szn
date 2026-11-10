@@ -5,6 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowLeft, ArrowUp, CalendarClock, Lock, LockOpen, Mic, Pencil, Plus, Trash2, Trophy } from 'lucide-react';
 import { eventsApi, isApiError, matchesApi, playersApi, tagTeamsApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSignupBlock } from '../../hooks/useSignupBlock';
+import { formatInstant } from '../../utils/dateUtils';
+import { refusalOr } from '../../utils/discipline';
+import SuspensionNotice from '../discipline/SuspensionNotice';
 import { useToast } from '../ui/toastContext';
 import type {
   MatchDesignation,
@@ -15,6 +19,7 @@ import type {
   EventCheckInSummary,
   EventCheckInRoster,
 } from '../../types/event';
+import { isAbortError, withoutSeasonRecords } from '../../utils/bookingSummary';
 import type { Match, Player, MatchStatus, PlayerBookingInfo } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
 import Badge from '../ui/Badge';
@@ -63,9 +68,13 @@ type PendingDelete =
   | { kind: 'event'; message: string }
   | { kind: 'match'; matchId: string; message: string };
 
+/** The fewest signed-up wrestlers a match can be closed with (the backend agrees). */
+const MIN_CLOSED_PARTICIPANTS = 2;
+
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const signupBlock = useSignupBlock();
   const navigate = useNavigate();
   const { showToast } = useToast();
   const {
@@ -98,6 +107,8 @@ export default function EventDetail() {
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
   const [matchActionError, setMatchActionError] = useState<string | null>(null);
   const [deletingMatchId, setDeletingMatchId] = useState<string | null>(null);
+  const [pendingCloseMatchId, setPendingCloseMatchId] = useState<string | null>(null);
+  const [closingMatchId, setClosingMatchId] = useState<string | null>(null);
 
   // Card order saves. The refs are read outside render: one blocks a second
   // save and holds back event reads, the other two put focus back after a move.
@@ -106,6 +117,10 @@ export default function EventDetail() {
   const cardSaveCountRef = useRef(0);
   const moveControlsRef = useRef(new Map<string, HTMLButtonElement>());
   const moveFocusRef = useRef<{ matchId: string; direction: CardMoveDirection } | null>(null);
+  // Closing sign-ups removes the button that opened the dialog, so focus moves
+  // to the match's new Edit button once the refreshed card shows it.
+  const editControlsRef = useRef(new Map<string, HTMLButtonElement>());
+  const closeFocusRef = useRef<string | null>(null);
 
   // Check-in state
   const [myCheckIn, setMyCheckIn] = useState<EventCheckInRow | null>(null);
@@ -136,18 +151,43 @@ export default function EventDetail() {
     }
   }, [eventId]);
 
-  // Last-booked / streak for the slot picker. Loaded once per admin visit —
-  // it changes rarely and the current card's own bookings are already
-  // covered by bookedPlayerIds. Optional: without it the picker sorts by name.
+  // Last-booked / streak / season record for the slot picker. Loaded once per
+  // admin visit (per event season) — it changes rarely and the current card's
+  // own bookings are already covered by bookedPlayerIds. Optional: without it
+  // the picker sorts by name. Waits for the event so the record is for the
+  // event's season (or the active one when the event has none).
+  const bookingSeasonId = eventData ? (eventData.seasonId ?? '') : null;
   useEffect(() => {
-    if (!isAdminOrModerator) return;
-    let mounted = true;
-    playersApi
-      .getBookingSummary()
-      .then((summary) => { if (mounted) setBookingInfo(new Map(Object.entries(summary))); })
-      .catch(() => { if (mounted) setBookingInfo(undefined); });
-    return () => { mounted = false; };
-  }, [isAdminOrModerator]);
+    if (!isAdminOrModerator || bookingSeasonId === null) return;
+    const controller = new AbortController();
+    const loadBookingInfo = async () => {
+      try {
+        const summary = await playersApi.getBookingSummary(
+          bookingSeasonId ? { seasonId: bookingSeasonId } : {},
+          controller.signal,
+        );
+        if (!controller.signal.aborted) setBookingInfo(new Map(Object.entries(summary)));
+      } catch (err) {
+        if (controller.signal.aborted || isAbortError(err)) return;
+        if (!bookingSeasonId) {
+          setBookingInfo(undefined);
+          return;
+        }
+        // The event's season may have been deleted (400): keep last-booked
+        // and streak, but drop records that would be for another season.
+        try {
+          const fallback = await playersApi.getBookingSummary({}, controller.signal);
+          if (!controller.signal.aborted) {
+            setBookingInfo(withoutSeasonRecords(new Map(Object.entries(fallback))));
+          }
+        } catch {
+          if (!controller.signal.aborted) setBookingInfo(undefined);
+        }
+      }
+    };
+    void loadBookingInfo();
+    return () => controller.abort();
+  }, [isAdminOrModerator, bookingSeasonId]);
 
   const loadAdminData = useCallback(async () => {
     if (!isAdminOrModerator) return;
@@ -309,6 +349,27 @@ export default function EventDetail() {
       setManageError(err instanceof Error ? err.message : t('events.admin.lockSignups.error', 'Failed to update sign-ups.'));
     } finally {
       setTogglingLock(false);
+    }
+  };
+
+  /** Books an open-signups match with whoever signed up; its empty spots go. */
+  const handleConfirmCloseSignups = async () => {
+    const matchId = pendingCloseMatchId;
+    if (!matchId || closingMatchId) return;
+    setPendingCloseMatchId(null);
+    setClosingMatchId(matchId);
+    setMatchActionError(null);
+    try {
+      await matchesApi.closeSignups(matchId);
+      closeFocusRef.current = matchId;
+      await refreshAfterMutation();
+    } catch (err) {
+      closeFocusRef.current = null;
+      setMatchActionError(err instanceof Error
+        ? err.message
+        : t('events.detail.closeSignups.error', 'Could not close sign-ups for this match.'));
+    } finally {
+      setClosingMatchId(null);
     }
   };
 
@@ -489,13 +550,13 @@ export default function EventDetail() {
         setCheckInError(null);
       } catch (err) {
         if (ignore) return;
-        setCheckInError(err instanceof Error ? err.message : 'events.checkIn.error');
+        setCheckInError(refusalOr(err, t('events.checkIn.error', { defaultValue: 'Failed to update check-in.' })));
       }
     })();
     return () => {
       ignore = true;
     };
-  }, [eventId, isAuthenticated, isWrestler, playerId]);
+  }, [eventId, isAuthenticated, isWrestler, playerId, t]);
 
   const handleCheckInChange = useCallback(
     async (status: EventCheckInStatus | null) => {
@@ -533,14 +594,14 @@ export default function EventDetail() {
           const row = await eventsApi.checkIn(eventId, status);
           setMyCheckIn(row);
         }
-      } catch {
+      } catch (err) {
         // Revert
         setMyCheckIn(prevCheckIn);
         setCheckInSummary(prevSummary);
-        setCheckInError('events.checkIn.error');
+        setCheckInError(refusalOr(err, t('events.checkIn.error', { defaultValue: 'Failed to update check-in.' })));
       }
     },
-    [eventId, myCheckIn, checkInSummary]
+    [eventId, myCheckIn, checkInSummary, t]
   );
 
   // A swap can re-insert the focused row, and a match that reaches the end of
@@ -553,6 +614,19 @@ export default function EventDetail() {
     const usedControl = moveControlsRef.current.get(`${matchId}:${direction}`);
     const otherControl = moveControlsRef.current.get(`${matchId}:${direction === 'up' ? 'down' : 'up'}`);
     (usedControl && !usedControl.disabled ? usedControl : otherControl)?.focus();
+  }, [eventData]);
+
+  useLayoutEffect(() => {
+    const matchId = closeFocusRef.current;
+    if (!matchId) return;
+    const editControl = editControlsRef.current.get(matchId);
+    if (editControl) {
+      closeFocusRef.current = null;
+      editControl.focus();
+      return;
+    }
+    const closedMatch = eventData?.enrichedMatches.find((entry) => entry.matchId === matchId);
+    if (closedMatch?.matchData?.status !== 'open-signups') closeFocusRef.current = null;
   }, [eventData]);
 
   const scheduledMatchesById = useMemo(() => {
@@ -699,6 +773,10 @@ export default function EventDetail() {
   ) => {
     const slots = match.matchData?.slots;
     const isScheduled = match.matchData?.status === 'scheduled';
+    const filledSlotCount = slots?.filter((slot) => !!slot.playerId).length ?? 0;
+    const canCloseSignups = isAdminOrModerator
+      && match.matchData?.status === 'open-signups'
+      && filledSlotCount >= MIN_CLOSED_PARTICIPANTS;
 
     return (
       <MatchEntry
@@ -711,6 +789,17 @@ export default function EventDetail() {
         orderControls={canAddMatch ? renderMoveControls(match) : undefined}
         onRecordResult={isAdminOrModerator && isScheduled ? () => handleRecordResult(match.matchId) : undefined}
         onEdit={isAdminOrModerator && isScheduled ? () => handleEditMatch(match.matchId) : undefined}
+        editControlRef={(control) => {
+          if (control) editControlsRef.current.set(match.matchId, control);
+          else editControlsRef.current.delete(match.matchId);
+        }}
+        onCloseSignups={canCloseSignups
+          ? () => {
+            setMatchActionError(null);
+            setPendingCloseMatchId(match.matchId);
+          }
+          : undefined}
+        isClosingSignups={closingMatchId === match.matchId}
         onDelete={isAdminOrModerator ? () => handleRequestDeleteMatch(match.matchId) : undefined}
         onRemoveCard={isAdminOrModerator && !deletingMatchId
           ? () => void handleRemoveCard(enrichedMatches.indexOf(match))
@@ -732,11 +821,14 @@ export default function EventDetail() {
               ? (slot) => handleAdminEditSlot(match.matchId, slot)
               : undefined}
             claimDisabled={
+              signupBlock.blocked ||
               !!eventData.checkInsLocked ||
               (!!userOccupiedMatchId && userOccupiedMatchId !== match.matchId)
             }
             disableClaimReason={
-              eventData.checkInsLocked
+              signupBlock.until
+                ? t('discipline.notice.signupBlockedUntil', { date: formatInstant(signupBlock.until, i18n.language) })
+                : eventData.checkInsLocked
                 ? t('events.checkIn.lockedByAdmin', {
                     defaultValue: 'Sign-ups are closed for this event.',
                   })
@@ -761,6 +853,7 @@ export default function EventDetail() {
   const lockLabel = eventData.checkInsLocked
     ? t('events.admin.lockSignups.unlock', 'Unlock sign-ups')
     : t('events.admin.lockSignups.lock', 'Lock sign-ups');
+  const hasOpenSlot = enrichedMatches.some((match) => match.matchData?.slots?.some((slot) => !slot.playerId));
   const hasCompletedMatch = enrichedMatches.some((match) => match.matchData?.status === 'completed');
   const subtitle = [formattedDate, eventData.venue].filter(Boolean).join(' · ');
 
@@ -853,6 +946,12 @@ export default function EventDetail() {
           >
             {t('events.admin.deleteEvent')}
           </Button>
+          {eventData.checkInsLocked && (
+            <p className="event-manage__notice" role="status">
+              <Lock aria-hidden="true" size={16} />
+              {t('events.checkIn.lockedByAdmin', 'Sign-ups are closed for this event.')}
+            </p>
+          )}
           {manageError && <p className="event-detail-error" role="alert">{manageError}</p>}
         </section>
       )}
@@ -866,12 +965,9 @@ export default function EventDetail() {
             summary={checkInSummary}
             onChange={handleCheckInChange}
             signupsLocked={!!eventData.checkInsLocked}
+            signupBlockedUntil={signupBlock.until}
           />
-          {checkInError && (
-            <p className="event-detail-error" role="alert">
-              {t(checkInError, { defaultValue: 'Failed to update check-in.' })}
-            </p>
-          )}
+          {checkInError && <p className="event-detail-error" role="alert">{checkInError}</p>}
         </Card>
       )}
 
@@ -886,6 +982,7 @@ export default function EventDetail() {
         </div>
 
         {matchActionError && <p className="event-detail-error" role="alert">{matchActionError}</p>}
+        {signupBlock.until && hasOpenSlot && <SuspensionNotice until={signupBlock.until} />}
 
         {enrichedMatches.length === 0 ? (
           <EmptyState
@@ -1002,6 +1099,28 @@ export default function EventDetail() {
         <p>{pendingDelete?.message}</p>
       </Modal>
 
+      <Modal
+        open={!!pendingCloseMatchId}
+        onClose={() => setPendingCloseMatchId(null)}
+        title={t('events.detail.closeSignups.title', 'Close sign-ups for this match?')}
+        size="sm"
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => setPendingCloseMatchId(null)}>{t('common.cancel', 'Cancel')}</Button>
+            <Button icon={<Lock aria-hidden="true" size={18} />} onClick={() => void handleConfirmCloseSignups()}>
+              {t('events.detail.closeSignups.confirm', 'Close sign-ups')}
+            </Button>
+          </>
+        )}
+      >
+        <p>
+          {t(
+            'events.detail.closeSignups.message',
+            'The open spots are removed and the match is booked with the wrestlers who signed up. Nobody else can claim a spot.',
+          )}
+        </p>
+      </Modal>
+
       <SlotEditDialog
         slot={editingSlot?.slot ?? null}
         players={players}
@@ -1049,6 +1168,11 @@ interface MatchEntryProps {
   orderControls?: ReactNode;
   onRecordResult?: () => void;
   onEdit?: () => void;
+  /** Receives the Edit button, so focus can be moved to it. */
+  editControlRef?: (control: HTMLButtonElement | null) => void;
+  /** Offered on an open-signups match that has enough wrestlers to go ahead. */
+  onCloseSignups?: () => void;
+  isClosingSignups?: boolean;
   onDelete?: () => void;
   /** Offered on a card whose match no longer exists. */
   onRemoveCard?: () => void;
@@ -1068,6 +1192,9 @@ function MatchEntry({
   orderControls,
   onRecordResult,
   onEdit,
+  editControlRef,
+  onCloseSignups,
+  isClosingSignups = false,
   onDelete,
   onRemoveCard,
   onMatchUpdated,
@@ -1151,7 +1278,7 @@ function MatchEntry({
         </div>
       )}
 
-      {isAdmin && (onRecordResult || onEdit || onDelete) && (
+      {isAdmin && (onRecordResult || onEdit || onCloseSignups || onDelete) && (
         <div className="event-match__actions">
           {onRecordResult && (
             <Button size="sm" onClick={onRecordResult} disabled={isDeleting || isSavingOrder}>
@@ -1159,8 +1286,20 @@ function MatchEntry({
             </Button>
           )}
           {onEdit && (
-            <Button variant="secondary" size="sm" icon={<Pencil aria-hidden="true" size={16} />} onClick={onEdit} disabled={isDeleting || isSavingOrder}>
+            <Button ref={editControlRef} variant="secondary" size="sm" icon={<Pencil aria-hidden="true" size={16} />} onClick={onEdit} disabled={isDeleting || isSavingOrder}>
               {t('events.detail.editMatch', 'Edit')}
+            </Button>
+          )}
+          {onCloseSignups && (
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Lock aria-hidden="true" size={16} />}
+              onClick={onCloseSignups}
+              loading={isClosingSignups}
+              disabled={isDeleting || isSavingOrder}
+            >
+              {t('events.detail.closeSignups.action', 'Close sign-ups')}
             </Button>
           )}
           {onDelete && (

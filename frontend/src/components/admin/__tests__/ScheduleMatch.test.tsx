@@ -17,6 +17,7 @@ const {
   mockGetAllDivisions,
   mockGetCheckIns,
   mockGetChallenges,
+  mockGetBookingSummary,
 } = vi.hoisted(() => ({
   mockGetAllPlayers: vi.fn(),
   mockGetAllChampionships: vi.fn(),
@@ -30,12 +31,13 @@ const {
   mockGetAllDivisions: vi.fn(),
   mockGetCheckIns: vi.fn(),
   mockGetChallenges: vi.fn(),
+  mockGetBookingSummary: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
   challengesApi: { getAll: mockGetChallenges },
   matchesApi: { schedule: mockScheduleMatch },
-  playersApi: { getAllIncludingHidden: mockGetAllPlayers, getBookingSummary: vi.fn().mockResolvedValue({}) },
+  playersApi: { getAllIncludingHidden: mockGetAllPlayers, getBookingSummary: mockGetBookingSummary },
   championshipsApi: { getAll: mockGetAllChampionships },
   tournamentsApi: { getAll: mockGetAllTournaments },
   seasonsApi: { getAll: mockGetAllSeasons },
@@ -48,6 +50,7 @@ vi.mock('../../../services/api', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en-US' },
     t: (key: string, options?: string | Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'scheduleMatch.matchFormat': 'Match Format',
@@ -154,6 +157,7 @@ function setupDefaultMocks() {
   mockGetAllTagTeams.mockResolvedValue([]);
   mockGetAllDivisions.mockResolvedValue([]);
   mockGetChallenges.mockResolvedValue([]);
+  mockGetBookingSummary.mockResolvedValue({});
   mockGetCheckIns.mockResolvedValue({
     available: [{ playerId: 'p1', name: 'John Cena', currentWrestler: 'The Champ' }],
     tentative: [{ playerId: 'p2', name: 'Dwayne Johnson', currentWrestler: 'The Rock' }],
@@ -383,6 +387,120 @@ describe('ScheduleMatch', () => {
 
     expect(screen.getByRole('option', { name: /The Rock/ })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /Newbie/ })).not.toBeInTheDocument();
+  });
+
+  describe('discipline', () => {
+    const summary = (status: string) => ({
+      status,
+      activeStrikeCount: 3,
+      activeStrikes: [],
+      cooldownEndsAt: null,
+      signupBlockedUntil: null,
+      deactivatedAt: null,
+    });
+    const deactivatedEntrant = {
+      ...mockPlayers[0],
+      playerId: 'p9',
+      name: 'Gone Guy',
+      currentWrestler: 'Sting',
+      discipline: summary('deactivated'),
+    };
+
+    const openPicker = async (user: ReturnType<typeof userEvent.setup>) => {
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+      await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
+    };
+
+    it('leaves a deactivated player out of the picker', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetAllPlayers.mockResolvedValue([...mockPlayers, deactivatedEntrant]);
+      renderScheduleMatch();
+
+      await openPicker(user);
+      await user.click(screen.getByRole('button', { name: /Add participants/ }));
+
+      expect(screen.queryByRole('option', { name: /Sting/ })).not.toBeInTheDocument();
+    });
+
+    it('offers a deactivated entrant of the chosen tournament, and warns about the forfeit', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetAllPlayers.mockResolvedValue([...mockPlayers, deactivatedEntrant]);
+      mockGetAllTournaments.mockResolvedValue([{ ...mockTournaments[0], participants: ['p9', 'p1'] }]);
+      renderScheduleMatch();
+
+      await openPicker(user);
+      await user.selectOptions(screen.getByLabelText(/Tournament/), 't1');
+      await pickParticipants(user, ['Sting (Gone Guy)']);
+
+      expect(screen.getByText('discipline.admin.tournamentForfeitWarning')).toBeInTheDocument();
+    });
+
+    it('warns about a player blocked from signing up, and still lets staff book them', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetAllPlayers.mockResolvedValue([
+        { ...mockPlayers[0], discipline: summary('signup-blocked') },
+        ...mockPlayers.slice(1),
+      ]);
+      renderScheduleMatch();
+
+      await openPicker(user);
+      await pickParticipants(user, ['The Champ (John Cena)']);
+
+      expect(screen.getByText('discipline.admin.bookingWarning')).toBeInTheDocument();
+    });
+
+    it('flags the blocked player in the picker and on the chip, not only above the form', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      const blockedUntil = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+      mockGetAllPlayers.mockResolvedValue([
+        {
+          ...mockPlayers[0],
+          discipline: { ...summary('signup-blocked'), signupBlockedUntil: blockedUntil, cooldownEndsAt: blockedUntil },
+        },
+        ...mockPlayers.slice(1),
+      ]);
+      renderScheduleMatch();
+
+      await openPicker(user);
+      await user.click(screen.getByRole('button', { name: /Add participants…/ }));
+
+      const option = screen.getByRole('option', { name: /The Champ \(John Cena\)/ });
+      expect(within(option).getByText('discipline.status.signupBlocked')).toBeInTheDocument();
+
+      await user.click(option);
+
+      const chip = screen.getByText('The Champ (John Cena)', { selector: '.selected-participant-text' }).closest('li');
+      expect(within(chip as HTMLElement).getByText('discipline.status.signupBlocked')).toBeInTheDocument();
+    });
+
+    it('leaves a warned player unflagged, since a warning does not affect booking', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetAllPlayers.mockResolvedValue([
+        { ...mockPlayers[0], discipline: { ...summary('warned'), cooldownEndsAt: new Date(Date.now() + 60000).toISOString() } },
+        ...mockPlayers.slice(1),
+      ]);
+      renderScheduleMatch();
+
+      await openPicker(user);
+      await pickParticipants(user, ['The Champ (John Cena)']);
+
+      expect(screen.queryByText('discipline.status.warned')).not.toBeInTheDocument();
+    });
+  });
+
+  it('shows an event on its own calendar day in the event list, whatever the viewer timezone', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    renderScheduleMatch();
+
+    await user.click(await screen.findByLabelText('Add to Event (Optional)'));
+
+    expect(await screen.findByText('WrestleMania (Jul 1, 2024)')).toBeInTheDocument();
   });
 
   it('keeps a hidden player pre-filled from a challenge', async () => {
@@ -992,6 +1110,78 @@ describe('ScheduleMatch', () => {
 
       expect(screen.getByText('Undertaker (Mark Calaway)')).toBeInTheDocument();
       expect(screen.getByText('Triple H (Paul Levesque)')).toBeInTheDocument();
+    });
+  });
+
+  describe('season record in the participant picker', () => {
+    const completedSeason = {
+      seasonId: 's0', name: 'Season 0', startDate: '2023-01-01', status: 'completed' as const,
+      createdAt: '2023-01-01', updatedAt: '2023-01-01',
+    };
+    const summaryFor = (seasonId: string, seasonName: string, wins: number) => ({
+      p1: {
+        lastBookedAt: null,
+        currentStreak: { type: 'L' as const, count: 4 },
+        seasonRecord: { seasonId, seasonName, wins, losses: 3, draws: 1 },
+      },
+    });
+
+    async function openParticipants(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(screen.getByRole('button', { name: /Add participants…|\d+ selected/ }));
+      return () => screen.getAllByRole('option').find((o) => o.textContent?.includes('The Champ'))!;
+    }
+
+    it('fetches the summary once, for the default (active) season', async () => {
+      setupDefaultMocks();
+      mockGetBookingSummary.mockResolvedValue(summaryFor('s1', 'Season 1', 5));
+      const user = userEvent.setup();
+      renderScheduleMatch();
+
+      await waitFor(() => expect(screen.getByLabelText('Season')).toHaveValue('s1'));
+      await waitFor(() => expect(mockGetBookingSummary).toHaveBeenCalled());
+      expect(mockGetBookingSummary).toHaveBeenCalledTimes(1);
+      expect(mockGetBookingSummary).toHaveBeenCalledWith({ seasonId: 's1' }, expect.any(AbortSignal));
+
+      const champRow = await openParticipants(user);
+      await waitFor(() => expect(within(champRow()).getByText('5-3-1')).toBeInTheDocument());
+      expect(within(champRow()).getByText('L4')).toBeInTheDocument();
+    });
+
+    it('refetches for the chosen season', async () => {
+      setupDefaultMocks();
+      mockGetAllSeasons.mockResolvedValue([...mockSeasons, completedSeason]);
+      mockGetBookingSummary.mockImplementation(async (options: { seasonId?: string }) =>
+        options.seasonId === 's0' ? summaryFor('s0', 'Season 0', 9) : summaryFor('s1', 'Season 1', 5));
+      const user = userEvent.setup();
+      renderScheduleMatch();
+
+      await waitFor(() => expect(screen.getByLabelText('Season')).toHaveValue('s1'));
+      await user.selectOptions(screen.getByLabelText('Season'), 's0');
+
+      await waitFor(() =>
+        expect(mockGetBookingSummary).toHaveBeenLastCalledWith({ seasonId: 's0' }, expect.any(AbortSignal)));
+      const champRow = await openParticipants(user);
+      await waitFor(() => expect(within(champRow()).getByText('9-3-1')).toBeInTheDocument());
+    });
+
+    it('keeps streak and last-booked but drops the stale record when a refetch fails', async () => {
+      setupDefaultMocks();
+      mockGetAllSeasons.mockResolvedValue([...mockSeasons, completedSeason]);
+      mockGetBookingSummary.mockImplementation(async (options: { seasonId?: string }) => {
+        if (options.seasonId === 's0') throw new Error('boom');
+        return summaryFor('s1', 'Season 1', 5);
+      });
+      const user = userEvent.setup();
+      renderScheduleMatch();
+
+      await waitFor(() => expect(screen.getByLabelText('Season')).toHaveValue('s1'));
+      await waitFor(() => expect(mockGetBookingSummary).toHaveBeenCalledTimes(1));
+      await user.selectOptions(screen.getByLabelText('Season'), 's0');
+      await waitFor(() => expect(mockGetBookingSummary).toHaveBeenCalledTimes(2));
+
+      const champRow = await openParticipants(user);
+      await waitFor(() => expect(within(champRow()).queryByText('5-3-1')).not.toBeInTheDocument());
+      expect(within(champRow()).getByText('L4')).toBeInTheDocument();
     });
   });
 });

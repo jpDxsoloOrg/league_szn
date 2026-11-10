@@ -1,6 +1,7 @@
 [
   {"slug":"getting-started","titleKey":"wiki.articles.gettingStarted","file":"getting-started.md"},
   {"slug":"league-rules","titleKey":"wiki.articles.leagueRules","file":"league-rules.md"},
+  {"slug":"strikes-and-suspensions","titleKey":"wiki.articles.strikesAndSuspensions","file":"strikes-and-suspensions.md"},
   {"slug":"user-quickstart","titleKey":"wiki.articles.userQuickstart","file":"user-quickstart.md"},
   {"slug":"install-app","titleKey":"wiki.articles.installApp","file":"install-app.md"},
   {"slug":"faqs","titleKey":"wiki.articles.faqs","file":"faqs.md"},
@@ -26,6 +27,7 @@
   {"slug":"admin-user-management","titleKey":"wiki.articles.adminUserManagement","file":"admin-user-management.md","adminOnly":true,"parent":"admin","navTitleKey":"wiki.navLabels.adminUserManagement"},
   {"slug":"admin-divisions","titleKey":"wiki.articles.adminDivisions","file":"admin-divisions.md","adminOnly":true,"parent":"admin","navTitleKey":"wiki.navLabels.adminDivisions"},
   {"slug":"admin-manage-players","titleKey":"wiki.articles.adminManagePlayers","file":"admin-manage-players.md","adminOnly":true,"parent":"admin","navTitleKey":"wiki.navLabels.adminManagePlayers"},
+  {"slug":"admin-strikes","titleKey":"wiki.articles.adminStrikes","file":"admin-strikes.md","adminOnly":true,"parent":"admin","navTitleKey":"wiki.navLabels.adminStrikes"},
   {"slug":"admin-seasons","titleKey":"wiki.articles.adminSeasons","file":"admin-seasons.md","adminOnly":true,"parent":"admin","navTitleKey":"wiki.navLabels.adminSeasons"},
   {"slug":"admin-championships","titleKey":"wiki.articles.adminChampionships","file":"admin-championships.md","adminOnly":true,"parent":"admin","navTitleKey":"wiki.navLabels.adminChampionships"},
   {"slug":"admin-events","titleKey":"wiki.articles.adminEvents","file":"admin-events.md","adminOnly":true,"parent":"admin","navTitleKey":"wiki.navLabels.adminEvents"},

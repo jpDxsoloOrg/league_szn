@@ -27,6 +27,12 @@ Du kannst keine Promos schneiden, keine Call-outs aussprechen oder kontern, kein
 **Warum fehlt jemand in der Tabelle?**  
 Spieler ohne Wrestler-Namen sind auf öffentlichen Seiten ausgeblendet. Das Liga-Team findet sie unter Spieler verwalten mit **Ausgeblendete anzeigen**.
 
+**Ich habe einen Strike bekommen. Was heißt das?**  
+Ein erster Strike ist eine Verwarnung für 7 Tage. Ein zweiter sperrt Anmeldungen für 7 Tage und bleibt 14 Tage. Ein dritter innerhalb dieser 14 Tage deaktiviert dein Konto. Das Feld **Strikes** auf der Ich-Seite und in deinem [Profil](profile) zeigt den Grund und die Restzeit. Siehe [Strikes und Sperren](strikes-and-suspensions).
+
+**Warum kann ich mich nicht mehr einloggen?**  
+Dein Konto wurde vielleicht nach einem dritten Strike deaktiviert. Nur ein Admin kann das rückgängig machen, wende dich also an einen Admin.
+
 **Was bedeutet „Ehemaliges Mitglied“?**  
 Ein vom Liga-Team entfernter Spieler verlässt das Roster, seine Ergebnisse bleiben aber in der Historie. Alte Einträge behalten den gespeicherten Namen. Lässt sich kein Name finden, steht dort **Ehemaliges Mitglied**.
 

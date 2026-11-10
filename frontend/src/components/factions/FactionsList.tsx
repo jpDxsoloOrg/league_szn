@@ -96,9 +96,9 @@ export default function FactionsList() {
     return () => controller.abort();
   }, [isAuthenticated, isWrestler, reloadKey]);
 
-  // A hidden leader has no wrestler and stays unnamed, so the tile says the leader is no longer listed.
+  // A hidden or deactivated leader stays unnamed, so the tile says the leader is no longer listed.
   const nameById = useMemo(
-    () => new Map(directory.filter((entry) => entry.currentWrestler !== null).map((entry) => [entry.playerId, entry.name])),
+    () => new Map(directory.filter((entry) => entry.currentWrestler !== null && !entry.deactivated).map((entry) => [entry.playerId, entry.name])),
     [directory],
   );
 

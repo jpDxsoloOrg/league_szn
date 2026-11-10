@@ -6,6 +6,7 @@ import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { createNotification } from '../../lib/notifications';
 import { isPlayerVisible, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
+import { callerRefusal, targetRefusal } from '../../lib/discipline';
 import type { InvitationRecord } from '../../lib/repositories/LeagueOpsRepository';
 
 interface CreateInvitationBody {
@@ -32,6 +33,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('No player profile linked to your account');
     }
     const caller = callerPlayer;
+
+    const callerBlocked = callerRefusal(caller);
+    if (callerBlocked) return callerBlocked;
 
     const { data: body, error: parseError } = parseBody<CreateInvitationBody>(event);
     if (parseError) return parseError;
@@ -66,6 +70,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (!target) {
       return notFound('Target player not found');
     }
+    const targetBlocked = targetRefusal(target);
+    if (targetBlocked) return targetBlocked;
     if (!isPlayerVisible(target)) {
       return badRequest(TARGET_NEEDS_WRESTLER_MESSAGE);
     }

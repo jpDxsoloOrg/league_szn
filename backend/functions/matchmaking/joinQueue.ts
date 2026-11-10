@@ -4,6 +4,7 @@ import { success, badRequest, forbidden, serverError } from '../../lib/response'
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE } from '../../lib/needsWrestler';
+import { callerRefusal } from '../../lib/discipline';
 
 interface JoinQueueBody {
   matchFormat?: string;
@@ -58,6 +59,9 @@ export const handler = async (
     if (!callerPlayer) {
       return badRequest('No player profile linked to your account');
     }
+
+    const refusal = callerRefusal(callerPlayer);
+    if (refusal) return refusal;
 
     if (!isPlayerVisible(callerPlayer)) {
       return badRequest(SET_WRESTLER_NAME_MESSAGE);

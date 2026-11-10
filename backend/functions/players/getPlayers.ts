@@ -4,6 +4,7 @@ import { success, serverError } from '../../lib/response';
 import { isNeedsWrestler, isPlayerVisible } from '../../lib/needsWrestler';
 import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
 import { toPublicPlayer } from '../../lib/publicPlayer';
+import { isDeactivated } from '../../lib/discipline';
 
 /**
  * GET /players
@@ -11,7 +12,8 @@ import { toPublicPlayer } from '../../lib/publicPlayer';
  * Public. Returns players who have a real wrestler name. Two query modes:
  *  - `view=directory`: public name lookup covering ALL players, deleted ones
  *    included, so historical matches can still resolve names. Fields are
- *    whitelisted; a blank or placeholder wrestler comes back as null.
+ *    whitelisted; a blank or placeholder wrestler comes back as null. A
+ *    deactivated player keeps their name, for history, and is flagged.
  *  - `includeHidden=true`: every current player, for verified staff only. Anyone
  *    else gets the public list.
  * Account ids go only to staff and to the player themselves.
@@ -24,10 +26,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (view === 'directory') {
       const allPlayers = await playersRepo.listWithDeleted();
       return success(
-        allPlayers.map(({ playerId, name, currentWrestler }) => ({
-          playerId,
-          name,
-          currentWrestler: isNeedsWrestler(currentWrestler) ? null : currentWrestler,
+        allPlayers.map((player) => ({
+          playerId: player.playerId,
+          name: player.name,
+          currentWrestler: isNeedsWrestler(player.currentWrestler) ? null : player.currentWrestler,
+          ...(isDeactivated(player) ? { deactivated: true } : {}),
         })),
       );
     }

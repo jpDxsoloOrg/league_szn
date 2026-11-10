@@ -82,10 +82,14 @@ const ADMIN_ONLY_ROUTES = new Set([
   'POST /challenges/bulk-delete',
   'DELETE /stables/{stableId}',
   'DELETE /tag-teams/{tagTeamId}',
+  'POST /players/{playerId}/strikes',
+  'POST /players/{playerId}/strikes/{strikeId}/remove',
+  'POST /players/{playerId}/reactivate',
 ]);
 
 /** The audit's unprotected routes: these must stay closed to non-staff. */
 const STAFF_ROUTES = [
+  'GET /players/{playerId}/discipline',
   'POST /championships',
   'PUT /championships/{championshipId}',
   'DELETE /championships/{championshipId}',
@@ -284,6 +288,20 @@ describe('route access declarations', () => {
       );
       expect(matches.length, label).toBeGreaterThan(0);
     }
+  });
+
+  it('exposes every discipline route through the gateway, with auth left to the router', () => {
+    const disciplineEvents = parseGatewayEvents().filter(
+      ({ handlerFile, path }) => handlerFile === 'players/handler.ts'
+        && /\/(discipline|strikes|reactivate)/.test(path),
+    );
+    expect(disciplineEvents.map(({ method, path }) => `${method} ${path}`).sort()).toEqual([
+      'GET /players/{playerId}/discipline',
+      'POST /players/{playerId}/reactivate',
+      'POST /players/{playerId}/strikes',
+      'POST /players/{playerId}/strikes/{strikeId}/remove',
+    ]);
+    expect(disciplineEvents.every(({ hasAuthorizer }) => !hasAuthorizer)).toBe(true);
   });
 
   it('never marks a route public behind the gateway authorizer', () => {
