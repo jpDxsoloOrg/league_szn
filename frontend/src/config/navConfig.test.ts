@@ -60,7 +60,6 @@ describe('section routing', () => {
     ['/factions/standings', 'storylines'],
     ['/tag-teams/t1', 'storylines'],
     ['/profile', 'me'],
-    ['/find-match', 'me'],
     ['/challenges/c1', 'me'],
     ['/guide/wiki/league-rules', 'me'],
     ['/login', 'me'],
@@ -109,7 +108,7 @@ describe('flag and role visibility', () => {
   it('shows wrestler items only to wrestlers', () => {
     const visitor = context({ isAuthenticated: false, isWrestler: false });
     expect(getVisibleTabs(section('me'), visitor).map((tab) => tab.path)).toEqual(['/guide', '/guide/wiki/league-rules']);
-    expect(getVisibleTabs(section('me'), context()).map((tab) => tab.path)).toContain('/find-match');
+    expect(getVisibleTabs(section('me'), context()).map((tab) => tab.path)).toContain('/profile');
   });
 });
 

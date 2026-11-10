@@ -8,7 +8,6 @@ Das Dashboard ist die erste Seite im Bereich Start. Es zeigt dir auf einen Blick
 - **Aktuelle Champions** — Aktive Titel mit ihren Champions, der Dauer der Regentschaft und den Titelverteidigungen. Ein Klick führt zur Titel-Seite.
 - **Letzte Ergebnisse** — Die fünf neuesten abgeschlossenen Matches. Ein Unentschieden wird als solches angezeigt. Ein Klick öffnet das zugehörige Event oder den Tab Matches, wenn das Match zu keinem Event gehört.
 - **Tabellenspitze** — Die fünf besten Spieler der aktiven Saison. Ohne aktive Saison oder solange darin noch niemand gekämpft hat, siehst du die Gesamtführenden. Spieler ohne Match erscheinen hier nicht.
-- **Match finden** — Ein schneller Weg ins Matchmaking. Das sehen nur angemeldete Wrestler.
 - **Meine Rivalitäten** — Bis zu drei deiner aktiven Rivalitäten, falls du welche hast.
 - **Saison-Fortschritt** — Name und Startdatum der aktiven Saison, dazu ein Fortschrittsbalken, wenn sie ein Enddatum hat.
 - **Schnellstatistiken** — Anzahl der Spieler, Matches dieser Saison, Matches gesamt, aktive Titel und der Spieler mit den meisten Siegen.

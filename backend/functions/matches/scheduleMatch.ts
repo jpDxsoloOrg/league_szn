@@ -82,7 +82,7 @@ export class ScheduleMatchError extends Error {
 
 /**
  * Core "schedule a match" logic, decoupled from API Gateway. Call this from
- * any handler (HTTP, matchmaking, etc.) that needs to create a match row
+ * any handler that needs to create a match row
  * with all the associated side effects (event linking, challenge/promo
  * updates, participant notifications).
  *

@@ -23,7 +23,7 @@ Hat sich der Datensatz geändert, während er geöffnet war, wird nichts geschri
 
 Admins und Moderatoren können keine Strikes erhalten. Entferne zuerst die Rolle in der [Benutzerverwaltung](admin-user-management).
 
-Ein zweiter oder dritter Strike entfernt außerdem den Platz des Spielers in der Warteschlange, seine Online-Präsenz, offene Einladungen sowie offene oder gekonterte Herausforderungen. **Gebuchte Matches bleiben unverändert.**
+Ein zweiter oder dritter Strike bricht außerdem die offenen oder gekonterten Herausforderungen des Spielers ab. **Gebuchte Matches bleiben unverändert.**
 
 ## Nach einer Deaktivierung
 
@@ -54,7 +54,7 @@ Das Entfernen eines Strikes bringt nichts zurück, was er entfernt hat. Abgelauf
 2. Kreuze **Frühere Strikes wiederherstellen** nur an, wenn der letzte Strike ein Fehler war. Dann wird nur dieser entfernt, und die anderen behalten ihre Daten. Ohne Häkchen werden alle aktiven Strikes entfernt
 3. Klicke auf **Reaktivieren**
 
-Das Formular zeigt, was der Spieler noch hält, weil das Team in der Zwischenzeit etwas geändert haben kann. Tabelle, Bilanz, Wrestler und Check-ins kommen zurück. Sein Platz in der Warteschlange, Einladungen und abgebrochene Herausforderungen nicht. Der Spieler loggt sich einfach wieder ein.
+Das Formular zeigt, was der Spieler noch hält, weil das Team in der Zwischenzeit etwas geändert haben kann. Tabelle, Bilanz, Wrestler und Check-ins kommen zurück. Abgebrochene Herausforderungen nicht. Der Spieler loggt sich einfach wieder ein.
 
 ## Wenn ein Login nicht passt
 
@@ -64,4 +64,4 @@ Der Datensatz entscheidet über den Zugang. Der Login in Cognito ist eine zweite
 - **Der Login passt nicht zum Datensatz**: Der Dialog warnt, wenn ein deaktivierter Spieler einen aktiven Login hat oder ein nicht deaktivierter Spieler einen gesperrten. Korrigiere das auf derselben Seite. Ein Login lässt sich immer sperren und aktivieren, sobald der Spieler reaktiviert ist.
 - **Kein verknüpfter Login**: Der Spieler hat kein Konto zum Ändern, es zählt also nur der Datensatz.
 - **Login war schon gesperrt**: Die Reaktivierung lässt ihn gesperrt. Aktiviere ihn bei Bedarf in der [Benutzerverwaltung](admin-user-management).
-- **Aufräumen nicht abgeschlossen**: Einige Einträge in Warteschlange oder Herausforderungen können bleiben. Der Spieler wird trotzdem abgelehnt und aus diesen Listen ausgeblendet.
+- **Aufräumen nicht abgeschlossen**: Einige Herausforderungen können bleiben. Der Spieler wird trotzdem abgelehnt und aus diesen Listen ausgeblendet.

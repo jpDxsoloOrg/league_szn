@@ -27,8 +27,6 @@ import { handler as getDashboard } from '../dashboard/getDashboard';
 import { handler as getStatistics } from '../statistics/getStatistics';
 import { handler as getMatchHistoryRivalries } from '../rivalries/getMatchHistoryRivalries';
 import { handler as getContenders } from '../contenders/getContenders';
-import { handler as getOnline } from '../matchmaking/getOnline';
-import { handler as getQueue } from '../matchmaking/getQueue';
 import { handler as getStable } from '../stables/getStable';
 import { handler as getFactionStats } from '../stables/getFactionStats';
 import { handler as getActivity } from '../activity/getActivity';
@@ -447,48 +445,6 @@ describe('getContenders', () => {
 
     expect(ids(body.contenders)).toEqual([roster.visibleId]);
     expect(body.contenders[0].rank).toBe(1);
-  });
-});
-
-describe('matchmaking boards', () => {
-  const inFuture = (): number => Math.floor(Date.now() / 1000) + 600;
-
-  beforeEach(async () => {
-    await linkUser(roster.placeholderId, 'hidden-sub');
-    const caller = await repos.roster.players.create({ name: 'C', currentWrestler: 'Kane' });
-    await linkUser(caller.playerId, 'caller-sub');
-  });
-
-  it('getOnline leaves out hidden players', async () => {
-    const { matchmaking } = repos.leagueOps;
-    const lastSeenAt = new Date().toISOString();
-    for (const playerId of [roster.visibleId, roster.placeholderId]) {
-      await matchmaking.putPresence({ playerId, lastSeenAt, ttl: inFuture() });
-    }
-
-    const { body } = await call<PlayerRow[]>(getOnline, authedEvent('caller-sub', 'Wrestler'));
-
-    expect(ids(body)).toEqual([roster.visibleId]);
-  });
-
-  const queueBoth = async (): Promise<void> => {
-    const { matchmaking } = repos.leagueOps;
-    const joinedAt = new Date().toISOString();
-    for (const playerId of [roster.visibleId, roster.placeholderId]) {
-      await matchmaking.putQueue({ playerId, joinedAt, ttl: inFuture() });
-    }
-  };
-
-  it('getQueue hides a queued hidden player from others', async () => {
-    await queueBoth();
-    const { body } = await call<PlayerRow[]>(getQueue, authedEvent('caller-sub', 'Wrestler'));
-    expect(ids(body)).toEqual([roster.visibleId]);
-  });
-
-  it('getQueue keeps the caller\'s own row while they are hidden', async () => {
-    await queueBoth();
-    const { body } = await call<PlayerRow[]>(getQueue, authedEvent('hidden-sub', 'Wrestler'));
-    expect(ids(body).sort()).toEqual([roster.visibleId, roster.placeholderId].sort());
   });
 });
 

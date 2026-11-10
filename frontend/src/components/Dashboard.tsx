@@ -5,7 +5,6 @@ import { dashboardApi } from '../services/api';
 import type { DashboardData } from '../types';
 import EmptyState from './ui/EmptyState';
 import Skeleton from './ui/Skeleton';
-import FindMatchWidget from './matchmaking/FindMatchWidget';
 import ChampionCarousel from './ChampionCarousel';
 import DashboardRivalries from './rivalries/DashboardRivalries';
 import HomeHero from './home/HomeHero';
@@ -74,8 +73,7 @@ export default function Dashboard() {
         <LatestResults results={data.recentResults} />
         <TopOfTable seasonId={data.seasonInfo?.seasonId} seasonName={data.seasonInfo?.name} />
       </div>
-      {/* Both gate themselves to logged-in wrestlers. */}
-      <FindMatchWidget />
+      {/* Gates itself to logged-in wrestlers. */}
       <DashboardRivalries />
       <SeasonSummary season={data.seasonInfo} stats={data.quickStats} />
     </div>

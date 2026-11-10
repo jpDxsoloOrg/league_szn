@@ -35,12 +35,6 @@ import { handler as adminUpdateSlot } from '../matches/adminUpdateSlot';
 import { handler as updateMatch } from '../matches/updateMatch';
 import { handler as recordResult } from '../matches/recordResult';
 import { hydrateMatchSlots } from '../matches/hydrateSlots';
-import { handler as heartbeat } from '../matchmaking/heartbeat';
-import { handler as joinQueue } from '../matchmaking/joinQueue';
-import { handler as createInvitation } from '../matchmaking/createInvitation';
-import { handler as acceptInvitation } from '../matchmaking/acceptInvitation';
-import { handler as getQueue } from '../matchmaking/getQueue';
-import { handler as getOnline } from '../matchmaking/getOnline';
 import { handler as createChallenge } from '../challenges/createChallenge';
 import { handler as respondToChallenge } from '../challenges/respondToChallenge';
 import { handler as createPromo } from '../promos/createPromo';
@@ -127,14 +121,6 @@ const expectDeactivatedRefusal = (result: { statusCode: number; body: Refusal })
   expect(result.body.code).toBe('PLAYER_DEACTIVATED');
 };
 
-async function appearOnline(playerId: string): Promise<void> {
-  await repos.leagueOps.matchmaking.putPresence({
-    playerId,
-    lastSeenAt: new Date().toISOString(),
-    ttl: Math.floor(Date.now() / 1000) + 600,
-  });
-}
-
 async function addEvent(): Promise<string> {
   const { eventId } = await repos.leagueOps.events.create({ name: 'Raw', eventType: 'weekly', date: FUTURE });
   await repos.leagueOps.events.update(eventId, { status: 'upcoming' });
@@ -179,20 +165,6 @@ async function addScheduledMatch(participants: string[], teams?: string[][]): Pr
     updatedAt: now,
   });
   return matchId;
-}
-
-async function addInvitation(fromPlayerId: string, toPlayerId: string): Promise<string> {
-  const invitationId = `inv-${Math.random()}`;
-  await repos.leagueOps.matchmaking.putInvitation({
-    invitationId,
-    fromPlayerId,
-    toPlayerId,
-    status: 'pending',
-    createdAt: new Date().toISOString(),
-    expiresAt: FUTURE,
-    ttl: Math.floor(Date.now() / 1000) + 600,
-  });
-  return invitationId;
 }
 
 async function addTournament(participants: string[]): Promise<string> {
@@ -243,34 +215,6 @@ describe.each<DisciplineState>(['blocked', 'deactivated'])('member actions by a 
     const matchId = await addSlotMatch([undefined, undefined]);
     const result = await call<Refusal>(claimSlot, member('caller-sub', { pathParameters: { matchId, slotId: 'slot-1' } }));
     expectCallerRefused(result, state);
-  });
-
-  it('refuses a heartbeat and writes no presence', async () => {
-    const result = await call<Refusal>(heartbeat, member('caller-sub'));
-    expectCallerRefused(result, state);
-    expect(await repos.leagueOps.matchmaking.getPresence(callerId)).toBeNull();
-  });
-
-  it('refuses joining the queue', async () => {
-    await appearOnline(callerId);
-    const result = await call<Refusal>(joinQueue, memberPost('caller-sub', {}));
-    expectCallerRefused(result, state);
-    expect(await repos.leagueOps.matchmaking.listQueue()).toEqual([]);
-  });
-
-  it('refuses sending an invitation', async () => {
-    await appearOnline(callerId);
-    await appearOnline(rivalId);
-    const result = await call<Refusal>(createInvitation, memberPost('caller-sub', { targetPlayerId: rivalId }));
-    expectCallerRefused(result, state);
-  });
-
-  it('refuses accepting an invitation and writes nothing', async () => {
-    const invitationId = await addInvitation(rivalId, callerId);
-    const result = await call<Refusal>(acceptInvitation, member('caller-sub', { pathParameters: { invitationId } }));
-    expectCallerRefused(result, state);
-    expect((await repos.leagueOps.matchmaking.getInvitation(invitationId))?.status).toBe('pending');
-    expect(await repos.competition.matches.list()).toEqual([]);
   });
 
   it('refuses issuing a challenge', async () => {
@@ -378,19 +322,6 @@ describe('member actions a blocked caller keeps', () => {
 
 describe.each<DisciplineState>(['blocked', 'deactivated'])('member actions with a %s other party', (state) => {
   beforeEach(() => setDiscipline(rivalId, state));
-
-  it('refuses inviting them, with the reason left out', async () => {
-    await appearOnline(callerId);
-    await appearOnline(rivalId);
-    expectUnavailable(await call<Refusal>(createInvitation, memberPost('caller-sub', { targetPlayerId: rivalId })));
-  });
-
-  it('refuses accepting their invitation and writes nothing', async () => {
-    const invitationId = await addInvitation(rivalId, callerId);
-    expectUnavailable(await call<Refusal>(acceptInvitation, member('caller-sub', { pathParameters: { invitationId } })));
-    expect((await repos.leagueOps.matchmaking.getInvitation(invitationId))?.status).toBe('pending');
-    expect(await repos.competition.matches.list()).toEqual([]);
-  });
 
   it('refuses challenging them', async () => {
     expectUnavailable(await call<Refusal>(
@@ -951,34 +882,6 @@ describe('reads', () => {
     expect(list.body.noResponse.map((row) => row.playerId)).not.toContain(rivalId);
     expect(summary.body).toMatchObject({ available: 1, total: 1 });
     expect(await repos.leagueOps.events.listCheckIns(eventId)).toHaveLength(2);
-  });
-
-  it.each<DisciplineState>(['blocked', 'deactivated'])('getQueue hides a %s player from others', async (state) => {
-    await repos.leagueOps.matchmaking.putQueue({
-      playerId: rivalId,
-      joinedAt: new Date().toISOString(),
-      ttl: Math.floor(Date.now() / 1000) + 600,
-    });
-    await setDiscipline(rivalId, state);
-
-    const others = await call<Array<{ playerId: string }>>(getQueue, authedEvent('caller-sub', 'Wrestler'));
-    expect(others.body).toEqual([]);
-
-    const own = await call<Array<{ playerId: string }>>(getQueue, authedEvent('rival-sub', 'Wrestler'));
-    expect(own.body.map((row) => row.playerId)).toEqual([rivalId]);
-  });
-
-  it.each<DisciplineState>(['blocked', 'deactivated'])('getOnline hides a %s player from others', async (state) => {
-    await appearOnline(rivalId);
-    await setDiscipline(rivalId, state);
-    const { body } = await call<Array<{ playerId: string }>>(getOnline, authedEvent('caller-sub', 'Wrestler'));
-    expect(body).toEqual([]);
-  });
-
-  it('getOnline still lists a clear player', async () => {
-    await appearOnline(rivalId);
-    const { body } = await call<Array<{ playerId: string }>>(getOnline, authedEvent('caller-sub', 'Wrestler'));
-    expect(body.map((row) => row.playerId)).toEqual([rivalId]);
   });
 
   it('masks a deactivated player\'s psnId on hydrated slots', async () => {

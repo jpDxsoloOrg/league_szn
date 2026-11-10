@@ -23,7 +23,7 @@ If the record changed while you had it open, nothing is written. The dialog relo
 
 Admins and Moderators can't receive strikes. Remove the role in [User Management](admin-user-management) first.
 
-A second or third strike also clears the player's queue spot, online presence, pending invitations, and pending or countered challenges. **Matches they're booked in stay as they are.**
+A second or third strike also cancels the player's pending or countered challenges. **Matches they're booked in stay as they are.**
 
 ## After a Deactivation
 
@@ -54,7 +54,7 @@ Removing a strike doesn't bring back anything it cleared. You can't remove a str
 2. Tick **Restore earlier strikes** only if the last strike was a mistake. Then only that strike is cleared, and the others keep their own dates. Leave it unticked to clear all active strikes
 3. Click **Reactivate**
 
-The form shows what the player still holds, because staff may have moved things in the meantime. Their standings, record, wrestler and check-ins return. Their queue spot, invitations and cancelled challenges don't. The player logs in again to continue.
+The form shows what the player still holds, because staff may have moved things in the meantime. Their standings, record, wrestler and check-ins return. Their cancelled challenges don't. The player logs in again to continue.
 
 ## When a Login Doesn't Match
 
@@ -64,4 +64,4 @@ The record decides access. The login in Cognito is a second layer, and changing 
 - **The login doesn't match the record**: the dialog warns whenever a deactivated player has an enabled login, or a player who isn't deactivated has a disabled one. Use the same page to fix it. A login can always be disabled, and can be enabled once the player is reactivated.
 - **No linked login**: the player has no account to change, so only the record applies.
 - **Login was already disabled**: reactivating leaves it disabled. Enable it in [User Management](admin-user-management) if you want to.
-- **Cleanup did not finish**: some queue or challenge entries may remain. The player is still refused and hidden from those listings.
+- **Cleanup did not finish**: some challenges may remain. The player is still refused and hidden from those listings.

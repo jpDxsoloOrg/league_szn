@@ -531,7 +531,7 @@ export interface Video {
   updatedAt: string;
 }
 
-export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'transfer_reviewed' | 'match_invitation' | 'match_invitation_declined' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change' | 'strike_issued' | 'strike_removed' | 'account_reactivated';
+export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'transfer_reviewed' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change' | 'strike_issued' | 'strike_removed' | 'account_reactivated';
 
 export interface AppNotification {
   notificationId: string;
@@ -539,7 +539,7 @@ export interface AppNotification {
   type: NotificationType;
   message: string;
   sourceId: string;
-  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'match_invitation' | 'match_invitation_declined' | 'rivalry' | 'storyline_request' | 'discipline';
+  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'rivalry' | 'storyline_request' | 'discipline';
   isRead: boolean;
   createdAt: string;
 }
@@ -640,7 +640,6 @@ export interface StorylineRequestWithDetails extends StorylineRequest {
   targetPlayerNames: string[];
 }
 
-export * from './matchmaking';
 export * from './location';
 export * from './factionMessage';
 export * from './rivalry';

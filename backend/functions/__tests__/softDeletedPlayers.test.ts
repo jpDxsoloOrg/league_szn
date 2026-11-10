@@ -37,7 +37,6 @@ import { handler as getBookingSummary } from '../players/getBookingSummary';
 import { findWrestlerHolders } from '../players/wrestlerAssignment';
 import { handler as getStandings } from '../standings/getStandings';
 import { handler as getStatistics } from '../statistics/getStatistics';
-import { handler as getQueue } from '../matchmaking/getQueue';
 import { handler as deleteDivision } from '../divisions/deleteDivision';
 import { handler as getCheckIns } from '../events/getCheckIns';
 import { handler as getEvent } from '../events/getEvent';
@@ -191,19 +190,6 @@ describe('where a deleted player reads as gone', () => {
     expect(await repos.roster.players.findByUserId('gone-sub')).toBeNull();
     const { statusCode } = await call(getMyProfile, authedEvent('gone-sub', 'Wrestler'));
     expect(statusCode).toBe(404);
-  });
-
-  it('matchmaking, including a queue row left behind', async () => {
-    const ttl = Math.floor(Date.now() / 1000) + 600;
-    const joinedAt = new Date().toISOString();
-    await repos.roster.players.update(keptId, { userId: 'kept-sub' });
-    await repos.leagueOps.matchmaking.putQueue({ playerId: goneId, joinedAt, ttl });
-    await repos.leagueOps.matchmaking.putQueue({ playerId: keptId, joinedAt, ttl });
-
-    const { body } = await call<PlayerRow[]>(getQueue, authedEvent('kept-sub', 'Wrestler'));
-
-    expect(ids(body)).toEqual([keptId]);
-    expect((await call(getQueue, authedEvent('gone-sub', 'Wrestler'))).statusCode).toBe(400);
   });
 
   it('all-time standings', async () => {

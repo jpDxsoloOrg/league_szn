@@ -270,7 +270,6 @@
     "admin": "Admin",
     "contenders": "Contenders",
     "matchSearch": "Match Search",
-    "findMatch": "Find a Match",
     "seasonAwards": "Season Awards",
     "factions": "Factions",
     "tagTeams": "Tag Teams",
@@ -2505,78 +2504,6 @@
     "typeStoryline": "Storyline",
     "typeDiscipline": "Strikes"
   },
-  "findMatch": {
-    "title": "Find a Match",
-    "subtitle": "Get matched with another wrestler in real time",
-    "appearOnline": {
-      "title": "Appear online",
-      "description": "Other wrestlers can see you and invite you to matches.",
-      "on": "Online",
-      "off": "Offline",
-      "appearFirstHint": "Appear online to use matchmaking."
-    },
-    "queue": {
-      "title": "Looking for a match",
-      "join": "Find me a match",
-      "leave": "Stop searching",
-      "searching": "Searching for an opponent…",
-      "queued": "You're in the queue.",
-      "you": "You",
-      "matched": "You've been matched!",
-      "joinError": "Couldn't join the queue. Try again.",
-      "championshipNotice": "Championship matches are not supported here. Use the Challenges or admin scheduling flow."
-    },
-    "preferences": {
-      "matchFormat": "Match format",
-      "stipulation": "Stipulation",
-      "any": "Any"
-    },
-    "online": {
-      "title": "Online players",
-      "empty": "No other wrestlers are online right now.",
-      "invite": "Invite to a match",
-      "alreadyInvited": "Invitation pending",
-      "inQueue": "Looking for a match"
-    },
-    "invitations": {
-      "title": "Pending invitations",
-      "incoming": "Incoming",
-      "outgoing": "Outgoing",
-      "accept": "Accept",
-      "decline": "Decline",
-      "expiresIn": "Expires in {{seconds}}s",
-      "expired": "Expired",
-      "noneIncoming": "No incoming invitations.",
-      "noneOutgoing": "No outgoing invitations."
-    },
-    "widget": {
-      "title": "Find a Match",
-      "open": "Open Find a Match",
-      "pendingCount": "{{count}} pending invitation",
-      "pendingCount_plural": "{{count}} pending invitations",
-      "incomingHeader": "Incoming challenges",
-      "lookingHeader": "Looking for a match",
-      "lookingCount": "{{count}} looking",
-      "challenge": "Challenge",
-      "challenging": "Sending…",
-      "challenged": "Invited",
-      "joinedAgo": "joined {{ago}}",
-      "joinQueue": "Join the queue",
-      "joinQueueSubtitle": "Get matched with the next available wrestler",
-      "leaveQueue": "Leave queue",
-      "inQueueLabel": "You're in the queue",
-      "empty": "No wrestlers in the queue right now",
-      "emptyHint": "Be the first — join the queue",
-      "you": "You",
-      "loadFailed": "Couldn't load the queue. Retrying…",
-      "ago": {
-        "justNow": "just now",
-        "minutes": "{{count}}m ago",
-        "hours": "{{count}}h ago"
-      }
-    },
-    "needsWrestler": "You need a wrestler profile to use matchmaking."
-  },
   "overalls": {
     "admin": {
       "title": "Wrestler Overalls",
@@ -2658,7 +2585,7 @@
     "setup": {
       "title": "Enter your wrestler name",
       "hiddenTitle": "You're hidden from the site",
-      "hiddenNotice": "You're signed in, but other players can't see you on the roster, standings or matchmaking until you enter a wrestler name.",
+      "hiddenNotice": "You're signed in, but other players can't see you on the roster or standings until you enter a wrestler name.",
       "wrestlerLabel": "Your wrestler name",
       "wrestlerHint": "Type any name. It doesn't have to come from a list, and you'll appear on the site as soon as you save.",
       "wrestlerHintRoster": "Choose a wrestler. You'll appear on the site as soon as you save.",
@@ -2677,16 +2604,6 @@
       "welcomeNextTitle": "One step left: enter your wrestler name",
       "welcomeNextBody": "You'll be asked for it when you sign in. You stay hidden from the site until you've entered one.",
       "welcomeContinue": "Continue"
-    },
-    "matchmaking": {
-      "needsNameTitle": "Enter a wrestler name to find matches",
-      "needsNameBody": "Matchmaking opens up once you have a wrestler name. You're hidden from other players until then.",
-      "needsNameAction": "Enter wrestler name",
-      "actionFailed": "That didn't work. Please try again.",
-      "goOnline": "Go online",
-      "goOffline": "Go offline",
-      "queueHeading": "In the queue",
-      "queueEmpty": "Nobody is in the queue right now."
     },
     "profile": {
       "edit": "Edit profile",
@@ -3592,7 +3509,7 @@
       "accountSyncFailed": "The player's record was updated, but their login could not be changed. Fix it in Manage Users.",
       "accountMismatch": "This player's login doesn't match their record: the record decides access, so fix the login in Manage Users.",
       "loginAlreadyDisabled": "The login was already disabled before the deactivation, so it was left disabled. Enable it in Manage Users if that is wanted.",
-      "softHoldsFailed": "Queue or challenge cleanup did not finish. The player is still refused and hidden from listings, but some of it may need clearing by hand.",
+      "softHoldsFailed": "Challenge cleanup did not finish. The player is still refused and hidden from listings, but some of it may need clearing by hand.",
       "notLinked": "This player has no linked login, so there is no account to disable or enable.",
       "holdingsTitle": "Still held by this player",
       "holdingsNotChanged": "None of these are changed automatically. Handle each one with the tools linked here.",

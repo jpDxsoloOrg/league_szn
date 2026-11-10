@@ -6,7 +6,7 @@ Search by name, wrestler or PSN ID, and use the filter to show one division or p
 
 ## Hidden Players
 
-A player with no wrestler name is **hidden**. They can sign in and use their account, but they don't appear on the roster, standings or matchmaking, and you can't pick them when you book a match or build a tournament.
+A player with no wrestler name is **hidden**. They can sign in and use their account, but they don't appear on the roster or standings, and you can't pick them when you book a match or build a tournament.
 
 Hidden players stay out of this table too. When there are any, a **Show hidden** checkbox appears with the count. Tick it to list them; they show a **Hidden** badge in the Wrestler column.
 

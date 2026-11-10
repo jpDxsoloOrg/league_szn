@@ -61,10 +61,6 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../Dashboard.css', () => ({}));
 
-vi.mock('../matchmaking/FindMatchWidget', () => ({
-  default: () => null,
-}));
-
 vi.mock('../rivalries/DashboardRivalries', () => ({
   default: () => null,
 }));

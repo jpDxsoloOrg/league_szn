@@ -22,7 +22,7 @@ Standings and the Matches tab show 50 rows at a time, and past events on the Cal
 You're hidden until you enter a wrestler name. Enter one from the prompt, the Me page or [My Profile](profile). You appear as soon as you save.
 
 **What can't I do while I'm hidden?**  
-You can't cut promos, issue or counter call-outs, find a match or claim a spot on a card. You can still sign in, edit your profile and answer a call-out with Accept or Decline.
+You can't cut promos, issue or counter call-outs, or claim a spot on a card. You can still sign in, edit your profile and answer a call-out with Accept or Decline.
 
 **Why is someone missing from the standings?**  
 Players with no wrestler name are hidden from public pages. Staff can still find them in Manage Players with **Show hidden**.

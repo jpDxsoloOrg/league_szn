@@ -6,7 +6,7 @@ Suche nach Name, Wrestler oder PSN-ID, und nutze den Filter, um eine Division od
 
 ## Ausgeblendete Spieler
 
-Ein Spieler ohne Wrestler-Namen ist **ausgeblendet**. Er kann sich anmelden und sein Konto nutzen, erscheint aber nicht im Roster, in der Tabelle oder im Matchmaking, und du kannst ihn weder für ein Match noch für ein Turnier auswählen.
+Ein Spieler ohne Wrestler-Namen ist **ausgeblendet**. Er kann sich anmelden und sein Konto nutzen, erscheint aber nicht im Roster oder in der Tabelle, und du kannst ihn weder für ein Match noch für ein Turnier auswählen.
 
 Ausgeblendete Spieler fehlen auch in dieser Tabelle. Gibt es welche, erscheint das Kontrollkästchen **Ausgeblendete anzeigen** mit der Anzahl. Setzt du das Häkchen, werden sie aufgelistet; in der Spalte Wrestler tragen sie das Abzeichen **Ausgeblendet**.
 

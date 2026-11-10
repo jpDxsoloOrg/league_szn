@@ -163,7 +163,6 @@ export const NAV_SECTIONS: NavSection[] = [
     path: ME_HUB_PATH,
     tabs: [
       { path: '/profile', labelKey: 'nav.profile', icon: User, wrestlerOnly: true },
-      { path: '/find-match', labelKey: 'nav.findMatch', icon: Target, wrestlerOnly: true },
       { path: '/challenges', labelKey: 'nav.tabs.callOuts', icon: Megaphone, feature: 'challenges', wrestlerOnly: true },
       { path: '/my-faction', labelKey: 'nav.myFaction', icon: Flag, feature: 'stables', wrestlerOnly: true },
       { path: '/my-tag-team', labelKey: 'nav.myTagTeam', icon: Link2, feature: 'stables', wrestlerOnly: true },

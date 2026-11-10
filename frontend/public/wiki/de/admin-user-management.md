@@ -8,7 +8,7 @@ Auf der Seite **Benutzerverwaltung** verwaltet ein voller Admin Konten und Rolle
 |-------|-----------------|
 | **Admin** | Alles, auch die vier reinen Admin-Seiten: Benutzerverwaltung, Funktionsverwaltung, Heat-Einstellungen und Gefahrenzone |
 | **Moderator** | Alle anderen Admin-Seiten, etwa Spieler, Matches, Events, Meisterschaften, Saisons, Promos und Rivalitäten |
-| **Wrestler** | Die persönlichen Seiten unter **Ich**: Profil, Match suchen, Call-outs, Meine Videos sowie die Seiten für Faktion und Tag Team |
+| **Wrestler** | Die persönlichen Seiten unter **Ich**: Profil, Call-outs, Meine Videos sowie die Seiten für Faktion und Tag Team |
 
 Auch diese Aufgaben kann ein Moderator nicht übernehmen, sie sind vollen Admins vorbehalten:
 

@@ -15,8 +15,6 @@ import {
   resetRepositoriesForTesting,
   type Repositories,
 } from '../../lib/repositories';
-import { handler as joinQueue } from '../matchmaking/joinQueue';
-import { handler as createInvitation } from '../matchmaking/createInvitation';
 import { handler as createChallenge } from '../challenges/createChallenge';
 import { handler as respondToChallenge } from '../challenges/respondToChallenge';
 import { handler as createPromo } from '../promos/createPromo';
@@ -35,14 +33,6 @@ let roster: RosterSeed;
 const post = (sub: string, body: Record<string, unknown>) =>
   authedEvent(sub, 'Wrestler', { httpMethod: 'POST', body: JSON.stringify(body) });
 
-async function appearOnline(playerId: string): Promise<void> {
-  await repos.leagueOps.matchmaking.putPresence({
-    playerId,
-    lastSeenAt: new Date().toISOString(),
-    ttl: Math.floor(Date.now() / 1000) + 600,
-  });
-}
-
 beforeEach(async () => {
   repos = buildInMemoryRepositories();
   setRepositoriesForTesting(repos);
@@ -52,35 +42,6 @@ beforeEach(async () => {
 });
 
 afterEach(() => resetRepositoriesForTesting());
-
-describe('joinQueue', () => {
-  it('blocks a hidden player with a clear message', async () => {
-    await appearOnline(roster.placeholderId);
-    const { statusCode, body } = await call<Message>(joinQueue, post('hidden-sub', {}));
-    expect(statusCode).toBe(400);
-    expect(body.message).toBe('Set your wrestler name first');
-    expect(await repos.leagueOps.matchmaking.listQueue()).toEqual([]);
-  });
-
-  it('lets a visible player join', async () => {
-    await appearOnline(roster.visibleId);
-    const { statusCode } = await call(joinQueue, post('visible-sub', {}));
-    expect(statusCode).toBe(200);
-  });
-});
-
-describe('createInvitation', () => {
-  it('blocks inviting a hidden player', async () => {
-    await appearOnline(roster.visibleId);
-    await appearOnline(roster.placeholderId);
-    const { statusCode, body } = await call<Message>(
-      createInvitation,
-      post('visible-sub', { targetPlayerId: roster.placeholderId }),
-    );
-    expect(statusCode).toBe(400);
-    expect(body.message).toBe(TARGET_MESSAGE);
-  });
-});
 
 describe('createChallenge', () => {
   it.each(['placeholderId', 'blankId'] as const)('blocks challenging %s', async (key) => {

@@ -7,6 +7,7 @@ import { notificationsApi } from '../services/api/notifications.api';
 import { waitForPageRequests } from '../utils/deferShellRequest';
 import type { AppNotification } from '../types';
 import './NotificationBell.css';
+import { usePollWhileVisible } from '../hooks/usePollWhileVisible';
 
 const POLL_INTERVAL_MS = 60_000;
 const NOTIFICATIONS_LIMIT = 20;
@@ -34,10 +35,7 @@ function sourceTypeLabel(sourceType: AppNotification['sourceType']): string {
     case 'promo': return 'notifications.typePromo';
     case 'challenge': return 'notifications.typeChallenge';
     case 'rivalry': return 'notifications.typeRivalry';
-    case 'match':
-    case 'match_invitation':
-    case 'match_invitation_declined':
-      return 'notifications.typeMatch';
+    case 'match': return 'notifications.typeMatch';
     case 'storyline_request': return 'notifications.typeStoryline';
     case 'announcement': return 'notifications.typeAnnouncement';
     case 'stable': return 'notifications.typeStable';
@@ -63,8 +61,6 @@ function getNavigationPath(notification: AppNotification, playerId: string | nul
     }
     case 'stable': return '/my-faction';
     case 'tag_team': return '/my-tag-team';
-    case 'match_invitation': return '/';
-    case 'match_invitation_declined': return '/';
     case 'announcement': return '/';
     case 'transfer': return transfersEnabled ? '/profile' : '/';
     case 'storyline_request': return '/profile';
@@ -85,7 +81,6 @@ export default function NotificationBell() {
   const [isLoading, setIsLoading] = useState(false);
 
   const bellRef = useRef<HTMLDivElement>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const shouldShow = isAuthenticated && features.notifications;
 
@@ -121,18 +116,14 @@ export default function NotificationBell() {
     };
     void fetchFirstCount();
 
-    intervalRef.current = setInterval(() => {
-      fetchUnreadCount();
-    }, POLL_INTERVAL_MS);
-
     return () => {
       controller.abort();
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
     };
   }, [shouldShow, fetchUnreadCount]);
+
+  usePollWhileVisible(() => {
+    void fetchUnreadCount();
+  }, POLL_INTERVAL_MS, shouldShow);
 
   // Fetch notifications when dropdown opens
   useEffect(() => {

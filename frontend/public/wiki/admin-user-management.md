@@ -8,7 +8,7 @@ The **User Management** page is where a full Admin manages accounts and roles. M
 |------|---------------|
 | **Admin** | Everything, including the four Admin-only pages: User Management, Feature Management, Heat Tunables and the Danger Zone |
 | **Moderator** | Every other Admin page, such as players, matches, events, championships, seasons, promos and rivalries |
-| **Wrestler** | The personal pages under **Me**: profile, Find a Match, Call-outs, My Videos, and faction and tag team pages |
+| **Wrestler** | The personal pages under **Me**: profile, Call-outs, My Videos, and faction and tag team pages |
 
 A Moderator also can't do these jobs, which are for full Admins only:
 

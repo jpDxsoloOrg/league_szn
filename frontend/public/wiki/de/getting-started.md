@@ -12,7 +12,7 @@ Die Seite hat fünf Bereiche. Am Computer stehen sie in der Seitenleiste links, 
 | **Events** | [Kalender und Matches](events), [Turniere](tournaments), Highlights |
 | **Ranglisten** | [Tabelle](standings), [Titel](championships), [Herausforderer](contenders), [Statistiken](statistics), Auszeichnungen |
 | **Storylines** | [Rivalitäten](rivalries), [Promos](promos), Faktionen, Tag Teams |
-| **Ich** | [Mein Profil](profile), Match suchen, [Call-outs](challenges), Meine Faktion, Mein Tag Team, Meine Videos, Hilfe, Liga-Regeln |
+| **Ich** | [Mein Profil](profile), [Call-outs](challenges), Meine Faktion, Mein Tag Team, Meine Videos, Hilfe, Liga-Regeln |
 
 Manche Seiten erscheinen nur, wenn die Liga die Funktion eingeschaltet hat. Die persönlichen Seiten unter Ich erscheinen erst, wenn du angemeldet bist. Bis dahin steht dort **Anmelden**.
 
@@ -32,7 +32,7 @@ Das Laufband am unteren Rand ist der **Liga-Ticker**: kommende Shows, Schlagzeil
 
 ## Dein Wrestler-Name
 
-Solange du keinen Wrestler-Namen eingegeben hast, bist du nicht sichtbar. Du kannst dich anmelden und dein Konto nutzen, aber andere Spieler sehen dich weder im Roster noch in der Tabelle oder im Matchmaking. Außerdem kannst du keine Promos schneiden, keine Call-outs aussprechen, kein Match suchen und keinen Platz auf einer Card belegen.
+Solange du keinen Wrestler-Namen eingegeben hast, bist du nicht sichtbar. Du kannst dich anmelden und dein Konto nutzen, aber andere Spieler sehen dich weder im Roster noch in der Tabelle. Außerdem kannst du keine Promos schneiden, keine Call-outs aussprechen und keinen Platz auf einer Card belegen.
 
 Die Aufforderung, einen Namen einzugeben, öffnet sich nach der Anmeldung. **Später erinnern** verschiebt sie auf deinen nächsten Besuch. Du kannst den Namen auch auf der Ich-Seite oder unter [Mein Profil](profile) eingeben. Sobald du speicherst, erscheinst du auf der Seite.
 

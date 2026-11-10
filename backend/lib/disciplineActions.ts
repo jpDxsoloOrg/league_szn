@@ -6,7 +6,6 @@ import {
   CognitoIdentityProviderClient,
 } from '@aws-sdk/client-cognito-identity-provider';
 import type { APIGatewayProxyResult } from 'aws-lambda';
-import { expirePendingInvitations } from '../functions/matchmaking/leavePresence';
 import type { AuthContext } from './auth';
 import type { PlayerDisciplineSummary, StrikeOutcome } from './discipline';
 import { createNotification, type NotificationType } from './notifications';
@@ -249,22 +248,17 @@ async function cancelOpenChallenges(playerId: string): Promise<void> {
 }
 
 /**
- * Clears queue, presence, pending invitations and pending or countered
- * challenges. Check-ins, card bookings and accepted challenges stay (decision 7).
- * Every step runs even if another fails. Resolves false if any did; never throws.
+ * Cancels pending or countered challenges. Check-ins, card bookings and
+ * accepted challenges stay (decision 7). Resolves false if it failed; never throws.
  */
 export async function clearSoftHolds(playerId: string): Promise<boolean> {
-  const { leagueOps: { matchmaking } } = getRepositories();
-  const results = await Promise.allSettled([
-    matchmaking.deletePresence(playerId),
-    matchmaking.deleteQueue(playerId),
-    expirePendingInvitations('from', playerId),
-    expirePendingInvitations('to', playerId),
-    cancelOpenChallenges(playerId),
-  ]);
-  const failures = results.filter((result) => result.status === 'rejected');
-  failures.forEach((failure) => console.error('Failed to clear a soft hold:', failure.reason));
-  return failures.length === 0;
+  try {
+    await cancelOpenChallenges(playerId);
+    return true;
+  } catch (err) {
+    console.error('Failed to clear a soft hold:', err);
+    return false;
+  }
 }
 
 /** Everyone on the match: explicit participants plus anyone holding a slot. */

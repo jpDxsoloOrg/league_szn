@@ -22,7 +22,7 @@ Die Tabelle und der Tab Matches zeigen jeweils 50 Zeilen, vergangene Events im K
 Du bist nicht sichtbar, bis du einen Wrestler-Namen eingibst. Das geht über die Aufforderung, auf der Ich-Seite oder unter [Mein Profil](profile). Sobald du speicherst, erscheinst du.
 
 **Was kann ich nicht tun, solange ich nicht sichtbar bin?**  
-Du kannst keine Promos schneiden, keine Call-outs aussprechen oder kontern, kein Match suchen und keinen Platz auf einer Card belegen. Du kannst dich weiterhin anmelden, dein Profil bearbeiten und einen Call-out mit Annehmen oder Ablehnen beantworten.
+Du kannst keine Promos schneiden, keine Call-outs aussprechen oder kontern und keinen Platz auf einer Card belegen. Du kannst dich weiterhin anmelden, dein Profil bearbeiten und einen Call-out mit Annehmen oder Ablehnen beantworten.
 
 **Warum fehlt jemand in der Tabelle?**  
 Spieler ohne Wrestler-Namen sind auf öffentlichen Seiten ausgeblendet. Das Liga-Team findet sie unter Spieler verwalten mit **Ausgeblendete anzeigen**.

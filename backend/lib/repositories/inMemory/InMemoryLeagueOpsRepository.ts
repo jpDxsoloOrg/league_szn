@@ -17,10 +17,6 @@ import type {
   LocationPatch,
   LocationBulkImportResult,
   LocationsMethods,
-  MatchmakingMethods,
-  PresenceRecord,
-  QueueRecord,
-  InvitationRecord,
 } from '../LeagueOpsRepository';
 import type {
   LeagueEvent,
@@ -252,75 +248,6 @@ class LocationsSubRepo
   }
 }
 
-// ─── Matchmaking ───────────────────────────────────────────────────
-
-function createMatchmakingSubRepo(): MatchmakingMethods {
-  const presenceStore = new Map<string, PresenceRecord>();
-  const queueStore = new Map<string, QueueRecord>();
-  const invitationStore = new Map<string, InvitationRecord>();
-
-  return {
-    // Presence
-    async putPresence(record: PresenceRecord): Promise<void> {
-      presenceStore.set(record.playerId, record);
-    },
-    async getPresence(playerId: string): Promise<PresenceRecord | null> {
-      return presenceStore.get(playerId) ?? null;
-    },
-    async listPresence(): Promise<PresenceRecord[]> {
-      return Array.from(presenceStore.values());
-    },
-    async deletePresence(playerId: string): Promise<void> {
-      presenceStore.delete(playerId);
-    },
-
-    // Queue
-    async putQueue(record: QueueRecord): Promise<void> {
-      queueStore.set(record.playerId, record);
-    },
-    async listQueue(): Promise<QueueRecord[]> {
-      return Array.from(queueStore.values());
-    },
-    async deleteQueue(playerId: string): Promise<void> {
-      queueStore.delete(playerId);
-    },
-
-    // Invitations
-    async putInvitation(record: InvitationRecord): Promise<void> {
-      invitationStore.set(record.invitationId, record);
-    },
-    async getInvitation(invitationId: string): Promise<InvitationRecord | null> {
-      return invitationStore.get(invitationId) ?? null;
-    },
-    async listInvitationsByToPlayer(toPlayerId: string): Promise<InvitationRecord[]> {
-      return Array.from(invitationStore.values()).filter(
-        (inv) => inv.toPlayerId === toPlayerId,
-      );
-    },
-    async listInvitationsByFromPlayer(fromPlayerId: string): Promise<InvitationRecord[]> {
-      return Array.from(invitationStore.values()).filter(
-        (inv) => inv.fromPlayerId === fromPlayerId,
-      );
-    },
-    async updateInvitation(
-      invitationId: string,
-      patch: Record<string, unknown>,
-      conditionStatus?: string,
-    ): Promise<InvitationRecord> {
-      const existing = invitationStore.get(invitationId);
-      if (!existing) throw new Error('Invitation not found');
-      if (conditionStatus && existing.status !== conditionStatus) {
-        const err = new Error('Condition not met');
-        (err as unknown as Record<string, string>).name = 'ConditionalCheckFailedException';
-        throw err;
-      }
-      const updated: InvitationRecord = { ...existing, ...patch } as InvitationRecord;
-      invitationStore.set(invitationId, updated);
-      return updated;
-    },
-  };
-}
-
 // ─── Aggregate ─────────────────────────────────────────────────────
 
 export class InMemoryLeagueOpsRepository implements LeagueOpsRepository {
@@ -329,7 +256,6 @@ export class InMemoryLeagueOpsRepository implements LeagueOpsRepository {
   readonly companies: InMemoryCrudRepository<Company, CompanyCreateInput, CompanyPatch>;
   readonly divisions: InMemoryCrudRepository<Division, DivisionCreateInput, DivisionPatch>;
   readonly locations: LocationsMethods;
-  readonly matchmaking: MatchmakingMethods;
 
   constructor() {
     this.events = createEventsSubRepo();
@@ -363,7 +289,5 @@ export class InMemoryLeagueOpsRepository implements LeagueOpsRepository {
     });
 
     this.locations = new LocationsSubRepo();
-
-    this.matchmaking = createMatchmakingSubRepo();
   }
 }

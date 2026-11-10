@@ -179,7 +179,7 @@ describe('SectionNav', () => {
 describe('MeHub', () => {
   it('lists personal pages for a wrestler, with no Admin row', () => {
     renderAt('/me', <MeHub />);
-    expect(linkNames()).toEqual(expect.arrayContaining(['nav.profile', 'nav.findMatch', 'nav.tabs.callOuts', 'nav.myVideos', 'nav.help', 'nav.leagueRules']));
+    expect(linkNames()).toEqual(expect.arrayContaining(['nav.profile', 'nav.tabs.callOuts', 'nav.myVideos', 'nav.help', 'nav.leagueRules']));
     expect(linkNames()).not.toContain('nav.admin');
   });
 

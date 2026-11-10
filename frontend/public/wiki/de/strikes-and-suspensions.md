@@ -20,13 +20,12 @@ Solange du für Anmeldungen gesperrt bist, kannst du nicht:
 
 - Dich für eine Show als **Verfügbar** oder **Vielleicht** eintragen
 - Einen Slot in einem Match beanspruchen
-- Online gehen, der Warteschlange beitreten oder Match-Einladungen senden und annehmen
 - Eine Herausforderung aussprechen, annehmen oder kontern
 - Eine Call-out-Promo posten
 
-Du kannst dich weiterhin als **Nicht verfügbar** eintragen, einen Slot freigeben, die Warteschlange verlassen, Einladungen und Herausforderungen ablehnen und den Rest der Seite nutzen. Das Team kann dich weiterhin buchen, und Matches, für die du schon gebucht bist, bleiben auf der Card. Offene Herausforderungen und Einladungen werden beim Start der Sperre abgebrochen.
+Du kannst dich weiterhin als **Nicht verfügbar** eintragen, einen Slot freigeben, Herausforderungen ablehnen und den Rest der Seite nutzen. Das Team kann dich weiterhin buchen, und Matches, für die du schon gebucht bist, bleiben auf der Card. Offene Herausforderungen werden beim Start der Sperre abgebrochen.
 
-Du bleibst in der Tabelle und im Roster. Wenn die Sperre endet, gehst du selbst wieder online, wenn du möchtest.
+Du bleibst in der Tabelle und im Roster.
 
 ## Wenn dein Konto deaktiviert ist
 

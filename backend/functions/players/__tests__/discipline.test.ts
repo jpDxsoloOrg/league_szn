@@ -253,8 +253,12 @@ describe('issueStrike', () => {
       order.push(command.type);
       return command.type === 'groups' ? { Groups: [] } : { Enabled: true, UserAttributes: [] };
     });
-    vi.spyOn(repos.leagueOps.matchmaking, 'deletePresence').mockImplementation(async () => {
-      order.push('clearSoftHolds');
+    const { challenges } = repos.user;
+    const realListByStatus = challenges.listByStatus.bind(challenges);
+    // Only clearSoftHolds reads pending challenges; holdings read accepted ones.
+    vi.spyOn(challenges, 'listByStatus').mockImplementation(async (status) => {
+      if (status === 'pending') order.push('clearSoftHolds');
+      return realListByStatus(status);
     });
 
     await strike('deactivated');
@@ -293,7 +297,7 @@ describe('issueStrike', () => {
   it('reports softHoldsCleared false when cleanup fails, with the strike still written', async () => {
     seed({ strikes: [strikeRow(0)], disciplineVersion: 1 });
     setDay(3);
-    vi.spyOn(repos.leagueOps.matchmaking, 'deleteQueue').mockRejectedValueOnce(new Error('throttled'));
+    vi.spyOn(repos.user.challenges, 'listByStatus').mockRejectedValue(new Error('throttled'));
 
     const { statusCode, body } = await strike('signup-blocked');
 

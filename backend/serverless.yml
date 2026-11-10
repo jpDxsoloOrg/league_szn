@@ -956,61 +956,6 @@ functions:
           method: post
           cors: *corsConfig
 
-  # Matchmaking (consolidated: heartbeat, presence, queue join/leave/list, online, invite, invitations list/accept/decline)
-  matchmaking:
-    handler: functions/matchmaking/handler.handler
-    events:
-      - http:
-          path: matchmaking/heartbeat
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: matchmaking/presence
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: matchmaking/queue/join
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: matchmaking/queue/leave
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: matchmaking/queue
-          method: get
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: matchmaking/online
-          method: get
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: matchmaking/invite
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: matchmaking/invitations
-          method: get
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: matchmaking/invitations/{invitationId}/accept
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: matchmaking/invitations/{invitationId}/decline
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-
   # Promos (Phase 2 consolidated: getPromos, getPromo, create, react, adminUpdate, delete, bulkDelete)
   promos:
     handler: functions/promos/handler.handler

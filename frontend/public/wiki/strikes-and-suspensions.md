@@ -20,13 +20,12 @@ While you're blocked from signing up, you can't:
 
 - Check in to a show as **Available** or **Tentative**
 - Claim a slot on a match
-- Go online, join the queue or send and accept match invitations
 - Issue, accept or counter a challenge
 - Post a call-out promo
 
-You can still set yourself as **Unavailable**, release a slot, leave the queue, decline an invitation or challenge, and use the rest of the site. Staff can still book you, and matches you're already booked in stay on the card. Pending challenges and invitations are cancelled when the block starts.
+You can still set yourself as **Unavailable**, release a slot, decline a challenge, and use the rest of the site. Staff can still book you, and matches you're already booked in stay on the card. Pending challenges are cancelled when the block starts.
 
-You stay in the standings and on rosters. When the block ends, go online again yourself if you want to.
+You stay in the standings and on rosters.
 
 ## If Your Account Is Deactivated
 

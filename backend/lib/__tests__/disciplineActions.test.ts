@@ -66,53 +66,11 @@ afterEach(() => {
 });
 
 describe('clearSoftHolds', () => {
-  const invite = async (fromPlayerId: string, toPlayerId: string, invitationId: string) => {
-    await repos.leagueOps.matchmaking.putInvitation({
-      invitationId,
-      fromPlayerId,
-      toPlayerId,
-      status: 'pending',
-      expiresAt: '2030-01-01T00:00:00.000Z',
-      ttl: 0,
-      createdAt: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-01-01T00:00:00.000Z',
-    } as Parameters<Repositories['leagueOps']['matchmaking']['putInvitation']>[0]);
-  };
-
-  it('clears presence, queue and invitations in both directions', async () => {
-    const { matchmaking } = repos.leagueOps;
-    await matchmaking.putPresence({ playerId: 'p1', lastSeenAt: 'x', ttl: 0 } as Parameters<typeof matchmaking.putPresence>[0]);
-    await matchmaking.putQueue({ playerId: 'p1', joinedAt: 'x', ttl: 0 } as Parameters<typeof matchmaking.putQueue>[0]);
-    await invite('p1', 'other', 'sent');
-    await invite('other', 'p1', 'received');
-
-    expect(await clearSoftHolds('p1')).toBe(true);
-
-    expect(await matchmaking.getPresence('p1')).toBeNull();
-    expect(await matchmaking.listQueue()).toEqual([]);
-    expect((await matchmaking.getInvitation('sent'))?.status).toBe('expired');
-    expect((await matchmaking.getInvitation('received'))?.status).toBe('expired');
-  });
-
-  it('leaves an invitation that moved on before the write', async () => {
-    const { matchmaking } = repos.leagueOps;
-    await invite('p1', 'other', 'raced');
-    const realUpdate = matchmaking.updateInvitation.bind(matchmaking);
-    vi.spyOn(matchmaking, 'updateInvitation').mockImplementationOnce(async (id, patch, condition) => {
-      await realUpdate(id, { status: 'accepted' });
-      return realUpdate(id, patch, condition);
-    });
-
-    expect(await clearSoftHolds('p1')).toBe(true);
-
-    expect((await matchmaking.getInvitation('raced'))?.status).toBe('accepted');
-  });
-
   it('cancels pending and countered challenges on either side', async () => {
     const sent = await addChallenge({ challengerId: 'p1' });
     const received = await addChallenge({ challengedId: 'p1' }, 'countered');
 
-    await clearSoftHolds('p1');
+    expect(await clearSoftHolds('p1')).toBe(true);
 
     expect(await statusOf(sent)).toBe('cancelled');
     expect(await statusOf(received)).toBe('cancelled');
@@ -153,13 +111,17 @@ describe('clearSoftHolds', () => {
     expect(await statusOf(raced)).toBe('accepted');
   });
 
-  it('finishes the other steps and reports false when one fails', async () => {
+  it('reports true when there is nothing to cancel', async () => {
+    expect(await clearSoftHolds('p1')).toBe(true);
+  });
+
+  it('reports false, without throwing, when cancelling challenges fails', async () => {
     const challengeId = await addChallenge({ challengerId: 'p1' });
-    vi.spyOn(repos.leagueOps.matchmaking, 'deleteQueue').mockRejectedValueOnce(new Error('throttled'));
+    vi.spyOn(repos.user.challenges, 'updateIfStatus').mockRejectedValueOnce(new Error('throttled'));
 
     expect(await clearSoftHolds('p1')).toBe(false);
 
-    expect(await statusOf(challengeId)).toBe('cancelled');
+    expect(await statusOf(challengeId)).toBe('pending');
   });
 });
 

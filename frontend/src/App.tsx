@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParam
 import { useTranslation } from 'react-i18next';
 import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
-import { PresenceProvider } from './contexts/PresenceContext';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ScrollToTop from './components/ScrollToTop';
@@ -83,7 +82,6 @@ const RequestRivalry = lazy(() => import('./components/rivalries/RequestRivalry'
 const WrestlerProfile = lazy(() => import('./components/profile/WrestlerProfile'));
 const PublicProfile = lazy(() => import('./components/profile/PublicProfile'));
 const MyVideos = lazy(() => import('./components/profile/MyVideos'));
-const FindMatchPage = lazy(() => import('./components/matchmaking/FindMatchPage'));
 const Highlights = lazy(() => import('./components/Highlights'));
 const MeHub = lazy(() => import('./components/shell/MeHub'));
 const WikiLayout = lazy(async () => {
@@ -102,13 +100,11 @@ function App() {
       <Router>
         <ScrollToTop />
         <AuthProvider>
-          <PresenceProvider>
-            <SiteConfigProvider>
-              <ToastProvider>
-                <AppLayout />
-              </ToastProvider>
-            </SiteConfigProvider>
-          </PresenceProvider>
+          <SiteConfigProvider>
+            <ToastProvider>
+              <AppLayout />
+            </ToastProvider>
+          </SiteConfigProvider>
         </AuthProvider>
       </Router>
     </ErrorBoundary>
@@ -197,13 +193,6 @@ function AppLayout() {
             <Route path="/my-videos" element={
               <ProtectedRoute requiredRole="Wrestler">
                 <MyVideos />
-              </ProtectedRoute>
-            } />
-
-            {/* Find Match - Wrestler only */}
-            <Route path="/find-match" element={
-              <ProtectedRoute requiredRole="Wrestler">
-                <FindMatchPage />
               </ProtectedRoute>
             } />
 

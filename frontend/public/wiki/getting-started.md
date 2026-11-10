@@ -12,7 +12,7 @@ The site has five sections. On a computer they are listed in the sidebar on the 
 | **Events** | [Calendar and Matches](events), [Tournaments](tournaments), Highlights |
 | **Rankings** | [Standings](standings), [Titles](championships), [Contenders](contenders), [Stats](statistics), Awards |
 | **Storylines** | [Rivalries](rivalries), [Promos](promos), Factions, Tag Teams |
-| **Me** | [My Profile](profile), Find a Match, [Call-outs](challenges), My Faction, My Tag Team, My Videos, Help, League Rules |
+| **Me** | [My Profile](profile), [Call-outs](challenges), My Faction, My Tag Team, My Videos, Help, League Rules |
 
 Some pages only appear when the league has that feature turned on, and the personal pages under Me only appear once you sign in. Until then, Me reads **Sign In**.
 
@@ -32,7 +32,7 @@ The moving strip along the bottom is the **League Wire**: upcoming shows, news h
 
 ## Your wrestler name
 
-Until you enter a wrestler name you are hidden. You can sign in and use your account, but other players can't see you on the roster, in the standings or in matchmaking. You also can't cut promos, issue call-outs, find a match or claim a spot on a card.
+Until you enter a wrestler name you are hidden. You can sign in and use your account, but other players can't see you on the roster or in the standings. You also can't cut promos, issue call-outs or claim a spot on a card.
 
 The prompt to enter a name opens after you sign in. **Remind me later** puts it off until your next visit. You can also enter a name from the Me page or from [My Profile](profile). You appear on the site as soon as you save.
 
