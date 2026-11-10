@@ -16,13 +16,14 @@ The token names in `frontend/src/variables.css` are unchanged from Main Event Ar
 ## Shell
 - Desktop: a fixed sidebar on the left lists every section with its pages under it (`ShellSidebar`), so the secondary tab row is gone. Third-level tabs (Stats) still sit under the top bar.
 - Top bar (`ShellHeader`): "SECTION // PAGE", then a status strip with the season, the next show and a live flag, then search, bell, language, help and Sign In for guests.
-- Ticker (`LeagueTicker`, built on `ui/Ticker`): docked along the bottom, above the tab bar on phones. Headlines are the live and next show, the latest news, recent results and current champions, each linking to its page. It pauses on hover, on focus and from its button, and does not crawl with reduced motion. Hidden in Admin.
+- Ticker (`LeagueTicker`, built on `ui/Ticker`): docked along the bottom, above the tab bar on phones. It runs upcoming shows (a running one tagged Live), then news headlines, then every result from the two latest shows, one show after the other in card order with the show's name on each result. Each headline links to its page. It pauses on hover, on focus and from its button, and does not crawl with reduced motion. Hidden in Admin.
 - Phones keep the slim header, the scrolling tab row and the bottom tab bar.
-- The status strip and the ticker share one deferred request (`useLeaguePulse`) and show nothing until the API answers. No sample data.
+- The status strip and the ticker share one deferred load (`useLeaguePulse`): the dashboard, active announcements and the event list, then the two latest shows' cards one at a time. It is cached for five minutes and shows nothing until the API answers. No sample data.
 
 ## News
 - Home > News (`/news`, `/news/:id`): the newest story leads, the rest follow as cards.
 - Stories are the active announcements staff publish in Admin > Announcements. Priority 3 is flagged "Breaking".
+- Wiki: `news.md` (English and German) covers News and the ticker; Getting Started, FAQs and the admin pages describe the sidebar.
 
 ## Patterns
 - Cards carry a 3px accent bar on the left in the section colour: red for Home and Events, cyan for Rankings and Me, gold for Storylines.

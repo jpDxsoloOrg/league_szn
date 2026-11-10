@@ -178,6 +178,54 @@ a.ui-ticker__headline:focus-visible {
   --ticker-items: 12;
 }
 
+.ui-ticker__track[data-items='13'] {
+  --ticker-items: 13;
+}
+
+.ui-ticker__track[data-items='14'] {
+  --ticker-items: 14;
+}
+
+.ui-ticker__track[data-items='15'] {
+  --ticker-items: 15;
+}
+
+.ui-ticker__track[data-items='16'] {
+  --ticker-items: 16;
+}
+
+.ui-ticker__track[data-items='17'] {
+  --ticker-items: 17;
+}
+
+.ui-ticker__track[data-items='18'] {
+  --ticker-items: 18;
+}
+
+.ui-ticker__track[data-items='19'] {
+  --ticker-items: 19;
+}
+
+.ui-ticker__track[data-items='20'] {
+  --ticker-items: 20;
+}
+
+.ui-ticker__track[data-items='21'] {
+  --ticker-items: 21;
+}
+
+.ui-ticker__track[data-items='22'] {
+  --ticker-items: 22;
+}
+
+.ui-ticker__track[data-items='23'] {
+  --ticker-items: 23;
+}
+
+.ui-ticker__track[data-items='24'] {
+  --ticker-items: 24;
+}
+
 .ui-ticker--crawling .ui-ticker__track {
   animation: ui-ticker-crawl calc(var(--ticker-seconds-per-item) * var(--ticker-items, 1)) linear infinite;
 }

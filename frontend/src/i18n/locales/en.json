@@ -453,7 +453,8 @@
       "adminRivalries": "Admin: Rivalries",
       "rateMatches": "Rate Matches",
       "rivalryHeatExplained": "How Rivalry Heat Works",
-      "installApp": "Install the App"
+      "installApp": "Install the App",
+      "news": "News and the League Wire"
     },
     "navLabels": {
       "adminQuickstart": "Quickstart",
@@ -3492,11 +3493,8 @@
     "resume": "Resume ticker",
     "tags": {
       "live": "Live",
-      "nextUp": "Next up",
-      "news": "News",
-      "result": "Result",
-      "titleMatch": "Title match",
-      "champion": "Champion"
+      "upcoming": "Upcoming",
+      "news": "News"
     }
   },
   "shell": {

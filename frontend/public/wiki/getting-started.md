@@ -4,21 +4,25 @@ Welcome to the WWE 2K League site. This short guide helps you find your way arou
 
 ## Finding your way around
 
-The site has five sections. On a computer they run along the top of the page. On a phone they sit in the bar at the bottom of the screen. Each section has its own tabs.
+The site has five sections. On a computer they are listed in the sidebar on the left, each with its pages under it. On a phone they sit in the bar at the bottom of the screen, and each section's pages are tabs at the top.
 
 | Section | What's in it |
 |---------|--------------|
-| **Home** | [Dashboard](dashboard), [Activity](activity) |
+| **Home** | [Dashboard](dashboard), [News](news), [Activity](activity) |
 | **Events** | [Calendar and Matches](events), [Tournaments](tournaments), Highlights |
 | **Rankings** | [Standings](standings), [Titles](championships), [Contenders](contenders), [Stats](statistics), Awards |
 | **Storylines** | [Rivalries](rivalries), [Promos](promos), Factions, Tag Teams |
 | **Me** | [My Profile](profile), Find a Match, [Call-outs](challenges), My Faction, My Tag Team, My Videos, Help, League Rules |
 
-Some tabs only appear when the league has that feature turned on, and the personal tabs under Me only appear once you sign in. Until then, Me reads **Sign In**.
+Some pages only appear when the league has that feature turned on, and the personal pages under Me only appear once you sign in. Until then, Me reads **Sign In**.
 
-League staff also get **Admin**. It sits in the top bar on a computer and at the top of the Me page on a phone.
+League staff also get **Admin**. It sits at the bottom of the sidebar on a computer and at the top of the Me page on a phone.
 
-The search box in the header finds wrestlers, events, titles and pages. Signed-in members also get a notification bell there.
+The bar across the top shows which section and page you're on. On a computer it also shows the current season and the next show, and flags a show that is **Live**.
+
+The search box in the top bar finds wrestlers, events, titles and pages. Signed-in members also get a notification bell there.
+
+The moving strip along the bottom is the **League Wire**: upcoming shows, news headlines and the latest results. See [News and the League Wire](news).
 
 ## Joining the league
 
@@ -34,8 +38,8 @@ The prompt to enter a name opens after you sign in. **Remind me later** puts it 
 
 ## Finding help
 
-- **Help** opens this Wiki. It's the question mark in the header on a computer and a row on the Me page on a phone.
+- **Help** opens this Wiki. It's the question mark in the top bar on a computer and a row on the Me page on a phone.
 - **League Rules** is under Me. Read the [League Rules](league-rules) before your first match.
 - [User Quickstart](user-quickstart) is a short tour of the site.
 - [FAQs](faqs) answers the most common questions.
-- To change language, use the English / Deutsch control. It's in the header on a computer and on the Me page on a phone.
+- To change language, use the English / Deutsch control. It's in the top bar on a computer and on the Me page on a phone.

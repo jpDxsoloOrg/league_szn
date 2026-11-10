@@ -453,7 +453,8 @@
       "adminRivalries": "Admin: Rivalitäten",
       "rateMatches": "Kämpfe bewerten",
       "rivalryHeatExplained": "Wie Rivalitäts-Hitze funktioniert",
-      "installApp": "App installieren"
+      "installApp": "App installieren",
+      "news": "News und der Liga-Ticker"
     },
     "navLabels": {
       "adminQuickstart": "Schnellstart",
@@ -3492,11 +3493,8 @@
     "resume": "Ticker fortsetzen",
     "tags": {
       "live": "Live",
-      "nextUp": "Als Nächstes",
-      "news": "News",
-      "result": "Ergebnis",
-      "titleMatch": "Titelmatch",
-      "champion": "Champion"
+      "upcoming": "Demnächst",
+      "news": "News"
     }
   },
   "shell": {

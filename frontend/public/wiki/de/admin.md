@@ -1,6 +1,6 @@
 # Admin-Anleitung
 
-Das Team führt die Liga über den Bereich **Admin**. Am Computer findest du **Admin** in der oberen Leiste hinter den fünf Bereichen (Start, Events, Ranglisten, Storylines, Ich). Am Handy öffnest du **Ich** und tippst auf **Admin**.
+Das Team führt die Liga über den Bereich **Admin**. Am Computer findest du **Admin** am Ende der Seitenleiste, unter den fünf Bereichen (Start, Events, Ranglisten, Storylines, Ich). Am Handy öffnest du **Ich** und tippst auf **Admin**.
 
 Die meisten Seiten stehen Moderatoren und Admins offen. Einige sind nur für volle Admins; den Unterschied erklärt die [Benutzerverwaltung](admin-user-management).
 

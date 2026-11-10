@@ -4,8 +4,11 @@ Common questions about the WWE 2K League site.
 
 ## Finding your way around
 
-**Where did the sidebar and the Basic/Advanced menu go?**  
-They're gone, along with the More sheet. The site now has five sections: Home, Events, Rankings, Storylines and Me. League staff also get Admin. See [Getting Started](getting-started).
+**Where did the Basic/Advanced menu go?**  
+It's gone, along with the More sheet. The site now has five sections: Home, Events, Rankings, Storylines and Me. On a computer the sidebar lists every section with its pages. League staff also get Admin. See [Getting Started](getting-started).
+
+**What is the moving strip at the bottom?**  
+That's the League Wire: upcoming shows, news headlines and the latest results. You can pause it. See [News and the League Wire](news).
 
 **Where is Help on a phone?**  
 Open **Me**. Help, League Rules and the language control are all there.

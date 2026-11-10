@@ -1,6 +1,6 @@
 # Admin Quickstart Guide
 
-New admin? Follow these steps to set up your league from scratch. Open **Admin** from the top bar, or from **Me** on a phone. Steps 1 and the sample data at the end need a full Admin; a Moderator can do the rest.
+New admin? Follow these steps to set up your league from scratch. Open **Admin** from the bottom of the sidebar, or from **Me** on a phone. Steps 1 and the sample data at the end need a full Admin; a Moderator can do the rest.
 
 ## Steps
 

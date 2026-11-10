@@ -16,6 +16,7 @@
   {"slug":"promos","titleKey":"wiki.articles.promos","file":"promos.md"},
   {"slug":"tips","titleKey":"wiki.articles.tips","file":"tips.md"},
   {"slug":"dashboard","titleKey":"wiki.articles.dashboard","file":"dashboard.md"},
+  {"slug":"news","titleKey":"wiki.articles.news","file":"news.md"},
   {"slug":"activity","titleKey":"wiki.articles.activity","file":"activity.md"},
   {"slug":"statistics","titleKey":"wiki.articles.statistics","file":"statistics.md"},
   {"slug":"admin","titleKey":"wiki.articles.adminGuide","file":"admin.md","adminOnly":true},

@@ -4,44 +4,75 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import type { TFunction } from 'i18next';
 import Ticker from '../../ui/Ticker';
-import { buildTickerItems } from '../tickerItems';
+import { buildTickerItems, describeResult } from '../tickerItems';
 import type { LeaguePulse } from '../../../hooks/useLeaguePulse';
-import type { Announcement, DashboardData } from '../../../types';
+import type { Announcement } from '../../../types';
+import type { EnrichedMatchData, EventWithMatches, LeagueEvent } from '../../../types/event';
 
 const t = ((key: string) => key) as unknown as TFunction;
 
-const DASHBOARD: DashboardData = {
-  currentChampions: [{ championshipId: 'c1', championshipName: 'World Title', championName: 'Lynx', playerId: 'p1' }],
-  upcomingEvents: [{ eventId: 'e2', name: 'Mayhem Monday', date: '2026-11-09', eventType: 'weekly' }],
-  inProgressEvents: [{ eventId: 'e1', name: 'Fallout Friday', date: '2026-11-06', eventType: 'weekly' }],
-  recentResults: [
-    { matchId: 'm1', date: '2026-11-04', matchType: 'singles', winnerName: 'RoySzn', loserName: 'Devlin', eventId: 'e0' },
-    { matchId: 'm2', date: '2026-11-04', matchType: 'singles', winnerName: '', loserName: '', isDraw: true, participantsName: 'A vs B' },
-    { matchId: 'm3', date: '2026-11-04', matchType: 'singles', winnerName: 'Lynx', loserName: 'Kai', isChampionship: true, championshipName: 'World Title' },
+const UPCOMING = { eventId: 'e2', name: 'Mayhem Monday', date: '2026-11-09', status: 'upcoming' } as LeagueEvent;
+const LIVE = { eventId: 'e1', name: 'Fallout Friday', date: '2026-11-06', status: 'in-progress' } as LeagueEvent;
+
+function participant(playerId: string, wrestlerName: string) {
+  return { playerId, playerName: playerId, wrestlerName };
+}
+
+function match(matchId: string, data: Partial<EnrichedMatchData>): EnrichedMatchData {
+  return { matchId, matchFormat: 'singles', participants: [], isChampionship: false, status: 'completed', ...data } as EnrichedMatchData;
+}
+
+const WON = match('m1', { participants: [participant('p1', 'RoySzn'), participant('p2', 'Devlin')], winners: ['p1'], losers: ['p2'] });
+const DRAWN = match('m2', { participants: [participant('p3', 'Ace'), participant('p4', 'Bolt')], winners: ['p3', 'p4'], losers: [] });
+const TITLE = match('m3', {
+  participants: [participant('p5', 'Lynx'), participant('p6', 'Kai'), participant('p7', 'Zed')],
+  winners: ['p5'],
+  losers: ['p6', 'p7'],
+  isChampionship: true,
+  championshipName: 'World Title',
+});
+const UNPLAYED = match('m4', { status: 'scheduled', participants: [participant('p1', 'RoySzn')] });
+
+const SHOW = {
+  eventId: 'e0',
+  name: 'Warzone Wednesday',
+  date: '2026-11-04',
+  status: 'completed',
+  enrichedMatches: [
+    { position: 3, matchId: 'm3', designation: 'main-event', matchData: TITLE },
+    { position: 1, matchId: 'm1', designation: 'opener', matchData: WON },
+    { position: 2, matchId: 'm2', designation: 'midcard', matchData: DRAWN },
+    { position: 4, matchId: 'm4', designation: 'midcard', matchData: UNPLAYED },
+    { position: 5, matchId: 'gone', designation: 'midcard', matchData: null },
   ],
-  seasonInfo: null,
-  quickStats: { totalPlayers: 0, totalMatches: 0, activeChampionships: 0 },
-  activeChallengesCount: 0,
-};
+} as unknown as EventWithMatches;
 
 const STORY: Announcement = {
   announcementId: 'a1', title: 'Strike system', body: '<p>Body</p>', isActive: true, priority: 3, createdAt: '2026-11-07', updatedAt: '2026-11-07',
 };
 
+const EMPTY: LeaguePulse = { dashboard: null, news: [], upcomingShows: [], recentShows: [] };
+
 describe('buildTickerItems', () => {
-  it('leads with live and next shows, then news, results and champions', () => {
-    const items = buildTickerItems({ dashboard: DASHBOARD, news: [STORY] }, t, 'en');
-    expect(items.map((item) => item.id)).toEqual(['live-e1', 'next-e2', 'news-a1', 'result-m1', 'result-m2', 'result-m3', 'champion-c1']);
-    expect(items[1]).toMatchObject({ text: 'Mayhem Monday · Nov 9', to: '/events/e2' });
-    expect(items[2]).toMatchObject({ text: 'Strike system', to: '/news/a1' });
-    expect(items[3]).toMatchObject({ text: 'RoySzn dashboard.def Devlin', to: '/events/e0' });
-    expect(items[4]).toMatchObject({ text: 'A vs B dashboard.draw', to: '/matches' });
-    expect(items[5]).toMatchObject({ tag: 'ticker.tags.titleMatch', tagTone: 'prestige', text: 'Lynx dashboard.def Kai · World Title' });
+  it('runs upcoming shows, then news, then each show\'s results in card order', () => {
+    const items = buildTickerItems({ ...EMPTY, news: [STORY], upcomingShows: [LIVE, UPCOMING], recentShows: [SHOW] }, t, 'en');
+    expect(items.map((item) => item.id)).toEqual(['show-e1', 'show-e2', 'news-a1', 'result-e0-m1', 'result-e0-m2', 'result-e0-m3']);
+    expect(items[0]).toMatchObject({ tag: 'ticker.tags.live', text: 'Fallout Friday', to: '/events/e1' });
+    expect(items[1]).toMatchObject({ tag: 'ticker.tags.upcoming', text: 'Mayhem Monday · Nov 9', to: '/events/e2' });
+    expect(items[2]).toMatchObject({ tag: 'ticker.tags.news', text: 'Strike system', to: '/news/a1' });
+    expect(items[3]).toMatchObject({ tag: 'Warzone Wednesday · Nov 4', text: 'RoySzn dashboard.def Devlin', to: '/events/e0/results' });
+    expect(items[4]).toMatchObject({ text: 'Ace vs Bolt (dashboard.draw)' });
+    expect(items[5]).toMatchObject({ tagTone: 'prestige', text: 'Lynx dashboard.def Kai & Zed · World Title' });
   });
 
   it('has no headlines without data', () => {
-    const empty: LeaguePulse = { dashboard: null, news: [] };
-    expect(buildTickerItems(empty, t)).toEqual([]);
+    expect(buildTickerItems(EMPTY, t)).toEqual([]);
+  });
+});
+
+describe('describeResult', () => {
+  it('reports nothing for a match that has not been played', () => {
+    expect(describeResult(UNPLAYED, t)).toBeNull();
   });
 });
 

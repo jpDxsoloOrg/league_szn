@@ -1,6 +1,6 @@
 # Admin Guide
 
-Staff run the league from the **Admin** panel. On a computer, **Admin** sits in the top bar after the five sections (Home, Events, Rankings, Storylines, Me). On a phone, open **Me** and tap **Admin**.
+Staff run the league from the **Admin** panel. On a computer, **Admin** sits at the bottom of the sidebar, below the five sections (Home, Events, Rankings, Storylines, Me). On a phone, open **Me** and tap **Admin**.
 
 Most pages are open to Moderators and Admins. A few are for full Admins only; see [User Management](admin-user-management) for the difference.
 

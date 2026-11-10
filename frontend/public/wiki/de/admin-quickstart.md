@@ -1,6 +1,6 @@
 # Admin-Schnellstart
 
-Neu als Admin? Mit diesen Schritten richtest du deine Liga von Grund auf ein. Öffne **Admin** in der oberen Leiste oder am Handy unter **Ich**. Schritt 1 und die Beispieldaten am Ende brauchen einen vollen Admin; den Rest kann auch ein Moderator erledigen.
+Neu als Admin? Mit diesen Schritten richtest du deine Liga von Grund auf ein. Öffne **Admin** am Ende der Seitenleiste oder am Handy unter **Ich**. Schritt 1 und die Beispieldaten am Ende brauchen einen vollen Admin; den Rest kann auch ein Moderator erledigen.
 
 ## Schritte
 
