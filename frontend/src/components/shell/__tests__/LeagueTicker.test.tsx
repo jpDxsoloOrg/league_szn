@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { TFunction } from 'i18next';
 import Ticker from '../../ui/Ticker';
 import { buildTickerItems, describeResult } from '../tickerItems';
@@ -113,12 +113,34 @@ describe('Ticker', () => {
     );
     expect(screen.getByRole('region', { name: 'News ticker' })).toBeInTheDocument();
     expect(container.querySelectorAll('.ui-ticker__list')).toHaveLength(2);
-    expect(container.querySelector('.ui-ticker__list[aria-hidden="true"]')).toHaveAttribute('inert');
-    expect(screen.getAllByRole('link', { name: 'Big news' })).toHaveLength(1);
+    const loopCopy = container.querySelector('.ui-ticker__list[aria-hidden="true"]');
+    expect(loopCopy).not.toHaveAttribute('inert');
+    expect(loopCopy?.querySelector('a')).toHaveAttribute('tabindex', '-1');
+    expect(screen.getAllByRole('link', { name: 'News Big news' })).toHaveLength(1);
 
     await userEvent.click(screen.getByRole('button', { name: 'Pause' }));
     expect(screen.getByRole('button', { name: 'Resume' })).toBeInTheDocument();
     expect(container.querySelector('.ui-ticker')).toHaveClass('ui-ticker--paused');
+  });
+
+  it.each([0, 1])('opens the headline when copy %i of the crawl is clicked, tag included', async (copy) => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="/" element={<Ticker {...props} items={[{ id: 'one', text: 'Big news', tag: 'News', to: '/news/one' }]} />} />
+          <Route path="/news/:newsId" element={<p>Story page</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    const lists = container.querySelectorAll('.ui-ticker__list');
+    await userEvent.click(lists[copy]!.querySelector('.ui-ticker__tag')!);
+    expect(screen.getByText('Story page')).toBeInTheDocument();
+  });
+
+  it('leaves a headline with nowhere to go as plain text', () => {
+    render(<MemoryRouter><Ticker {...props} items={[{ id: 'one', text: 'Just words', tag: 'Results' }]} /></MemoryRouter>);
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Just words')).toHaveLength(2);
   });
 
   it('stops crawling for reduced motion', () => {

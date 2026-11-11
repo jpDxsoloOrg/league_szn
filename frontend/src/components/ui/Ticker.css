@@ -77,11 +77,20 @@
   text-decoration: none;
 }
 
-a.ui-ticker__headline:hover {
+/* A headline with somewhere to go: tag and text are one link. */
+.ui-ticker__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.ui-ticker__link:hover .ui-ticker__headline {
   color: var(--color-cyan-bright);
 }
 
-a.ui-ticker__headline:focus-visible {
+.ui-ticker__link:focus-visible {
   outline-offset: -2px;
 }
 
