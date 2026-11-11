@@ -10,6 +10,7 @@ interface UpdateAnnouncementBody {
   priority?: number;
   isActive?: boolean;
   expiresAt?: string | null;
+  showAsPopup?: boolean;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -24,6 +25,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const { data: reqBody, error: parseError } = parseBody<UpdateAnnouncementBody>(event);
     if (parseError) return parseError;
+    if (reqBody.showAsPopup !== undefined && typeof reqBody.showAsPopup !== 'boolean') {
+      return badRequest('showAsPopup must be a boolean');
+    }
 
     const { content: { announcements } } = getRepositories();
     const updated = await announcements.update(announcementId, reqBody);

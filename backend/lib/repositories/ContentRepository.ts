@@ -22,6 +22,7 @@ export interface AnnouncementCreateInput {
   isActive?: boolean;
   expiresAt?: string;
   videoUrl?: string;
+  showAsPopup?: boolean;
   createdBy: string;
 }
 
@@ -31,6 +32,7 @@ export interface AnnouncementPatch {
   priority?: number;
   isActive?: boolean;
   expiresAt?: string | null;
+  showAsPopup?: boolean;
 }
 
 // ─── Video input types ──────────────────────────────────────────────

@@ -511,6 +511,7 @@ export interface Announcement {
   priority: number;      // 1=low, 2=medium, 3=high
   expiresAt?: string;
   videoUrl?: string;     // Optional attached video URL
+  showAsPopup?: boolean; // Also shown as a pop-up; missing means News only
   createdAt: string;
   updatedAt: string;
 }

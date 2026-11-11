@@ -75,6 +75,7 @@ function buildAnnouncementsMethods(): AnnouncementsCrud {
         body: input.body.trim(),
         priority: typeof input.priority === 'number' ? input.priority : 1,
         isActive: input.isActive === false || (input.isActive as unknown) === 'false' ? 'false' : 'true',
+        showAsPopup: input.showAsPopup === true,
         createdBy: input.createdBy,
         createdAt: now,
         updatedAt: now,
@@ -105,6 +106,7 @@ function buildAnnouncementsMethods(): AnnouncementsCrud {
       if (patch.expiresAt !== undefined && patch.expiresAt !== null) {
         fields.expiresAt = patch.expiresAt;
       }
+      if (patch.showAsPopup !== undefined) fields.showAsPopup = patch.showAsPopup === true;
 
       const now = new Date().toISOString();
 

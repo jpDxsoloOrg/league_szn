@@ -42,6 +42,7 @@ const DEFAULT_FORM = {
   expiresAt: '',
   isActive: true,
   videoUrl: '',
+  showAsPopup: false,
 };
 
 export default function ManageAnnouncements() {
@@ -103,6 +104,7 @@ export default function ManageAnnouncements() {
       isActive: formData.isActive,
       expiresAt: formData.expiresAt ? new Date(formData.expiresAt).toISOString() : undefined,
       videoUrl: formData.videoUrl.trim() || undefined,
+      showAsPopup: formData.showAsPopup,
     };
 
     setSaving(true);
@@ -132,6 +134,7 @@ export default function ManageAnnouncements() {
       expiresAt: announcement.expiresAt ? announcement.expiresAt.slice(0, 10) : '',
       isActive: announcement.isActive,
       videoUrl: announcement.videoUrl || '',
+      showAsPopup: announcement.showAsPopup === true,
     });
     setShowForm(true);
     setShowPreview(false);
@@ -207,6 +210,14 @@ export default function ManageAnnouncements() {
                 const status = getStatusLabel(announcement);
                 return <Badge tone={STATUS_TONES[status]}>{t(`announcements.status.${status}`)}</Badge>;
               },
+            },
+            {
+              key: 'popup',
+              header: t('announcements.fields.popupColumn'),
+              render: (announcement) => (announcement.showAsPopup
+                ? <Badge tone="primary">{t('announcements.popupOn')}</Badge>
+                : <span className="ac-cell__muted">{t('announcements.newsOnly')}</span>),
+              sortValue: (announcement) => (announcement.showAsPopup ? 1 : 0),
             },
             {
               key: 'priority',
@@ -330,6 +341,14 @@ export default function ManageAnnouncements() {
             onChange={(event) => setFormData({ ...formData, isActive: event.target.checked })}
           />
           {t('announcements.fields.active')}
+        </label>
+        <label className="ac-check">
+          <input
+            type="checkbox"
+            checked={formData.showAsPopup}
+            onChange={(event) => setFormData({ ...formData, showAsPopup: event.target.checked })}
+          />
+          {t('announcements.fields.showAsPopup')}
         </label>
       </AdminFormModal>
 

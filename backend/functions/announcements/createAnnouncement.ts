@@ -11,6 +11,7 @@ interface CreateAnnouncementBody {
   isActive?: boolean;
   expiresAt?: string;
   videoUrl?: string;
+  showAsPopup?: boolean;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -21,13 +22,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: reqBody, error: parseError } = parseBody<CreateAnnouncementBody>(event);
     if (parseError) return parseError;
 
-    const { title, body, priority, isActive, expiresAt, videoUrl } = reqBody;
+    const { title, body, priority, isActive, expiresAt, videoUrl, showAsPopup } = reqBody;
 
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       return badRequest('title is required');
     }
     if (!body || typeof body !== 'string' || body.trim().length === 0) {
       return badRequest('body is required');
+    }
+    if (showAsPopup !== undefined && typeof showAsPopup !== 'boolean') {
+      return badRequest('showAsPopup must be a boolean');
     }
 
     const auth = getAuthContext(event);
@@ -40,6 +44,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       isActive,
       expiresAt,
       videoUrl,
+      showAsPopup,
       createdBy: auth.username || auth.sub,
     });
 

@@ -8,6 +8,8 @@ export interface CreateAnnouncementInput {
   isActive?: boolean;
   expiresAt?: string;
   videoUrl?: string;
+  /** Also show it as a pop-up. Every announcement appears on News either way. */
+  showAsPopup?: boolean;
 }
 
 export const announcementsApi = {

@@ -52,4 +52,27 @@ describe('ManageAnnouncements', () => {
     expect(preview?.querySelector('iframe')).toBeNull();
     expect(preview?.querySelector('img')?.hasAttribute('onerror')).toBe(false);
   });
+
+  it('shows the pop-up flag and lets staff turn it on for an existing announcement', async () => {
+    const user = userEvent.setup();
+    mockAnnouncementsApi.update.mockResolvedValue({ ...announcement, showAsPopup: true });
+    render(<ManageAnnouncements />);
+
+    await screen.findByText('Show tonight');
+    expect(screen.getByText('announcements.newsOnly')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'common.edit' }));
+    const popup = await screen.findByRole('checkbox', { name: 'announcements.fields.showAsPopup' });
+    expect(popup).not.toBeChecked();
+    await user.click(popup);
+    await user.click(screen.getByRole('button', { name: /announcements.update|Update Announcement/ }));
+
+    expect(mockAnnouncementsApi.update).toHaveBeenCalledWith('a1', expect.objectContaining({ showAsPopup: true }));
+  });
+
+  it('marks pop-up announcements in the list', async () => {
+    mockAnnouncementsApi.getAll.mockResolvedValue([{ ...announcement, showAsPopup: true }]);
+    render(<ManageAnnouncements />);
+    expect(await screen.findByText('announcements.popupOn')).toBeInTheDocument();
+  });
 });

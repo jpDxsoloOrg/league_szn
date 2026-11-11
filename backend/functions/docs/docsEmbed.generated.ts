@@ -853,6 +853,7 @@ components:
         isActive: { type: boolean }
         expiresAt: { type: string, format: date-time }
         videoUrl: { type: string }
+        showAsPopup: { type: boolean, description: 'Also show as a pop-up. Every announcement appears on News; missing means News only.' }
         createdBy: { type: string }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
@@ -3354,6 +3355,7 @@ paths:
                 isActive: { type: boolean }
                 expiresAt: { type: string, format: date-time }
                 videoUrl: { type: string }
+                showAsPopup: { type: boolean, default: false }
       responses:
         '201': { description: Created }
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
@@ -3380,6 +3382,7 @@ paths:
                 priority: { type: integer }
                 isActive: { type: boolean }
                 expiresAt: { type: string, format: date-time, nullable: true }
+                showAsPopup: { type: boolean }
       responses:
         '200': { description: Updated }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
