@@ -60,7 +60,7 @@ function showResultItems(show: EventWithMatches, t: TFunction, locale?: string):
 
 /**
  * Headlines for the crawl, built only from what the API returned: shows still
- * to come, news, then the latest shows' results. Results run newest show
+ * to come, news, the current champions, then the latest shows' results. Results run newest show
  * first, each show named once and followed by its matches in card order.
  */
 export function buildTickerItems(pulse: LeaguePulse, t: TFunction, locale?: string): TickerItem[] {
@@ -78,7 +78,19 @@ export function buildTickerItems(pulse: LeaguePulse, t: TFunction, locale?: stri
   }
 
   for (const article of pulse.news.slice(0, NEWS_SHOWN)) {
-    items.push({ id: `news-${article.announcementId}`, tag: t('ticker.tags.news'), tagTone: 'data', text: article.title, to: `/news/${article.announcementId}` });
+    items.push({ id: `news-${article.announcementId}`, tag: t('ticker.tags.news'), tagTone: 'prestige', text: article.title, to: `/news/${article.announcementId}` });
+  }
+
+  // Before the results, so a long run of results cannot push them past the crawl's limit.
+  for (const champion of pulse.dashboard?.currentChampions ?? []) {
+    items.push({
+      id: `champion-${champion.championshipId}`,
+      tag: t('ticker.tags.champion'),
+      tagTone: 'prestige',
+      text: `${champion.championName} · ${champion.championshipName}`,
+      to: '/championships',
+      ...(champion.championshipImageUrl ? { iconUrl: champion.championshipImageUrl } : {}),
+    });
   }
 
   // recentShows arrives newest first.

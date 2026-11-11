@@ -77,6 +77,28 @@ describe('buildTickerItems', () => {
     expect(items[6]).toMatchObject({ tag: 'World Title', tagTone: 'prestige', text: 'Lynx dashboard.def Kai & Zed' });
   });
 
+  it('tags news in gold and lists each champion with their belt before the results', () => {
+    const dashboard = {
+      currentChampions: [
+        { championshipId: 'c1', championshipName: 'World Title', championName: 'Lynx', championshipImageUrl: 'https://img/belt.png', playerId: 'p5' },
+        { championshipId: 'c2', championshipName: 'Tag Titles', championName: 'Ace & Bolt', playerId: 'p3' },
+      ],
+    } as unknown as LeaguePulse['dashboard'];
+    const items = buildTickerItems({ ...EMPTY, dashboard, news: [STORY], recentShows: [SHOW] }, t, 'en');
+
+    expect(items.map((item) => item.id).slice(0, 4)).toEqual(['news-a1', 'champion-c1', 'champion-c2', 'results-e0']);
+    expect(items[0]).toMatchObject({ tag: 'ticker.tags.news', tagTone: 'prestige' });
+    expect(items[1]).toEqual({
+      id: 'champion-c1',
+      tag: 'ticker.tags.champion',
+      tagTone: 'prestige',
+      text: 'Lynx · World Title',
+      to: '/championships',
+      iconUrl: 'https://img/belt.png',
+    });
+    expect(items[2]).not.toHaveProperty('iconUrl');
+  });
+
   it('keeps the newest show first and names each show only once', () => {
     const items = buildTickerItems({ ...EMPTY, recentShows: [SHOW, EMPTY_SHOW, OLDER_SHOW] }, t, 'en');
     expect(items.map((item) => item.id)).toEqual(['results-e0', 'result-e0-m1', 'result-e0-m2', 'result-e0-m3', 'results-e-1', 'result-e-1-m9']);
@@ -135,6 +157,18 @@ describe('Ticker', () => {
     const lists = container.querySelectorAll('.ui-ticker__list');
     await userEvent.click(lists[copy]!.querySelector('.ui-ticker__tag')!);
     expect(screen.getByText('Story page')).toBeInTheDocument();
+  });
+
+  it('draws an item icon as decoration beside the headline', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <Ticker {...props} items={[{ id: 'c1', text: 'Lynx · World Title', tag: 'Champion', to: '/championships', iconUrl: 'https://img/belt.png' }]} />
+      </MemoryRouter>,
+    );
+    const icon = container.querySelector('.ui-ticker__list img');
+    expect(icon).toHaveAttribute('src', 'https://img/belt.png');
+    expect(icon).toHaveAttribute('alt', '');
+    expect(screen.getByRole('link', { name: 'Champion Lynx · World Title' })).toHaveAttribute('href', '/championships');
   });
 
   it('leaves a headline with nowhere to go as plain text', () => {

@@ -20,10 +20,11 @@ Manche Meldungen erscheinen außerdem als Pop-up, wenn angemeldete Mitglieder di
 Der Liga-Ticker läuft am unteren Rand jeder Seite außer im Admin-Bereich. Am Handy sitzt er direkt über der unteren Leiste. Er zeigt in dieser Reihenfolge:
 
 1. **Kommende Shows** — Die nächsten Shows mit Datum. Eine Show, die gerade läuft, ist mit **Live** markiert.
-2. **News** — Die neuesten Schlagzeilen von der News-Seite.
-3. **Ergebnisse** — Die Match-Ergebnisse der letzten Show, danach die der Shows davor im Wechsel Montag, Mittwoch, Freitag, die neueste zuerst. Name und Datum jeder Show stehen einmal vorne, markiert mit **Ergebnisse**, gefolgt von den Matches dieser Show in der Reihenfolge der Card. Titelmatches tragen den Namen des Titels als goldene Markierung.
+2. **News** — Die neuesten Schlagzeilen von der News-Seite, gold markiert.
+3. **Champions** — Jeder aktuelle Champion mit seinem Titel und einem kleinen Bild des Gürtels. Wähle einen aus, um die Seite Championships zu öffnen.
+4. **Ergebnisse** — Die Match-Ergebnisse der letzten Show, danach die der Shows davor im Wechsel Montag, Mittwoch, Freitag, die neueste zuerst. Name und Datum jeder Show stehen einmal vorne, markiert mit **Ergebnisse**, gefolgt von den Matches dieser Show in der Reihenfolge der Card. Titelmatches tragen den Namen des Titels als goldene Markierung.
 
-Wähle eine Schlagzeile, um die Show, die Meldung oder die Ergebnisse der Show zu öffnen.
+Wähle eine Schlagzeile, um die Show, die Meldung, die Championships oder die Ergebnisse der Show zu öffnen.
 
 ### Anhalten
 

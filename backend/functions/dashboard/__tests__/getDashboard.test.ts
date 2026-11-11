@@ -219,7 +219,7 @@ describe('getDashboard', () => {
 
   it('returns correct current champions (only active with champion)', async () => {
     mockChampionshipsList.mockResolvedValue([
-      { championshipId: 'c1', name: 'World Title', isActive: true, currentChampion: 'p1' },
+      { championshipId: 'c1', name: 'World Title', isActive: true, currentChampion: 'p1', imageUrl: 'https://img/belt.png' },
       { championshipId: 'c2', name: 'Tag Titles', isActive: false, currentChampion: 'p2' },
       { championshipId: 'c3', name: 'Midcard', isActive: true },
     ]);
@@ -235,6 +235,7 @@ describe('getDashboard', () => {
     expect(body.currentChampions).toHaveLength(1);
     expect(body.currentChampions[0].championshipName).toBe('World Title');
     expect(body.currentChampions[0].championName).toBe('Stone Cold');
+    expect(body.currentChampions[0].championshipImageUrl).toBe('https://img/belt.png');
   });
 
   it('reads champion wonDate from ChampionshipHistory (open reign), not from Championships.updatedAt', async () => {

@@ -15,6 +15,8 @@ export interface TickerItem {
   tagTone?: TickerTagTone;
   /** Where the headline leads. */
   to?: string;
+  /** A small picture before the headline, such as a championship belt. Decorative. */
+  iconUrl?: string;
 }
 
 export interface TickerProps {
@@ -40,6 +42,7 @@ function TickerItems({ items, focusable }: { items: TickerItem[]; focusable: boo
         const content = (
           <>
             {item.tag && <span className={`ui-ticker__tag ui-ticker__tag--${item.tagTone ?? 'data'}`}>{item.tag}</span>}
+            {item.iconUrl && <img className="ui-ticker__icon" src={item.iconUrl} alt="" loading="lazy" decoding="async" />}
             <span className="ui-ticker__headline">{item.text}</span>
           </>
         );
