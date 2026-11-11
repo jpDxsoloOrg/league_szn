@@ -57,8 +57,9 @@ export default function AnnouncementModal() {
         const active = await announcementsApi.getActive(controller.signal);
         if (!mounted) return;
 
+        // Only announcements staff chose to pop up; the rest live on News.
         const hiddenIds = getHiddenAnnouncementIds();
-        setAnnouncements(active.filter((a) => !hiddenIds.has(a.announcementId)));
+        setAnnouncements(active.filter((a) => a.showAsPopup === true && !hiddenIds.has(a.announcementId)));
         setCurrentIndex(0);
       } catch {
         // Fail silently — don't show modal if API errors

@@ -44,6 +44,8 @@ export interface Announcement {
   isActive: string; // 'true' | 'false' — string for DynamoDB GSI
   expiresAt?: string;
   videoUrl?: string;
+  /** Also shown as a pop-up. Missing on older rows, which are News only. */
+  showAsPopup?: boolean;
   createdBy: string;
   createdAt: string;
   updatedAt: string;

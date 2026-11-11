@@ -25,7 +25,7 @@ vi.mock('react-i18next', () => ({
 import AnnouncementModal from '../AnnouncementModal';
 
 function announcement(id: string, overrides: Partial<Announcement> = {}): Announcement {
-  return { announcementId: id, title: `Title ${id}`, body: `<p>Body ${id}</p>`, ...overrides } as Announcement;
+  return { announcementId: id, title: `Title ${id}`, body: `<p>Body ${id}</p>`, showAsPopup: true, ...overrides } as Announcement;
 }
 
 describe('AnnouncementModal', () => {
@@ -61,6 +61,28 @@ describe('AnnouncementModal', () => {
     expect(screen.getByText('Safe')).not.toHaveAttribute('onclick');
     expect(screen.getByText('Safe')).toHaveAttribute('style', 'text-align: center;');
     expect(body?.querySelector('video source')).toHaveAttribute('src', '/videos/a.mp4');
+  });
+
+  it('only pops up announcements staff chose to show as a pop-up', async () => {
+    mockGetActive.mockResolvedValue([
+      announcement('news-only', { showAsPopup: false }),
+      announcement('legacy', { showAsPopup: undefined }),
+      announcement('popup'),
+    ]);
+
+    render(<AnnouncementModal />);
+
+    expect(await screen.findByRole('dialog', { name: 'Title popup' })).toBeInTheDocument();
+    expect(screen.queryByText('Title news-only')).not.toBeInTheDocument();
+    expect(screen.queryByText('Title legacy')).not.toBeInTheDocument();
+  });
+
+  it('stays closed when no announcement is a pop-up', async () => {
+    mockGetActive.mockResolvedValue([announcement('news-only', { showAsPopup: false })]);
+    render(<AnnouncementModal />);
+    await waitFor(() => expect(mockGetActive).toHaveBeenCalled());
+    await waitFor(() => expect(mockSetOpen).toHaveBeenLastCalledWith(false));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('does not fetch or open when notifications are switched off', async () => {

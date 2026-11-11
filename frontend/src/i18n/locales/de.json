@@ -925,6 +925,8 @@
       "priority": "Priorität",
       "expiresAt": "Läuft ab am",
       "active": "Aktiv",
+      "showAsPopup": "Zusätzlich als Pop-up zeigen",
+      "popupColumn": "Pop-up",
       "videoUrl": "Video-URL (optional)",
       "videoUrlPlaceholder": "https://... Link zur Videodatei"
     },
@@ -938,6 +940,8 @@
       "inactive": "Inaktiv",
       "expired": "Abgelaufen"
     },
+    "popupOn": "Pop-up",
+    "newsOnly": "Nur News",
     "dontShowAgain": "Nicht mehr anzeigen",
     "counter": "{{current}} von {{total}}",
     "update": "Ankündigung aktualisieren"

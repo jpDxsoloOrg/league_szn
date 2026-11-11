@@ -30,6 +30,7 @@ Zwei Aufgaben liegen außerhalb des Admin-Bereichs. Events werden im Bereich **E
 
 - [Herausforderungen](admin-challenges) — Call-outs moderieren, jetzt unter Promos
 - [Promos](admin-promos) — Promo-Feed verwalten: anpinnen, verbergen, Kampf aus einer Ansage planen
+- [News & Ankündigungen](news) — Meldungen auf News veröffentlichen und wählen, welche zusätzlich als Pop-up erscheinen (siehe **Für das Liga-Team**)
 - [Herausforderer-Ranglisten](admin-contender-config) — Wie sich die #1-Herausforderer-Ranglisten aktualisieren und wie du sie anpasst
 - [Rivalitäten](admin-rivalries) — Rivalitäten eröffnen, abschließen und aufräumen; Notizen und Hitze
 

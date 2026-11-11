@@ -13,7 +13,7 @@ Das Ligabüro veröffentlicht Artikel und Ankündigungen auf der Seite **News**.
 
 Eine Meldung bleibt so lange auf News, wie das Ligabüro sie veröffentlicht lässt. Wird sie zurückgezogen oder ist ihr Enddatum erreicht, verschwindet sie von der Seite, und ihr Link zeigt **Meldung nicht gefunden**.
 
-Angemeldete Mitglieder sehen jede neue Meldung außerdem einmal als Pop-up, wenn sie die Seite öffnen. **Nicht mehr anzeigen** blendet das Pop-up dieser Meldung aus. Auf der News-Seite bleibt sie stehen.
+Manche Meldungen erscheinen außerdem als Pop-up, wenn angemeldete Mitglieder die Seite öffnen. Welche, entscheidet das Ligabüro. **Nicht mehr anzeigen** blendet das Pop-up dieser Meldung aus. Auf der News-Seite bleibt sie stehen.
 
 ## Der Liga-Ticker
 
@@ -34,7 +34,11 @@ Der Liga-Ticker aktualisiert sich alle paar Minuten. Ein Ergebnis kann daher kur
 
 ## Für das Liga-Team
 
-Meldungen sind die Ankündigungen, die du im **Admin**-Bereich unter **Ankündigungen** veröffentlichst. Alles, was du dort veröffentlichst, erscheint auf News und im Liga-Ticker.
+Meldungen sind die Ankündigungen, die du im **Admin**-Bereich unter **Ankündigungen** veröffentlichst, entweder mit dem **GM Wizard** (Match Card, Breaking News oder Video / Poster) oder mit **Ankündigung erstellen**. Alles, was du dort veröffentlichst, erscheint auf News und im Liga-Ticker.
+
+- **Pop-ups nur auf Wunsch.** Setze im letzten Schritt des Wizards das Häkchen bei **Also show as a pop-up when members open the site**, damit angemeldete Mitglieder die Meldung zusätzlich als Pop-up sehen. Es ist standardmäßig aus, eine Meldung landet also nur auf News, solange du es nicht setzt.
+- Um das später zu ändern, wähle in **Ankündigungen** bei der Meldung **Bearbeiten** und setze oder entferne **Zusätzlich als Pop-up zeigen**. Die Spalte **Pop-up** in der Liste zeigt, welche Meldungen als Pop-up erscheinen und welche **Nur News** sind.
+- Meldungen, die vor dieser Option veröffentlicht wurden, erscheinen nur auf News.
 
 - Setze die Priorität auf **High**, damit eine Meldung als **Eilmeldung** markiert wird. High ist voreingestellt, wähle für Routinemeldungen also eine niedrigere Stufe.
 - Schalte eine Meldung ab oder gib ihr ein Enddatum, um sie von News zu nehmen.

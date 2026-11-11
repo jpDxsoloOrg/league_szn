@@ -447,6 +447,10 @@
   gap: 1rem;
 }
 
+.wizard-popup-option {
+  margin-top: 0.75rem;
+}
+
 /* ── Preview ─────────────────────────────────────────────────────────────── */
 
 .wizard-preview-toggle {

@@ -13,7 +13,7 @@ Open **Home**, then **News**.
 
 A story stays on News for as long as the league office keeps it published. When a story is taken down or reaches its end date, it leaves the page and its link shows **Story not found**.
 
-Signed-in members also see each new story once as a pop-up when they open the site. **Don't show again** hides that story's pop-up. It stays on the News page.
+Some stories also appear as a pop-up when signed-in members open the site. The league office chooses which ones. **Don't show again** hides that story's pop-up. It stays on the News page.
 
 ## The League Wire
 
@@ -34,7 +34,11 @@ The League Wire updates every few minutes, so a result can take a short while to
 
 ## For league staff
 
-Stories are the announcements you publish in **Admin**, under **Announcements**. Anything you publish there appears on News and in the League Wire.
+Stories are the announcements you publish in **Admin**, under **Announcements**, either with the **GM Wizard** (Match Card, Breaking News or Video / Poster) or with **Create Announcement**. Anything you publish there appears on News and in the League Wire.
+
+- **Pop-ups are opt-in.** On the wizard's last step, tick **Also show as a pop-up when members open the site** to put the story in front of signed-in members as well. It is off by default, so a story goes to News only unless you tick it.
+- To change it later, choose **Edit** on the story in **Announcements** and tick or clear **Also show as a pop-up**. The **Pop-up** column in the list shows which stories pop up and which are **News only**.
+- Stories published before this option existed are News only.
 
 - Set the priority to **High** to tag a story **Breaking**. High is the default, so lower it for routine posts.
 - Switch a story off, or give it an end date, to take it off News.

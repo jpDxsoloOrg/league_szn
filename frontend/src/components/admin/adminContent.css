@@ -214,3 +214,7 @@
     justify-content: flex-start;
   }
 }
+
+.ac-cell__muted {
+  color: var(--color-text-muted);
+}

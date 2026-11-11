@@ -125,6 +125,7 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
   const mediaInputRef = useRef<HTMLInputElement>(null);
 
   const [priority, setPriority] = useState(3);
+  const [showAsPopup, setShowAsPopup] = useState(false);
   const [expiresAt, setExpiresAt] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -303,6 +304,7 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
         priority,
         isActive: true,
         expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
+        showAsPopup,
       });
       onPublished();
     } catch (err) {
@@ -690,6 +692,16 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
                   </div>
                 </div>
 
+                <label className="wizard-checkbox-label wizard-popup-option">
+                  <input
+                    id="wz-popup"
+                    type="checkbox"
+                    checked={showAsPopup}
+                    onChange={(e) => setShowAsPopup(e.target.checked)}
+                  />
+                  Also show as a pop-up when members open the site
+                </label>
+
                 <button
                   className={`wizard-preview-toggle ${showPreview ? 'wizard-preview-toggle--open' : ''}`}
                   onClick={() => setShowPreview((v) => !v)}
@@ -935,6 +947,16 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
                   </div>
                 </div>
 
+                <label className="wizard-checkbox-label wizard-popup-option">
+                  <input
+                    id="bn-popup"
+                    type="checkbox"
+                    checked={showAsPopup}
+                    onChange={(e) => setShowAsPopup(e.target.checked)}
+                  />
+                  Also show as a pop-up when members open the site
+                </label>
+
                 <button
                   className={`wizard-preview-toggle ${showPreview ? 'wizard-preview-toggle--open' : ''}`}
                   onClick={() => setShowPreview((v) => !v)}
@@ -1126,6 +1148,16 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
                     />
                   </div>
                 </div>
+
+                <label className="wizard-checkbox-label wizard-popup-option">
+                  <input
+                    id="mp-popup"
+                    type="checkbox"
+                    checked={showAsPopup}
+                    onChange={(e) => setShowAsPopup(e.target.checked)}
+                  />
+                  Also show as a pop-up when members open the site
+                </label>
 
                 <button
                   className={`wizard-preview-toggle ${showPreview ? 'wizard-preview-toggle--open' : ''}`}

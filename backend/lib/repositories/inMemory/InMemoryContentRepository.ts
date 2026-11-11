@@ -58,6 +58,7 @@ class AnnouncementsImpl implements AnnouncementsMethods {
       body: input.body.trim(),
       priority: typeof input.priority === 'number' ? input.priority : 1,
       isActive: input.isActive === false || (input.isActive as unknown) === 'false' ? 'false' : 'true',
+      showAsPopup: input.showAsPopup === true,
       createdBy: input.createdBy,
       createdAt: now,
       updatedAt: now,
@@ -82,6 +83,7 @@ class AnnouncementsImpl implements AnnouncementsMethods {
     if (patch.isActive !== undefined) {
       updated.isActive = patch.isActive === false || (patch.isActive as unknown) === 'false' ? 'false' : 'true';
     }
+    if (patch.showAsPopup !== undefined) updated.showAsPopup = patch.showAsPopup === true;
     if (patch.expiresAt === null) {
       delete updated.expiresAt;
     } else if (patch.expiresAt !== undefined) {
