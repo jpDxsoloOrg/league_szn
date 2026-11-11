@@ -1,13 +1,21 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { CalendarDays, Handshake, Medal, Mic, Swords, Trophy } from 'lucide-react';
 import { activityApi } from '../services/api';
 import type { ActivityItem, ActivityItemType } from '../types';
-import Skeleton from './ui/Skeleton';
+import Button from './ui/Button';
+import Card from './ui/Card';
 import EmptyState from './ui/EmptyState';
+import PageHeader from './ui/PageHeader';
+import Skeleton from './ui/Skeleton';
+import Tabs from './ui/Tabs';
 import './ActivityFeed.css';
 
 const DEFAULT_LIMIT = 20;
+const ALL_TYPES = 'all';
+
 /** Backend expects type=match|championship|season|tournament|challenge|promo */
 const TYPE_TO_PARAM: Record<ActivityItemType, string> = {
   match_result: 'match',
@@ -18,14 +26,23 @@ const TYPE_TO_PARAM: Record<ActivityItemType, string> = {
   promo_posted: 'promo',
 };
 
-const TYPE_FILTERS: { value: '' | ActivityItemType; key: string }[] = [
-  { value: '', key: 'activity.filters.all' },
+const TYPE_FILTERS: { value: ActivityItemType | typeof ALL_TYPES; key: string }[] = [
+  { value: ALL_TYPES, key: 'activity.filters.all' },
   { value: 'match_result', key: 'activity.types.match_result' },
   { value: 'championship_change', key: 'activity.types.championship_change' },
   { value: 'season_event', key: 'activity.types.season_event' },
   { value: 'tournament_result', key: 'activity.types.tournament_result' },
   { value: 'promo_posted', key: 'activity.types.promo_posted' },
 ];
+
+const TYPE_ICONS: Record<ActivityItemType, ReactNode> = {
+  match_result: <Swords aria-hidden="true" size={20} />,
+  championship_change: <Trophy aria-hidden="true" size={20} />,
+  season_event: <CalendarDays aria-hidden="true" size={20} />,
+  tournament_result: <Medal aria-hidden="true" size={20} />,
+  challenge_event: <Handshake aria-hidden="true" size={20} />,
+  promo_posted: <Mic aria-hidden="true" size={20} />,
+};
 
 function getDetailLink(item: ActivityItem): string {
   const meta = item.metadata;
@@ -61,144 +78,118 @@ function formatRelativeTime(dateStr: string, now: Date): { key: string; count?: 
   return { key: 'activity.timeAgo.date', count: diffDays };
 }
 
-const TYPE_ICONS: Record<ActivityItemType, string> = {
-  match_result: '⚔️',
-  championship_change: '🏆',
-  season_event: '📅',
-  tournament_result: '🏅',
-  challenge_event: '🤝',
-  promo_posted: '🎤',
-};
-
 export default function ActivityFeed() {
   const { t } = useTranslation();
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  // Empty string means the request failed without a usable message.
   const [error, setError] = useState<string | null>(null);
-  const [typeFilter, setTypeFilter] = useState<'' | ActivityItemType>('');
+  const [typeFilter, setTypeFilter] = useState<ActivityItemType | typeof ALL_TYPES>(ALL_TYPES);
+  const activeRequest = useRef<AbortController | null>(null);
 
-  const typeParam =
-    typeFilter && TYPE_TO_PARAM[typeFilter] ? TYPE_TO_PARAM[typeFilter] : undefined;
+  const typeParam = typeFilter === ALL_TYPES ? undefined : TYPE_TO_PARAM[typeFilter];
 
   const fetchPage = useCallback(
-    async (cursor?: string, append = false) => {
-      const isMore = !!cursor;
-      if (isMore) setLoadingMore(true);
+    async (cursor?: string) => {
+      // A response for an old filter must not land on the current list.
+      activeRequest.current?.abort();
+      const controller = new AbortController();
+      activeRequest.current = controller;
+
+      if (cursor) setLoadingMore(true);
       else setLoading(true);
       setError(null);
       try {
-        const res = await activityApi.getAll(
-          { limit: DEFAULT_LIMIT, cursor, type: typeParam }
-        );
-        if (append) {
-          setItems((prev) => [...prev, ...res.items]);
-        } else {
-          setItems(res.items);
-        }
+        const res = await activityApi.getAll({ limit: DEFAULT_LIMIT, cursor, type: typeParam }, controller.signal);
+        if (controller.signal.aborted) return;
+        setItems((previous) => (cursor ? [...previous, ...res.items] : res.items));
         setNextCursor(res.nextCursor);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load activity');
+        if (!controller.signal.aborted) setError(err instanceof Error ? err.message : '');
       } finally {
-        if (isMore) setLoadingMore(false);
-        else setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     },
     [typeParam]
   );
 
   useEffect(() => {
-    fetchPage();
+    void fetchPage();
+    return () => activeRequest.current?.abort();
   }, [fetchPage]);
-
-  const handleLoadMore = useCallback(() => {
-    if (nextCursor && !loadingMore) fetchPage(nextCursor, true);
-  }, [nextCursor, loadingMore, fetchPage]);
-
-  if (loading && items.length === 0) {
-    return (
-      <div className="activity-feed">
-        <h1 className="activity-feed__title page-title--mobile-hidden">{t('activity.title')}</h1>
-        <Skeleton variant="block" count={5} />
-      </div>
-    );
-  }
 
   const timeAgo = (timestamp: string) => {
     const { key, count } = formatRelativeTime(timestamp, new Date());
     return count != null ? t(key, { count }) : t(key);
   };
 
+  const hasItems = items.length > 0;
+
   return (
     <div className="activity-feed">
-      <h1 className="activity-feed__title page-title--mobile-hidden">{t('activity.title')}</h1>
+      <PageHeader title={t('activity.title')} />
 
-      <div className="activity-feed__filters" role="tablist" aria-label={t('activity.filters.label')}>
-        {TYPE_FILTERS.map(({ value, key }) => (
-          <button
-            key={value || 'all'}
-            type="button"
-            role="tab"
-            aria-selected={typeFilter === value}
-            className={`activity-feed__filter-tab ${typeFilter === value ? 'activity-feed__filter-tab--active' : ''}`}
-            onClick={() => setTypeFilter(value)}
-          >
-            {t(key)}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        className="activity-feed__filters"
+        label={t('activity.filters.label')}
+        value={typeFilter}
+        onValueChange={(value) => setTypeFilter(value as ActivityItemType | typeof ALL_TYPES)}
+        items={TYPE_FILTERS.map(({ value, key }) => ({ value, label: t(key) }))}
+      />
 
-      {error && (
-        <div className="activity-feed__error">
-          <p>{error}</p>
-          <button type="button" onClick={() => fetchPage()}>
-            {t('common.retry')}
-          </button>
-        </div>
-      )}
+      {loading && <Skeleton variant="block" count={5} />}
 
-      {!error && items.length === 0 && (
+      {!loading && error !== null && !hasItems && (
         <EmptyState
           title={t('activity.title')}
-          description={t('activity.noActivity')}
+          description={error || undefined}
+          actionLabel={t('common.retry')}
+          onAction={() => void fetchPage()}
         />
       )}
 
-      {!error && items.length > 0 && (
-        <ul className="activity-feed__list">
-          {items.map((item) => (
-            <li key={item.id} className={`activity-feed__card activity-feed__card--${item.type}`}>
-              <Link to={getDetailLink(item)} className="activity-feed__card-link">
-                <span className="activity-feed__card-icon" aria-hidden>
-                  {TYPE_ICONS[item.type]}
-                </span>
-                <div className="activity-feed__card-body">
-                  <p className="activity-feed__card-summary">{item.summary}</p>
-                  <time
-                    className="activity-feed__card-time"
-                    dateTime={item.timestamp}
-                    title={new Date(item.timestamp).toLocaleString()}
-                  >
-                    {timeAgo(item.timestamp)}
-                  </time>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
+      {!loading && error === null && !hasItems && (
+        <EmptyState title={t('activity.title')} description={t('activity.noActivity')} />
       )}
 
-      {!error && nextCursor && items.length > 0 && (
+      {!loading && hasItems && (
+        <Card padding="none">
+          <ul className="activity-feed__list">
+            {items.map((item) => (
+              <li key={item.id}>
+                <Link to={getDetailLink(item)} className="activity-feed__row">
+                  <span className="activity-feed__icon">{TYPE_ICONS[item.type]}</span>
+                  <span className="activity-feed__body">
+                    <span className="activity-feed__summary">{item.summary}</span>
+                    <time
+                      className="activity-feed__time"
+                      dateTime={item.timestamp}
+                      title={new Date(item.timestamp).toLocaleString()}
+                    >
+                      {timeAgo(item.timestamp)}
+                    </time>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {!loading && hasItems && error !== null && (
+        <p className="activity-feed__error" role="alert">{error}</p>
+      )}
+
+      {!loading && hasItems && nextCursor && (
         <div className="activity-feed__load-more">
-          <button
-            type="button"
-            className="activity-feed__load-more-btn"
-            onClick={handleLoadMore}
-            disabled={loadingMore}
-          >
+          <Button variant="secondary" loading={loadingMore} onClick={() => void fetchPage(nextCursor)}>
             {loadingMore ? t('activity.loading') : t('activity.loadMore')}
-          </button>
+          </Button>
         </div>
       )}
     </div>

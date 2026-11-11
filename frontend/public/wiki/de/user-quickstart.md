@@ -1,37 +1,44 @@
 # Benutzer-Schnellstart
 
-Neu hier? Mit diesem kurzen Ablauf lernst du die Seite in 5 Minuten.
+Neu hier? Mit diesem kurzen Weg lernst du die Seite in 5 Minuten kennen.
 
-## 1) Mit dem Dashboard starten
+## 1) Beginne bei Start
 
-Öffne das [Dashboard](dashboard), um zu sehen:
+Öffne das [Dashboard](dashboard). Dort siehst du:
+- das laufende oder nächste Event
 - aktuelle Champions
-- kommende Events
 - letzte Ergebnisse
-- schnelle Liga-Statistiken
+- die Tabellenspitze
+- Saison-Fortschritt und Schnellstatistiken
 
-## 2) Tabellenstand prüfen
+## 2) Prüfe deinen Stand
 
-Gehe zu [Tabelle](standings):
-- nutze **Saison**, um zwischen Gesamt und Saisonstand zu wechseln
-- nutze **Division**-Filter, um Ergebnisse einzugrenzen
+Gehe zu **Ranglisten** und dann zur [Tabelle](standings):
+- mit **Saison** wechselst du zwischen Gesamt- und Saison-Tabelle
+- mit dem **Division**-Filter und **Ausrichtung** grenzt du die Liste ein
 
-## 3) Aktive Wettbewerbe verfolgen
+## 3) Verfolge das Geschehen
 
-- [Events](events): kommende Cards und abgeschlossene Ergebnisse
-- [Meisterschaften](championships): aktuelle Champions und Titelhistorie
-- [Turniere](tournaments): Brackets und Rundensystem-Standings
-- [Aktivität](activity): alle neuesten Liga-Aktionen im Feed
+- [Events](events): Kalender, Match Cards und Ergebnisse
+- [Titel](championships): aktuelle Champions und Titel-Historie
+- [Turniere](tournaments): Turnierbäume und Tabellen für Jeder gegen Jeden
+- [Aktivität](activity): die neuesten Liga-Aktionen in einem Feed
 
-## 4) Optionale Wrestler-Funktionen (Login erforderlich)
+## 4) Gib deinen Wrestler-Namen ein
 
-Wenn dein Account Wrestler-Zugriff hat:
-- [Mein Profil](profile)
-- [Herausforderungen](challenges)
-- [Promos](promos)
+Nach der Anmeldung fragt die Seite nach deinem Wrestler-Namen. Bis du einen eingibst, bist du für andere Spieler nicht sichtbar. Erledige das also zuerst. Siehe [Erste Schritte](getting-started).
 
-## 5) Schnell Hilfe finden
+## 5) Mach mit
 
-- [FAQs](faqs) durchsuchen
-- [Tipps](tips) nutzen
-- [Admin-Schnellstart](admin-quickstart) öffnen, wenn du Liga-Administration übernimmst
+Sobald du einen Wrestler-Namen hast, findest du das alles unter **Ich** oder **Storylines**:
+- [Mein Profil](profile): deine Bilanz, Moves und Anfragen
+- Event-Seiten: klicke auf **Verfügbar**, damit die GMs dich buchen können ([Events](events))
+- [Call-outs](challenges): fordere einen anderen Wrestler heraus
+- [Promos](promos): sag, was du zu sagen hast
+- [Kämpfe bewerten](rate-matches): gib abgeschlossenen Matches Sterne
+
+## 6) Schnell Hilfe nötig?
+
+- Lies die [Liga-Regeln](league-rules)
+- Stöbere in den [Häufigen Fragen](faqs)
+- Nutze die [Tipps](tips)

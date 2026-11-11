@@ -1,24 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockGetAllPlayers, mockGetAllPromos, mockGetAllMatches, mockGetAllChampionships, mockCreatePromo, mockGetAllStipulations, mockGetAllMatchTypes, mockGetAllTagTeams } =
+const signupBlock = vi.hoisted(() => ({ blocked: false, until: null as string | null }));
+const { mockGetAllPlayers, mockGetAllPromos, mockGetAllMatches, mockGetAllChampionships, mockCreatePromo, mockCreateChallenge, mockGetAllStipulations, mockGetAllMatchTypes, mockGetAllTagTeams, mockIsHiddenPlayer } =
   vi.hoisted(() => ({
     mockGetAllPlayers: vi.fn(),
     mockGetAllPromos: vi.fn(),
     mockGetAllMatches: vi.fn(),
     mockGetAllChampionships: vi.fn(),
     mockCreatePromo: vi.fn(),
+    mockCreateChallenge: vi.fn(),
     mockGetAllStipulations: vi.fn(),
     mockGetAllMatchTypes: vi.fn(),
     mockGetAllTagTeams: vi.fn(),
+    mockIsHiddenPlayer: vi.fn(),
   }));
 
 vi.mock('../../../services/api', () => ({
   playersApi: { getAll: mockGetAllPlayers },
   promosApi: { getAll: mockGetAllPromos, create: mockCreatePromo },
+  challengesApi: { create: mockCreateChallenge },
   matchesApi: { getAll: mockGetAllMatches },
   championshipsApi: { getAll: mockGetAllChampionships },
   stipulationsApi: { getAll: mockGetAllStipulations },
@@ -28,6 +32,7 @@ vi.mock('../../../services/api', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string, fallbackOrOpts?: string | Record<string, unknown>, opts?: Record<string, unknown>) => {
       const t: Record<string, string> = {
         'promos.editor.title': 'Cut a Promo',
@@ -93,23 +98,32 @@ vi.mock('../../../contexts/SiteConfigContext', () => ({
   }),
 }));
 
+vi.mock('../../../hooks/useIsHiddenPlayer', () => ({
+  useIsHiddenPlayer: mockIsHiddenPlayer,
+}));
+
 vi.mock('../PromoEditor.css', () => ({}));
+vi.mock('../../../hooks/useSignupBlock', () => ({ useSignupBlock: () => signupBlock }));
 vi.mock('../PromoCard.css', () => ({}));
 vi.mock('../PromoReactions.css', () => ({}));
 
+import { ApiError } from '../../../services/api/apiClient';
 import PromoEditor from '../PromoEditor';
 
-function renderEditor() {
+function renderEditor(initialEntry = '/promos/new') {
   return render(
-    <BrowserRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <PromoEditor />
-    </BrowserRouter>
+    </MemoryRouter>
   );
 }
 
 describe('PromoEditor', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    signupBlock.blocked = false;
+    signupBlock.until = null;
+    mockIsHiddenPlayer.mockReturnValue(false);
     mockGetAllPlayers.mockResolvedValue([
       { playerId: 'p-1', userId: 'u-1', name: 'John', currentWrestler: 'Stone Cold', wins: 0, losses: 0, draws: 0, createdAt: '', updatedAt: '' },
       { playerId: 'p-2', userId: 'u-2', name: 'Jane', currentWrestler: 'The Rock', wins: 0, losses: 0, draws: 0, createdAt: '', updatedAt: '' },
@@ -150,6 +164,30 @@ describe('PromoEditor', () => {
     expect(screen.getByText('Drop the Mic')).toBeInTheDocument();
   });
 
+  it('tells a player with no wrestler name why they cannot post, and blocks the submit', async () => {
+    mockIsHiddenPlayer.mockReturnValue(true);
+    const user = userEvent.setup();
+    renderEditor();
+
+    expect(await screen.findByText('me.setup.cannotCutPromoTitle')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'me.setup.enterName' })).toHaveAttribute('href', '/profile');
+
+    await user.type(screen.getByPlaceholderText('Drop your promo here...'), 'x'.repeat(60));
+    expect(screen.getByRole('button', { name: 'Drop the Mic' })).toBeDisabled();
+  });
+
+  it('stops a call-out while blocked but leaves other promos open', async () => {
+    signupBlock.blocked = true;
+    signupBlock.until = new Date(Date.now() + 86_400_000).toISOString();
+    const callOut = renderEditor('/promos/new?promoType=call-out');
+    expect(await screen.findByRole('timer')).toBeInTheDocument();
+    callOut.unmount();
+
+    renderEditor('/promos/new?promoType=open-mic');
+    await screen.findByRole('radiogroup');
+    expect(screen.queryByRole('timer')).not.toBeInTheDocument();
+  });
+
   it('validates content minimum length and disables submit when too short', async () => {
     const user = userEvent.setup();
     renderEditor();
@@ -182,7 +220,8 @@ describe('PromoEditor', () => {
     // Type sufficient content (50+ chars)
     const textarea = screen.getByPlaceholderText('Drop your promo here...');
     const validContent = 'A'.repeat(60);
-    await user.type(textarea, validContent);
+    await user.click(textarea);
+    await user.paste(validContent);
 
     // Submit
     const submitBtn = screen.getByText('Drop the Mic');
@@ -203,6 +242,182 @@ describe('PromoEditor', () => {
       expect(screen.getByText('Promo Submitted!')).toBeInTheDocument();
       expect(screen.getByText('View Promo Feed')).toBeInTheDocument();
       expect(screen.getByText('Cut Another Promo')).toBeInTheDocument();
+    });
+  });
+
+  it('issues a challenge when a call-out is published', async () => {
+    const user = userEvent.setup();
+    mockCreatePromo.mockResolvedValue({ promoId: 'promo-1' });
+    mockCreateChallenge.mockResolvedValue({});
+    mockGetAllMatchTypes.mockResolvedValue([{ matchTypeId: 'mt-1', name: 'Singles' }]);
+
+    const { container } = renderEditor('/promos/new?promoType=call-out&targetPlayerId=p-2');
+
+    const textarea = await screen.findByPlaceholderText('Drop your promo here...');
+    await user.click(textarea);
+    await user.paste('A'.repeat(60));
+
+    // A call-out cannot go out without the match type the challenge needs.
+    const submitBtn = screen.getByText('Drop the Mic');
+    expect(submitBtn).toBeDisabled();
+
+    await waitFor(() => {
+      expect(container.querySelector('select option[value="Singles"]')).not.toBeNull();
+    });
+    const matchTypeSelect = container.querySelector('select option[value="Singles"]')?.parentElement as HTMLSelectElement;
+    fireEvent.change(matchTypeSelect, { target: { value: 'Singles' } });
+
+    await waitFor(() => expect(submitBtn).toBeEnabled());
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(mockCreateChallenge).toHaveBeenCalledWith(
+        expect.objectContaining({ challengedId: 'p-2', matchType: 'Singles', promoId: 'promo-1' })
+      );
+    });
+  });
+
+  describe('title challenges', () => {
+    const worldTitle = { championshipId: 'world', name: 'World Title', type: 'singles', currentChampion: 'p-2', isActive: true, createdAt: '' };
+    const tagTitle = { championshipId: 'tag-belts', name: 'Tag Titles', type: 'tag', currentChampion: ['p-3', 'p-4'], isActive: true, createdAt: '' };
+
+    function pickOption(container: HTMLElement, value: string) {
+      const select = container.querySelector(`select option[value="${value}"]`)?.parentElement as HTMLSelectElement;
+      fireEvent.change(select, { target: { value } });
+    }
+
+    async function writePromo(user: ReturnType<typeof userEvent.setup>) {
+      const textarea = await screen.findByPlaceholderText('Drop your promo here...');
+      await user.click(textarea);
+      await user.paste('A'.repeat(60));
+    }
+
+    it('puts the chosen title on a singles call-out', async () => {
+      const user = userEvent.setup();
+      mockCreatePromo.mockResolvedValue({});
+      mockCreateChallenge.mockResolvedValue({});
+      mockGetAllChampionships.mockResolvedValue([worldTitle, tagTitle]);
+
+      const { container } = renderEditor('/promos/new?promoType=call-out&targetPlayerId=p-2');
+      await writePromo(user);
+      await waitFor(() => expect(container.querySelector('select option[value="Singles"]')).not.toBeNull());
+      pickOption(container, 'Singles');
+
+      await waitFor(() => expect(container.querySelector('select option[value="world"]')).not.toBeNull());
+      expect(container.querySelector('select option[value="tag-belts"]')).toBeNull();
+      pickOption(container, 'world');
+
+      await user.click(screen.getByText('Drop the Mic'));
+
+      await waitFor(() => {
+        expect(mockCreateChallenge).toHaveBeenCalledWith(
+          expect.objectContaining({ challengedId: 'p-2', matchType: 'Singles', championshipId: 'world' }),
+        );
+      });
+      expect(mockCreatePromo).toHaveBeenCalledWith(expect.objectContaining({ championshipId: 'world' }));
+    });
+
+    it('drops a title the new match type rules out', async () => {
+      const user = userEvent.setup();
+      mockCreatePromo.mockResolvedValue({});
+      mockCreateChallenge.mockResolvedValue({});
+      mockGetAllChampionships.mockResolvedValue([worldTitle]);
+
+      const { container } = renderEditor('/promos/new?promoType=call-out&targetPlayerId=p-2');
+      await writePromo(user);
+      await waitFor(() => expect(container.querySelector('select option[value="Singles"]')).not.toBeNull());
+      pickOption(container, 'Singles');
+      await waitFor(() => expect(container.querySelector('select option[value="world"]')).not.toBeNull());
+      pickOption(container, 'world');
+
+      pickOption(container, 'Tag Team');
+      await waitFor(() => expect(container.querySelector('select option[value="world"]')).toBeNull());
+
+      await user.click(screen.getByText('Drop the Mic'));
+
+      await waitFor(() => expect(mockCreateChallenge).toHaveBeenCalled());
+      expect(mockCreateChallenge.mock.calls[0]?.[0].championshipId).toBeUndefined();
+    });
+
+    it('puts a tag title on a tag team call-out', async () => {
+      const user = userEvent.setup();
+      mockCreatePromo.mockResolvedValue({});
+      mockCreateChallenge.mockResolvedValue({});
+      mockGetAllChampionships.mockResolvedValue([worldTitle, tagTitle]);
+      mockGetAllTagTeams.mockResolvedValue([
+        { tagTeamId: 'team-1', name: 'Us', player1Id: 'p-1', player2Id: 'p-5', status: 'active' },
+        { tagTeamId: 'team-2', name: 'Them', player1Id: 'p-3', player2Id: 'p-4', status: 'active' },
+      ]);
+
+      const { container } = renderEditor('/promos/new?promoType=call-out');
+      await writePromo(user);
+      await user.click(await screen.findByRole('radio', { name: 'Tag Team' }));
+      pickOption(container, 'team-2');
+      pickOption(container, 'Tag Team');
+
+      await waitFor(() => expect(container.querySelector('select option[value="tag-belts"]')).not.toBeNull());
+      expect(container.querySelector('select option[value="world"]')).toBeNull();
+      pickOption(container, 'tag-belts');
+
+      await user.click(screen.getByText('Drop the Mic'));
+
+      await waitFor(() => {
+        expect(mockCreateChallenge).toHaveBeenCalledWith(expect.objectContaining({
+          challengeMode: 'tag_team', challengedTagTeamId: 'team-2', matchType: 'Tag Team', championshipId: 'tag-belts',
+        }));
+      });
+    });
+
+    describe('a tag team call-out the server refuses', () => {
+      const callOutTeam = async (user: ReturnType<typeof userEvent.setup>) => {
+        mockGetAllTagTeams.mockResolvedValue([
+          { tagTeamId: 'team-1', name: 'Us', player1Id: 'p-1', player2Id: 'p-5', status: 'active' },
+          { tagTeamId: 'team-2', name: 'Them', player1Id: 'p-3', player2Id: 'p-4', status: 'active' },
+        ]);
+        const { container } = renderEditor('/promos/new?promoType=call-out');
+        await writePromo(user);
+        await user.click(await screen.findByRole('radio', { name: 'Tag Team' }));
+        pickOption(container, 'team-2');
+        pickOption(container, 'Tag Team');
+        await user.click(screen.getByText('Drop the Mic'));
+      };
+
+      it('names the team to the promo, so the server can check its members first', async () => {
+        const user = userEvent.setup();
+        mockCreatePromo.mockResolvedValue({ promoId: 'promo-1' });
+        mockCreateChallenge.mockResolvedValue({});
+
+        await callOutTeam(user);
+
+        await waitFor(() => {
+          expect(mockCreatePromo).toHaveBeenCalledWith(expect.objectContaining({
+            challengeMode: 'tag_team', targetTagTeamId: 'team-2',
+          }));
+        });
+      });
+
+      it('shows the refusal when the challenge is refused', async () => {
+        const user = userEvent.setup();
+        mockCreatePromo.mockResolvedValue({ promoId: 'promo-1' });
+        mockCreateChallenge.mockRejectedValue(
+          new ApiError("That player isn't available right now.", 409, { code: 'PLAYER_UNAVAILABLE' }),
+        );
+
+        await callOutTeam(user);
+
+        expect(await screen.findByText("That player isn't available right now.")).toBeInTheDocument();
+        expect(screen.queryByText(/You can issue it separately/)).not.toBeInTheDocument();
+      });
+
+      it('keeps the general warning for any other failure', async () => {
+        const user = userEvent.setup();
+        mockCreatePromo.mockResolvedValue({ promoId: 'promo-1' });
+        mockCreateChallenge.mockRejectedValue(new Error('Network down'));
+
+        await callOutTeam(user);
+
+        expect(await screen.findByText(/You can issue it separately/)).toBeInTheDocument();
+      });
     });
   });
 });

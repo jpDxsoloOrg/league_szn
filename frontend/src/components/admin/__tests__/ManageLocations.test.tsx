@@ -19,7 +19,6 @@ vi.mock('../../../services/api', () => ({
   locationsApi: mockLocationsApi,
 }));
 
-vi.mock('../ManageLocations.css', () => ({}));
 
 import ManageLocations from '../ManageLocations';
 import type { Location } from '../../../types/location';

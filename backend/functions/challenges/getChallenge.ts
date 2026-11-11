@@ -9,7 +9,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('challengeId is required');
     }
 
-    const { user: { challenges }, roster: { players, tagTeams } } = getRepositories();
+    const { user: { challenges }, roster: { players, tagTeams }, competition: { championships } } = getRepositories();
 
     const challenge = await challenges.findById(challengeId);
     if (!challenge) {
@@ -17,9 +17,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Enrich with player names
-    const [challengerPlayer, challengedPlayer] = await Promise.all([
+    const [challengerPlayer, challengedPlayer, championship] = await Promise.all([
       players.findById(challenge.challengerId),
       players.findById(challenge.challengedId),
+      challenge.championshipId ? championships.findById(challenge.championshipId) : null,
     ]);
 
     const enriched: Record<string, unknown> = {
@@ -32,6 +33,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         ? { playerName: challengedPlayer.name, wrestlerName: challengedPlayer.currentWrestler, imageUrl: challengedPlayer.imageUrl }
         : { playerName: 'Unknown', wrestlerName: 'Unknown' },
     };
+    if (championship) enriched.championshipName = championship.name;
 
     // Enrich tag team challenge data
     if (challenge.challengeMode === 'tag_team' && challenge.challengerTagTeamId && challenge.challengedTagTeamId) {

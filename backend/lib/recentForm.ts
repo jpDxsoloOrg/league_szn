@@ -1,6 +1,13 @@
 import type { Match } from './repositories';
+import {
+  computeRecentFormAndStreak as computeFromResults,
+  type FormAndStreak,
+  type FormResult,
+} from './stats/recentFormAndStreak';
 
-export type FormResult = 'W' | 'L' | 'D';
+export type { FormResult };
+
+const RECENT_FORM_LIMIT = 5;
 
 export function getResultForPlayer(
   playerId: string,
@@ -16,31 +23,33 @@ export function getResultForPlayer(
   return 'D';
 }
 
-export type CompletedMatchForForm = Pick<Match, 'participants' | 'winners' | 'losers' | 'isDraw' | 'updatedAt'>;
+export type CompletedMatchForForm = Pick<Match, 'date' | 'participants' | 'winners' | 'losers' | 'isDraw' | 'updatedAt'>;
+
+/**
+ * Newest match first, by match date. updatedAt only breaks ties within a date:
+ * a rating, Match of the Night or a slot edit bumps it on any completed match,
+ * however old, so ordering on it would make an old result read as the latest.
+ */
+export function compareMatchesNewestFirst(
+  a: { date: string; updatedAt?: string },
+  b: { date: string; updatedAt?: string },
+): number {
+  return (
+    new Date(b.date).getTime() - new Date(a.date).getTime() ||
+    (b.updatedAt ?? '').localeCompare(a.updatedAt ?? '')
+  );
+}
 
 export function computeRecentFormAndStreak(
   playerId: string,
   completedMatches: CompletedMatchForForm[]
-): { recentForm: FormResult[]; currentStreak: { type: FormResult; count: number } } {
+): FormAndStreak {
   // Rows with no updatedAt can't be ordered, so they're left out — the same
   // rule getStandings applies; keeping it here means every caller agrees.
-  const playerMatches = completedMatches
+  const resultsNewestFirst = completedMatches
     .filter((m) => m.updatedAt && (m.participants || []).includes(playerId))
-    .sort((a, b) => {
-      const aTime = new Date(a.updatedAt ?? 0).getTime();
-      const bTime = new Date(b.updatedAt ?? 0).getTime();
-      return bTime - aTime;
-    })
-    .slice(0, 5);
-  const recentForm: FormResult[] = playerMatches.map((m) => getResultForPlayer(playerId, m));
-  if (recentForm.length === 0) {
-    return { recentForm: [], currentStreak: { type: 'W', count: 0 } };
-  }
-  const first = recentForm[0];
-  let count = 0;
-  for (const r of recentForm) {
-    if (r !== first) break;
-    count++;
-  }
-  return { recentForm, currentStreak: { type: first, count } };
+    .sort(compareMatchesNewestFirst)
+    .map((m) => getResultForPlayer(playerId, m));
+  // The form window is capped; the streak runs over every result.
+  return computeFromResults(resultsNewestFirst, RECENT_FORM_LIMIT);
 }

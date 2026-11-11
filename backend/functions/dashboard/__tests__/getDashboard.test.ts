@@ -33,7 +33,7 @@ vi.mock('../../../lib/repositories', () => ({
       stipulations: { list: mockStipulationsList },
     },
     roster: {
-      players: { list: mockPlayersList },
+      players: { listWithDeleted: mockPlayersList },
     },
     season: {
       seasons: { list: mockSeasonsList },
@@ -132,6 +132,78 @@ describe('getDashboard', () => {
     expect(body.recentResults).toHaveLength(1);
     // History keeps its participants even though B no longer counts.
     expect(JSON.stringify(body.recentResults[0])).toContain('B');
+  });
+
+  describe('drawn recent results', () => {
+    const recent = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+    beforeEach(() => {
+      mockPlayersList.mockResolvedValue([
+        { playerId: 'p1', name: 'Alice', currentWrestler: 'A', hasWrestlerRole: true },
+        { playerId: 'p2', name: 'Bob', currentWrestler: 'B', hasWrestlerRole: true },
+        { playerId: 'p3', name: 'Cara', currentWrestler: 'C', hasWrestlerRole: true },
+        { playerId: 'p4', name: 'Dee', currentWrestler: 'D', hasWrestlerRole: true },
+      ]);
+    });
+
+    it('marks a draw and names everyone in it, with no winner', async () => {
+      mockMatchesList.mockResolvedValue([
+        { matchId: 'm1', date: recent, status: 'completed', participants: ['p1', 'p2'], winners: ['p1', 'p2'], losers: [], isDraw: true, matchFormat: 'singles' },
+      ]);
+
+      const result = await getDashboard({} as never, ctx, cb);
+
+      const [row] = JSON.parse(result!.body).recentResults;
+      expect(row.isDraw).toBe(true);
+      expect(row.participantsName).toBe('A vs B');
+      expect(row.winnerName).toBe('\u2014');
+      expect(row.winnerImageUrl).toBeUndefined();
+    });
+
+    it('keeps tag partners together in a drawn team match', async () => {
+      mockMatchesList.mockResolvedValue([
+        {
+          matchId: 'm1', date: recent, status: 'completed', participants: ['p1', 'p2', 'p3', 'p4'],
+          teams: [['p1', 'p2'], ['p3', 'p4']], winners: ['p1', 'p2', 'p3', 'p4'], losers: [], isDraw: true, matchFormat: 'tag',
+        },
+      ]);
+
+      const result = await getDashboard({} as never, ctx, cb);
+
+      expect(JSON.parse(result!.body).recentResults[0].participantsName).toBe('A & B vs C & D');
+    });
+
+    it('leaves a decided match as it was', async () => {
+      mockMatchesList.mockResolvedValue([
+        { matchId: 'm1', date: recent, status: 'completed', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'], matchFormat: 'singles' },
+      ]);
+
+      const result = await getDashboard({} as never, ctx, cb);
+
+      const [row] = JSON.parse(result!.body).recentResults;
+      expect(row.isDraw).toBe(false);
+      expect(row.participantsName).toBeUndefined();
+      expect(row.winnerName).toBe('A');
+      expect(row.loserName).toBe('B');
+    });
+  });
+
+  it('names a player with no row Former member, and keeps the dash for an empty side', async () => {
+    const recent = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    mockMatchesList.mockResolvedValue([
+      { matchId: 'm1', date: recent, status: 'completed', winners: ['gone'], losers: ['p1'], matchFormat: 'singles' },
+      { matchId: 'm2', date: recent, status: 'completed', winners: ['p1'], losers: [], matchFormat: 'singles' },
+    ]);
+    mockPlayersList.mockResolvedValue([{ playerId: 'p1', name: 'Alice', currentWrestler: 'A' }]);
+
+    const result = await getDashboard({} as never, ctx, cb);
+
+    const rows = JSON.parse(result!.body).recentResults;
+    expect(rows.find((row: { matchId: string }) => row.matchId === 'm1')).toMatchObject({
+      winnerName: 'Former member',
+      loserName: 'A',
+    });
+    expect(rows.find((row: { matchId: string }) => row.matchId === 'm2').loserName).toBe('\u2014');
   });
 
   it('handles empty tables gracefully', async () => {
@@ -240,7 +312,7 @@ describe('getDashboard', () => {
     expect(body.upcomingEvents.length).toBeLessThanOrEqual(3);
   });
 
-  it('excludes completed matches without updatedAt from recent results', async () => {
+  it('includes completed matches without updatedAt when they have a date', async () => {
     mockMatchesList.mockResolvedValue([
       {
         matchId: 'm1',
@@ -260,13 +332,45 @@ describe('getDashboard', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    expect(body.recentResults).toHaveLength(0);
+    expect(body.recentResults.map((m: { matchId: string }) => m.matchId)).toEqual(['m1']);
   });
 
-  it('returns recent results from the last 3 days, excluding older matches', async () => {
+  it('keeps showing the latest results however long ago they were played', async () => {
+    const yearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
+    mockMatchesList.mockResolvedValue([
+      { matchId: 'old', date: yearAgo, updatedAt: yearAgo, status: 'completed', winners: ['p1'], losers: ['p2'], matchFormat: 'singles' },
+    ]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', currentWrestler: 'A' },
+      { playerId: 'p2', currentWrestler: 'B' },
+    ]);
+
+    const result = await getDashboard({} as never, ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    expect(body.recentResults.map((m: { matchId: string }) => m.matchId)).toEqual(['old']);
+  });
+
+  it('orders by match date, not by when the row was last updated', async () => {
+    mockMatchesList.mockResolvedValue([
+      { matchId: 'older', date: '2025-01-01T00:00:00Z', updatedAt: '2025-06-01T00:00:00Z', status: 'completed', winners: ['p1'], losers: ['p2'], matchFormat: 'singles' },
+      { matchId: 'newer', date: '2025-03-01T00:00:00Z', status: 'completed', winners: ['p1'], losers: ['p2'], matchFormat: 'singles' },
+    ]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', currentWrestler: 'A' },
+      { playerId: 'p2', currentWrestler: 'B' },
+    ]);
+
+    const result = await getDashboard({} as never, ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    expect(body.recentResults.map((m: { matchId: string }) => m.matchId)).toEqual(['newer', 'older']);
+  });
+
+  it('returns only the latest 5 completed matches', async () => {
     const now = Date.now();
     const oneHourMs = 60 * 60 * 1000;
-    // 5 recent matches (within 3 days) + 5 old matches (> 3 days ago)
+    // 5 newer matches + 5 older ones
     const manyMatches = [
       ...Array.from({ length: 5 }, (_, i) => ({
         matchId: `recent${i}`,

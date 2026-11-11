@@ -1,15 +1,14 @@
 import { useTranslation } from 'react-i18next';
 import type { Season } from '../../types';
-import './SeasonSelector.css';
+import Select from '../ui/Select';
 
 interface SeasonSelectorProps {
   seasons: Season[];
   selectedSeasonId: string;
   onSeasonChange: (seasonId: string) => void;
-  compact?: boolean;
 }
 
-function SeasonSelector({ seasons, selectedSeasonId, onSeasonChange, compact }: SeasonSelectorProps) {
+function SeasonSelector({ seasons, selectedSeasonId, onSeasonChange }: SeasonSelectorProps) {
   const { t } = useTranslation();
 
   if (seasons.length === 0) {
@@ -17,21 +16,19 @@ function SeasonSelector({ seasons, selectedSeasonId, onSeasonChange, compact }: 
   }
 
   return (
-    <div className={`ps-season-selector${compact ? ' ps-season-selector--compact' : ''}`}>
-      <label htmlFor="season-stats-select">{t('standings.season')}:</label>
-      <select
-        id="season-stats-select"
-        value={selectedSeasonId}
-        onChange={(e) => onSeasonChange(e.target.value)}
-      >
-        <option value="">{t('standings.allTime')}</option>
-        {seasons.map((season) => (
-          <option key={season.seasonId} value={season.seasonId}>
-            {season.name} {season.status === 'active' ? `(${t('common.active')})` : ''}
-          </option>
-        ))}
-      </select>
-    </div>
+    <Select
+      id="season-stats-select"
+      label={t('standings.season')}
+      value={selectedSeasonId}
+      onValueChange={onSeasonChange}
+      options={[
+        { value: '', label: t('standings.allTime') },
+        ...seasons.map((season) => ({
+          value: season.seasonId,
+          label: season.status === 'active' ? `${season.name} (${t('common.active')})` : season.name,
+        })),
+      ]}
+    />
   );
 }
 

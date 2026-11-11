@@ -51,7 +51,7 @@ describe('PromoReactions', () => {
   it('highlights active reaction and increments count on click', async () => {
     const user = userEvent.setup();
 
-    render(<PromoReactions reactionCounts={defaultCounts} />);
+    render(<PromoReactions reactionCounts={defaultCounts} onReact={vi.fn()} />);
 
     const fireButton = screen.getByLabelText('Fire');
     expect(fireButton).not.toHaveClass('active');
@@ -81,5 +81,25 @@ describe('PromoReactions', () => {
     await user.click(clapButton);
     expect(mockOnReact).toHaveBeenCalledTimes(2);
     expect(clapButton).not.toHaveClass('active');
+  });
+
+  it('moves the highlight when a different reaction is picked', async () => {
+    const user = userEvent.setup();
+
+    render(<PromoReactions reactionCounts={defaultCounts} onReact={vi.fn()} />);
+
+    await user.click(screen.getByLabelText('Fire'));
+    await user.click(screen.getByLabelText('Clap'));
+
+    expect(screen.getByLabelText('Fire')).not.toHaveClass('active');
+    expect(screen.getByLabelText('Clap')).toHaveClass('active');
+    expect(screen.getByLabelText('Fire')).toHaveTextContent('3');
+    expect(screen.getByLabelText('Clap')).toHaveTextContent('6');
+  });
+
+  it('is read-only without a handler', () => {
+    render(<PromoReactions reactionCounts={defaultCounts} />);
+
+    expect(screen.getByLabelText('Fire')).toBeDisabled();
   });
 });

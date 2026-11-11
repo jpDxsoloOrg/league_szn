@@ -8,6 +8,7 @@ import {
   AdminAddUserToGroupCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { success, badRequest, serverError, unauthorized } from '../../lib/response';
+import { parseBody } from '../../lib/parseBody';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
@@ -40,16 +41,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   }
 
   try {
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    let parsedBody: CreateAdminRequest;
-    try {
-      parsedBody = JSON.parse(event.body);
-    } catch {
-      return badRequest('Invalid JSON in request body');
-    }
+    const { data: parsedBody, error: parseError } = parseBody<CreateAdminRequest>(event);
+    if (parseError) return parseError;
 
     const { email, password, name } = parsedBody;
 

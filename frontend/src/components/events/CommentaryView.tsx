@@ -1,36 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { eventsApi } from '../../services/api';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { formatDate } from '../../utils/dateUtils';
-import type { CommentaryParticipant, EventCommentary, MatchDesignation } from '../../types/event';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { formatCalendarDate } from '../../utils/dateUtils';
+import type { CommentaryParticipant, EventCommentary } from '../../types/event';
 import { defaultMatchIndex, groupByTeam } from '../../utils/commentary';
+import { formatMatchType } from '../../utils/matchDisplay';
+import Badge from '../ui/Badge';
+import type { BadgeTone } from '../ui/Badge';
+import Button from '../ui/Button';
+import Skeleton from '../ui/Skeleton';
+import { DESIGNATION_LABEL_KEYS } from './eventDisplay';
 import CommentaryWrestlerCard from './CommentaryWrestlerCard';
 import HeadToHeadStrip from './HeadToHeadStrip';
 import './CommentaryView.css';
 
-const designationLabels: Record<MatchDesignation, string> = {
-  'pre-show': 'events.designations.preShow',
-  opener: 'events.designations.opener',
-  midcard: 'events.designations.midcard',
-  'co-main': 'events.designations.coMain',
-  'main-event': 'events.designations.mainEvent',
-};
-
-/** "singles" → "Singles", "triple-threat" → "Triple Threat". */
-function prettyFormat(format: string): string {
-  return format
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
-}
-
 export default function CommentaryView() {
   const { eventId } = useParams<{ eventId: string }>();
   const { t } = useTranslation();
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isMobile = useIsMobile();
 
   const [data, setData] = useState<EventCommentary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -90,10 +79,7 @@ export default function CommentaryView() {
   if (loading) {
     return (
       <div className="commentary-page">
-        <div className="loading-state">
-          <div className="loading-spinner" role="status" aria-label={t('events.commentary.loading')} />
-          <p className="loading-text">{t('events.commentary.loading')}</p>
-        </div>
+        <Skeleton variant="cards" count={2} />
       </div>
     );
   }
@@ -101,10 +87,10 @@ export default function CommentaryView() {
   if (error || !data) {
     return (
       <div className="commentary-page">
-        <Link to={`/events/${eventId}`} className="back-link">{t('events.commentary.backToEvent')}</Link>
-        <div className="error-message" role="alert">
+        <Button className="commentary-back" variant="ghost" size="sm" to={`/events/${eventId}`}>{t('events.commentary.backToEvent')}</Button>
+        <p className="commentary-error" role="alert">
           {error === 'events.commentary.loadError' || !error ? t('events.commentary.loadError') : error}
-        </div>
+        </p>
       </div>
     );
   }
@@ -117,12 +103,12 @@ export default function CommentaryView() {
 
   // There is no "in progress" signal on a match, so anything after the
   // default one is simply upcoming.
-  const statusPill = (() => {
+  const statusPill = ((): { key: string; tone: BadgeTone } | null => {
     if (!match) return null;
-    if (match.status === 'completed') return { key: 'completed', cls: 'done' };
-    if (match.status === 'cancelled') return { key: 'cancelled', cls: 'done' };
-    if (index === nextIndex) return { key: 'upNext', cls: 'next' };
-    return { key: 'upcoming', cls: 'later' };
+    if (match.status === 'completed') return { key: 'completed', tone: 'neutral' };
+    if (match.status === 'cancelled') return { key: 'cancelled', tone: 'neutral' };
+    if (index === nextIndex) return { key: 'upNext', tone: 'pink' };
+    return { key: 'upcoming', tone: 'primary' };
   })();
 
   const renderCard = (p: CommentaryParticipant, teamIndex?: number, teamLabel?: string) => (
@@ -139,17 +125,17 @@ export default function CommentaryView() {
     <div className="commentary-page">
       <header className="commentary-topbar">
         <div className="commentary-topbar-left">
-          <Link to={`/events/${data.eventId}`} className="back-link">{t('events.commentary.backToEvent')}</Link>
+          <Button variant="ghost" size="sm" to={`/events/${data.eventId}`}>{t('events.commentary.backToEvent')}</Button>
           <h1 className="commentary-event-name">
-            {data.name} <span className="commentary-event-date">— {formatDate(data.date)}</span>
+            {data.name} <span className="commentary-event-date">— {formatCalendarDate(data.date)}</span>
           </h1>
           {match && (
             <p className="commentary-match-label">
               <span>{t('events.commentary.matchOf', { n: index + 1, total })}</span>
               <span className="commentary-sep">·</span>
-              <span>{t(designationLabels[match.designation])}</span>
+              <span>{t(DESIGNATION_LABEL_KEYS[match.designation])}</span>
               <span className="commentary-sep">·</span>
-              <span>{prettyFormat(match.matchFormat)}</span>
+              <span>{formatMatchType(match.matchFormat, t)}</span>
               {match.stipulationName && (
                 <>
                   <span className="commentary-sep">·</span>
@@ -165,20 +151,18 @@ export default function CommentaryView() {
                 </>
               )}
               {statusPill && (
-                <span className={`commentary-pill commentary-pill--${statusPill.cls}`}>
-                  {t(`events.commentary.${statusPill.key}`)}
-                </span>
+                <Badge tone={statusPill.tone}>{t(`events.commentary.${statusPill.key}`)}</Badge>
               )}
             </p>
           )}
         </div>
         <nav className="commentary-nav" aria-label={t('events.commentary.title')}>
-          <button type="button" className="commentary-nav-btn" onClick={goPrev} disabled={index <= 0}>
+          <Button variant="secondary" size="sm" onClick={goPrev} disabled={index <= 0}>
             {t('events.commentary.prevMatch')}
-          </button>
-          <button type="button" className="commentary-nav-btn" onClick={goNext} disabled={index >= total - 1}>
+          </Button>
+          <Button variant="secondary" size="sm" onClick={goNext} disabled={index >= total - 1}>
             {t('events.commentary.nextMatch')}
-          </button>
+          </Button>
         </nav>
       </header>
 

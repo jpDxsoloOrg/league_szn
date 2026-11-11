@@ -6,8 +6,8 @@
  * indirectly by calling exported API functions and verifying how
  * global.fetch was invoked.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { authApi, profileApi, playersApi } from '../api';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { ApiError, AUTH_EXPIRED_EVENT, authApi, eventsApi, isApiError, profileApi, playersApi, promosApi } from '../api';
 
 // fetchWithAuth lazily imports the cognito service on the 401-refresh path;
 // mock it so tests never load aws-amplify.
@@ -58,7 +58,6 @@ describe('fetchWithAuth (indirect)', () => {
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: 'Bearer test-jwt-token',
-          'Content-Type': 'application/json',
         }),
       }),
     );
@@ -72,7 +71,58 @@ describe('fetchWithAuth (indirect)', () => {
     const callArgs = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     const headers = callArgs[1].headers as Record<string, string>;
     expect(headers).not.toHaveProperty('Authorization');
-    expect(headers['Content-Type']).toBe('application/json');
+  });
+
+  it('sends Content-Type only when the request has a body', async () => {
+    global.fetch = mockFetchResponse([]);
+
+    await playersApi.getAll();
+    await playersApi.create({ name: 'A', currentWrestler: 'B' } as never);
+
+    const calls = (global.fetch as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls[0]![1].headers).not.toHaveProperty('Content-Type');
+    expect(calls[1]![1].headers['Content-Type']).toBe('application/json');
+  });
+
+  it('throws an ApiError carrying the HTTP status', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      json: vi.fn().mockResolvedValue({ message: 'Player not found' }),
+    });
+
+    const failure = await playersApi.getById('missing').catch((err: unknown) => err);
+
+    expect(failure).toBeInstanceOf(ApiError);
+    expect(failure).toMatchObject({ status: 404, message: 'Player not found' });
+    expect(isApiError(failure, 404)).toBe(true);
+    expect(isApiError(failure, 401)).toBe(false);
+  });
+
+  it('requests the directory and staff views of players', async () => {
+    global.fetch = mockFetchResponse([]);
+
+    await playersApi.getDirectory();
+    await playersApi.getAllIncludingHidden();
+
+    const urls = (global.fetch as ReturnType<typeof vi.fn>).mock.calls.map((call) => call[0]);
+    expect(urls).toEqual([`${API_BASE}/players?view=directory`, `${API_BASE}/players?includeHidden=true`]);
+  });
+
+  it('passes includeArchived to the promos API', async () => {
+    global.fetch = mockFetchResponse([]);
+
+    await promosApi.getAll({ includeArchived: true });
+
+    expect(global.fetch).toHaveBeenCalledWith(`${API_BASE}/promos?includeArchived=true`, expect.anything());
+  });
+
+  it('getMyCheckIn resolves null on 404 and rethrows other failures', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404, json: vi.fn().mockResolvedValue({ message: 'none' }) });
+    await expect(eventsApi.getMyCheckIn('event-1')).resolves.toBeNull();
+
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 403, json: vi.fn().mockResolvedValue({ message: 'boom' }) });
+    await expect(eventsApi.getMyCheckIn('event-1')).rejects.toThrow('boom');
   });
 
   it('returns undefined for 204 No Content responses', async () => {
@@ -102,7 +152,7 @@ describe('fetchWithAuth (indirect)', () => {
   it('throws generic message when error body is not JSON', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
-      status: 500,
+      status: 400,
       json: vi.fn().mockRejectedValue(new Error('not JSON')),
     });
 
@@ -153,11 +203,17 @@ describe('fetchWithAuth (indirect)', () => {
         json: vi.fn().mockResolvedValue({ message: 'Unauthorized' }),
       });
 
+      const onExpired = vi.fn();
+      window.addEventListener(AUTH_EXPIRED_EVENT, onExpired);
+
       await expect(playersApi.getAll()).rejects.toThrow(
         'Your session has expired. Please sign in again.',
       );
+      window.removeEventListener(AUTH_EXPIRED_EVENT, onExpired);
+
       expect(mockRefreshSession).toHaveBeenCalledTimes(1);
       expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(onExpired).toHaveBeenCalledTimes(1);
     });
 
     it('does not attempt a refresh for unauthenticated 401s', async () => {
@@ -171,6 +227,120 @@ describe('fetchWithAuth (indirect)', () => {
       await expect(playersApi.getAll()).rejects.toThrow('Unauthorized');
       expect(mockRefreshSession).not.toHaveBeenCalled();
     });
+  });
+});
+
+// ===========================================================================
+// Transient failure retries
+// ===========================================================================
+
+describe('fetchWithAuth retries', () => {
+  const failure = (status: number) => ({
+    ok: false,
+    status,
+    json: vi.fn().mockResolvedValue({ message: `HTTP ${status}` }),
+  });
+  const success = (body: unknown) => ({ ok: true, status: 200, json: vi.fn().mockResolvedValue(body) });
+  const fetchCalls = () => (global.fetch as ReturnType<typeof vi.fn>).mock.calls.length;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it.each([429, 500, 502, 503])('retries a GET that fails with %i', async (status) => {
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce(failure(status))
+      .mockResolvedValueOnce(success([{ playerId: 'p1' }]));
+
+    const result = playersApi.getAll();
+    await vi.runAllTimersAsync();
+
+    await expect(result).resolves.toEqual([{ playerId: 'p1' }]);
+    expect(fetchCalls()).toBe(2);
+  });
+
+  it('gives up after two retries and reports the last failure', async () => {
+    global.fetch = vi.fn().mockResolvedValue(failure(503));
+
+    const result = playersApi.getAll().catch((err: unknown) => err);
+    await vi.runAllTimersAsync();
+
+    expect(await result).toMatchObject({ status: 503 });
+    expect(fetchCalls()).toBe(3);
+  });
+
+  it('waits longer before the second retry, with jitter', async () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    global.fetch = vi.fn().mockResolvedValue(failure(500));
+
+    const result = playersApi.getAll().catch((err: unknown) => err);
+    await vi.advanceTimersByTimeAsync(399);
+    expect(fetchCalls()).toBe(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchCalls()).toBe(2);
+    await vi.advanceTimersByTimeAsync(799);
+    expect(fetchCalls()).toBe(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchCalls()).toBe(3);
+
+    await result;
+    random.mockRestore();
+  });
+
+  it.each([400, 403, 404, 504])('does not retry a GET that fails with %i', async (status) => {
+    global.fetch = vi.fn().mockResolvedValue(failure(status));
+
+    const result = playersApi.getAll().catch((err: unknown) => err);
+    await vi.runAllTimersAsync();
+
+    expect(await result).toMatchObject({ status });
+    expect(fetchCalls()).toBe(1);
+  });
+
+  it('never retries a write', async () => {
+    global.fetch = vi.fn().mockResolvedValue(failure(503));
+
+    const created = playersApi.create({ name: 'A', currentWrestler: 'B' } as never).catch((err: unknown) => err);
+    await vi.runAllTimersAsync();
+    expect(await created).toMatchObject({ status: 503 });
+    expect(fetchCalls()).toBe(1);
+
+    const deleted = playersApi.delete('player-1').catch((err: unknown) => err);
+    await vi.runAllTimersAsync();
+    expect(await deleted).toMatchObject({ status: 503 });
+    expect(fetchCalls()).toBe(2);
+  });
+
+  it('stops waiting as soon as the caller aborts', async () => {
+    global.fetch = vi.fn().mockResolvedValue(failure(500));
+    const controller = new AbortController();
+
+    const result = playersApi.getAll(controller.signal).catch((err: unknown) => err);
+    await vi.advanceTimersByTimeAsync(10);
+    controller.abort();
+
+    expect(await result).toMatchObject({ name: 'AbortError' });
+    await vi.runAllTimersAsync();
+    expect(fetchCalls()).toBe(1);
+  });
+
+  it('retries a transient failure on the request made after a token refresh', async () => {
+    sessionStorage.setItem('accessToken', 'expired-token');
+    mockRefreshSession.mockResolvedValue({ accessToken: 'fresh-token' });
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce(failure(401))
+      .mockResolvedValueOnce(failure(500))
+      .mockResolvedValueOnce(success([]));
+
+    const result = playersApi.getAll();
+    await vi.runAllTimersAsync();
+
+    await expect(result).resolves.toEqual([]);
+    expect(fetchCalls()).toBe(3);
   });
 });
 

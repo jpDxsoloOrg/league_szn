@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
 // --- Hoisted mocks ---
 const { mockGetH2HPlayers, mockGetH2H } = vi.hoisted(() => ({
@@ -16,6 +16,9 @@ vi.mock('../../../services/api', () => ({
   },
   seasonsApi: {
     getAll: vi.fn().mockResolvedValue([]),
+  },
+  playersApi: {
+    getAll: vi.fn().mockResolvedValue([{ playerId: 'p2', name: 'The Rock', imageUrl: 'https://img.test/p2.png' }]),
   },
 }));
 
@@ -48,6 +51,13 @@ vi.mock('react-i18next', () => ({
         'statistics.nav.playerStats': 'Player Stats',
         'statistics.nav.leaderboards': 'Leaderboards',
         'statistics.nav.taleOfTape': 'Tale of the Tape',
+        'statistics.taleOfTape.title': 'Tale of the Tape',
+        'statistics.headToHead.compareView': 'Compare',
+        'statistics.headToHead.needTwoPlayers': 'At least two players are needed.',
+        'statistics.labels.titleLosses': 'Title Losses',
+        'statistics.labels.longestLossStreak': 'Worst Loss Streak',
+        'statistics.loadFailed': 'Could not load these stats',
+        'common.retry': 'Retry',
         'common.loading': 'Loading...',
         'common.vs': 'VS',
       };
@@ -57,9 +67,9 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../HeadToHeadComparison.css', () => ({}));
-vi.mock('../SeasonSelector.css', () => ({}));
 
 import HeadToHeadComparison from '../HeadToHeadComparison';
+import TaleOfTheTape from '../TaleOfTheTape';
 
 // --- Test data ---
 const mockPlayers = [
@@ -104,11 +114,20 @@ const mockH2HResponse = {
   },
 };
 
-function renderComponent() {
+function LocationProbe() {
+  const { pathname, search } = useLocation();
+  return <output data-testid="location">{`${pathname}${search}`}</output>;
+}
+
+function renderComponent(entry = '/stats/head-to-head') {
   return render(
-    <BrowserRouter>
-      <HeadToHeadComparison />
-    </BrowserRouter>
+    <MemoryRouter initialEntries={[entry]}>
+      <Routes>
+        <Route path="/stats/head-to-head" element={<HeadToHeadComparison />} />
+        <Route path="/stats/tale-of-tape" element={<TaleOfTheTape />} />
+      </Routes>
+      <LocationProbe />
+    </MemoryRouter>
   );
 }
 
@@ -143,6 +162,38 @@ describe('HeadToHeadComparison', () => {
 
     // Stat comparison section
     expect(screen.getByText('Stat Comparison')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Head to Head' })).toBeInTheDocument();
+  });
+
+  it('shows real photos in the corners, with initials for a player who has none', async () => {
+    mockGetH2HPlayers.mockResolvedValue({ players: mockPlayers });
+    mockGetH2H.mockResolvedValue(mockH2HResponse);
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByRole('img', { name: 'The Rock' })).toHaveAttribute('src', 'https://img.test/p2.png');
+    });
+    expect(screen.getByRole('img', { name: 'John Cena' })).toHaveTextContent('JC');
+  });
+
+  it('lists players alphabetically and leaves no empty brackets for a blank name', async () => {
+    const user = userEvent.setup();
+    mockGetH2HPlayers.mockResolvedValue({
+      players: [...mockPlayers, { playerId: 'p4', name: '', wrestlerName: 'Sid Vicious' }],
+    });
+    mockGetH2H.mockResolvedValue(mockH2HResponse);
+
+    renderComponent();
+
+    await user.click(await screen.findByRole('combobox', { name: 'Player 1' }));
+
+    expect((await screen.findAllByRole('option')).map((option) => option.textContent)).toEqual([
+      'John Cena (The Champ)',
+      'Sid Vicious',
+      'The Rock (The Great One)',
+      'Undertaker (The Deadman)',
+    ]);
   });
 
   it('displays recent results with winner names and badges', async () => {
@@ -158,8 +209,8 @@ describe('HeadToHeadComparison', () => {
     // Recent result dates within .h2h-recent-date elements
     const dates = document.querySelectorAll('.h2h-recent-date');
     expect(dates).toHaveLength(2);
-    expect(dates[0]).toHaveTextContent('2024-06-01');
-    expect(dates[1]).toHaveTextContent('2024-05-15');
+    expect(dates[0]).toHaveTextContent('Jun 1, 2024');
+    expect(dates[1]).toHaveTextContent('May 15, 2024');
 
     // Winner badges
     expect(screen.getByText('P1 Win')).toBeInTheDocument();
@@ -179,12 +230,100 @@ describe('HeadToHeadComparison', () => {
       expect(screen.getAllByText('Head-to-Head Record').length).toBeGreaterThanOrEqual(1);
     });
 
-    const selects = screen.getAllByRole('combobox');
     // Change player 2 to same as player 1
-    await user.selectOptions(selects[1]!, 'p1');
+    await user.click(screen.getByRole('combobox', { name: 'Player 2' }));
+    await user.click(await screen.findByRole('option', { name: 'John Cena (The Champ)' }));
 
     await waitFor(() => {
       expect(screen.getByText('Select two different players')).toBeInTheDocument();
     });
+  });
+
+  it.each([
+    ['player1 and player2', '/stats/head-to-head?player1=p3&player2=p2'],
+    ['player1Id and player2Id', '/stats/head-to-head?player1Id=p3&player2Id=p2'],
+  ])('preselects the matchup from %s in the URL', async (_names, entry) => {
+    mockGetH2HPlayers.mockResolvedValue({ players: mockPlayers });
+    mockGetH2H.mockResolvedValue(mockH2HResponse);
+
+    renderComponent(entry);
+
+    await waitFor(() => {
+      expect(mockGetH2H).toHaveBeenCalledWith('p3', 'p2', undefined, expect.any(AbortSignal));
+    });
+    expect(screen.getByRole('combobox', { name: 'Player 1' })).toHaveTextContent('Undertaker (The Deadman)');
+  });
+
+  it('fills the empty slot when only one player is linked', async () => {
+    mockGetH2HPlayers.mockResolvedValue({ players: mockPlayers });
+    mockGetH2H.mockResolvedValue(mockH2HResponse);
+
+    renderComponent('/stats/head-to-head?player2=p1');
+
+    await waitFor(() => {
+      expect(mockGetH2H).toHaveBeenCalledWith('p2', 'p1', undefined, expect.any(AbortSignal));
+    });
+  });
+
+  it('keeps the matchup when switching to the Tale of the Tape view', async () => {
+    const user = userEvent.setup();
+    mockGetH2HPlayers.mockResolvedValue({ players: mockPlayers });
+    mockGetH2H.mockResolvedValue(mockH2HResponse);
+
+    renderComponent('/stats/head-to-head?player1=p3&player2=p2');
+
+    await user.click(await screen.findByRole('link', { name: 'Tale of the Tape' }));
+
+    expect(screen.getByTestId('location')).toHaveTextContent('/stats/tale-of-tape?player1=p3&player2=p2');
+    expect(await screen.findByText('Title Losses')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Tale of the Tape' })).toBeInTheDocument();
+    expect(mockGetH2H).toHaveBeenLastCalledWith('p3', 'p2', undefined, expect.any(AbortSignal));
+  });
+
+  it('counts fewer losses as the advantage on the tape', async () => {
+    mockGetH2HPlayers.mockResolvedValue({ players: mockPlayers });
+    mockGetH2H.mockResolvedValue(mockH2HResponse);
+
+    renderComponent('/stats/tale-of-tape');
+
+    const lossRow = (await screen.findByText('Losses')).closest('li');
+    expect(lossRow?.querySelector('.h2h-better')).toHaveTextContent('8');
+  });
+
+  it('shows a drawn match as a draw, not as a win for either player', async () => {
+    mockGetH2HPlayers.mockResolvedValue({ players: mockPlayers });
+    mockGetH2H.mockResolvedValue({
+      ...mockH2HResponse,
+      headToHead: {
+        ...mockH2HResponse.headToHead,
+        recentResults: [{ matchId: 'm3', winnerId: '', date: '2024-04-01' }],
+      },
+    });
+
+    renderComponent();
+
+    expect((await screen.findByText('Apr 1, 2024')).closest('li')).toHaveTextContent('Draws');
+    expect(screen.queryByText('P2 Win')).not.toBeInTheDocument();
+  });
+
+  it('shows an empty state when fewer than two players exist', async () => {
+    mockGetH2HPlayers.mockResolvedValue({ players: [mockPlayers[0]] });
+
+    renderComponent();
+
+    expect(await screen.findByText('At least two players are needed.')).toBeInTheDocument();
+    expect(mockGetH2H).not.toHaveBeenCalled();
+  });
+
+  it('offers a retry when the comparison fails to load', async () => {
+    const user = userEvent.setup();
+    mockGetH2HPlayers.mockResolvedValue({ players: mockPlayers });
+    mockGetH2H.mockRejectedValueOnce(new Error('Network error')).mockResolvedValue(mockH2HResponse);
+
+    renderComponent();
+
+    await user.click(await screen.findByRole('button', { name: 'Retry' }));
+
+    expect(await screen.findByText('Stat Comparison')).toBeInTheDocument();
   });
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
@@ -12,6 +12,7 @@ const mockChallengesRepo = {
   listByPlayer: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
+  updateIfStatus: vi.fn(),
   delete: vi.fn(),
 };
 
@@ -34,6 +35,8 @@ const mockTagTeamsRepo = {
   delete: vi.fn(),
 };
 
+const mockChampionshipsRepo = { findById: vi.fn() };
+
 const mockRunInTransaction = vi.fn();
 
 vi.mock('../../../lib/repositories', () => ({
@@ -44,6 +47,9 @@ vi.mock('../../../lib/repositories', () => ({
     roster: {
       players: mockPlayersRepo,
       tagTeams: mockTagTeamsRepo,
+    },
+    competition: {
+      championships: mockChampionshipsRepo,
     },
     runInTransaction: mockRunInTransaction,
   }),
@@ -97,8 +103,12 @@ function setupValidResponder() {
 // ─── respondToChallenge ─────────────────────────────────────────────
 
 describe('respondToChallenge', () => {
+  afterEach(() => vi.useRealTimers());
+
   beforeEach(() => {
     vi.clearAllMocks();
+    // Keep the dated fixture inside its response window.
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2025-01-16T10:00:00.000Z') });
     mockRunInTransaction.mockImplementation(async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
       const tx = {
         updateChallenge: vi.fn(),
@@ -177,31 +187,31 @@ describe('respondToChallenge', () => {
 
   it('accepts a challenge and updates status to accepted', async () => {
     setupValidResponder();
-    mockChallengesRepo.update.mockResolvedValue({ ...pendingChallenge, status: 'accepted' });
+    mockChallengesRepo.updateIfStatus.mockResolvedValue(true);
     const result = await respondToChallenge(respondEvent({ action: 'accept' }), ctx, cb);
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     expect(body.status).toBe('accepted');
     expect(body.updatedAt).toBeDefined();
-    expect(mockChallengesRepo.update).toHaveBeenCalledWith('ch1', { status: 'accepted' });
+    expect(mockChallengesRepo.updateIfStatus).toHaveBeenCalledWith('ch1', { status: 'accepted' }, 'pending');
   });
 
   it('accepts with responseMessage', async () => {
     setupValidResponder();
-    mockChallengesRepo.update.mockResolvedValue({ ...pendingChallenge, status: 'accepted', responseMessage: 'Bring it!' });
+    mockChallengesRepo.updateIfStatus.mockResolvedValue(true);
     const result = await respondToChallenge(respondEvent({ action: 'accept', responseMessage: 'Bring it!' }), ctx, cb);
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body).responseMessage).toBe('Bring it!');
-    expect(mockChallengesRepo.update).toHaveBeenCalledWith('ch1', { status: 'accepted', responseMessage: 'Bring it!' });
+    expect(mockChallengesRepo.updateIfStatus).toHaveBeenCalledWith('ch1', { status: 'accepted', responseMessage: 'Bring it!' }, 'pending');
   });
 
   it('declines a challenge and updates status to declined', async () => {
     setupValidResponder();
-    mockChallengesRepo.update.mockResolvedValue({ ...pendingChallenge, status: 'declined' });
+    mockChallengesRepo.updateIfStatus.mockResolvedValue(true);
     const result = await respondToChallenge(respondEvent({ action: 'decline' }), ctx, cb);
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body).status).toBe('declined');
-    expect(mockChallengesRepo.update).toHaveBeenCalledOnce();
+    expect(mockChallengesRepo.updateIfStatus).toHaveBeenCalledOnce();
   });
 
   it('returns 400 when countering without counterMatchType', async () => {
@@ -242,6 +252,62 @@ describe('respondToChallenge', () => {
     expect(body.counter.matchType).toBe('TLC');
     expect(body.counter.stipulation).toBeUndefined();
     expect(body.counter.message).toBeUndefined();
+  });
+
+  describe('countering a title challenge', () => {
+    const titleChallenge = { ...pendingChallenge, championshipId: 'world' };
+    const worldTitle = { championshipId: 'world', name: 'World Title', type: 'singles', currentChampion: 'p2', isActive: true };
+
+    function setupTitleCounter() {
+      setupValidResponder();
+      mockChallengesRepo.findById.mockResolvedValue(titleChallenge);
+      mockPlayersRepo.findById.mockResolvedValue({ playerId: 'p1', currentWrestler: 'W1' });
+      mockChampionshipsRepo.findById.mockResolvedValue(worldTitle);
+    }
+
+    it('keeps the title on the line', async () => {
+      setupTitleCounter();
+      const result = await respondToChallenge(respondEvent({ action: 'counter', counterMatchType: 'Ladder' }), ctx, cb);
+      expect(result!.statusCode).toBe(200);
+      expect(JSON.parse(result!.body).counter.championshipId).toBe('world');
+    });
+
+    it('rejects a counter match type that does not suit the title', async () => {
+      setupTitleCounter();
+      const result = await respondToChallenge(respondEvent({ action: 'counter', counterMatchType: 'Tag Team' }), ctx, cb);
+      expect(result!.statusCode).toBe(400);
+      expect(JSON.parse(result!.body).message).toBe('A singles title cannot be decided in a tag team match');
+      expect(mockRunInTransaction).not.toHaveBeenCalled();
+    });
+
+    it('keeps a tag title on the line when the title belongs to a team in the challenge', async () => {
+      setupTitleCounter();
+      mockChallengesRepo.findById.mockResolvedValue({
+        ...titleChallenge,
+        championshipId: 'tag',
+        challengeMode: 'tag_team',
+        challengerTagTeamId: 'team-1',
+        challengedTagTeamId: 'team-2',
+      });
+      mockChampionshipsRepo.findById.mockResolvedValue({ championshipId: 'tag', type: 'tag', currentChampion: ['p2', 'p4'], isActive: true });
+      mockTagTeamsRepo.findById.mockImplementation((id: string) => Promise.resolve(id === 'team-1'
+        ? { tagTeamId: id, player1Id: 'p1', player2Id: 'p3', status: 'active' }
+        : { tagTeamId: id, player1Id: 'p2', player2Id: 'p4', status: 'active' }));
+      mockPlayersRepo.findById.mockImplementation((id: string) => Promise.resolve({ playerId: id, currentWrestler: id }));
+
+      const result = await respondToChallenge(respondEvent({ action: 'counter', counterMatchType: 'Tornado Tag' }), ctx, cb);
+
+      expect(result!.statusCode).toBe(200);
+      expect(JSON.parse(result!.body).counter.championshipId).toBe('tag');
+    });
+
+    it('returns 400 when the title has gone', async () => {
+      setupTitleCounter();
+      mockChampionshipsRepo.findById.mockResolvedValue(null);
+      const result = await respondToChallenge(respondEvent({ action: 'counter', counterMatchType: 'Ladder' }), ctx, cb);
+      expect(result!.statusCode).toBe(400);
+      expect(JSON.parse(result!.body).message).toBe('Championship not found');
+    });
   });
 
   it('returns 500 when an unexpected error occurs', async () => {

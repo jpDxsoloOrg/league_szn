@@ -8,16 +8,24 @@
       style-src 'self' 'unsafe-inline';
       img-src 'self' data: blob: https://*.s3.amazonaws.com https://*.s3.us-east-1.amazonaws.com;
       connect-src 'self' https://*.execute-api.us-east-1.amazonaws.com https://cognito-idp.us-east-1.amazonaws.com https://*.s3.amazonaws.com https://*.s3.us-east-1.amazonaws.com;
+      media-src 'self' https://wwe-2k-league-api-images-dev.s3.amazonaws.com https://wwe-2k-league-api-images-devtest.s3.amazonaws.com;
       font-src 'self';
+      worker-src 'self';
+      manifest-src 'self';
       object-src 'none';
       base-uri 'self';
       form-action 'self';
-      frame-ancestors 'none';
+      frame-src 'none';
       upgrade-insecure-requests;
     ">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/brand/icon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/brand/icon-180.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#0f0f0f" />
+    <meta name="theme-color" content="#0a0d13" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="League SZN" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>League SZN</title>
   </head>

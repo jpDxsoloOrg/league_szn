@@ -1,19 +1,16 @@
 import { useState, useEffect, FormEvent, ChangeEvent, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   playersApi,
   imagesApi,
   divisionsApi,
   wrestlersApi,
+  isApiError,
 } from '../../services/api';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
 import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
-import {
-  DEFAULT_WRESTLER_IMAGE,
-  applyImageFallback,
-  resolveImageSrc,
-} from '../../constants/imageFallbacks';
 import type {
   Player,
   Division,
@@ -23,19 +20,74 @@ import {
   buildWrestlerOptionGroups,
   type WrestlerSlotOptions,
 } from '../../utils/wrestlerOptions';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
+import { nameOrUnnamed } from '../../utils/playerName';
+import Avatar from '../ui/Avatar';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import DataTable from '../ui/DataTable';
+import type { DataTableColumn } from '../ui/DataTable';
+import EmptyState from '../ui/EmptyState';
+import Modal from '../ui/Modal';
+import PageHeader from '../ui/PageHeader';
+import Select from '../ui/Select';
+import AdminNotice from './AdminNotice';
+import ConfirmModal from './ConfirmModal';
+import DisciplineBadge from './DisciplineBadge';
+import HiddenBadge from './HiddenBadge';
+import PlayerDisciplineModal from './PlayerDisciplineModal';
+import SourceLoadNotice from './SourceLoadNotice';
+import { settleSources } from './loadSources';
+import './adminRoster.css';
 import './ManagePlayers.css';
 
+const FORM_ID = 'player-form';
+
+/** Select value for a wrestler held by name only, with no roster link. */
+const NAME_ONLY_SLOT = '__name-only__';
+
+const PLAYER_SOURCES = {
+  players: () => playersApi.getAllIncludingHidden(),
+  divisions: () => divisionsApi.getAll(),
+  wrestlers: () => wrestlersApi.getAll(),
+};
+
+type PlayerSource = keyof typeof PLAYER_SOURCES;
+
+/** Players the table leaves out until "Show hidden" is on. */
+function isHiddenFromTable(player: Player): boolean {
+  return isNeedsWrestler(player.currentWrestler) || player.discipline?.status === 'deactivated';
+}
+
+/** What a wrestler select opens on, so an untouched slot can be told from a cleared one. */
+function initialSlotValue(
+  wrestlerId: string | null | undefined,
+  wrestlerName: string | null | undefined,
+  wrestlers: Wrestler[],
+): string {
+  // A player can rename themselves and keep the old link. The stored name is
+  // what the table and public pages show, so the form opens on that too.
+  const rosterName = wrestlers.find((wrestler) => wrestler.wrestlerId === wrestlerId)?.name;
+  const renamed = rosterName !== undefined && rosterName.toLowerCase() !== (wrestlerName ?? '').toLowerCase();
+  if (wrestlerId && !renamed) return wrestlerId;
+  return isNeedsWrestler(wrestlerName) ? '' : NAME_ONLY_SLOT;
+}
+
 export default function ManagePlayers() {
+  const { t } = useTranslation();
   const [players, setPlayers] = useState<Player[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [wrestlers, setWrestlers] = useState<Wrestler[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [failedSources, setFailedSources] = useState<PlayerSource[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Player | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [disciplinePlayer, setDisciplinePlayer] = useState<Player | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   // Form state — FK-backed. The legacy `currentWrestler` / `alternateWrestler`
@@ -56,73 +108,85 @@ export default function ManagePlayers() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // Division filter for the players table. `null` means "not yet initialized";
-  // a one-shot effect picks Heavyweight (or "all" if Heavyweight is missing)
-  // once divisions load. Special values: 'all' = no filter, 'none' = players
-  // with no division assigned.
-  const [divisionFilter, setDivisionFilter] = useState<string | null>(null);
+  // Division filter for the players table. Special values: 'all' = no filter,
+  // 'none' = players with no division assigned.
+  const [divisionFilter, setDivisionFilter] = useState('all');
+  // Players with no wrestler, and deactivated players, stay out of the table until asked for.
+  const [showHidden, setShowHidden] = useState(false);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     loadData();
   }, []);
 
-  useEffect(() => {
-    if (divisionFilter !== null || divisions.length === 0) return;
-    const heavyweight = divisions.find(
-      (d) => d.name.toLowerCase() === 'heavyweight',
-    );
-    setDivisionFilter(heavyweight ? heavyweight.divisionId : 'all');
-  }, [divisions, divisionFilter]);
-
   const loadData = async () => {
+    setLoading(true);
+    const { values, failed } = await settleSources(PLAYER_SOURCES);
+    if (values.players) setPlayers(values.players);
+    if (values.divisions) setDivisions(values.divisions);
+    if (values.wrestlers) setWrestlers(values.wrestlers);
+    setFailedSources(failed);
+    setLoading(false);
+  };
+
+  // No loading state: the table sits behind the open discipline dialog.
+  const refreshPlayers = async () => {
     try {
-      setLoading(true);
-      const [playersData, divisionsData, wrestlersData] = await Promise.all([
-        playersApi.getAll(),
-        divisionsApi.getAll(),
-        wrestlersApi.getAll(),
-      ]);
-      setPlayers(playersData);
-      setDivisions(divisionsData);
-      setWrestlers(wrestlersData);
-    } catch (_err) {
-      setError('Failed to load data');
-    } finally {
-      setLoading(false);
+      setPlayers(await playersApi.getAllIncludingHidden());
+    } catch {
+      logger.error('Failed to refresh players after a discipline action');
     }
   };
 
   const getDivisionName = (divisionId?: string) => {
-    if (!divisionId) return 'None';
+    if (!divisionId) return t('common.none', 'None');
     const division = divisions.find(d => d.divisionId === divisionId);
-    return division?.name || 'Unknown';
+    return division?.name || t('common.unknown', 'Unknown');
   };
 
+  // A slot held by name can still be linked, so its roster row stays on offer.
+  const heldCurrentId = formData.currentWrestlerId === NAME_ONLY_SLOT
+    ? editingPlayer?.currentWrestlerId
+    : formData.currentWrestlerId;
+  const heldAlternateId = formData.alternateWrestlerId === NAME_ONLY_SLOT
+    ? editingPlayer?.alternateWrestlerId
+    : formData.alternateWrestlerId;
+
   const currentWrestlerOptions = useMemo(
-    () =>
-      buildWrestlerOptionGroups(
-        wrestlers,
-        formData.currentWrestlerId || undefined,
-        formData.alternateWrestlerId || undefined,
-      ),
-    [wrestlers, formData.currentWrestlerId, formData.alternateWrestlerId],
+    () => buildWrestlerOptionGroups(wrestlers, heldCurrentId || undefined, heldAlternateId || undefined),
+    [wrestlers, heldCurrentId, heldAlternateId],
   );
 
   const alternateWrestlerOptions = useMemo(
-    () =>
-      buildWrestlerOptionGroups(
-        wrestlers,
-        formData.alternateWrestlerId || undefined,
-        formData.currentWrestlerId || undefined,
-      ),
-    [wrestlers, formData.currentWrestlerId, formData.alternateWrestlerId],
+    () => buildWrestlerOptionGroups(wrestlers, heldAlternateId || undefined, heldCurrentId || undefined),
+    [wrestlers, heldCurrentId, heldAlternateId],
+  );
+
+  const initialCurrentSlot = editingPlayer
+    ? initialSlotValue(editingPlayer.currentWrestlerId, editingPlayer.currentWrestler, wrestlers)
+    : '';
+  const initialAlternateSlot = editingPlayer
+    ? initialSlotValue(editingPlayer.alternateWrestlerId, editingPlayer.alternateWrestler, wrestlers)
+    : '';
+
+  const unnamedLabel = t('common.unnamedPlayer', 'Unnamed player');
+
+  const hiddenCount = useMemo(
+    () => players.filter(isHiddenFromTable).length,
+    [players],
   );
 
   const filteredPlayers = useMemo(() => {
-    if (divisionFilter === null || divisionFilter === 'all') return players;
-    if (divisionFilter === 'none') return players.filter((p) => !p.divisionId);
-    return players.filter((p) => p.divisionId === divisionFilter);
-  }, [players, divisionFilter]);
+    const term = search.trim().toLowerCase();
+    return players.filter((player) => {
+      if (!showHidden && isHiddenFromTable(player)) return false;
+      if (divisionFilter === 'none' && player.divisionId) return false;
+      if (!['all', 'none'].includes(divisionFilter) && player.divisionId !== divisionFilter) return false;
+      if (!term) return true;
+      return [nameOrUnnamed(player.name, unnamedLabel), player.currentWrestler, player.alternateWrestler, player.psnId]
+        .some((value) => value?.toLowerCase().includes(term));
+    });
+  }, [players, divisionFilter, showHidden, search, unnamedLabel]);
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -176,7 +240,7 @@ export default function ManagePlayers() {
         imageUrl = response.imageUrl;
       } catch (err) {
         logger.error('Failed to get upload URL for player image');
-        if (err instanceof Error && err.message.includes('401')) {
+        if (isApiError(err, 401)) {
           throw new Error('Session expired. Please log in again to upload images.');
         }
         throw new Error('Unable to prepare image upload. Please check your connection and try again.');
@@ -223,23 +287,40 @@ export default function ManagePlayers() {
 
       const sanitizedName = sanitizeName(formData.name, VALIDATION.MAX_NAME_LENGTH);
 
-      if (!sanitizedName) {
-        setError('Player name cannot be empty');
+      const nameChanged = formData.name !== editingPlayer?.name;
+      if (!sanitizedName && nameChanged) {
+        setError(t('adminRoster.players.nameRequired', 'Player name cannot be empty'));
         return;
       }
       if (editingPlayer) {
         await playersApi.update(editingPlayer.playerId, {
-          name: sanitizedName,
-          // Empty string clears the FK server-side (mirrors how divisionId
-          // and alignment are cleared on this same endpoint) — clearing the
-          // primary slot drops the player back to "Needs Wrestler".
-          currentWrestlerId: formData.currentWrestlerId,
-          alternateWrestlerId: formData.alternateWrestlerId || '',
-          imageUrl: imageUrl || undefined,
+          // Only a change goes out: sanitizing rewrites a stored name that holds
+          // characters the form no longer allows.
+          ...(nameChanged ? { name: sanitizedName } : {}),
+          // A slot only goes out when the admin changed it, because clearing
+          // the primary slot hides the player. The API ignores an empty id on
+          // a slot held by name alone, so a clear has to be stated outright.
+          ...(formData.currentWrestlerId !== initialCurrentSlot
+            ? formData.currentWrestlerId
+              ? { currentWrestlerId: formData.currentWrestlerId }
+              : { clearCurrentWrestler: true }
+            : {}),
+          ...(formData.alternateWrestlerId !== initialAlternateSlot
+            ? formData.alternateWrestlerId
+              ? { alternateWrestlerId: formData.alternateWrestlerId }
+              : { clearAlternateWrestler: true }
+            : {}),
+          // These two only go out when changed, so an empty value always means
+          // the admin cleared it, not that a public read left the field out.
+          ...((imageUrl ?? '') !== (editingPlayer.imageUrl ?? '') ? { imageUrl: imageUrl ?? '' } : {}),
           divisionId: formData.divisionId || '',
-          psnId: formData.psnId.trim() || undefined,
+          ...(formData.psnId.trim() !== (editingPlayer.psnId ?? '') ? { psnId: formData.psnId.trim() } : {}),
           alignment: formData.alignment || '',
-          canUploadVideos: formData.canUploadVideos,
+          // Public reads leave this flag out when the session has lapsed, so the
+          // form can start on a false it never read. Only a change goes out.
+          ...(formData.canUploadVideos !== (editingPlayer.canUploadVideos ?? false)
+            ? { canUploadVideos: formData.canUploadVideos }
+            : {}),
         });
       } else {
         await playersApi.create({
@@ -269,10 +350,12 @@ export default function ManagePlayers() {
       setImagePreview(null);
       setShowAddForm(false);
       setEditingPlayer(null);
-      setSuccess(editingPlayer ? 'Player updated successfully!' : 'Player created successfully!');
+      setSuccess(editingPlayer
+        ? t('adminRoster.players.updated', 'Player updated successfully!')
+        : t('adminRoster.players.created', 'Player created successfully!'));
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save player');
+      setError(err instanceof Error ? err.message : t('adminRoster.players.saveError', 'Failed to save player'));
     } finally {
       setSubmitting(false);
     }
@@ -282,8 +365,8 @@ export default function ManagePlayers() {
     setEditingPlayer(player);
     setFormData({
       name: player.name,
-      currentWrestlerId: player.currentWrestlerId || '',
-      alternateWrestlerId: player.alternateWrestlerId || '',
+      currentWrestlerId: initialSlotValue(player.currentWrestlerId, player.currentWrestler, wrestlers),
+      alternateWrestlerId: initialSlotValue(player.alternateWrestlerId, player.alternateWrestler, wrestlers),
       imageUrl: player.imageUrl || '',
       divisionId: player.divisionId || '',
       psnId: player.psnId || '',
@@ -296,6 +379,7 @@ export default function ManagePlayers() {
   };
 
   const handleCancel = () => {
+    setError(null);
     setFormData(resetFormData());
     setSelectedFile(null);
     setImagePreview(null);
@@ -303,29 +387,23 @@ export default function ManagePlayers() {
     setEditingPlayer(null);
   };
 
-  const handleDelete = async (playerId: string, playerName: string) => {
-    if (!confirm(`Are you sure you want to delete ${playerName}? This action cannot be undone.`)) {
-      return;
-    }
-
-    setDeleting(playerId);
+  const handleDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
     setError(null);
     setSuccess(null);
 
     try {
-      await playersApi.delete(playerId);
-      setSuccess('Player deleted successfully!');
+      await playersApi.delete(pendingDelete.playerId);
+      setSuccess(t('adminRoster.players.deleted', 'Player deleted successfully!'));
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete player');
+      setError(err instanceof Error ? err.message : t('adminRoster.players.deleteError', 'Failed to delete player'));
     } finally {
-      setDeleting(null);
+      setDeleting(false);
+      setPendingDelete(null);
     }
   };
-
-  if (loading) {
-    return <div className="loading">Loading players...</div>;
-  }
 
   const renderWrestlerOptions = (groups: WrestlerSlotOptions) =>
     groups.map((group) => (
@@ -338,37 +416,222 @@ export default function ManagePlayers() {
       </optgroup>
     ));
 
+  /**
+   * Keeps a wrestler the roster can't supply selectable: a name with no roster
+   * link, a name the player changed away from the linked row, or a link whose
+   * roster row is gone. Without this option the select would read as if no
+   * wrestler were assigned.
+   */
+  const renderKeptWrestlerOption = (
+    groups: WrestlerSlotOptions,
+    initialValue: string,
+    wrestlerName: string | null | undefined,
+  ) => {
+    const onRoster = groups.some((group) => group.wrestlers.some((w) => w.wrestlerId === initialValue));
+    if (!initialValue || onRoster || isNeedsWrestler(wrestlerName)) return null;
+    return (
+      <option value={initialValue}>
+        {t('adminRoster.players.keptWrestler', { defaultValue: '{{name}} (custom name)', name: wrestlerName })}
+      </option>
+    );
+  };
+
   const rosterEmpty = wrestlers.length === 0;
+  const rosterLoadFailed = failedSources.includes('wrestlers');
+  const clearingPrimarySlot = initialCurrentSlot !== '' && formData.currentWrestlerId === '';
+
+  const alignmentLabels: Record<'face' | 'heel' | 'neutral', string> = {
+    face: t('adminRoster.players.alignmentFace', 'Face'),
+    heel: t('adminRoster.players.alignmentHeel', 'Heel'),
+    neutral: t('adminRoster.players.alignmentNeutral', 'Neutral'),
+  };
+
+  const submitLabel = () => {
+    if (submitting) return t('common.saving', 'Saving...');
+    if (uploading) return t('adminRoster.players.uploading', 'Uploading...');
+    return editingPlayer
+      ? t('adminRoster.players.update', 'Update Player')
+      : t('adminRoster.players.add', 'Add Player');
+  };
+
+  const columns: DataTableColumn<Player>[] = [
+    {
+      key: 'player',
+      header: t('adminRoster.players.player', 'Player'),
+      sortValue: (player) => player.name,
+      render: (player) => (
+        <span className="ar-identity">
+          <Avatar src={player.imageUrl} name={nameOrUnnamed(player.name, unnamedLabel)} size="sm" />
+          <span className="ar-stack">
+            <span className="ar-strong">{nameOrUnnamed(player.name, unnamedLabel)}</span>
+            {player.psnId && <span className="ar-sub">{player.psnId}</span>}
+          </span>
+        </span>
+      ),
+    },
+    {
+      key: 'wrestler',
+      header: t('adminRoster.players.wrestler', 'Wrestler'),
+      sortValue: (player) => (isNeedsWrestler(player.currentWrestler) ? '' : player.currentWrestler),
+      render: (player) => (
+        <span className="ar-stack">
+          {isNeedsWrestler(player.currentWrestler) ? <HiddenBadge /> : <span>{player.currentWrestler}</span>}
+          {player.alternateWrestler && (
+            <span className="ar-sub">
+              {t('adminRoster.players.alternateShort', 'Alt')}: {player.alternateWrestler}
+            </span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: 'division',
+      header: t('adminRoster.players.division', 'Division'),
+      sortValue: (player) => getDivisionName(player.divisionId),
+      render: (player) => <span className="division-cell">{getDivisionName(player.divisionId)}</span>,
+    },
+    {
+      key: 'record',
+      header: t('adminRoster.players.record', 'Record'),
+      sortValue: (player) => player.wins,
+      render: (player) => (
+        <span className="ar-numeric">{player.wins}W - {player.losses}L - {player.draws}D</span>
+      ),
+    },
+    {
+      key: 'status',
+      header: t('adminRoster.players.status', 'Status'),
+      render: (player) => (
+        <span className="ar-badges">
+          <DisciplineBadge discipline={player.discipline} />
+          {player.alignment && <Badge tone="violet">{alignmentLabels[player.alignment]}</Badge>}
+          {player.userId ? (
+            <Badge
+              tone="primary"
+              className="linked-badge"
+              title={t('adminRoster.players.linkedHint', 'This player is linked to a user account')}
+            >
+              {t('adminRoster.players.linked', 'Linked')}
+            </Badge>
+          ) : (
+            <Badge title={t('adminRoster.players.manualHint', 'This player was created manually and is not linked to a user account')}>
+              {t('adminRoster.players.manual', 'Manual')}
+            </Badge>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: t('common.actions', 'Actions'),
+      align: 'end',
+      render: (player) => (
+        <div className="ar-row-actions">
+          <Button variant="secondary" size="sm" onClick={() => handleEdit(player)}>{t('common.edit', 'Edit')}</Button>
+          <Button variant="ghost" size="sm" onClick={() => setDisciplinePlayer(player)}>{t('discipline.admin.open')}</Button>
+          <Button variant="ghost" size="sm" onClick={() => setPendingDelete(player)}>{t('common.delete', 'Delete')}</Button>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div className="manage-players">
-      <div className="players-header">
-        <div>
-          <h2>Manage Players</h2>
-          <p className="players-subtext">
-            Edit existing players, assign divisions, and keep wrestler profiles current. Need process
-            details? <Link to="/guide/wiki/admin-manage-players">Learn more</Link>.
-          </p>
-        </div>
+    <div className="ar-page manage-players">
+      <PageHeader
+        title={t('adminRoster.players.title', 'Manage Players')}
+        subtitle={t('adminRoster.players.subtitle', 'Edit players, assign divisions, and keep wrestlers current.')}
+        actions={(
+          <Button variant="ghost" to="/guide/wiki/admin-manage-players">{t('adminRoster.learnMore', 'Learn more')}</Button>
+        )}
+      />
+
+      <SourceLoadNotice failed={failedSources} onRetry={loadData} retrying={loading} />
+      {error && !showAddForm && <AdminNotice tone="error">{error}</AdminNotice>}
+      {success && <AdminNotice tone="success">{success}</AdminNotice>}
+
+      <div className="ar-toolbar">
+        <h2 className="ar-section-title">
+          {t('adminRoster.players.all', 'All Players')} ({filteredPlayers.length}
+          {filteredPlayers.length !== players.length ? ` ${t('adminRoster.of', 'of')} ${players.length}` : ''})
+        </h2>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
-      {success && <div className="success-message">{success}</div>}
+      <div className="ar-toolbar__filters">
+        <input
+          className="ar-input ar-input--search"
+          type="search"
+          aria-label={t('adminRoster.players.search', 'Search players')}
+          placeholder={t('adminRoster.players.search', 'Search players')}
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+        <Select
+          label={t('adminRoster.players.filterLabel', 'Filter players')}
+          value={divisionFilter}
+          onValueChange={setDivisionFilter}
+          options={[
+            { value: 'all', label: t('common.all', 'All') },
+            ...divisions.map((division) => ({ value: division.divisionId, label: division.name })),
+            { value: 'none', label: t('adminRoster.players.noDivision', 'No Division') },
+          ]}
+        />
+        {hiddenCount > 0 && (
+          <label className="ar-check">
+            <input type="checkbox" checked={showHidden} onChange={(event) => setShowHidden(event.target.checked)} />
+            {t('adminRoster.players.showHidden', { defaultValue: 'Show hidden ({{count}})', count: hiddenCount })}
+          </label>
+        )}
+      </div>
 
-      {showAddForm && (
-        <div className="player-form-container am-sheet">
-          <h3>{editingPlayer ? 'Edit Player' : 'Add New Player'}</h3>
-          {rosterEmpty && (
-            <div className="info-message">
-              No wrestlers in the roster yet. You can still create players — they stay on
-              &ldquo;Needs Wrestler&rdquo; until you add wrestlers via{' '}
-              <Link to="/admin/wrestlers">Manage Wrestlers</Link> and assign one.
-            </div>
+      <DataTable
+        className="ar-table"
+        caption={t('adminRoster.players.all', 'All Players')}
+        density="dense"
+        columns={columns}
+        rows={filteredPlayers}
+        rowKey={(player) => player.playerId}
+        loading={loading}
+        empty={failedSources.includes('players') ? undefined : (
+          <EmptyState
+            title={players.length === 0
+              ? t('adminRoster.players.emptyTitle', 'No players yet')
+              : t('adminRoster.players.noMatches', 'No players match these filters')}
+          />
+        )}
+      />
+
+      <Modal
+        open={showAddForm}
+        onClose={handleCancel}
+        size="lg"
+        title={editingPlayer
+          ? t('adminRoster.players.editTitle', 'Edit Player')
+          : t('adminRoster.players.addTitle', 'Add New Player')}
+        footer={(
+          <>
+            <Button variant="ghost" onClick={handleCancel} disabled={submitting || uploading}>
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button type="submit" form={FORM_ID} disabled={submitting || uploading || rosterEmpty}>
+              {submitLabel()}
+            </Button>
+          </>
+        )}
+      >
+        <form id={FORM_ID} onSubmit={handleSubmit} className="ar-form">
+          {error && <AdminNotice tone="error">{error}</AdminNotice>}
+          {rosterEmpty && !rosterLoadFailed && (
+            <AdminNotice tone="info">
+              {t('adminRoster.players.rosterEmpty', 'No wrestlers in the roster yet. Add them in')}{' '}
+              <Link to="/admin/wrestlers">{t('adminRoster.wrestlers.title', 'Manage Wrestlers')}</Link>.
+            </AdminNotice>
           )}
-          <form onSubmit={handleSubmit} className="player-form am-form">
-            <div className="form-group">
-              <label htmlFor="name">Player Name</label>
+
+          <div className="ar-form__grid">
+            <div className="ar-field">
+              <label className="ar-field__label" htmlFor="name">{t('adminRoster.players.nameLabel', 'Player Name')}</label>
               <input
+                className="ar-input"
                 type="text"
                 id="name"
                 value={formData.name}
@@ -378,236 +641,142 @@ export default function ManagePlayers() {
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="wrestler">Wrestler</label>
-              <select
-                id="wrestler"
-                value={formData.currentWrestlerId}
-                onChange={(e) =>
-                  setFormData({ ...formData, currentWrestlerId: e.target.value })
-                }
-                disabled={rosterEmpty}
-              >
-                <option value="">Needs Wrestler — assign later</option>
-                {renderWrestlerOptions(currentWrestlerOptions)}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="alternateWrestler">Alternate Wrestler</label>
-              <select
-                id="alternateWrestler"
-                value={formData.alternateWrestlerId}
-                onChange={(e) =>
-                  setFormData({ ...formData, alternateWrestlerId: e.target.value })
-                }
-                disabled={rosterEmpty}
-              >
-                <option value="">None</option>
-                {renderWrestlerOptions(alternateWrestlerOptions)}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="division">Division</label>
-              <select
-                id="division"
-                value={formData.divisionId}
-                onChange={(e) => setFormData({ ...formData, divisionId: e.target.value })}
-              >
-                <option value="">No Division</option>
-                {divisions.map((division) => (
-                  <option key={division.divisionId} value={division.divisionId}>
-                    {division.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="psnId">PSN ID</label>
+            <div className="ar-field">
+              <label className="ar-field__label" htmlFor="psnId">{t('adminRoster.players.psnLabel', 'PSN ID')}</label>
               <input
+                className="ar-input"
                 type="text"
                 id="psnId"
                 value={formData.psnId}
                 onChange={(e) => setFormData({ ...formData, psnId: e.target.value })}
-                placeholder="PlayStation Network ID"
+                placeholder={t('adminRoster.players.psnPlaceholder', 'PlayStation Network ID')}
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="alignment">Alignment</label>
+            <div className="ar-field">
+              <label className="ar-field__label" htmlFor="wrestler">{t('adminRoster.players.wrestler', 'Wrestler')}</label>
               <select
+                className="ar-input"
+                id="wrestler"
+                value={formData.currentWrestlerId}
+                onChange={(e) => setFormData({ ...formData, currentWrestlerId: e.target.value })}
+                disabled={rosterEmpty}
+              >
+                <option value="">{t('adminRoster.players.needsWrestler', 'Needs Wrestler — assign later')}</option>
+                {renderKeptWrestlerOption(currentWrestlerOptions, initialCurrentSlot, editingPlayer?.currentWrestler)}
+                {renderWrestlerOptions(currentWrestlerOptions)}
+              </select>
+              {clearingPrimarySlot && (
+                <p className="ar-hint">
+                  {t('adminRoster.players.clearWarning', 'Saving removes this wrestler and hides the player from public pages.')}
+                </p>
+              )}
+            </div>
+
+            <div className="ar-field">
+              <label className="ar-field__label" htmlFor="alternateWrestler">
+                {t('adminRoster.players.alternateLabel', 'Alternate Wrestler')}
+              </label>
+              <select
+                className="ar-input"
+                id="alternateWrestler"
+                value={formData.alternateWrestlerId}
+                onChange={(e) => setFormData({ ...formData, alternateWrestlerId: e.target.value })}
+                disabled={rosterEmpty}
+              >
+                <option value="">{t('common.none', 'None')}</option>
+                {renderKeptWrestlerOption(alternateWrestlerOptions, initialAlternateSlot, editingPlayer?.alternateWrestler)}
+                {renderWrestlerOptions(alternateWrestlerOptions)}
+              </select>
+            </div>
+
+            <div className="ar-field">
+              <label className="ar-field__label" htmlFor="division">{t('adminRoster.players.division', 'Division')}</label>
+              <select
+                className="ar-input"
+                id="division"
+                value={formData.divisionId}
+                onChange={(e) => setFormData({ ...formData, divisionId: e.target.value })}
+              >
+                <option value="">{t('adminRoster.players.noDivision', 'No Division')}</option>
+                {divisions.map((division) => (
+                  <option key={division.divisionId} value={division.divisionId}>{division.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="ar-field">
+              <label className="ar-field__label" htmlFor="alignment">{t('adminRoster.players.alignment', 'Alignment')}</label>
+              <select
+                className="ar-input"
                 id="alignment"
                 value={formData.alignment}
                 onChange={(e) => setFormData({ ...formData, alignment: e.target.value as '' | 'face' | 'heel' | 'neutral' })}
               >
-                <option value="">Not Set</option>
-                <option value="face">😇 Face</option>
-                <option value="neutral">⚖️ Neutral</option>
-                <option value="heel">😈 Heel</option>
+                <option value="">{t('adminRoster.players.alignmentUnset', 'Not Set')}</option>
+                <option value="face">{alignmentLabels.face}</option>
+                <option value="neutral">{alignmentLabels.neutral}</option>
+                <option value="heel">{alignmentLabels.heel}</option>
               </select>
             </div>
+          </div>
 
-            <div className="form-group form-checkbox">
-              <label htmlFor="canUploadVideos" className="am-toggle-row">
-                <input
-                  type="checkbox"
-                  className="am-toggle"
-                  id="canUploadVideos"
-                  checked={formData.canUploadVideos}
-                  onChange={(e) => setFormData({ ...formData, canUploadVideos: e.target.checked })}
-                />
-                {' '}Allow video uploads (wrestler can submit drafts via /my-videos)
-              </label>
-            </div>
+          <label className="ar-check" htmlFor="canUploadVideos">
+            <input
+              type="checkbox"
+              id="canUploadVideos"
+              checked={formData.canUploadVideos}
+              onChange={(e) => setFormData({ ...formData, canUploadVideos: e.target.checked })}
+            />
+            {t('adminRoster.players.allowVideos', 'Allow video uploads (wrestler can submit drafts via /my-videos)')}
+          </label>
 
-            <div className="form-group">
-              <label htmlFor="image">Wrestler Image</label>
-              <div className="image-upload-container">
-                {imagePreview ? (
-                  <div className="image-preview">
-                    <img src={imagePreview} alt="Preview" />
-                    <button type="button" onClick={clearImage} className="remove-image-btn">
-                      Remove Image
-                    </button>
-                  </div>
-                ) : (
-                  <div className="image-upload-box">
-                    <input
-                      type="file"
-                      id="image"
-                      accept="image/jpeg,image/png,image/gif,image/webp"
-                      onChange={handleFileSelect}
-                      className="file-input"
-                    />
-                    <label htmlFor="image" className="file-input-label">
-                      Click to upload image
-                    </label>
-                    <p className="upload-hint">{FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS} (max {FILE_UPLOAD_LIMITS.MAX_SIZE_MB}MB)</p>
-                  </div>
-                )}
+          <div className="ar-field">
+            <span className="ar-field__label">{t('adminRoster.players.imageLabel', 'Wrestler Image')}</span>
+            {imagePreview ? (
+              <div className="player-image-preview">
+                <img src={imagePreview} alt={t('adminRoster.players.imagePreview', 'Preview')} />
+                <Button variant="ghost" size="sm" onClick={clearImage}>
+                  {t('adminRoster.players.removeImage', 'Remove Image')}
+                </Button>
               </div>
-            </div>
-
-            <div className="form-actions am-actionbar">
-              <button type="submit" disabled={submitting || uploading || rosterEmpty}>
-                {submitting ? 'Saving...' : uploading ? 'Uploading...' : editingPlayer ? 'Update Player' : 'Add Player'}
-              </button>
-              <button type="button" onClick={handleCancel} className="cancel-btn" disabled={submitting || uploading}>
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      <div className="players-list">
-        <div className="players-list-header">
-          <h3>
-            All Players ({filteredPlayers.length}
-            {filteredPlayers.length !== players.length ? ` of ${players.length}` : ''})
-          </h3>
-          <div className="players-filter am-filter-row">
-            <label htmlFor="divisionFilter">Division:</label>
-            <select
-              id="divisionFilter"
-              value={divisionFilter ?? 'all'}
-              onChange={(e) => setDivisionFilter(e.target.value)}
-            >
-              <option value="all">All</option>
-              {divisions.map((division) => (
-                <option key={division.divisionId} value={division.divisionId}>
-                  {division.name}
-                </option>
-              ))}
-              <option value="none">No Division</option>
-            </select>
+            ) : (
+              <div>
+                <input
+                  type="file"
+                  id="image"
+                  className="sr-only ar-file__input"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={handleFileSelect}
+                />
+                <label htmlFor="image" className="ar-file__label">
+                  {t('adminRoster.players.uploadImage', 'Click to upload image')}
+                </label>
+                <p className="ar-hint">{FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS} (max {FILE_UPLOAD_LIMITS.MAX_SIZE_MB}MB)</p>
+              </div>
+            )}
           </div>
-        </div>
-        {players.length === 0 ? (
-          <p>No players yet. Add your first player!</p>
-        ) : filteredPlayers.length === 0 ? (
-          <p>No players match the selected division.</p>
-        ) : (
-          <div className="players-table-wrapper">
-          <table className="players-table am-card-table">
-            <thead>
-              <tr>
-                <th>Image</th>
-                <th>Player Name</th>
-                <th>Wrestler</th>
-                <th>Alt. Wrestler</th>
-                <th>PSN</th>
-                <th>Division</th>
-                <th>Alignment</th>
-                <th>Record</th>
-                <th>Linked</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPlayers.map((player) => (
-                <tr key={player.playerId} className="am-list-row">
-                  <td className="am-row-media">
-                    <img
-                      src={resolveImageSrc(player.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-                      onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-                      alt={player.currentWrestler}
-                      className="player-thumbnail"
-                    />
-                  </td>
-                  <td className="am-row-title">{player.name}</td>
-                  <td className="am-row-sub">{player.currentWrestler}</td>
-                  <td className="am-row-extra">{player.alternateWrestler || '-'}</td>
-                  <td className="am-row-extra">{player.psnId || '-'}</td>
-                  <td className="division-cell am-row-badge">{getDivisionName(player.divisionId)}</td>
-                  <td className="alignment-cell am-row-extra">
-                    {player.alignment === 'face' && <span className="alignment-badge face">😇 Face</span>}
-                    {player.alignment === 'heel' && <span className="alignment-badge heel">😈 Heel</span>}
-                    {player.alignment === 'neutral' && <span className="alignment-badge neutral">⚖️ Neutral</span>}
-                    {!player.alignment && <span className="alignment-badge unset">-</span>}
-                  </td>
-                  <td className="am-row-extra">
-                    <span className="record">
-                      {player.wins}W - {player.losses}L - {player.draws}D
-                    </span>
-                  </td>
-                  <td className="am-row-extra">
-                    {player.userId ? (
-                      <span className="linked-badge" title="This player is linked to a user account">
-                        Linked
-                      </span>
-                    ) : (
-                      <span className="unlinked-badge" title="This player was created manually and is not linked to a user account">
-                        Manual
-                      </span>
-                    )}
-                  </td>
-                  <td className="am-row-actions">
-                    <div className="actions-cell">
-                      <button
-                        onClick={() => handleEdit(player)}
-                        className="edit-btn"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(player.playerId, player.name)}
-                        className="delete-btn"
-                        disabled={deleting === player.playerId}
-                      >
-                        {deleting === player.playerId ? 'Deleting...' : 'Delete'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
-        )}
-      </div>
+        </form>
+      </Modal>
+
+      <PlayerDisciplineModal
+        player={disciplinePlayer}
+        onClose={() => setDisciplinePlayer(null)}
+        onChanged={() => void refreshPlayers()}
+      />
+
+      <ConfirmModal
+        open={pendingDelete !== null}
+        title={t('adminRoster.players.deleteTitle', 'Delete player')}
+        message={t('adminRoster.players.deleteConfirm', {
+          defaultValue: 'Are you sure you want to delete {{name}}? This action cannot be undone.',
+          name: nameOrUnnamed(pendingDelete?.name, unnamedLabel),
+        })}
+        confirmLabel={t('common.delete', 'Delete')}
+        busy={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

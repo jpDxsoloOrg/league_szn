@@ -26,6 +26,11 @@ export interface EventCreateInput {
   showId?: string;
 }
 
+export interface EventUpdateOptions {
+  /** Refuse the write with a ConflictError unless the stored card still equals this list. */
+  expectedMatchCards?: EventPatch['matchCards'];
+}
+
 export interface EventPatch {
   name?: string;
   eventType?: 'ppv' | 'weekly' | 'special' | 'house';
@@ -131,62 +136,11 @@ export interface LocationsMethods extends CrudRepository<Location, LocationCreat
   bulkImport(inputs: LocationCreateInput[]): Promise<LocationBulkImportResult>;
 }
 
-// ─── Matchmaking types ──────────────────────────────────────────────
-
-export interface PresenceRecord {
-  playerId: string;
-  lastSeenAt: string;
-  ttl: number;
-}
-
-export interface QueueRecord {
-  playerId: string;
-  joinedAt: string;
-  preferences?: { matchFormat?: string; stipulationId?: string };
-  ttl: number;
-}
-
-export interface InvitationRecord {
-  invitationId: string;
-  fromPlayerId: string;
-  toPlayerId: string;
-  matchFormat?: string;
-  stipulationId?: string;
-  status: string;
-  createdAt: string;
-  expiresAt: string;
-  updatedAt?: string;
-  acceptedAt?: string;
-  ttl: number;
-  [key: string]: unknown;
-}
-
-// ─── Sub-interfaces ─────────────────────────────────────────────────
-
-export interface MatchmakingMethods {
-  // Presence
-  putPresence(record: PresenceRecord): Promise<void>;
-  getPresence(playerId: string): Promise<PresenceRecord | null>;
-  listPresence(): Promise<PresenceRecord[]>;
-  deletePresence(playerId: string): Promise<void>;
-
-  // Queue
-  putQueue(record: QueueRecord): Promise<void>;
-  listQueue(): Promise<QueueRecord[]>;
-  deleteQueue(playerId: string): Promise<void>;
-
-  // Invitations
-  putInvitation(record: InvitationRecord): Promise<void>;
-  getInvitation(invitationId: string): Promise<InvitationRecord | null>;
-  listInvitationsByToPlayer(toPlayerId: string): Promise<InvitationRecord[]>;
-  listInvitationsByFromPlayer(fromPlayerId: string): Promise<InvitationRecord[]>;
-  updateInvitation(invitationId: string, patch: Record<string, unknown>, conditionStatus?: string): Promise<InvitationRecord>;
-}
-
 // ─── Aggregate interface ────────────────────────────────────────────
 
 export interface LeagueOpsRepository {
-  events: CrudRepository<LeagueEvent, EventCreateInput, EventPatch> & {
+  events: Omit<CrudRepository<LeagueEvent, EventCreateInput, EventPatch>, 'update'> & {
+    update(eventId: string, patch: EventPatch, options?: EventUpdateOptions): Promise<LeagueEvent>;
     listByStatus(status: EventStatus): Promise<LeagueEvent[]>;
     listBySeason(seasonId: string): Promise<LeagueEvent[]>;
     listByEventType(eventType: string): Promise<LeagueEvent[]>;
@@ -204,5 +158,4 @@ export interface LeagueOpsRepository {
   companies: CrudRepository<Company, CompanyCreateInput, CompanyPatch>;
   divisions: CrudRepository<Division, DivisionCreateInput, DivisionPatch>;
   locations: LocationsMethods;
-  matchmaking: MatchmakingMethods;
 }

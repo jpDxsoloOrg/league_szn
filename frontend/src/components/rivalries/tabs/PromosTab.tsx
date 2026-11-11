@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Player } from '../../../types';
 import type { HydratedRivalry } from '../../../types/rivalry';
+import EmptyState from '../../ui/EmptyState';
 import { resolvePlayerFullLabel } from '../rivalryUtils';
 
 interface TabProps {
@@ -44,7 +45,7 @@ export default function PromosTab({ hydrated, players }: TabProps) {
   }, [hydrated.recentPromos, hydrated.rivalry.rivalryId, participantIds]);
 
   if (promos.length === 0) {
-    return <div className="rivalry-tab__empty">{t('rivalries.detail.noRecentPromos')}</div>;
+    return <EmptyState title={t('rivalries.detail.noRecentPromos')} />;
   }
 
   return (

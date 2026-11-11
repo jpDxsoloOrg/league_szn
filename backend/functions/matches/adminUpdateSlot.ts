@@ -9,6 +9,8 @@ import {
 } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
+import { realWrestlerName } from '../../lib/needsWrestler';
+import { bookingRefusal } from '../../lib/discipline';
 
 interface AdminUpdateSlotBody {
   /** undefined = no change; null = clear the slot; string = assign that player. */
@@ -93,21 +95,27 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     } else if (newPlayerId !== null) {
       const player = await players.findById(newPlayerId);
       if (!player) return notFound(`Player not found: ${newPlayerId}`);
+      // A player already on this match must not stop staff editing it.
+      const alreadyOnMatch = slots.some((s) => s.playerId === newPlayerId);
+      const refusal = alreadyOnMatch ? null : bookingRefusal(player);
+      if (refusal) return refusal;
       resolvedPlayerId = newPlayerId;
       resolvedClaimedAt = now;
       resolvedChoice = body.wrestlerChoice === 'alternate' ? 'alternate' : 'main';
-      resolvedSnapshot =
+      resolvedSnapshot = realWrestlerName(
         resolvedChoice === 'alternate' && player.alternateWrestler
           ? player.alternateWrestler
-          : player.currentWrestler;
+          : player.currentWrestler,
+      );
     } else if (body.wrestlerChoice && original.playerId) {
       const player = await players.findById(original.playerId);
       if (!player) return notFound(`Player not found: ${original.playerId}`);
       resolvedChoice = body.wrestlerChoice === 'alternate' ? 'alternate' : 'main';
-      resolvedSnapshot =
+      resolvedSnapshot = realWrestlerName(
         resolvedChoice === 'alternate' && player.alternateWrestler
           ? player.alternateWrestler
-          : player.currentWrestler;
+          : player.currentWrestler,
+      );
     }
 
     const updatedSlot = buildUpdatedSlot(original, body, {

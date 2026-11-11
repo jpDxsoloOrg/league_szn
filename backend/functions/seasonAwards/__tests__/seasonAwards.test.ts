@@ -48,7 +48,7 @@ vi.mock('../../../lib/repositories', () => ({
     },
     roster: {
       players: {
-      list: mockPlayersList,
+      listWithDeleted: mockPlayersList,
       findById: mockPlayersFind,
     },
     },
@@ -92,6 +92,20 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
 describe('getSeasonAwards', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it('names an award winner with no player row Former member', async () => {
+    mockSeasonAwardsListBySeason.mockResolvedValue([]);
+    mockMatchesList.mockResolvedValue([
+      { matchId: 'm1', seasonId: 's1', participants: ['gone', 'p2'], winners: ['gone'], losers: ['p2'], status: 'completed', date: '2024-01-01' },
+    ]);
+    mockPlayersList.mockResolvedValue([{ playerId: 'p2', name: 'Player Two', currentWrestler: 'Christian' }]);
+    mockChampionshipsListAllHistory.mockResolvedValue([]);
+
+    const result = await getSeasonAwards(makeEvent({ pathParameters: { seasonId: 's1' } }), ctx, cb);
+
+    const mvp = JSON.parse(result!.body).autoAwards.find((a: Record<string, string>) => a.awardType === 'mvp');
+    expect(mvp.playerName).toBe('Former member');
+  });
+
   it('returns auto and custom awards for a season', async () => {
     mockSeasonAwardsListBySeason.mockResolvedValue([
       { awardId: 'custom-1', seasonId: 's1', name: 'Best Promo', awardType: 'custom', playerId: 'p1' },
@@ -102,8 +116,8 @@ describe('getSeasonAwards', () => {
       { matchId: 'm3', seasonId: 's1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'], status: 'completed', date: '2024-01-03' },
     ]);
     mockPlayersList.mockResolvedValue([
-      { playerId: 'p1', name: 'Player One' },
-      { playerId: 'p2', name: 'Player Two' },
+      { playerId: 'p1', name: 'Player One', currentWrestler: 'Edge' },
+      { playerId: 'p2', name: 'Player Two', currentWrestler: 'Christian' },
     ]);
     mockChampionshipsListAllHistory.mockResolvedValue([]);
 
@@ -313,6 +327,7 @@ describe('handler (router)', () => {
 
     const event = makeEvent({
       httpMethod: 'GET',
+      resource: '/seasons/{seasonId}/awards',
       pathParameters: { seasonId: 's1' },
     });
 
@@ -327,7 +342,11 @@ describe('handler (router)', () => {
 
     const event = makeEvent({
       httpMethod: 'DELETE',
+      resource: '/seasons/{seasonId}/awards/{awardId}',
       pathParameters: { seasonId: 's1', awardId: 'a1' },
+      requestContext: {
+        authorizer: { principalId: 'admin-sub', groups: 'Admin' },
+      } as unknown as APIGatewayProxyEvent['requestContext'],
     });
 
     const result = await routerHandler(event, ctx, cb);
@@ -338,11 +357,43 @@ describe('handler (router)', () => {
   it('returns 405 for unsupported methods', async () => {
     const event = makeEvent({
       httpMethod: 'PATCH',
+      resource: '/seasons/{seasonId}/awards',
       pathParameters: { seasonId: 's1' },
     });
 
     const result = await routerHandler(event, ctx, cb);
 
     expect(result!.statusCode).toBe(405);
+  });
+
+  it('rejects a Wrestler creating or deleting an award', async () => {
+    const wrestlerContext = {
+      authorizer: { principalId: 'wrestler-sub', groups: 'Wrestler' },
+    } as unknown as APIGatewayProxyEvent['requestContext'];
+
+    const createResult = await routerHandler(
+      makeEvent({
+        httpMethod: 'POST',
+        resource: '/seasons/{seasonId}/awards',
+        pathParameters: { seasonId: 's1' },
+        requestContext: wrestlerContext,
+      }),
+      ctx,
+      cb,
+    );
+    const deleteResult = await routerHandler(
+      makeEvent({
+        httpMethod: 'DELETE',
+        resource: '/seasons/{seasonId}/awards/{awardId}',
+        pathParameters: { seasonId: 's1', awardId: 'a1' },
+        requestContext: wrestlerContext,
+      }),
+      ctx,
+      cb,
+    );
+
+    expect(createResult!.statusCode).toBe(403);
+    expect(deleteResult!.statusCode).toBe(403);
+    expect(mockSeasonAwardsDelete).not.toHaveBeenCalled();
   });
 });

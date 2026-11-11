@@ -1,0 +1,75 @@
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: var(--page-header-padding);
+  background: var(--hatch), var(--section-band);
+  border: 1px solid var(--color-hairline);
+  border-left: 4px solid var(--section-accent);
+  border-radius: var(--radius-card);
+
+  /* Text and controls in the actions slot sit on the band, not on a surface. */
+  --color-text-secondary: var(--color-on-band-secondary);
+  --color-text-muted: var(--color-on-band-secondary);
+  --color-hairline: var(--color-on-band-hairline);
+}
+
+/* A header inside a hero already sits on colour, and one right above a hero
+   leaves the colour to it: one band per screen. */
+.event-hero .page-header,
+.page-header.page-header--plain {
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
+.page-header__text {
+  min-width: 0;
+}
+
+.page-header__eyebrow {
+  margin-bottom: 0.25rem;
+  color: var(--section-accent);
+  font-family: var(--font-label);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.page-header__title {
+  color: var(--color-text);
+  font-size: clamp(2rem, 5.5vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.page-header__subtitle {
+  margin-top: 0.375rem;
+  color: var(--color-text-secondary);
+}
+
+.page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    padding: var(--page-header-padding-phone, 1rem 1.125rem);
+  }
+}
+
+@media print {
+  .page-header {
+    padding: 0;
+    background: none;
+    border: none;
+  }
+}

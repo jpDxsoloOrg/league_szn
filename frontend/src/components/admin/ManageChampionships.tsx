@@ -1,5 +1,8 @@
-import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
-import { championshipsApi, divisionsApi, playersApi, imagesApi } from '../../services/api';
+import { useCallback, useEffect, useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Medal, Plus } from 'lucide-react';
+import { championshipsApi, divisionsApi, playersApi, imagesApi, isApiError } from '../../services/api';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
 import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
@@ -9,12 +12,26 @@ import {
   resolveImageSrc,
 } from '../../constants/imageFallbacks';
 import type { Championship, Division, Player } from '../../types';
-import './ManageChampionships.css';
+import { pickablePlayers } from '../../utils/pickablePlayers';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import DataTable from '../ui/DataTable';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Skeleton from '../ui/Skeleton';
+import AdminFormModal from './AdminFormModal';
+import AdminNotice from './AdminNotice';
+import useAdminConfirm from './useAdminConfirm';
+import './adminContent.css';
 
 export default function ManageChampionships() {
+  const { t } = useTranslation();
+  const { confirm, confirmDialog } = useAdminConfirm();
   const [championships, setChampionships] = useState<Championship[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [assignError, setAssignError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -44,57 +61,45 @@ export default function ManageChampionships() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadChampionships();
-    loadDivisions();
-    loadPlayers();
-  }, []);
-
-  const loadChampionships = async () => {
+  const loadChampionships = useCallback(async () => {
     try {
-      setLoading(true);
       // Include inactive titles so admins can see and reactivate them
-      const data = await championshipsApi.getAll(undefined, { includeInactive: true });
-      setChampionships(data);
-    } catch (_err) {
-      setError('Failed to load championships');
+      setChampionships(await championshipsApi.getAll(undefined, { includeInactive: true }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadDivisions = async () => {
-    try {
-      const data = await divisionsApi.getAll();
-      setDivisions(data);
-    } catch (_err) {
-      // Non-critical — divisions are optional
-    }
-  };
-
-  const loadPlayers = async () => {
-    try {
-      const data = await playersApi.getAll();
-      setPlayers(data);
-    } catch (_err) {
-      // Non-critical — used for champion display
-    }
-  };
+  useEffect(() => {
+    const loadOptions = async () => {
+      // Divisions and the roster only label rows and fill pickers, so a failure here is not fatal.
+      const [divisionResult, playerResult] = await Promise.allSettled([
+        divisionsApi.getAll(),
+        playersApi.getAllIncludingHidden(),
+      ]);
+      if (divisionResult.status === 'fulfilled') setDivisions(divisionResult.value);
+      if (playerResult.status === 'fulfilled') setPlayers(playerResult.value);
+    };
+    void loadChampionships();
+    void loadOptions();
+  }, [loadChampionships]);
 
   const getChampionName = (currentChampion?: string | string[]): string => {
-    if (!currentChampion) return 'Vacant';
+    if (!currentChampion) return t('common.vacant', 'Vacant');
     const ids = Array.isArray(currentChampion) ? currentChampion : [currentChampion];
     const names = ids.map(id => {
       const player = players.find(p => p.playerId === id);
-      return player ? player.name : 'Unknown';
+      return player ? player.name : t('common.unknown', 'Unknown');
     });
     return names.join(' & ');
   };
 
   const getDivisionName = (divisionId?: string) => {
-    if (!divisionId) return 'None';
+    if (!divisionId) return t('common.none', 'None');
     const division = divisions.find((d) => d.divisionId === divisionId);
-    return division ? division.name : 'Unknown';
+    return division ? division.name : t('common.unknown', 'Unknown');
   };
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
@@ -102,18 +107,18 @@ export default function ManageChampionships() {
     if (file) {
       // Validate file type
       if (!FILE_UPLOAD_LIMITS.ALLOWED_TYPES.includes(file.type as typeof FILE_UPLOAD_LIMITS.ALLOWED_TYPES[number])) {
-        setError(`Invalid file type. Only ${FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS} images are allowed.`);
+        setFormError(t('adminContent.invalidImageType', 'Invalid file type. Only {{types}} images are allowed.', { types: FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS }));
         return;
       }
 
       // Validate file size
       if (file.size > FILE_UPLOAD_LIMITS.MAX_SIZE) {
-        setError(`File too large. Maximum size is ${FILE_UPLOAD_LIMITS.MAX_SIZE_MB}MB.`);
+        setFormError(t('adminContent.imageTooLarge', 'File too large. Maximum size is {{size}}MB.', { size: FILE_UPLOAD_LIMITS.MAX_SIZE_MB }));
         return;
       }
 
       setSelectedFile(file);
-      setError(null);
+      setFormError(null);
 
       // Create preview
       const reader = new FileReader();
@@ -149,10 +154,10 @@ export default function ManageChampionships() {
         imageUrl = response.imageUrl;
       } catch (err) {
         logger.error('Failed to get upload URL for championship image');
-        if (err instanceof Error && err.message.includes('401')) {
-          throw new Error('Session expired. Please log in again to upload images.');
+        if (isApiError(err, 401)) {
+          throw new Error(t('adminContent.sessionExpired', 'Session expired. Please log in again to upload images.'));
         }
-        throw new Error('Unable to prepare image upload. Please check your connection and try again.');
+        throw new Error(t('adminContent.uploadPrepareFailed', 'Unable to prepare image upload. Please check your connection and try again.'));
       }
 
       // Upload to S3 with specific error handling
@@ -161,9 +166,9 @@ export default function ManageChampionships() {
       } catch (err) {
         logger.error('Failed to upload championship image to storage');
         if (err instanceof TypeError && err.message.includes('network')) {
-          throw new Error('Network error during upload. Please check your internet connection and try again.');
+          throw new Error(t('adminContent.uploadNetworkError', 'Network error during upload. Please check your internet connection and try again.'));
         }
-        throw new Error('Failed to upload image to storage. Please try again or use a different image.');
+        throw new Error(t('adminContent.uploadStorageFailed', 'Failed to upload image to storage. Please try again or use a different image.'));
       }
 
       return imageUrl;
@@ -177,6 +182,7 @@ export default function ManageChampionships() {
     if (submitting || uploading) return; // Prevent double submission
 
     setError(null);
+    setFormError(null);
     setSuccess(null);
     setSubmitting(true);
 
@@ -185,7 +191,7 @@ export default function ManageChampionships() {
       const sanitizedName = sanitizeName(formData.name, VALIDATION.MAX_NAME_LENGTH);
 
       if (!sanitizedName) {
-        setError('Championship name cannot be empty');
+        setFormError(t('adminContent.championships.nameRequired', 'Championship name cannot be empty'));
         return;
       }
 
@@ -199,7 +205,7 @@ export default function ManageChampionships() {
           divisionId: formData.divisionId || undefined,
           imageUrl: imageUrl || undefined,
         });
-        setSuccess('Championship updated successfully!');
+        setSuccess(t('adminContent.championships.updated', 'Championship updated successfully!'));
       } else {
         await championshipsApi.create({
           name: sanitizedName,
@@ -208,17 +214,13 @@ export default function ManageChampionships() {
           imageUrl: imageUrl || undefined,
           isActive: true,
         });
-        setSuccess('Championship created successfully!');
+        setSuccess(t('adminContent.championships.created', 'Championship created successfully!'));
       }
 
-      setFormData({ name: '', type: 'singles', divisionId: '', imageUrl: '' });
-      setSelectedFile(null);
-      setImagePreview(null);
-      setShowAddForm(false);
-      setEditingChampionship(null);
+      handleCancel();
       await loadChampionships();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save championship');
+      setFormError(err instanceof Error ? err.message : t('adminContent.championships.saveFailed', 'Failed to save championship'));
     } finally {
       setSubmitting(false);
     }
@@ -243,12 +245,16 @@ export default function ManageChampionships() {
     setImagePreview(null);
     setShowAddForm(false);
     setEditingChampionship(null);
+    setFormError(null);
   };
 
   const handleDelete = async (championshipId: string, championshipName: string) => {
-    if (!confirm(`Are you sure you want to delete "${championshipName}"? This will also delete all championship history. This action cannot be undone.`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: t('adminContent.deletePrompt', 'Delete {{name}}?', { name: championshipName }),
+      description: t('adminContent.championships.deleteText', 'This also deletes all championship history. This cannot be undone.'),
+      confirmLabel: t('common.delete', 'Delete'),
+    });
+    if (!confirmed) return;
 
     setDeleting(championshipId);
     setError(null);
@@ -256,19 +262,22 @@ export default function ManageChampionships() {
 
     try {
       await championshipsApi.delete(championshipId);
-      setSuccess('Championship deleted successfully!');
+      setSuccess(t('adminContent.championships.deleted', 'Championship deleted successfully!'));
       await loadChampionships();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete championship');
+      setError(err instanceof Error ? err.message : t('adminContent.championships.deleteFailed', 'Failed to delete championship'));
     } finally {
       setDeleting(null);
     }
   };
 
   const handleVacate = async (championshipId: string, championshipName: string) => {
-    if (!confirm(`Are you sure you want to vacate "${championshipName}"? The current champion will be stripped of the title.`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: t('adminContent.championships.vacateTitle', 'Vacate {{name}}?', { name: championshipName }),
+      description: t('adminContent.championships.vacateText', 'The current champion will be stripped of the title.'),
+      confirmLabel: t('adminContent.championships.vacate', 'Vacate'),
+    });
+    if (!confirmed) return;
 
     setVacating(championshipId);
     setError(null);
@@ -276,10 +285,10 @@ export default function ManageChampionships() {
 
     try {
       await championshipsApi.vacate(championshipId);
-      setSuccess('Championship vacated successfully!');
+      setSuccess(t('adminContent.championships.vacated', 'Championship vacated successfully!'));
       await loadChampionships();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to vacate championship');
+      setError(err instanceof Error ? err.message : t('adminContent.championships.vacateFailed', 'Failed to vacate championship'));
     } finally {
       setVacating(null);
     }
@@ -287,8 +296,13 @@ export default function ManageChampionships() {
 
   const handleToggleActive = async (championship: Championship) => {
     const isCurrentlyActive = championship.isActive !== false;
-    if (isCurrentlyActive && !confirm(`Deactivate "${championship.name}"? It will no longer be available for new matches or challenges, but its title history stays visible.`)) {
-      return;
+    if (isCurrentlyActive) {
+      const confirmed = await confirm({
+        title: t('adminContent.championships.deactivateTitle', 'Deactivate {{name}}?', { name: championship.name }),
+        description: t('adminContent.championships.deactivateText', 'It will no longer be available for new matches or challenges, but its title history stays visible.'),
+        confirmLabel: t('adminContent.championships.deactivate', 'Deactivate'),
+      });
+      if (!confirmed) return;
     }
 
     setTogglingActive(championship.championshipId);
@@ -297,10 +311,12 @@ export default function ManageChampionships() {
 
     try {
       await championshipsApi.update(championship.championshipId, { isActive: !isCurrentlyActive });
-      setSuccess(isCurrentlyActive ? 'Championship deactivated.' : 'Championship reactivated.');
+      setSuccess(isCurrentlyActive
+        ? t('adminContent.championships.deactivated', 'Championship deactivated.')
+        : t('adminContent.championships.reactivated', 'Championship reactivated.'));
       await loadChampionships();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update championship status');
+      setError(err instanceof Error ? err.message : t('adminContent.championships.statusFailed', 'Failed to update championship status'));
     } finally {
       setTogglingActive(null);
     }
@@ -310,6 +326,7 @@ export default function ManageChampionships() {
     setAssigningChampionship(championship);
     setAssignChampion1('');
     setAssignChampion2('');
+    setAssignError(null);
     setError(null);
     setSuccess(null);
   };
@@ -325,277 +342,278 @@ export default function ManageChampionships() {
 
     const isTag = assigningChampionship.type === 'tag';
     if (!assignChampion1 || (isTag && !assignChampion2)) {
-      setError(isTag ? 'Select both tag team champions' : 'Select a champion');
+      setAssignError(isTag
+        ? t('adminContent.championships.selectBoth', 'Select both tag team champions')
+        : t('adminContent.championships.selectOne', 'Select a champion'));
       return;
     }
     if (isTag && assignChampion1 === assignChampion2) {
-      setError('Tag team champions must be two different players');
+      setAssignError(t('adminContent.championships.differentPlayers', 'Tag team champions must be two different players'));
       return;
     }
 
     setAssigning(true);
-    setError(null);
+    setAssignError(null);
     setSuccess(null);
 
     try {
       const champion = isTag ? [assignChampion1, assignChampion2] : assignChampion1;
       await championshipsApi.assignChampion(assigningChampionship.championshipId, champion);
-      setSuccess('Champion assigned successfully!');
+      setSuccess(t('adminContent.championships.assigned', 'Champion assigned successfully!'));
       setAssigningChampionship(null);
       await loadChampionships();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to assign champion');
+      setAssignError(err instanceof Error ? err.message : t('adminContent.championships.assignFailed', 'Failed to assign champion'));
     } finally {
       setAssigning(false);
     }
   };
 
+  const title = t('adminContent.championships.title', 'Manage Championships');
+  const assignLabel = t('adminContent.championships.assign', 'Assign Champion');
+
   if (loading) {
-    return <div className="loading">Loading championships...</div>;
+    return (
+      <div className="ac-page">
+        <PageHeader title={title} />
+        <Skeleton variant="table" />
+      </div>
+    );
   }
 
+  const isTagAssignment = assigningChampionship?.type === 'tag';
+  const assignablePlayers = pickablePlayers(players, [assigningChampionship?.currentChampion ?? []].flat());
+
   return (
-    <div className="manage-championships">
-      <div className="championships-header">
-        <h2>Manage Championships</h2>
-        {!showAddForm && (
-          <button onClick={() => setShowAddForm(true)}>
-            Create Championship
-          </button>
+    <div className="ac-page">
+      <PageHeader
+        title={title}
+        actions={(
+          <Button icon={<Plus aria-hidden="true" size={18} />} onClick={() => setShowAddForm(true)}>
+            {t('adminContent.championships.create', 'Create Championship')}
+          </Button>
         )}
-      </div>
+      />
 
-      {error && <div className="error-message">{error}</div>}
-      {success && <div className="success-message">{success}</div>}
+      {error && <AdminNotice tone="error">{error}</AdminNotice>}
+      {success && <AdminNotice tone="success">{success}</AdminNotice>}
 
-      {showAddForm && (
-        <div className="championship-form-container">
-          <h3>{editingChampionship ? 'Edit Championship' : 'Create New Championship'}</h3>
-          <form onSubmit={handleSubmit} className="championship-form">
-            <div className="form-group">
-              <label htmlFor="name">Championship Name</label>
-              <input
-                type="text"
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                placeholder="World Heavyweight Championship"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="type">Type</label>
-              <select
-                id="type"
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value as 'singles' | 'tag' })}
-                required
-              >
-                <option value="singles">Singles</option>
-                <option value="tag">Tag Team</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="divisionId">Division (locks contenders to this division)</label>
-              <select
-                id="divisionId"
-                value={formData.divisionId}
-                onChange={(e) => setFormData({ ...formData, divisionId: e.target.value })}
-              >
-                <option value="">No Division (Open to all)</option>
-                {divisions.map((division) => (
-                  <option key={division.divisionId} value={division.divisionId}>
-                    {division.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="championship-image">Championship Belt Image</label>
-              <div className="image-upload-container">
-                {imagePreview ? (
-                  <div className="image-preview">
-                    <img src={imagePreview} alt="Preview" />
-                    <button type="button" onClick={clearImage} className="remove-image-btn">
-                      Remove Image
-                    </button>
-                  </div>
-                ) : (
-                  <div className="image-upload-box">
-                    <input
-                      type="file"
-                      id="championship-image"
-                      accept="image/jpeg,image/png,image/gif,image/webp"
-                      onChange={handleFileSelect}
-                      className="file-input"
-                    />
-                    <label htmlFor="championship-image" className="file-input-label">
-                      Click to upload image
-                    </label>
-                    <p className="upload-hint">{FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS} (max {FILE_UPLOAD_LIMITS.MAX_SIZE_MB}MB)</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="form-actions">
-              <button type="submit" disabled={submitting || uploading}>
-                {submitting ? 'Saving...' : uploading ? 'Uploading...' : editingChampionship ? 'Update Championship' : 'Create Championship'}
-              </button>
-              <button type="button" onClick={handleCancel} className="cancel-btn" disabled={submitting || uploading}>
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      <div className="championships-list">
-        <h3>All Championships ({championships.length})</h3>
-        {championships.length === 0 ? (
-          <p>No championships yet. Create your first championship!</p>
-        ) : (
-          <div className="championships-grid">
-            {championships.map(championship => (
-              <div key={championship.championshipId} className="championship-card">
-                <img
-                  src={resolveImageSrc(championship.imageUrl, DEFAULT_CHAMPIONSHIP_IMAGE)}
-                  onError={(event) => applyImageFallback(event, DEFAULT_CHAMPIONSHIP_IMAGE)}
-                  alt={championship.name}
-                  className="championship-image"
-                />
-                <h4>{championship.name}</h4>
-                <div className="championship-type">
-                  {championship.type === 'singles' ? 'Singles' : 'Tag Team'}
-                </div>
-                <div className="championship-division">
-                  Division: {getDivisionName(championship.divisionId)}
-                </div>
-                <div className="championship-champion">
-                  Champion: {getChampionName(championship.currentChampion)}
-                </div>
-                <div className="championship-status">
-                  {championship.isActive !== false ? (
-                    <span className="status-active">Active</span>
-                  ) : (
-                    <span className="status-inactive">Inactive</span>
-                  )}
-                </div>
-                <div className="championship-actions">
-                  <button
-                    onClick={() => handleEdit(championship)}
-                    className="championship-edit-btn"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => openAssignChampion(championship)}
-                    className="championship-assign-btn"
-                  >
-                    Assign Champion
-                  </button>
-                  <button
+      <section className="ac-section">
+        <h2 className="ac-section__title">
+          {t('adminContent.championships.all', 'All Championships')} ({championships.length})
+        </h2>
+        <DataTable
+          caption={t('adminContent.championships.all', 'All Championships')}
+          density="dense"
+          rows={championships}
+          rowKey={(championship) => championship.championshipId}
+          empty={(
+            <EmptyState
+              icon={<Medal aria-hidden="true" size={32} />}
+              title={t('adminContent.championships.emptyTitle', 'No championships yet')}
+              description={t('adminContent.championships.emptyText', 'Create your first championship.')}
+            />
+          )}
+          columns={[
+            {
+              key: 'name',
+              header: t('adminContent.championships.championship', 'Championship'),
+              render: (championship) => (
+                <span className="ac-cell">
+                  <img
+                    src={resolveImageSrc(championship.imageUrl, DEFAULT_CHAMPIONSHIP_IMAGE)}
+                    onError={(event) => applyImageFallback(event, DEFAULT_CHAMPIONSHIP_IMAGE)}
+                    alt={championship.name}
+                    className="ac-thumb"
+                  />
+                  <span className="ac-cell__text">
+                    <span className="ac-cell__title">{championship.name}</span>
+                    <span className="ac-cell__sub">
+                      {championship.type === 'singles' ? t('championships.singles', 'Singles') : t('championships.tagTeam', 'Tag Team')}
+                    </span>
+                  </span>
+                </span>
+              ),
+              sortValue: (championship) => championship.name,
+            },
+            {
+              key: 'division',
+              header: t('adminContent.championships.division', 'Division'),
+              render: (championship) => getDivisionName(championship.divisionId),
+            },
+            {
+              key: 'champion',
+              header: t('adminContent.championships.champion', 'Champion'),
+              render: (championship) => getChampionName(championship.currentChampion),
+            },
+            {
+              key: 'status',
+              header: t('adminContent.status', 'Status'),
+              render: (championship) => (
+                <Badge tone={championship.isActive !== false ? 'win' : 'neutral'}>
+                  {championship.isActive !== false ? t('common.active', 'Active') : t('championships.inactive', 'Inactive')}
+                </Badge>
+              ),
+            },
+            {
+              key: 'actions',
+              header: t('common.actions', 'Actions'),
+              align: 'end',
+              render: (championship) => (
+                <div className="ac-actions ac-actions--end">
+                  <Button variant="ghost" size="sm" onClick={() => handleEdit(championship)}>{t('common.edit', 'Edit')}</Button>
+                  <Button variant="ghost" size="sm" onClick={() => openAssignChampion(championship)}>{assignLabel}</Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    loading={togglingActive === championship.championshipId}
                     onClick={() => handleToggleActive(championship)}
-                    className="championship-toggle-btn"
-                    disabled={togglingActive === championship.championshipId}
                   >
-                    {togglingActive === championship.championshipId
-                      ? 'Updating...'
-                      : championship.isActive !== false ? 'Deactivate' : 'Activate'}
-                  </button>
+                    {championship.isActive !== false
+                      ? t('adminContent.championships.deactivate', 'Deactivate')
+                      : t('adminContent.championships.activate', 'Activate')}
+                  </Button>
                   {championship.currentChampion && (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      loading={vacating === championship.championshipId}
                       onClick={() => handleVacate(championship.championshipId, championship.name)}
-                      className="championship-vacate-btn"
-                      disabled={vacating === championship.championshipId}
                     >
-                      {vacating === championship.championshipId ? 'Vacating...' : 'Vacate'}
-                    </button>
+                      {t('adminContent.championships.vacate', 'Vacate')}
+                    </Button>
                   )}
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    loading={deleting === championship.championshipId}
                     onClick={() => handleDelete(championship.championshipId, championship.name)}
-                    className="championship-delete-btn"
-                    disabled={deleting === championship.championshipId}
                   >
-                    {deleting === championship.championshipId ? 'Deleting...' : 'Delete'}
-                  </button>
+                    {t('common.delete', 'Delete')}
+                  </Button>
                 </div>
-              </div>
-            ))}
+              ),
+            },
+          ]}
+        />
+      </section>
+
+      <AdminFormModal
+        open={showAddForm}
+        onClose={handleCancel}
+        title={editingChampionship
+          ? t('adminContent.championships.edit', 'Edit Championship')
+          : t('adminContent.championships.createNew', 'Create New Championship')}
+        submitLabel={editingChampionship
+          ? t('adminContent.championships.update', 'Update Championship')
+          : t('adminContent.championships.create', 'Create Championship')}
+        onSubmit={handleSubmit}
+        busy={submitting || uploading}
+        error={formError}
+      >
+        <div className="ac-field">
+          <label className="ac-field__label" htmlFor="championship-name">{t('adminContent.championships.name', 'Championship Name')}</label>
+          <input
+            type="text"
+            id="championship-name"
+            value={formData.name}
+            onChange={(event) => setFormData({ ...formData, name: event.target.value })}
+            required
+            placeholder={t('adminContent.championships.namePlaceholder', 'World Heavyweight Championship')}
+          />
+        </div>
+        <div className="ac-form__row">
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="championship-type">{t('adminContent.championships.type', 'Type')}</label>
+            <select
+              id="championship-type"
+              value={formData.type}
+              onChange={(event) => setFormData({ ...formData, type: event.target.value as 'singles' | 'tag' })}
+              required
+            >
+              <option value="singles">{t('championships.singles', 'Singles')}</option>
+              <option value="tag">{t('championships.tagTeam', 'Tag Team')}</option>
+            </select>
           </div>
-        )}
-      </div>
-
-      {assigningChampionship && (
-        <div className="assign-champion-overlay" onClick={closeAssignChampion}>
-          <div
-            className="assign-champion-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="assign-champion-title"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 id="assign-champion-title">Assign Champion — {assigningChampionship.name}</h3>
-            <p className="assign-champion-hint">
-              Crown a champion directly without a match. The current reign (if any) will be
-              closed and the new reign recorded in the title history.
-            </p>
-            <form onSubmit={handleAssignChampion} className="assign-champion-form">
-              <div className="form-group">
-                <label htmlFor="assign-champion-1">
-                  {assigningChampionship.type === 'tag' ? 'Champion 1' : 'New Champion'}
-                </label>
-                <select
-                  id="assign-champion-1"
-                  value={assignChampion1}
-                  onChange={(e) => setAssignChampion1(e.target.value)}
-                  required
-                >
-                  <option value="">Select a player</option>
-                  {players.map((player) => (
-                    <option key={player.playerId} value={player.playerId}>
-                      {player.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {assigningChampionship.type === 'tag' && (
-                <div className="form-group">
-                  <label htmlFor="assign-champion-2">Champion 2</label>
-                  <select
-                    id="assign-champion-2"
-                    value={assignChampion2}
-                    onChange={(e) => setAssignChampion2(e.target.value)}
-                    required
-                  >
-                    <option value="">Select a player</option>
-                    {players
-                      .filter((player) => player.playerId !== assignChampion1)
-                      .map((player) => (
-                        <option key={player.playerId} value={player.playerId}>
-                          {player.name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              )}
-
-              <div className="form-actions">
-                <button type="submit" disabled={assigning}>
-                  {assigning ? 'Assigning...' : 'Assign Champion'}
-                </button>
-                <button type="button" onClick={closeAssignChampion} className="cancel-btn" disabled={assigning}>
-                  Cancel
-                </button>
-              </div>
-            </form>
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="championship-division">
+              {t('adminContent.championships.divisionField', 'Division (locks contenders to this division)')}
+            </label>
+            <select
+              id="championship-division"
+              value={formData.divisionId}
+              onChange={(event) => setFormData({ ...formData, divisionId: event.target.value })}
+            >
+              <option value="">{t('adminContent.championships.noDivision', 'No Division (Open to all)')}</option>
+              {divisions.map((division) => (
+                <option key={division.divisionId} value={division.divisionId}>{division.name}</option>
+              ))}
+            </select>
           </div>
         </div>
-      )}
+        <div className="ac-field">
+          <label className="ac-field__label" htmlFor="championship-image">{t('adminContent.championships.image', 'Championship Belt Image')}</label>
+          {imagePreview ? (
+            <div className="ac-image-preview">
+              <img src={imagePreview} alt="" />
+              <Button variant="ghost" size="sm" onClick={clearImage}>{t('adminContent.removeImage', 'Remove Image')}</Button>
+            </div>
+          ) : (
+            <>
+              <input
+                type="file"
+                id="championship-image"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                onChange={handleFileSelect}
+              />
+              <p className="ac-field__hint">{FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS} (max {FILE_UPLOAD_LIMITS.MAX_SIZE_MB}MB)</p>
+            </>
+          )}
+        </div>
+      </AdminFormModal>
+
+      <AdminFormModal
+        open={assigningChampionship !== null}
+        onClose={closeAssignChampion}
+        title={`${assignLabel}: ${assigningChampionship?.name ?? ''}`}
+        description={t(
+          'adminContent.championships.assignHint',
+          'Crown a champion directly without a match. The current reign (if any) will be closed and the new reign recorded in the title history.',
+        )}
+        submitLabel={assignLabel}
+        onSubmit={handleAssignChampion}
+        busy={assigning}
+        error={assignError}
+      >
+        <div className="ac-field">
+          <label className="ac-field__label" htmlFor="assign-champion-1">
+            {isTagAssignment
+              ? t('adminContent.championships.champion1', 'Champion 1')
+              : t('adminContent.championships.newChampion', 'New Champion')}
+          </label>
+          <select id="assign-champion-1" value={assignChampion1} onChange={(event) => setAssignChampion1(event.target.value)} required>
+            <option value="">{t('adminContent.selectPlayer', 'Select a player')}</option>
+            {assignablePlayers.map((player) => (
+              <option key={player.playerId} value={player.playerId}>{player.name}</option>
+            ))}
+          </select>
+        </div>
+        {isTagAssignment && (
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="assign-champion-2">{t('adminContent.championships.champion2', 'Champion 2')}</label>
+            <select id="assign-champion-2" value={assignChampion2} onChange={(event) => setAssignChampion2(event.target.value)} required>
+              <option value="">{t('adminContent.selectPlayer', 'Select a player')}</option>
+              {assignablePlayers
+                .filter((player) => player.playerId !== assignChampion1)
+                .map((player) => (
+                  <option key={player.playerId} value={player.playerId}>{player.name}</option>
+                ))}
+            </select>
+          </div>
+        )}
+      </AdminFormModal>
+
+      {confirmDialog}
     </div>
   );
 }

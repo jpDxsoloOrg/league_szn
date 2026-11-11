@@ -1,7 +1,17 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { PROFILE_SETUP_SNOOZE_KEY } from '../utils/profileSetup';
+import { NO_PLAYER_ROW_KEY, PROFILE_SETUP_SNOOZE_KEY } from '../utils/profileSetup';
+import { ANNOUNCEMENTS_CLOSED_KEY } from '../utils/announcementDismissal';
 import { cognitoAuth, type UserRole } from '../services/cognito';
 import { profileApi } from '../services/api';
+import { AUTH_EXPIRED_EVENT, SIGNUP_BLOCKED_EVENT } from '../services/api/apiClient';
+import { MAX_TIMER_MS, isBlockedNow, msUntilNextBoundary } from '../utils/discipline';
+import type { Player } from '../types';
+
+/** Refresh just after a window ends, so a slightly slow server clock has passed it too. */
+const DISCIPLINE_REFRESH_SLACK_MS = 1000;
+
+/** How often a blocked tab re-reads the profile, so staff lifting the block reaches it. */
+const BLOCK_RECHECK_MS = 5 * 60_000;
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -13,6 +23,8 @@ interface AuthState {
   currentWrestler: string | null;
   /** The signed-in player's alternate wrestler name (if set). */
   alternateWrestler: string | null;
+  /** The player row loaded with the session, so the shell need not fetch it again. */
+  profile: Player | null;
 }
 
 interface AuthContextType extends AuthState {
@@ -41,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     playerId: null,
     currentWrestler: null,
     alternateWrestler: null,
+    profile: null,
   });
 
   // Initialize auth state on mount
@@ -64,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               playerId: player.playerId,
               currentWrestler: null,
               alternateWrestler: null,
+              profile: null,
             });
             return;
           } catch {
@@ -87,10 +101,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           let playerId: string | null = null;
           let currentWrestler: string | null = null;
           let alternateWrestler: string | null = null;
+          let loadedProfile: Player | null = null;
           if (groups.includes('Wrestler')) {
             try {
               const profile = await profileApi.getMyProfile();
               if (!mounted) return;
+              loadedProfile = profile;
               playerId = profile.playerId;
               currentWrestler = profile.currentWrestler ?? null;
               alternateWrestler = profile.alternateWrestler ?? null;
@@ -108,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             playerId,
             currentWrestler,
             alternateWrestler,
+            profile: loadedProfile,
           });
         } else {
           setState({
@@ -118,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             playerId: null,
             currentWrestler: null,
             alternateWrestler: null,
+            profile: null,
           });
         }
       } catch {
@@ -130,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           playerId: null,
           currentWrestler: null,
           alternateWrestler: null,
+          profile: null,
         });
       }
     };
@@ -147,9 +166,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let playerId: string | null = null;
     let currentWrestler: string | null = null;
     let alternateWrestler: string | null = null;
+    let loadedProfile: Player | null = null;
     if (result.groups.includes('Wrestler')) {
       try {
         const profile = await profileApi.getMyProfile();
+        loadedProfile = profile;
         playerId = profile.playerId;
         currentWrestler = profile.currentWrestler ?? null;
         alternateWrestler = profile.alternateWrestler ?? null;
@@ -166,6 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       playerId,
       currentWrestler,
       alternateWrestler,
+      profile: loadedProfile,
     });
   }, []);
 
@@ -186,6 +208,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('devPlayer');
     // The profile-setup nudge is per account; don't carry a snooze over.
     sessionStorage.removeItem(PROFILE_SETUP_SNOOZE_KEY);
+    sessionStorage.removeItem(NO_PLAYER_ROW_KEY);
+    sessionStorage.removeItem(ANNOUNCEMENTS_CLOSED_KEY);
     setState({
       isAuthenticated: false,
       isLoading: false,
@@ -194,22 +218,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       playerId: null,
       currentWrestler: null,
       alternateWrestler: null,
+      profile: null,
     });
   }, []);
+
+  // The API client fires this once a 401 survives a token refresh. Dropping to
+  // signed-out here shows the sign-in entry instead of a shell whose requests fail.
+  useEffect(() => {
+    const onAuthExpired = () => {
+      void handleSignOut();
+    };
+    window.addEventListener(AUTH_EXPIRED_EVENT, onAuthExpired);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, onAuthExpired);
+  }, [handleSignOut]);
 
   const refreshProfile = useCallback(async () => {
     try {
       const profile = await profileApi.getMyProfile();
-      setState(prev => ({
+      // Timers call this too, so a reply can land after signing out.
+      setState(prev => (prev.isAuthenticated ? {
         ...prev,
         playerId: profile.playerId,
         currentWrestler: profile.currentWrestler ?? null,
         alternateWrestler: profile.alternateWrestler ?? null,
-      }));
+        profile,
+      } : prev));
     } catch {
       // Profile may not exist
     }
   }, []);
+
+  // A window can end, or a block begin, while the tab stays open.
+  const discipline = state.profile?.discipline;
+  useEffect(() => {
+    const delay = msUntilNextBoundary(discipline);
+    if (delay === null) return undefined;
+    const timer = window.setTimeout(
+      () => void refreshProfile(),
+      Math.min(delay + DISCIPLINE_REFRESH_SLACK_MS, MAX_TIMER_MS),
+    );
+    return () => window.clearTimeout(timer);
+  }, [discipline, refreshProfile]);
+
+  // Staff can lift a block early. A blocked tab has its controls off, so it sends
+  // nothing that could be answered, and it has to ask.
+  const signupBlocked = isBlockedNow(discipline);
+  useEffect(() => {
+    if (!signupBlocked) return undefined;
+    const recheck = () => void refreshProfile();
+    const recheckWhenVisible = () => {
+      if (document.visibilityState === 'visible') recheck();
+    };
+    const timer = window.setInterval(recheck, BLOCK_RECHECK_MS);
+    window.addEventListener('focus', recheck);
+    document.addEventListener('visibilitychange', recheckWhenVisible);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', recheck);
+      document.removeEventListener('visibilitychange', recheckWhenVisible);
+    };
+  }, [signupBlocked, refreshProfile]);
+
+  useEffect(() => {
+    const onSignupBlocked = () => {
+      void refreshProfile();
+    };
+    window.addEventListener(SIGNUP_BLOCKED_EVENT, onSignupBlocked);
+    return () => window.removeEventListener(SIGNUP_BLOCKED_EVENT, onSignupBlocked);
+  }, [refreshProfile]);
 
   const hasRole = useCallback((role: UserRole): boolean => {
     if (state.groups.includes('Admin')) return true;
@@ -231,6 +307,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       playerId: player.playerId,
       currentWrestler: null,
       alternateWrestler: null,
+      profile: null,
     });
   }, []);
 

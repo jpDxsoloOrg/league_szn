@@ -1,11 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Player, PlayerBookingInfo } from '../../../types';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, options?: { defaultValue?: string; count?: number }) => {
+    i18n: { language: 'en-US' },
+    t: (key: string, options?: string | { defaultValue?: string; count?: number }) => {
+      if (typeof options === 'string') return options;
       const value = options?.defaultValue ?? key;
       return typeof options?.count === 'number'
         ? value.replace('{{count}}', String(options.count))
@@ -64,6 +66,37 @@ async function openMenu() {
 }
 
 describe('PlayerBookingPicker', () => {
+  it('uses a plain heading rather than check-in groups when there are no check-ins', async () => {
+    renderPicker({ checkInStatusByPlayerId: undefined });
+    await openMenu();
+
+    expect(screen.getByText('All players (4)')).toBeInTheDocument();
+    expect(screen.queryByText(/No Response/)).not.toBeInTheDocument();
+  });
+
+  it('shows a kept hidden player by name alone, without a tag', async () => {
+    const hiddenPlayer = player('p5', 'Eve', 'Needs Wrestler');
+    renderPicker({ players: [hiddenPlayer], checkInStatusByPlayerId: undefined });
+    await openMenu();
+
+    const option = screen.getByRole('option', { name: /Eve/ });
+    expect(option).not.toHaveTextContent('Hidden');
+    expect(option).not.toHaveTextContent('Needs Wrestler');
+  });
+
+  it('labels a blank-name player instead of leaving empty brackets', async () => {
+    renderPicker({
+      players: [player('blank', '', 'Sid Vicious'), player('blank-hidden', '  ', 'Needs Wrestler')],
+      checkInStatusByPlayerId: new Map(),
+    });
+
+    await openMenu();
+
+    expect(screen.getByRole('option', { name: /Sid Vicious \(Unnamed player\)/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^Unnamed player/ })).toBeInTheDocument();
+    expect(screen.queryByText(/\(\s*\)/)).not.toBeInTheDocument();
+  });
+
   it('lists only available and tentative players by default', async () => {
     renderPicker();
     await openMenu();
@@ -120,6 +153,45 @@ describe('PlayerBookingPicker', () => {
 
     expect(screen.getByText('Bravo (Bob)')).toBeInTheDocument();
     expect(screen.queryByText('Alpha (Alice)')).not.toBeInTheDocument();
+  });
+
+  describe('discipline flags', () => {
+    const until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const blocked: Player['discipline'] = {
+      status: 'signup-blocked',
+      activeStrikeCount: 2,
+      activeStrikes: [],
+      cooldownEndsAt: until,
+      signupBlockedUntil: until,
+      deactivatedAt: null,
+    };
+    const flag = 'discipline.status.signupBlocked';
+
+    it('flags a blocked player in the list and on the trigger once picked', async () => {
+      renderPicker({
+        players: [{ ...player('p1', 'Rock', 'Rocky'), discipline: blocked }, player('p2', 'Cena', 'Champ')],
+        value: 'p1',
+      });
+
+      const trigger = screen.getByRole('button', { expanded: false });
+      expect(within(trigger).getByText(flag)).toBeInTheDocument();
+
+      await userEvent.click(trigger);
+
+      expect(within(screen.getByRole('option', { name: /Rocky/ })).getByText(flag)).toBeInTheDocument();
+      expect(within(screen.getByRole('option', { name: /Champ/ })).queryByText(flag)).not.toBeInTheDocument();
+    });
+
+    it('does not flag a block that has already ended', async () => {
+      const past = new Date(Date.now() - 1000).toISOString();
+      renderPicker({
+        players: [{ ...player('p1', 'Rock', 'Rocky'), discipline: { ...blocked, signupBlockedUntil: past } }],
+      });
+
+      await openMenu();
+
+      expect(screen.queryByText(flag)).not.toBeInTheDocument();
+    });
   });
 
   it('flags players already booked elsewhere on the card', async () => {
@@ -210,7 +282,7 @@ describe('PlayerBookingPicker', () => {
 
       expect(screen.getByRole('button', { name: /1 selected/ })).toBeInTheDocument();
       await openMulti(1);
-      expect(screen.getByText('✓')).toBeInTheDocument();
+      expect(document.querySelector('.booking-picker-check')).toBeInTheDocument();
     });
 
     it('keeps a selected player visible even when filtered out', async () => {
@@ -331,6 +403,44 @@ describe('PlayerBookingPicker', () => {
       const names = screen.getAllByRole('option').map((o) => o.textContent ?? '');
       expect(names.findIndex((n) => n.includes('Alpha'))).toBeLessThan(names.findIndex((n) => n.includes('Bravo')));
       expect(screen.queryByText('Never booked')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('on a phone', () => {
+    it('scrolls the opened menu into view so Done clears the bottom bars', async () => {
+      const matchMediaSpy = vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+        matches: query.includes('max-width: 768px'),
+        media: query,
+        onchange: null,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        dispatchEvent: () => false,
+      }));
+      const scrollSpy = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => undefined);
+      try {
+        renderPicker();
+        await openMenu();
+
+        expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' });
+        expect(scrollSpy.mock.contexts[0]).toBe(screen.getByRole('listbox'));
+      } finally {
+        matchMediaSpy.mockRestore();
+        scrollSpy.mockRestore();
+      }
+    });
+
+    it('leaves the page alone on a desktop', async () => {
+      const scrollSpy = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => undefined);
+      try {
+        renderPicker();
+        await openMenu();
+
+        expect(scrollSpy).not.toHaveBeenCalled();
+      } finally {
+        scrollSpy.mockRestore();
+      }
     });
   });
 });

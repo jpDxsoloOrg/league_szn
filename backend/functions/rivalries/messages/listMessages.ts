@@ -1,4 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
+import { maskSystemMessageIds } from '../../../lib/reviewerName';
 import { getRepositories } from '../../../lib/repositories';
 import { success, badRequest, forbidden, notFound, serverError } from '../../../lib/response';
 import { getAuthContext, hasRole } from '../../../lib/auth';
@@ -60,9 +61,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // opposing wrestler. They can still see their own admins-only
     // messages because the author is always allowed to see what they
     // sent (the sent-confirmation convention from the ticket).
-    const filtered = page.items.filter((m: RivalryMessage) =>
-      isVisible(m, { isGm, callerPlayerId, allowed }),
-    );
+    const filtered = page.items
+      .filter((m: RivalryMessage) => isVisible(m, { isGm, callerPlayerId, allowed }))
+      .map(maskSystemMessageIds);
 
     return success({
       messages: filtered,

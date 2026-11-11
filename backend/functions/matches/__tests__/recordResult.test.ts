@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
+import { ConcurrencyError } from '../../../lib/repositories/errors';
 
 // ---- Repository Mocks -----------------------------------------------------
 
@@ -55,13 +56,24 @@ const mockEventsRepo = {
 const mockContendersRepo = {
   listByChampionship: vi.fn(),
   listByChampionshipRanked: vi.fn(),
-  deleteAllForChampionship: vi.fn(),
   upsertRanking: vi.fn(),
   findOverride: vi.fn(),
   listActiveOverrides: vi.fn(),
   createOverride: vi.fn(),
   deactivateOverride: vi.fn(),
   writeHistory: vi.fn(),
+};
+
+const mockPlayersRepo = {
+  findById: vi.fn(async (playerId: string): Promise<{ playerId: string } | null> => ({ playerId })),
+};
+
+const mockSeasonsRepo = {
+  findById: vi.fn(async (seasonId: string): Promise<Record<string, unknown> | null> => ({
+    seasonId,
+    name: 'Season 1',
+    status: 'active',
+  })),
 };
 
 const mockRunInTransaction = vi.fn();
@@ -77,6 +89,8 @@ vi.mock('../../../lib/repositories', () => ({
     leagueOps: {
       events: mockEventsRepo,
     },
+    roster: { players: mockPlayersRepo },
+    season: { seasons: mockSeasonsRepo },
     runInTransaction: mockRunInTransaction,
   }),
 }));
@@ -234,7 +248,7 @@ describe('recordResult — core transaction', () => {
       status: 'completed',
       winners: ['p1'],
       losers: ['p2'],
-    }));
+    }), { kind: 'notCompleted' });
     // Winner gets +1 win
     expect(tx.incrementPlayerRecord).toHaveBeenCalledWith('p1', { wins: 1 });
     // Loser gets +1 loss
@@ -265,10 +279,83 @@ describe('recordResult — core transaction', () => {
     expect(tx.incrementStanding).toHaveBeenCalledWith('s1', 'p2', { losses: 1 });
     expect(tx.incrementStanding).toHaveBeenCalledTimes(2);
   });
+});
 
-  // Note: Draw detection (isDraw) requires winners === losers (sorted),
-  // but the overlap validation on line 208 returns 400 before reaching draw logic.
-  // Draw code paths are unreachable with the current validation.
+// ---- Result integrity ------------------------------------------------------
+
+describe('recordResult — result integrity', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const submit = (body: object) => recordResult(ev({
+    pathParameters: { matchId: 'm1' },
+    body: JSON.stringify(body),
+  }), ctx, cb);
+
+  it('rejects a winner who is not a participant', async () => {
+    stubSuccess();
+    const r = await submit({ winners: ['p9'], losers: ['p2'] });
+    expect(r!.statusCode).toBe(400);
+    expect(mockRunInTransaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects a loser who is not a participant', async () => {
+    stubSuccess();
+    const r = await submit({ winners: ['p1'], losers: ['p9'] });
+    expect(r!.statusCode).toBe(400);
+    expect(mockRunInTransaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects draw participants outside the match', async () => {
+    stubSuccess();
+    const r = await submit({ winners: ['p1', 'p9'], losers: [], isDraw: true });
+    expect(r!.statusCode).toBe(400);
+    expect(mockRunInTransaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects an empty losers list unless the match is a draw', async () => {
+    stubSuccess();
+    const r = await submit({ winners: ['p1'], losers: [] });
+    expect(r!.statusCode).toBe(400);
+    expect(mockRunInTransaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects a player listed twice', async () => {
+    stubSuccess();
+    const r = await submit({ winners: ['p1', 'p1'], losers: ['p2'] });
+    expect(r!.statusCode).toBe(400);
+    expect(mockRunInTransaction).not.toHaveBeenCalled();
+  });
+
+  it('returns 409 when a player in the result no longer exists', async () => {
+    stubSuccess();
+    mockPlayersRepo.findById.mockResolvedValueOnce({ playerId: 'p1' }).mockResolvedValueOnce(null);
+    const r = await submit({ winners: ['p1'], losers: ['p2'] });
+    expect(r!.statusCode).toBe(409);
+    expect(mockRunInTransaction).not.toHaveBeenCalled();
+  });
+
+  it('returns 409 when the season has ended', async () => {
+    stubSuccess({ ...pending, seasonId: 's1' });
+    mockSeasonsRepo.findById.mockResolvedValueOnce({ seasonId: 's1', name: 'Season 1', status: 'completed' });
+    const r = await submit({ winners: ['p1'], losers: ['p2'] });
+    expect(r!.statusCode).toBe(409);
+    expect(JSON.parse(r!.body).message).toContain('has ended');
+    expect(mockRunInTransaction).not.toHaveBeenCalled();
+  });
+
+  it('returns 409 when the season no longer exists', async () => {
+    stubSuccess({ ...pending, seasonId: 's1' });
+    mockSeasonsRepo.findById.mockResolvedValueOnce(null);
+    const r = await submit({ winners: ['p1'], losers: ['p2'] });
+    expect(r!.statusCode).toBe(409);
+    expect(mockRunInTransaction).not.toHaveBeenCalled();
+  });
+
+  it('records a draw between participants', async () => {
+    stubSuccess();
+    const r = await submit({ winners: ['p1', 'p2'], losers: [], isDraw: true });
+    expect(r!.statusCode).toBe(200);
+  });
 });
 
 // ---- Concurrency -----------------------------------------------------------
@@ -276,7 +363,7 @@ describe('recordResult — core transaction', () => {
 describe('recordResult — concurrency', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('returns 400 with retry message on TransactionCanceledException', async () => {
+  it('returns 409 with retry message on TransactionCanceledException', async () => {
     mockMatchesRepo.findByIdWithDate.mockResolvedValue(pending);
     const err = new Error('cancelled');
     (err as { name?: string }).name = 'TransactionCanceledException';
@@ -286,8 +373,18 @@ describe('recordResult — concurrency', () => {
       pathParameters: { matchId: 'm1' },
       body: JSON.stringify({ winners: ['p1'], losers: ['p2'] }),
     }), ctx, cb);
-    expect(r!.statusCode).toBe(400);
+    expect(r!.statusCode).toBe(409);
     expect(JSON.parse(r!.body).message).toContain('concurrent update');
+  });
+
+  it('returns 409 when the status guard fails at write time', async () => {
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue(pending);
+    mockRunInTransaction.mockRejectedValue(new ConcurrencyError('Match', 'm1'));
+    const r = await recordResult(ev({
+      pathParameters: { matchId: 'm1' },
+      body: JSON.stringify({ winners: ['p1'], losers: ['p2'] }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(409);
   });
 
   it('returns 500 on non-transaction errors', async () => {

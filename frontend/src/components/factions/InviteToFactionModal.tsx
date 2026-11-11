@@ -1,8 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { factionsApi, playersApi } from '../../services/api';
 import type { Player } from '../../types';
-import './InviteToFactionModal.css';
+import Button from '../ui/Button';
+import Modal from '../ui/Modal';
+import Select from '../ui/Select';
+import { useToast } from '../ui/toastContext';
+import './groupUi.css';
+
+const FORM_ID = 'invite-to-faction-form';
 
 interface Props {
   isOpen: boolean;
@@ -12,21 +19,15 @@ interface Props {
   onInvited: () => void;
 }
 
-export default function InviteToFactionModal({
-  isOpen,
-  stableId,
-  currentMemberIds,
-  onClose,
-  onInvited,
-}: Props) {
+export default function InviteToFactionModal({ isOpen, stableId, currentMemberIds, onClose, onInvited }: Props) {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loadingPlayers, setLoadingPlayers] = useState(true);
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -36,29 +37,26 @@ export default function InviteToFactionModal({
     setSelectedPlayerId('');
     setMessage('');
     setError(null);
-    setSuccess(false);
 
-    playersApi.getAll(controller.signal)
-      .then((allPlayers) => {
-        const available = allPlayers.filter(
-          (p) => !currentMemberIds.includes(p.playerId) && !p.stableId
-        );
-        setPlayers(available);
-      })
-      .catch((err) => {
+    const loadPlayers = async () => {
+      try {
+        const allPlayers = await playersApi.getAll(controller.signal);
+        setPlayers(allPlayers.filter((player) => !currentMemberIds.includes(player.playerId) && !player.stableId));
+      } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
           setError(t('factions.invite.loadPlayersFailed', 'Failed to load players'));
         }
-      })
-      .finally(() => setLoadingPlayers(false));
+      } finally {
+        if (!controller.signal.aborted) setLoadingPlayers(false);
+      }
+    };
 
+    loadPlayers();
     return () => controller.abort();
   }, [isOpen, currentMemberIds, t]);
 
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
     setError(null);
 
     if (!selectedPlayerId) {
@@ -72,12 +70,9 @@ export default function InviteToFactionModal({
         playerId: selectedPlayerId,
         ...(message.trim() ? { message: message.trim() } : {}),
       });
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        onInvited();
-        onClose();
-      }, 2000);
+      showToast(t('factions.invite.success', 'Invitation sent successfully!'), 'success');
+      onInvited();
+      onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error', 'An error occurred'));
     } finally {
@@ -85,96 +80,58 @@ export default function InviteToFactionModal({
     }
   };
 
-  const handleOverlayClick = () => {
-    if (!submitting) onClose();
-  };
-
   return (
-    <div className="invite-faction-modal-overlay" onClick={handleOverlayClick} role="dialog" aria-modal="true">
-      <div className="invite-faction-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="invite-faction-modal__header">
-          <h2>{t('factions.invite.title', 'Invite Player to Faction')}</h2>
-          <button
-            className="invite-faction-modal__close"
-            onClick={onClose}
-            disabled={submitting}
-            aria-label={t('common.close', 'Close')}
-          >
-            &times;
-          </button>
+    <Modal
+      open={isOpen}
+      title={t('factions.invite.title', 'Invite Player to Faction')}
+      onClose={() => { if (!submitting) onClose(); }}
+      footer={(
+        <>
+          <Button variant="secondary" onClick={onClose} disabled={submitting}>
+            {t('common.cancel', 'Cancel')}
+          </Button>
+          <Button type="submit" form={FORM_ID} loading={submitting} disabled={loadingPlayers || players.length === 0}>
+            {submitting ? t('common.submitting', 'Submitting...') : t('factions.invite.submit', 'Send Invitation')}
+          </Button>
+        </>
+      )}
+    >
+      <form id={FORM_ID} className="group-form" onSubmit={handleSubmit}>
+        <div className="group-field">
+          <span className="group-field__label">{t('factions.invite.playerLabel', 'Select Player')}</span>
+          {loadingPlayers ? (
+            <p className="group-empty">{t('common.loading', 'Loading...')}</p>
+          ) : players.length === 0 ? (
+            <p className="group-empty">{t('factions.invite.noAvailablePlayers', 'No available players to invite')}</p>
+          ) : (
+            <Select
+              label={t('factions.invite.playerLabel', 'Select Player')}
+              placeholder={t('factions.invite.selectPlaceholder', '-- Select a player --')}
+              value={selectedPlayerId}
+              onValueChange={setSelectedPlayerId}
+              disabled={submitting}
+              options={players.map((player) => ({
+                value: player.playerId,
+                label: `${player.currentWrestler || player.name} (${player.name})`,
+              }))}
+            />
+          )}
         </div>
 
-        {success ? (
-          <div className="invite-faction-modal__success">
-            <p>{t('factions.invite.success', 'Invitation sent successfully!')}</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="invite-faction-modal__form">
-            <div className="form-group">
-              <label htmlFor="invite-player">{t('factions.invite.playerLabel', 'Select Player')}</label>
-              {loadingPlayers ? (
-                <p className="invite-faction-modal__loading">{t('common.loading', 'Loading...')}</p>
-              ) : players.length === 0 ? (
-                <p className="invite-faction-modal__empty">
-                  {t('factions.invite.noAvailablePlayers', 'No available players to invite')}
-                </p>
-              ) : (
-                <select
-                  id="invite-player"
-                  value={selectedPlayerId}
-                  onChange={(e) => setSelectedPlayerId(e.target.value)}
-                  disabled={submitting}
-                >
-                  <option value="">{t('factions.invite.selectPlaceholder', '-- Select a player --')}</option>
-                  {players.map((player) => (
-                    <option key={player.playerId} value={player.playerId}>
-                      {player.currentWrestler || player.name} ({player.name})
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
+        <label className="group-field">
+          <span className="group-field__label">{t('factions.invite.messageLabel', 'Message (optional)')}</span>
+          <textarea
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            placeholder={t('factions.invite.messagePlaceholder', 'Add a personal message...')}
+            disabled={submitting}
+            rows={3}
+            maxLength={200}
+          />
+        </label>
 
-            <div className="form-group">
-              <label htmlFor="invite-message">{t('factions.invite.messageLabel', 'Message (optional)')}</label>
-              <textarea
-                id="invite-message"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder={t('factions.invite.messagePlaceholder', 'Add a personal message...')}
-                disabled={submitting}
-                rows={3}
-                maxLength={200}
-              />
-            </div>
-
-            {error && (
-              <div className="invite-faction-modal__error" role="alert">{error}</div>
-            )}
-
-            <div className="invite-faction-modal__actions">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={onClose}
-                disabled={submitting}
-              >
-                {t('common.cancel', 'Cancel')}
-              </button>
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={submitting || loadingPlayers || players.length === 0}
-                aria-busy={submitting}
-              >
-                {submitting
-                  ? t('common.submitting', 'Submitting...')
-                  : t('factions.invite.submit', 'Send Invitation')}
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
+        {error && <p className="group-error" role="alert">{error}</p>}
+      </form>
+    </Modal>
   );
 }

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ctx, cb, makeEvent, withAuth } from '../../__tests__/testHelpers';
 
 const mockRivalries = { get: vi.fn() };
-const mockNotes = { create: vi.fn(), update: vi.fn() };
+const mockNotes = { create: vi.fn(), update: vi.fn(), listByRivalry: vi.fn() };
 const mockMatches = { findById: vi.fn() };
 const mockEvents = { findById: vi.fn() };
 const mockPlayers = { findByUserId: vi.fn() };
@@ -41,9 +41,30 @@ function postEvent(body: Record<string, unknown>) {
   });
 }
 
+const gmPlanNote = {
+  noteId: 'note-1',
+  rivalryId: 'r1',
+  noteType: 'plan',
+  visibility: 'admins',
+  body: 'secret plan',
+  authorPlayerId: 'gm',
+  createdAt: '',
+  updatedAt: '',
+};
+
+const storylineNoteByP1 = {
+  ...gmPlanNote,
+  noteId: 'note-2',
+  noteType: 'storyline',
+  visibility: 'participants',
+  body: 'my promo idea',
+  authorPlayerId: 'p1',
+};
+
 describe('upsertNote', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockNotes.listByRivalry.mockResolvedValue([gmPlanNote, storylineNoteByP1]);
     mockRivalries.get.mockResolvedValue(rivalry);
     mockPlayers.findByUserId.mockResolvedValue(null);
     mockMatches.findById.mockResolvedValue({ matchId: 'm1' });
@@ -193,5 +214,111 @@ describe('upsertNote', () => {
       visibility: 'participants',
     }));
     expect(mockNotes.create).not.toHaveBeenCalled();
+  });
+
+  describe('editing an existing note', () => {
+    const asWrestler = (body: Record<string, unknown>, sub: string) =>
+      withAuth(postEvent(body), 'Wrestler', sub);
+
+    it("refuses a participant editing another participant's note", async () => {
+      mockPlayers.findByUserId.mockResolvedValue({ playerId: 'p2', userId: 'user-p2' });
+
+      const res = await upsertNote(
+        asWrestler({ noteId: 'note-2', noteType: 'storyline', content: 'forged' }, 'user-p2'),
+        ctx,
+        cb,
+      );
+
+      expect(res!.statusCode).toBe(403);
+      expect(mockNotes.update).not.toHaveBeenCalled();
+    });
+
+    it("refuses a participant editing a GM plan by claiming it is a storyline note", async () => {
+      mockPlayers.findByUserId.mockResolvedValue({ playerId: 'p2', userId: 'user-p2' });
+
+      const res = await upsertNote(
+        asWrestler({ noteId: 'note-1', noteType: 'storyline', content: 'HIJACK' }, 'user-p2'),
+        ctx,
+        cb,
+      );
+
+      expect(res!.statusCode).toBe(403);
+      expect(mockNotes.update).not.toHaveBeenCalled();
+    });
+
+    it('lets the author edit their own note', async () => {
+      mockPlayers.findByUserId.mockResolvedValue({ playerId: 'p1', userId: 'user-p1' });
+
+      const res = await upsertNote(
+        asWrestler({ noteId: 'note-2', noteType: 'storyline', content: 'better idea' }, 'user-p1'),
+        ctx,
+        cb,
+      );
+
+      expect(res!.statusCode).toBe(200);
+      expect(mockNotes.update).toHaveBeenCalledWith('r1', 'note-2', expect.objectContaining({
+        body: 'better idea',
+      }));
+    });
+
+    it('keeps a stored visibility the author cannot set', async () => {
+      mockPlayers.findByUserId.mockResolvedValue({ playerId: 'p1', userId: 'user-p1' });
+      mockNotes.listByRivalry.mockResolvedValue([{ ...storylineNoteByP1, visibility: 'admins' }]);
+
+      await upsertNote(
+        asWrestler(
+          { noteId: 'note-2', noteType: 'storyline', content: 'edit', visibility: 'all' },
+          'user-p1',
+        ),
+        ctx,
+        cb,
+      );
+
+      expect(mockNotes.update.mock.calls[0][2].visibility).toBe('admins');
+    });
+
+    it("lets a GM edit someone else's note", async () => {
+      const res = await upsertNote(
+        withAuth(
+          postEvent({ noteId: 'note-2', noteType: 'storyline', content: 'tidied up' }),
+          'Moderator',
+          'gm-sub',
+        ),
+        ctx,
+        cb,
+      );
+
+      expect(res!.statusCode).toBe(200);
+      expect(mockNotes.update).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not widen an admins-only note when a GM omits visibility', async () => {
+      await upsertNote(
+        withAuth(
+          postEvent({ noteId: 'note-1', noteType: 'plan', content: 'still secret' }),
+          'Admin',
+          'gm-sub',
+        ),
+        ctx,
+        cb,
+      );
+
+      expect(mockNotes.update.mock.calls[0][2].visibility).toBe('admins');
+    });
+
+    it('returns 404 for an unknown noteId', async () => {
+      const res = await upsertNote(
+        withAuth(
+          postEvent({ noteId: 'ghost', noteType: 'plan', content: 'x' }),
+          'Admin',
+          'gm-sub',
+        ),
+        ctx,
+        cb,
+      );
+
+      expect(res!.statusCode).toBe(404);
+      expect(mockNotes.update).not.toHaveBeenCalled();
+    });
   });
 });

@@ -19,6 +19,8 @@ Punishments can range from:
 3. Not being booked for a period of time
 4. In more extreme cases, being **kicked from the league entirely**
 
+See [Strikes and Suspensions](strikes-and-suspensions) for how strikes work and how to see your status.
+
 ## Divisions & Rating Caps
 
 | Division | Max Overall Rating |

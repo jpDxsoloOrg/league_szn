@@ -1,10 +1,12 @@
 # Tipps zum Verfolgen der Liga
 
-Kurze Tipps, um das meiste aus der Liga-Website zu machen.
+Kurze Tipps, um das Beste aus der Liga-Website herauszuholen.
 
-1. **Tabelle regelmäßig prüfen** — Sehen Sie, wer in der Rangliste aufsteigt.
-2. **Auf Meisterschaftskämpfe achten** — Sie sind mit einem besonderen Hinweis markiert.
-3. **Turnierfortschritt verfolgen** — Turniere entscheiden oft über Meisterschaftschancen.
-4. **Kampf-Historie prüfen** — Filtern Sie nach „Abgeschlossen“, um verpasste Ergebnisse nachzuholen.
-5. **Herausforderer-Ranglisten im Blick behalten** — Sehen Sie, wer als Nächstes eine Meisterschaftschance hat.
-6. **Events durchsuchen** — Schauen Sie sich anstehende PPVs und wöchentliche Shows für die vollständigen Match Cards an.
+1. **Tabelle regelmäßig prüfen** — Sieh, wer in der Tabelle aufsteigt.
+2. **Auf Meisterschaftskämpfe achten** — Sie sind mit einem besonderen Badge markiert.
+3. **Turnierverlauf verfolgen** — Turniere entscheiden oft über Titelchancen.
+4. **Match-Historie ansehen** — Wähle im Tab Matches „Abgeschlossen“, um verpasste Ergebnisse nachzuholen.
+5. **Herausforderer-Ranglisten im Blick behalten** — Sieh, wer als Nächstes eine Titelchance bekommt. Sie werden nach Ergebnissen und alle 6 Stunden aktualisiert.
+6. **Events durchstöbern** — Schau dir kommende PPVs und wöchentliche Shows mit ihren Match Cards an.
+7. **Auf Verfügbar klicken** — Die GMs buchen über die Event-Seite. Beantworte also **Bist du dabei?** bei jeder Show, an der du teilnehmen kannst.
+8. **Call-outs schnell beantworten** — Eine Herausforderung läuft nach 4 Tagen ab.

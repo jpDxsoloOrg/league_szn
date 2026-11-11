@@ -54,6 +54,28 @@ describe('getPromo', () => {
     expect(body(result).message).toBe('Promo not found');
   });
 
+  it('names the title on the line for the promo and its responses', async () => {
+    const promo = {
+      promoId: 'p1', playerId: 'pl1', promoType: 'call-out', championshipId: 'c1',
+      content: 'x', isHidden: false, createdAt: '2024-01-01T00:00:00Z',
+    };
+    mockGet.mockImplementation(async (params: any) => {
+      if (params.Key.promoId === 'p1') return { Item: promo };
+      if (params.Key.championshipId === 'c1') return { Item: { championshipId: 'c1', name: 'World Title' } };
+      if (params.Key.playerId) return { Item: { playerId: params.Key.playerId, name: 'John', currentWrestler: 'The Rock' } };
+      return { Item: undefined };
+    });
+    mockScanAll.mockResolvedValue([{
+      promoId: 'p2', playerId: 'pl2', targetPromoId: 'p1', promoType: 'response', championshipId: 'gone',
+      content: 'y', isHidden: false, createdAt: '2024-01-02T00:00:00Z',
+    }]);
+
+    const data = body(await getPromo(makeEvent({ pathParameters: { promoId: 'p1' } }), ctx, cb));
+
+    expect(data.promo.championshipName).toBe('World Title');
+    expect(data.responses[0].championshipName).toBeUndefined();
+  });
+
   it('returns enriched promo with player info and response list', async () => {
     const promo = {
       promoId: 'p1', playerId: 'pl1', promoType: 'open-mic',
@@ -89,7 +111,30 @@ describe('getPromo', () => {
     expect(data.responses[0].wrestlerName).toBe('Bianca');
   });
 
-  it('shows "Unknown" when the promo author player has been deleted', async () => {
+  it('leaves the per-account reactions map out of the promo and its responses', async () => {
+    const reactions = { 'account-sub-1': 'fire' };
+    const promo = {
+      promoId: 'p1', playerId: 'pl1', promoType: 'open-mic', content: 'x', isHidden: false,
+      reactions, createdAt: '2024-01-01T00:00:00Z',
+    };
+    const response = {
+      promoId: 'p2', playerId: 'pl1', targetPromoId: 'p1', promoType: 'response', content: 'y',
+      isHidden: false, reactions, createdAt: '2024-01-02T00:00:00Z',
+    };
+    mockGet.mockImplementation(async (params: any) => {
+      if (params.Key.promoId === 'p1') return { Item: promo };
+      if (params.Key.playerId === 'pl1') return { Item: { playerId: 'pl1', name: 'John', currentWrestler: 'The Rock' } };
+      return { Item: undefined };
+    });
+    mockScanAll.mockResolvedValue([response]);
+
+    const result = await getPromo(makeEvent({ pathParameters: { promoId: 'p1' } }), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(result!.body).not.toContain('account-sub-1');
+  });
+
+  it('shows "Former member" when the promo author player has been deleted', async () => {
     const promo = {
       promoId: 'p1', playerId: 'deleted-pl', promoType: 'open-mic',
       content: 'test', isHidden: false, createdAt: '2024-01-01T00:00:00Z',
@@ -104,8 +149,8 @@ describe('getPromo', () => {
 
     expect(result!.statusCode).toBe(200);
     const data = body(result);
-    expect(data.promo.playerName).toBe('Unknown');
-    expect(data.promo.wrestlerName).toBe('Unknown');
+    expect(data.promo.playerName).toBe('Former member');
+    expect(data.promo.wrestlerName).toBe('Former member');
   });
 
   it('filters hidden response promos from the responses list', async () => {

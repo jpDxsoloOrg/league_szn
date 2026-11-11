@@ -3,7 +3,9 @@ import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { getAuthContext } from '../../lib/auth';
-import { invokeAsync } from '../../lib/asyncLambda';
+import { isPlayerVisible, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
+import { bookingRefusal } from '../../lib/discipline';
+import { recalculateContenderRankings } from '../../lib/services/recalculateContenderRankings';
 
 interface SetOverrideBody {
   championshipId: string;
@@ -14,6 +16,32 @@ interface SetOverrideBody {
 }
 
 const VALID_OVERRIDE_TYPES = ['bump_to_top', 'send_to_bottom'] as const;
+
+/** Where the override left the player, so staff are told what really happened. */
+export type OverridePlacement =
+  | { status: 'onList'; rank: number }
+  | { status: 'notOnList' | 'noActiveSeason' | 'recalculationFailed'; rank: null };
+
+/**
+ * Recalculates the title and reads back the player's position. This runs in the
+ * request rather than async because the answer is the point: the caller reports
+ * it to staff. The override is already saved, so a failure here doesn't lose it.
+ */
+async function placeOverride(championshipId: string, playerId: string): Promise<OverridePlacement> {
+  try {
+    const summary = await recalculateContenderRankings(championshipId, { overrideChange: true });
+    if (summary.championshipsFailed > 0) return { status: 'recalculationFailed', rank: null };
+    if (summary.championshipsProcessed === 0) return { status: 'noActiveSeason', rank: null };
+
+    const { competition: { contenders } } = getRepositories();
+    const rankings = await contenders.listByChampionship(championshipId);
+    const row = rankings.find((ranking) => ranking.playerId === playerId);
+    return row ? { status: 'onList', rank: row.rank } : { status: 'notOnList', rank: null };
+  } catch (err) {
+    console.warn('Failed to recalculate rankings after setting an override:', err);
+    return { status: 'recalculationFailed', rank: null };
+  }
+}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -35,6 +63,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('reason must be a non-empty string');
     }
 
+    // Same comparison the recalculation makes, so an override that would never
+    // apply is refused here instead of being reported as a success.
+    if (expiresAt && expiresAt <= new Date().toISOString()) {
+      return badRequest('expiresAt must be in the future');
+    }
+
     const { competition: { championships, contenders }, roster: { players } } = getRepositories();
 
     // Validate championship exists and is active
@@ -51,6 +85,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const player = await players.findById(playerId);
     if (!player) {
       return badRequest('Player not found');
+    }
+
+    const bookingBlocked = bookingRefusal(player);
+    if (bookingBlocked) return bookingBlocked;
+
+    // A hidden player can't be ranked, so the override could never show
+    if (!isPlayerVisible(player)) {
+      return badRequest(TARGET_NEEDS_WRESTLER_MESSAGE);
     }
 
     // Player must not be the current champion
@@ -86,14 +128,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       ...(expiresAt ? { expiresAt } : {}),
     });
 
-    // Trigger ranking recalculation for this championship
-    try {
-      await invokeAsync('contenders', { source: 'recordResult', championshipId });
-    } catch (err) {
-      console.warn('Failed to invoke calculateRankings async:', err);
-    }
+    const placement = await placeOverride(championshipId, playerId);
 
-    return created(override);
+    return created({ ...override, placement });
   } catch (err) {
     console.error('Error setting contender override:', err);
     return serverError('Failed to set contender override');

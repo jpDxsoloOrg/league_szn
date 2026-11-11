@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { X } from 'lucide-react';
 import {
   matchesApi,
   playersApi,
@@ -24,11 +25,24 @@ import type {
 } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
 import type { LeagueEvent, MatchDesignation } from '../../types/event';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
+import { pickablePlayers, pickableTagTeams } from '../../utils/pickablePlayers';
 import SearchableSelect from '../admin/SearchableSelect';
+import Button from '../ui/Button';
 import Skeleton from '../ui/Skeleton';
 import { formatCalendarDate } from '../../utils/dateUtils';
-import '../admin/ScheduleMatch.css';
+import { matchFormatKey } from '../../utils/matchDisplay';
 import './MatchEditForm.css';
+
+/**
+ * The match type name for a stored format, which older matches spell another
+ * way ("singles" for "Single"). A format with no match type stays as stored.
+ */
+function matchingFormatName(storedFormat: string, matchTypes: MatchType[]): string {
+  const names = matchTypes.map((matchType) => matchType.name);
+  if (names.includes(storedFormat)) return storedFormat;
+  return names.find((name) => matchFormatKey(name) === matchFormatKey(storedFormat)) ?? storedFormat;
+}
 
 interface MatchEditFormProps {
   matchId: string;
@@ -53,7 +67,7 @@ export default function MatchEditForm({
   const [stipulations, setStipulations] = useState<Stipulation[]>([]);
   const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
-  const [divisionFilter, setDivisionFilter] = useState<string>('');
+  const [divisionFilter, setDivisionFilter] = useState<string>('all');
   const [activeTagTeams, setActiveTagTeams] = useState<
     (TagTeam & { player1Name?: string; player2Name?: string })[]
   >([]);
@@ -63,7 +77,6 @@ export default function MatchEditForm({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const loadedRef = useRef(false);
 
   const [teams, setTeams] = useState<string[][]>([[], []]);
@@ -103,7 +116,8 @@ export default function MatchEditForm({
         divisionsData,
       ] = await Promise.all([
         matchesApi.getAll(),
-        playersApi.getAll(),
+        // The full roster, so names on this match resolve for hidden players.
+        playersApi.getAllIncludingHidden(),
         championshipsApi.getAll(),
         tournamentsApi.getAll(),
         seasonsApi.getAll(),
@@ -125,21 +139,17 @@ export default function MatchEditForm({
         tagTeamsData as (TagTeam & { player1Name?: string; player2Name?: string })[]
       );
       setDivisions(divisionsData);
-      const firstDivision = divisionsData[0];
-      if (firstDivision) {
-        setDivisionFilter(firstDivision.divisionId);
-      }
 
       // Find the match to edit
       const match = allMatches.find((m) => m.matchId === matchId);
       if (!match) {
-        setError('Match not found');
+        setError(t('events.forms.matchNotFound', 'Match not found'));
         setLoading(false);
         return;
       }
 
       if (match.status !== 'scheduled') {
-        setError('Only scheduled matches can be edited. Completed matches cannot be modified.');
+        setError(t('events.forms.onlyScheduled', 'Only scheduled matches can be edited. Completed matches cannot be modified.'));
         setLoading(false);
         return;
       }
@@ -160,7 +170,7 @@ export default function MatchEditForm({
 
       // Pre-fill form with match data
       setFormData({
-        matchFormat: match.matchFormat || '',
+        matchFormat: matchingFormatName(match.matchFormat || '', matchTypesData),
         stipulationId: match.stipulationId || '',
         participants: match.participants || [],
         isChampionship: match.isChampionship || false,
@@ -175,7 +185,7 @@ export default function MatchEditForm({
         setTeams(match.teams);
       }
     } catch (_err) {
-      setError('Failed to load match data');
+      setError(t('events.forms.loadError', 'Failed to load match data'));
     } finally {
       setLoading(false);
     }
@@ -188,7 +198,6 @@ export default function MatchEditForm({
     if (submitting || !matchId) return;
 
     setError(null);
-    setSuccess(null);
     setSubmitting(true);
 
     const effectiveEventId = lockedEventId ?? (formData.eventId || undefined);
@@ -220,10 +229,9 @@ export default function MatchEditForm({
           eventId: effectiveEventId,
           designation: effectiveDesignation,
         });
-        setSuccess('Match updated successfully');
         onSuccess();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to update match');
+        setError(err instanceof Error ? err.message : t('events.forms.updateError', 'Failed to update match'));
       } finally {
         setSubmitting(false);
       }
@@ -246,10 +254,9 @@ export default function MatchEditForm({
           eventId: effectiveEventId,
           designation: effectiveDesignation,
         });
-        setSuccess('Match updated successfully');
         onSuccess();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to update match');
+        setError(err instanceof Error ? err.message : t('events.forms.updateError', 'Failed to update match'));
       } finally {
         setSubmitting(false);
       }
@@ -304,12 +311,21 @@ export default function MatchEditForm({
     return player ? player.name : t('common.unknown');
   };
 
+  // A hidden player already booked here stays, even after being deselected,
+  // so the admin can put them back before saving.
+  const bookedPlayerIds = [
+    ...(originalMatch?.participants ?? []),
+    ...(originalMatch?.teams ?? []).flat(),
+  ];
+  const bookablePlayers = pickablePlayers(players, bookedPlayerIds);
+  const bookableTagTeams = pickableTagTeams(activeTagTeams, players, bookedPlayerIds);
+
   const filteredPlayers =
     !divisionFilter || divisionFilter === 'all'
-      ? players
+      ? bookablePlayers
       : divisionFilter === 'none'
-        ? players.filter((p) => !p.divisionId)
-        : players.filter((p) => p.divisionId === divisionFilter);
+        ? bookablePlayers.filter((p) => !p.divisionId)
+        : bookablePlayers.filter((p) => p.divisionId === divisionFilter);
 
   const handleMatchFormatChange = (newFormat: string) => {
     setFormData((prev) => ({ ...prev, matchFormat: newFormat, participants: [] }));
@@ -352,11 +368,9 @@ export default function MatchEditForm({
   if (!originalMatch) {
     return (
       <div className="match-edit-form">
-        {error && <div className="error-message">{error}</div>}
-        <div className="edit-match-actions">
-          <button type="button" className="cancel-btn" onClick={onCancel}>
-            Cancel
-          </button>
+        {error && <p className="match-edit-form__error" role="alert">{error}</p>}
+        <div className="match-edit-form__actions">
+          <Button variant="secondary" onClick={onCancel}>{t('common.cancel', 'Cancel')}</Button>
         </div>
       </div>
     );
@@ -364,15 +378,25 @@ export default function MatchEditForm({
 
   const lockedEvent = lockedEventId ? events.find((ev) => ev.eventId === lockedEventId) : null;
   const showDesignation = lockedEventId ? true : !!formData.eventId;
+  const divisionOptions = (
+    <>
+      <option value="all">{t('events.forms.allDivisions', 'All Divisions')}</option>
+      {divisions.map((d) => (
+        <option key={d.divisionId} value={d.divisionId}>
+          {d.name}
+        </option>
+      ))}
+      <option value="none">{t('events.forms.noDivision', 'No Division')}</option>
+    </>
+  );
 
   return (
     <div className="match-edit-form">
-      {error && <div className="error-message">{error}</div>}
-      {success && <div className="success-message">{success}</div>}
+      {error && <p className="match-edit-form__error" role="alert">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="match-form">
-        <div className="form-row">
-          <div className="form-group">
+      <form onSubmit={handleSubmit}>
+        <div className="match-edit-form__fields">
+          <div className="match-edit-form__field">
             <label htmlFor="matchFormat">{t('scheduleMatch.matchFormat', 'Match Format')}</label>
             <select
               id="matchFormat"
@@ -388,123 +412,139 @@ export default function MatchEditForm({
               ))}
             </select>
           </div>
-        </div>
 
-        <div className="form-group">
-          <label htmlFor="stipulation">{t('scheduleMatch.stipulation', 'Stipulation (Optional)')}</label>
-          <select
-            id="stipulation"
-            value={formData.stipulationId}
-            onChange={(e) => setFormData({ ...formData, stipulationId: e.target.value })}
-          >
-            <option value="">{t('scheduleMatch.noStipulation', 'Standard Match (No Stipulation)')}</option>
-            {stipulations.map((s) => (
-              <option key={s.stipulationId} value={s.stipulationId}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {seasons.length > 0 && (
-          <div className="form-group">
-            <label htmlFor="season">Season</label>
+          <div className="match-edit-form__field">
+            <label htmlFor="stipulation">{t('scheduleMatch.stipulation', 'Stipulation (Optional)')}</label>
             <select
-              id="season"
-              value={formData.seasonId}
-              onChange={(e) => setFormData({ ...formData, seasonId: e.target.value })}
+              id="stipulation"
+              value={formData.stipulationId}
+              onChange={(e) => setFormData({ ...formData, stipulationId: e.target.value })}
             >
-              <option value="">No Season (Exhibition)</option>
-              {seasons
-                .filter((s) => s.status === 'active')
-                .map((s) => (
-                  <option key={s.seasonId} value={s.seasonId}>
-                    {s.name} (Active)
-                  </option>
-                ))}
-              {seasons
-                .filter((s) => s.status === 'completed')
-                .map((s) => (
-                  <option key={s.seasonId} value={s.seasonId}>
-                    {s.name} (Completed)
-                  </option>
-                ))}
+              <option value="">{t('scheduleMatch.noStipulation', 'Standard Match (No Stipulation)')}</option>
+              {stipulations.map((s) => (
+                <option key={s.stipulationId} value={s.stipulationId}>
+                  {s.name}
+                </option>
+              ))}
             </select>
           </div>
-        )}
 
-        {lockedEventId ? (
-          lockedEvent && (
-            <div className="form-group">
-              <label>{t('scheduleMatch.event', 'Event')}</label>
-              <div className="locked-event-display">
-                {lockedEvent.name} ({new Date(lockedEvent.date).toLocaleDateString()})
+          {seasons.length > 0 && (
+            <div className="match-edit-form__field">
+              <label htmlFor="season">{t('events.admin.season', 'Season')}</label>
+              <select
+                id="season"
+                value={formData.seasonId}
+                onChange={(e) => setFormData({ ...formData, seasonId: e.target.value })}
+              >
+                <option value="">{t('events.forms.noSeason', 'No Season (Exhibition)')}</option>
+                {seasons
+                  .filter((s) => s.status === 'active')
+                  .map((s) => (
+                    <option key={s.seasonId} value={s.seasonId}>
+                      {s.name} ({t('common.active', 'Active')})
+                    </option>
+                  ))}
+                {seasons
+                  .filter((s) => s.status === 'completed')
+                  .map((s) => (
+                    <option key={s.seasonId} value={s.seasonId}>
+                      {s.name} ({t('common.completed', 'Completed')})
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
+
+          {lockedEventId ? (
+            lockedEvent && (
+              <div className="match-edit-form__field">
+                <span className="match-edit-form__label">{t('scheduleMatch.event', 'Event')}</span>
+                <p className="match-edit-form__locked">
+                  {lockedEvent.name} ({formatCalendarDate(lockedEvent.date)})
+                </p>
               </div>
-            </div>
-          )
-        ) : (
-          events.length > 0 && (
-            <div className="form-group">
-              <label htmlFor="event">{t('scheduleMatch.event', 'Add to Event (Optional)')}</label>
-              <SearchableSelect
-                id="event"
-                value={formData.eventId}
-                onChange={(value) => setFormData({ ...formData, eventId: value })}
-                placeholder={t('scheduleMatch.noEvent', 'No Event (Standalone Match)')}
-                options={[
-                  { value: '', label: t('scheduleMatch.noEvent', 'No Event (Standalone Match)') },
-                  ...events.map((ev) => ({
-                    value: ev.eventId,
-                    label: `${ev.name} (${formatCalendarDate(ev.date)})`,
-                  })),
-                ]}
-              />
-            </div>
-          )
-        )}
+            )
+          ) : (
+            events.length > 0 && (
+              <div className="match-edit-form__field">
+                <label htmlFor="event">{t('scheduleMatch.event', 'Add to Event (Optional)')}</label>
+                <SearchableSelect
+                  id="event"
+                  value={formData.eventId}
+                  onChange={(value) => setFormData({ ...formData, eventId: value })}
+                  placeholder={t('scheduleMatch.noEvent', 'No Event (Standalone Match)')}
+                  options={[
+                    { value: '', label: t('scheduleMatch.noEvent', 'No Event (Standalone Match)') },
+                    ...events.map((ev) => ({
+                      value: ev.eventId,
+                      label: `${ev.name} (${formatCalendarDate(ev.date)})`,
+                    })),
+                  ]}
+                />
+              </div>
+            )
+          )}
 
-        {showDesignation && (
-          <div className="form-group">
-            <label htmlFor="designation">{t('scheduleMatch.designation', 'Card Position')}</label>
-            <select
-              id="designation"
-              value={formData.designation}
-              onChange={(e) =>
-                setFormData({ ...formData, designation: e.target.value as MatchDesignation })
-              }
-            >
-              <option value="pre-show">{t('events.designations.preShow', 'Pre-Show')}</option>
-              <option value="opener">{t('events.designations.opener', 'Opener')}</option>
-              <option value="midcard">{t('events.designations.midcard', 'Midcard')}</option>
-              <option value="co-main">{t('events.designations.coMain', 'Co-Main Event')}</option>
-              <option value="main-event">{t('events.designations.mainEvent', 'Main Event')}</option>
-            </select>
-          </div>
-        )}
+          {showDesignation && (
+            <div className="match-edit-form__field">
+              <label htmlFor="designation">{t('scheduleMatch.designation', 'Card Position')}</label>
+              <select
+                id="designation"
+                value={formData.designation}
+                onChange={(e) =>
+                  setFormData({ ...formData, designation: e.target.value as MatchDesignation })
+                }
+              >
+                <option value="pre-show">{t('events.designations.preShow', 'Pre-Show')}</option>
+                <option value="opener">{t('events.designations.opener', 'Opener')}</option>
+                <option value="midcard">{t('events.designations.midcard', 'Midcard')}</option>
+                <option value="co-main">{t('events.designations.coMain', 'Co-Main Event')}</option>
+                <option value="main-event">{t('events.designations.mainEvent', 'Main Event')}</option>
+              </select>
+            </div>
+          )}
 
-        <div className="form-group">
-          <label>
-            <input
-              type="checkbox"
-              checked={formData.isChampionship}
-              onChange={(e) =>
-                setFormData({ ...formData, isChampionship: e.target.checked, championshipId: '' })
-              }
-            />
-            Championship Match
-          </label>
+          {tournaments.length > 0 && (
+            <div className="match-edit-form__field">
+              <label htmlFor="tournament">{t('events.forms.tournament', 'Tournament (Optional)')}</label>
+              <select
+                id="tournament"
+                value={formData.tournamentId}
+                onChange={(e) => setFormData({ ...formData, tournamentId: e.target.value })}
+              >
+                <option value="">{t('common.none', 'None')}</option>
+                {tournaments.map((tr) => (
+                  <option key={tr.tournamentId} value={tr.tournamentId}>
+                    {tr.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
+
+        <label className="match-edit-form__check">
+          <input
+            type="checkbox"
+            checked={formData.isChampionship}
+            onChange={(e) =>
+              setFormData({ ...formData, isChampionship: e.target.checked, championshipId: '' })
+            }
+          />
+          {t('events.forms.championshipMatch', 'Championship Match')}
+        </label>
 
         {formData.isChampionship && (
-          <div className="form-group">
-            <label htmlFor="championship">Championship</label>
+          <div className="match-edit-form__field">
+            <label htmlFor="championship">{t('events.forms.championship', 'Championship')}</label>
             <select
               id="championship"
               value={formData.championshipId}
               onChange={(e) => setFormData({ ...formData, championshipId: e.target.value })}
               required={formData.isChampionship}
             >
-              <option value="">Select Championship</option>
+              <option value="">{t('events.forms.selectChampionship', 'Select Championship')}</option>
               {championships.map((c) => (
                 <option key={c.championshipId} value={c.championshipId}>
                   {c.name}
@@ -514,141 +554,117 @@ export default function MatchEditForm({
           </div>
         )}
 
-        {tournaments.length > 0 && (
-          <div className="form-group">
-            <label htmlFor="tournament">Tournament (Optional)</label>
-            <select
-              id="tournament"
-              value={formData.tournamentId}
-              onChange={(e) => setFormData({ ...formData, tournamentId: e.target.value })}
-            >
-              <option value="">None</option>
-              {tournaments.map((tr) => (
-                <option key={tr.tournamentId} value={tr.tournamentId}>
-                  {tr.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
         {isTagTeamMatch ? (
-          <div className="form-group">
-            <label>{t('scheduleMatch.tagTeam.selectTeams', 'Select Teams')}</label>
+          <fieldset className="match-edit-form__group">
+            <legend className="match-edit-form__label">{t('scheduleMatch.tagTeam.selectTeams', 'Select Teams')}</legend>
 
-            {divisions.length > 0 && tagTeamSelectionMode === 'individuals' && (
-              <div className="division-filter">
-                <label htmlFor="divisionFilterEditTag">Filter by Division:</label>
-                <select
-                  id="divisionFilterEditTag"
-                  value={divisionFilter}
-                  onChange={(e) => setDivisionFilter(e.target.value)}
-                  className="division-filter-select"
+            <div className="match-edit-form__toolbar">
+              <div className="match-edit-form__modes" role="group" aria-label={t('scheduleMatch.tagTeam.selectTeams', 'Select Teams')}>
+                <button
+                  type="button"
+                  className="match-edit-form__mode"
+                  aria-pressed={tagTeamSelectionMode === 'tag-teams'}
+                  onClick={() => setTagTeamSelectionMode('tag-teams')}
                 >
-                  <option value="all">All Divisions</option>
-                  {divisions.map((d) => (
-                    <option key={d.divisionId} value={d.divisionId}>
-                      {d.name}
-                    </option>
-                  ))}
-                  <option value="none">No Division</option>
-                </select>
+                  {t('scheduleMatch.tagTeam.useTagTeams', 'Use Tag Teams')}
+                </button>
+                <button
+                  type="button"
+                  className="match-edit-form__mode"
+                  aria-pressed={tagTeamSelectionMode === 'individuals'}
+                  onClick={() => setTagTeamSelectionMode('individuals')}
+                >
+                  {t('scheduleMatch.tagTeam.useIndividuals', 'Pick Individuals')}
+                </button>
               </div>
-            )}
 
-            <div className="tag-team-mode-toggle">
-              <button
-                type="button"
-                className={`tag-team-mode-btn ${
-                  tagTeamSelectionMode === 'tag-teams' ? 'tag-team-mode-btn--active' : ''
-                }`}
-                onClick={() => setTagTeamSelectionMode('tag-teams')}
-              >
-                {t('scheduleMatch.tagTeam.useTagTeams', 'Use Tag Teams')}
-              </button>
-              <button
-                type="button"
-                className={`tag-team-mode-btn ${
-                  tagTeamSelectionMode === 'individuals' ? 'tag-team-mode-btn--active' : ''
-                }`}
-                onClick={() => setTagTeamSelectionMode('individuals')}
-              >
-                {t('scheduleMatch.tagTeam.useIndividuals', 'Pick Individuals')}
-              </button>
+              {divisions.length > 0 && tagTeamSelectionMode === 'individuals' && (
+                <div className="match-edit-form__field match-edit-form__division">
+                  <label htmlFor="divisionFilterEditTag">{t('events.forms.filterDivision', 'Filter by Division')}</label>
+                  <select
+                    id="divisionFilterEditTag"
+                    value={divisionFilter}
+                    onChange={(e) => setDivisionFilter(e.target.value)}
+                  >
+                    {divisionOptions}
+                  </select>
+                </div>
+              )}
             </div>
 
-            <div className="tag-team-container">
-              {teams.map((team, teamIndex) => (
-                <div key={teamIndex} className="team-section">
-                  <div className="team-header">
+            {teams.map((team, teamIndex) => {
+              const teamLabel = `${t('scheduleMatch.tagTeam.team', 'Team')} ${teamIndex + 1}`;
+              return (
+                <div key={teamIndex} className="match-edit-form__team">
+                  <div className="match-edit-form__team-header">
                     <h4>
-                      {t('scheduleMatch.tagTeam.team', 'Team')} {teamIndex + 1}
+                      {teamLabel}
+                      <span className={`match-edit-form__team-count${team.length >= 2 ? ' is-valid' : ''}`}>
+                        {team.length} {t('scheduleMatch.tagTeam.members', 'members')}
+                      </span>
                     </h4>
                     {teams.length > 2 && (
-                      <button
-                        type="button"
-                        className="remove-team-btn"
-                        onClick={() => removeTeam(teamIndex)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => removeTeam(teamIndex)}>
                         {t('common.delete', 'Remove')}
-                      </button>
+                      </Button>
                     )}
                   </div>
 
                   {tagTeamSelectionMode === 'tag-teams' && (
-                    <div className="team-tag-team-select">
-                      <select
-                        value={getTagTeamForTeam(teamIndex)}
-                        onChange={(e) => handleSelectTagTeam(teamIndex, e.target.value)}
-                        className="tag-team-dropdown"
-                      >
-                        <option value="">
-                          {t('scheduleMatch.tagTeam.selectTagTeam', 'Select a Tag Team...')}
-                        </option>
-                        {activeTagTeams
-                          .filter((tt) => {
-                            const assignedToOther = teams.some((otherTeam, i) => {
-                              if (i === teamIndex) return false;
-                              return (
-                                otherTeam.includes(tt.player1Id) &&
-                                otherTeam.includes(tt.player2Id)
-                              );
-                            });
-                            return !assignedToOther;
-                          })
-                          .map((tt) => (
-                            <option key={tt.tagTeamId} value={tt.tagTeamId}>
-                              {tt.name} ({tt.player1Name ?? getPlayerName(tt.player1Id)} &amp;{' '}
-                              {tt.player2Name ?? getPlayerName(tt.player2Id)})
-                            </option>
-                          ))}
-                      </select>
-                    </div>
+                    <select
+                      aria-label={`${teamLabel}: ${t('scheduleMatch.tagTeam.selectTagTeam', 'Select a Tag Team...')}`}
+                      value={getTagTeamForTeam(teamIndex)}
+                      onChange={(e) => handleSelectTagTeam(teamIndex, e.target.value)}
+                    >
+                      <option value="">
+                        {t('scheduleMatch.tagTeam.selectTagTeam', 'Select a Tag Team...')}
+                      </option>
+                      {bookableTagTeams
+                        .filter((tt) => {
+                          const assignedToOther = teams.some((otherTeam, i) => {
+                            if (i === teamIndex) return false;
+                            return (
+                              otherTeam.includes(tt.player1Id) &&
+                              otherTeam.includes(tt.player2Id)
+                            );
+                          });
+                          return !assignedToOther;
+                        })
+                        .map((tt) => (
+                          <option key={tt.tagTeamId} value={tt.tagTeamId}>
+                            {tt.name} ({tt.player1Name ?? getPlayerName(tt.player1Id)} &amp;{' '}
+                            {tt.player2Name ?? getPlayerName(tt.player2Id)})
+                          </option>
+                        ))}
+                    </select>
                   )}
 
-                  <div className="team-members">
+                  <div className="match-edit-form__members">
                     {team.length > 0 ? (
                       team.map((playerId) => (
-                        <span key={playerId} className="team-member-tag">
+                        <span key={playerId} className="match-edit-form__member">
                           {getPlayerName(playerId)}
                           <button
                             type="button"
-                            className="remove-member-btn"
+                            aria-label={t('scheduleMatch.removeParticipant', {
+                              name: getPlayerName(playerId),
+                              defaultValue: `Remove ${getPlayerName(playerId)}`,
+                            })}
                             onClick={() => handleTeamMemberToggle(teamIndex, playerId)}
                           >
-                            ×
+                            <X aria-hidden="true" size={16} />
                           </button>
                         </span>
                       ))
                     ) : (
-                      <span className="no-members">
+                      <span className="match-edit-form__hint">
                         {t('scheduleMatch.tagTeam.noMembers', 'No members selected')}
                       </span>
                     )}
                   </div>
 
                   {tagTeamSelectionMode === 'individuals' && (
-                    <div className="team-players-grid">
+                    <div className="match-edit-form__players">
                       {filteredPlayers
                         .filter((p) => !team.includes(p.playerId))
                         .map((player) => {
@@ -656,93 +672,82 @@ export default function MatchEditForm({
                           const isInOtherTeam =
                             playerTeamIndex !== -1 && playerTeamIndex !== teamIndex;
                           return (
-                            <div
+                            <button
                               key={player.playerId}
-                              className={`participant-card ${isInOtherTeam ? 'in-other-team' : ''}`}
-                              onClick={() =>
-                                !isInOtherTeam &&
-                                handleTeamMemberToggle(teamIndex, player.playerId)
-                              }
+                              type="button"
+                              className="match-edit-form__player"
+                              disabled={isInOtherTeam}
+                              onClick={() => handleTeamMemberToggle(teamIndex, player.playerId)}
                             >
-                              <div className="participant-name">{player.name}</div>
-                              <div className="participant-wrestler">{player.currentWrestler}</div>
-                              {isInOtherTeam && (
-                                <div className="other-team-label">
-                                  {t('scheduleMatch.tagTeam.team', 'Team')} {playerTeamIndex + 1}
-                                </div>
+                              <span className="match-edit-form__player-name">{player.name}</span>
+                              {!isNeedsWrestler(player.currentWrestler) && (
+                                <span className="match-edit-form__player-meta">{player.currentWrestler}</span>
                               )}
-                            </div>
+                              {isInOtherTeam && (
+                                <span className="match-edit-form__player-meta">
+                                  {t('scheduleMatch.tagTeam.team', 'Team')} {playerTeamIndex + 1}
+                                </span>
+                              )}
+                            </button>
                           );
                         })}
                     </div>
                   )}
                 </div>
-              ))}
-              <button type="button" className="add-team-btn" onClick={addTeam}>
-                + {t('scheduleMatch.tagTeam.addTeam', 'Add Team')}
-              </button>
-            </div>
-            <div className="teams-summary">
-              {teams.map((team, i) => (
-                <span key={i} className={`team-count ${team.length >= 2 ? 'valid' : 'invalid'}`}>
-                  {t('scheduleMatch.tagTeam.team', 'Team')} {i + 1}: {team.length}{' '}
-                  {t('scheduleMatch.tagTeam.members', 'members')}
-                </span>
-              ))}
-            </div>
-          </div>
+              );
+            })}
+
+            <Button variant="secondary" size="sm" onClick={addTeam}>
+              + {t('scheduleMatch.tagTeam.addTeam', 'Add Team')}
+            </Button>
+          </fieldset>
         ) : (
-          <div className="form-group">
-            <label>
+          <fieldset className="match-edit-form__group">
+            <legend className="match-edit-form__label">
               {t('scheduleMatch.participants')} (
-              {formData.matchFormat.toLowerCase() === 'singles' ? '2' : '2+'})
-            </label>
+              {matchFormatKey(formData.matchFormat) === 'singles' ? '2' : '2+'})
+            </legend>
             {divisions.length > 0 && (
-              <div className="division-filter">
-                <label htmlFor="divisionFilterEdit">Filter by Division:</label>
+              <div className="match-edit-form__field match-edit-form__division">
+                <label htmlFor="divisionFilterEdit">{t('events.forms.filterDivision', 'Filter by Division')}</label>
                 <select
                   id="divisionFilterEdit"
                   value={divisionFilter}
                   onChange={(e) => setDivisionFilter(e.target.value)}
-                  className="division-filter-select"
                 >
-                  <option value="all">All Divisions</option>
-                  {divisions.map((d) => (
-                    <option key={d.divisionId} value={d.divisionId}>
-                      {d.name}
-                    </option>
-                  ))}
-                  <option value="none">No Division</option>
+                  {divisionOptions}
                 </select>
               </div>
             )}
-            <div className="participants-grid">
+            <div className="match-edit-form__players">
               {filteredPlayers.map((player) => (
-                <div
+                <button
                   key={player.playerId}
-                  className={`participant-card ${
-                    formData.participants.includes(player.playerId) ? 'selected' : ''
-                  }`}
+                  type="button"
+                  className="match-edit-form__player"
+                  aria-pressed={formData.participants.includes(player.playerId)}
                   onClick={() => handleParticipantToggle(player.playerId)}
                 >
-                  <div className="participant-name">{player.name}</div>
-                  <div className="participant-wrestler">{player.currentWrestler}</div>
-                </div>
+                  <span className="match-edit-form__player-name">{player.name}</span>
+                  {!isNeedsWrestler(player.currentWrestler) && (
+                    <span className="match-edit-form__player-meta">{player.currentWrestler}</span>
+                  )}
+                </button>
               ))}
             </div>
-            <div className="selected-count">
+            <p className="match-edit-form__hint">
               {t('scheduleMatch.selected')}: {formData.participants.length}
-            </div>
-          </div>
+            </p>
+          </fieldset>
         )}
 
-        <div className="edit-match-actions">
-          <button type="submit" disabled={submitting}>
-            {submitting ? 'Saving...' : 'Save Changes'}
-          </button>
-          <button type="button" className="cancel-btn" onClick={onCancel} disabled={submitting}>
-            Cancel
-          </button>
+        <div className="match-edit-form__actions">
+          <Button variant="secondary" onClick={onCancel} disabled={submitting}>
+            {t('common.cancel', 'Cancel')}
+          </Button>
+          <Button type="submit" loading={submitting}>
+            {t('events.forms.saveChanges', 'Save Changes')}
+          </Button>
         </div>
       </form>
     </div>

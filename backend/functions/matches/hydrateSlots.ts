@@ -1,3 +1,5 @@
+import { FORMER_MEMBER, realWrestlerName, resolveBilledName } from '../../lib/needsWrestler';
+import { bookablePsnId } from '../../lib/disciplineGates';
 import type { MatchSlot, Player } from '../../lib/repositories/types';
 
 export interface HydratedMatchSlot extends MatchSlot {
@@ -7,7 +9,8 @@ export interface HydratedMatchSlot extends MatchSlot {
    * Display name of the wrestler this player is bringing. Prefers
    * `wrestlerNameSnapshot` (pinned at claim time, immune to later renames);
    * falls back to the player's `currentWrestler` for legacy slots that
-   * predate MSL-03's snapshot field. Only set when the slot is filled.
+   * predate MSL-03's snapshot field, then to the player's name. Placeholder
+   * values are skipped at each step. Only set when the slot is filled.
    */
   wrestlerName?: string;
   /**
@@ -24,7 +27,7 @@ export interface HydratedMatchSlot extends MatchSlot {
  * Pure read enrichment: returns slots with playerName/wrestlerName populated
  * for each filled slot, sourced from `playerLookup`. Does not persist.
  *
- * `playerLookup` is keyed by playerId. Missing entries fall back to "Unknown".
+ * `playerLookup` is keyed by playerId. Missing entries fall back to "Former member".
  */
 export function hydrateMatchSlots(
   slots: readonly MatchSlot[],
@@ -35,15 +38,15 @@ export function hydrateMatchSlots(
     const player = playerLookup.get(slot.playerId);
     // Snapshot wins over the live currentWrestler so a player renaming their
     // gimmick doesn't retroactively rewrite what was billed for past matches.
-    const wrestlerName =
-      slot.wrestlerNameSnapshot
-      ?? player?.currentWrestler
-      ?? 'Unknown Wrestler';
+    const wrestlerName = resolveBilledName(slot.wrestlerNameSnapshot, player, FORMER_MEMBER);
+    // A placeholder stored by an older booking is not a name worth returning.
+    const { wrestlerNameSnapshot, ...filledSlot } = slot;
     return {
-      ...slot,
-      playerName: player?.name ?? 'Unknown Player',
+      ...filledSlot,
+      ...(realWrestlerName(wrestlerNameSnapshot) ? { wrestlerNameSnapshot } : {}),
+      playerName: player?.name?.trim() || FORMER_MEMBER,
       wrestlerName,
-      psnId: player?.psnId,
+      psnId: bookablePsnId(player),
     };
   });
 }

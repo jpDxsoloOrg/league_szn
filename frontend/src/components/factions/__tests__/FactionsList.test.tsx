@@ -1,20 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 
 const {
   mockFactionsGetAll,
   mockFactionsGetStandings,
-  mockPlayersGetAll,
+  mockPlayersGetDirectory,
   mockGetMyProfile,
   mockUseAuth,
+  mockShowToast,
 } = vi.hoisted(() => ({
   mockFactionsGetAll: vi.fn(),
   mockFactionsGetStandings: vi.fn(),
-  mockPlayersGetAll: vi.fn(),
+  mockPlayersGetDirectory: vi.fn(),
   mockGetMyProfile: vi.fn(),
   mockUseAuth: vi.fn(),
+  mockShowToast: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -23,7 +25,7 @@ vi.mock('../../../services/api', () => ({
     getStandings: mockFactionsGetStandings,
   },
   playersApi: {
-    getAll: mockPlayersGetAll,
+    getDirectory: mockPlayersGetDirectory,
   },
   profileApi: {
     getMyProfile: mockGetMyProfile,
@@ -49,6 +51,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../FactionsList.css', () => ({}));
 vi.mock('../FactionCard.css', () => ({}));
+vi.mock('../../ui/toastContext', () => ({ useToast: () => ({ showToast: mockShowToast }) }));
 
 import FactionsList from '../FactionsList';
 
@@ -88,10 +91,10 @@ function renderHub() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockUseAuth.mockReturnValue({ isAuthenticated: false, isWrestler: false });
+  mockUseAuth.mockReturnValue({ isAuthenticated: false, isWrestler: false, hasRole: () => false });
   mockFactionsGetAll.mockResolvedValue([]);
   mockFactionsGetStandings.mockResolvedValue([]);
-  mockPlayersGetAll.mockResolvedValue([]);
+  mockPlayersGetDirectory.mockResolvedValue([]);
   mockGetMyProfile.mockResolvedValue(null);
 });
 
@@ -109,16 +112,45 @@ describe('FactionsList (FAC-10)', () => {
       basePlayer({ playerId: `p${i + 1}`, name: `Leader ${i + 1}` }),
     );
     mockFactionsGetAll.mockResolvedValue(factions);
-    mockPlayersGetAll.mockResolvedValue(players);
+    mockPlayersGetDirectory.mockResolvedValue(players);
 
     renderHub();
 
     for (let i = 1; i <= 6; i++) {
-      expect(await screen.findByText(`Faction ${i}`)).toBeInTheDocument();
+      expect(await screen.findByRole('link', { name: new RegExp(`Faction ${i}`) })).toBeInTheDocument();
+      expect(screen.getByText(`Led by Leader ${i}`)).toBeInTheDocument();
     }
   });
 
-  it('filters the visible cards when an Active chip is clicked', async () => {
+  it('does not name a hidden leader on the tile', async () => {
+    mockFactionsGetAll.mockResolvedValue([
+      baseFaction({ stableId: 'f1', name: 'Blood Brothers', leaderId: 'p1', memberIds: ['p1'] }),
+    ]);
+    mockPlayersGetDirectory.mockResolvedValue([{ playerId: 'p1', name: 'Hidden Leader', currentWrestler: null }]);
+
+    renderHub();
+
+    expect(await screen.findByRole('link', { name: /Blood Brothers/ })).toBeInTheDocument();
+    expect(screen.queryByText(/Hidden Leader/)).not.toBeInTheDocument();
+    expect(screen.getByText('Leader no longer listed')).toBeInTheDocument();
+  });
+
+  it('does not name a deactivated leader on the tile', async () => {
+    mockFactionsGetAll.mockResolvedValue([
+      baseFaction({ stableId: 'f1', name: 'Blood Brothers', leaderId: 'p1', memberIds: ['p1'] }),
+    ]);
+    mockPlayersGetDirectory.mockResolvedValue([
+      { playerId: 'p1', name: 'Gone Leader', currentWrestler: 'Edge', deactivated: true },
+    ]);
+
+    renderHub();
+
+    expect(await screen.findByRole('link', { name: /Blood Brothers/ })).toBeInTheDocument();
+    expect(screen.queryByText(/Gone Leader/)).not.toBeInTheDocument();
+    expect(screen.getByText('Leader no longer listed')).toBeInTheDocument();
+  });
+
+  it('filters the visible cards from the status select', async () => {
     const factions = [
       baseFaction({ stableId: 'f1', name: 'Alpha Active', status: 'active' }),
       baseFaction({ stableId: 'f2', name: 'Beta Pending', status: 'pending' }),
@@ -131,15 +163,26 @@ describe('FactionsList (FAC-10)', () => {
     expect(screen.getByText('Beta Pending')).toBeInTheDocument();
     expect(screen.getByText('Gamma Disbanded')).toBeInTheDocument();
 
-    const activeChip = screen.getByRole('tab', { name: 'Active' });
-    await userEvent.click(activeChip);
+    await userEvent.click(screen.getByRole('combobox', { name: 'Filter by status' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Active' }));
 
     await waitFor(() => {
       expect(screen.queryByText('Beta Pending')).not.toBeInTheDocument();
     });
     expect(screen.getByText('Alpha Active')).toBeInTheDocument();
     expect(screen.queryByText('Gamma Disbanded')).not.toBeInTheDocument();
-    expect(activeChip).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('shows the standings record on a tile so it matches the faction page', async () => {
+    mockFactionsGetAll.mockResolvedValue([baseFaction({ stableId: 'f1', name: 'Alpha', wins: 1, losses: 4, draws: 0 })]);
+    mockFactionsGetStandings.mockResolvedValue([
+      { stableId: 'f1', name: 'Alpha', memberCount: 2, wins: 10, losses: 17, draws: 1, winPercentage: 35.7 },
+    ]);
+
+    renderHub();
+
+    expect(await screen.findByText(/10-17-1/)).toBeInTheDocument();
+    expect(screen.queryByText(/1-4-0/)).not.toBeInTheDocument();
   });
 
   it('narrows by name via the search input (case-insensitive substring)', async () => {
@@ -163,7 +206,7 @@ describe('FactionsList (FAC-10)', () => {
   });
 
   it('renders the "Request a Faction" CTA only for wrestlers without an active faction', async () => {
-    mockUseAuth.mockReturnValue({ isAuthenticated: true, isWrestler: true });
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isWrestler: true, hasRole: () => true });
     mockGetMyProfile.mockResolvedValue(basePlayer({ stableId: undefined }));
     mockFactionsGetAll.mockResolvedValue([baseFaction()]);
 
@@ -173,22 +216,22 @@ describe('FactionsList (FAC-10)', () => {
   });
 
   it('hides the "Request a Faction" CTA when the wrestler is already in a faction', async () => {
-    mockUseAuth.mockReturnValue({ isAuthenticated: true, isWrestler: true });
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isWrestler: true, hasRole: () => true });
     mockGetMyProfile.mockResolvedValue(basePlayer({ stableId: 'some-faction' }));
     mockFactionsGetAll.mockResolvedValue([baseFaction()]);
 
     renderHub();
     // Wait for the page to finish loading
-    await screen.findByText('Default Faction');
+    await screen.findByRole('link', { name: /Default Faction/ });
     expect(screen.queryByRole('link', { name: 'Request a Faction' })).not.toBeInTheDocument();
   });
 
   it('hides the CTA for unauthenticated users', async () => {
-    mockUseAuth.mockReturnValue({ isAuthenticated: false, isWrestler: false });
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, isWrestler: false, hasRole: () => false });
     mockFactionsGetAll.mockResolvedValue([baseFaction()]);
 
     renderHub();
-    await screen.findByText('Default Faction');
+    await screen.findByRole('link', { name: /Default Faction/ });
     expect(screen.queryByRole('link', { name: 'Request a Faction' })).not.toBeInTheDocument();
     // Profile should never even be fetched when not auth'd
     expect(mockGetMyProfile).not.toHaveBeenCalled();
@@ -225,5 +268,18 @@ describe('FactionsList (FAC-10)', () => {
 
     renderHub();
     expect(await screen.findByLabelText('Heat: 3 of 5')).toBeInTheDocument();
+  });
+
+  it('shows a toast passed in router state, once', async () => {
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/factions', state: { toast: 'The Brood has been disbanded.' } }]}>
+        <FactionsList />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith('The Brood has been disbanded.', 'success');
+    });
+    expect(mockShowToast).toHaveBeenCalledTimes(1);
   });
 });

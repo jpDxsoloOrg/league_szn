@@ -1,0 +1,204 @@
+.ui-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 1.5rem;
+  margin: 0 0 2rem;
+  padding: 1.25rem 0 0;
+  list-style: none;
+}
+
+.ui-podium__slot--first {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.ui-podium__slot--second {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.ui-podium__slot--third {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.ui-podium__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 2rem 1.25rem 1.25rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  color: var(--color-text);
+  text-align: center;
+  text-decoration: none;
+}
+
+.ui-podium__slot--first .ui-podium__card {
+  padding-top: 2.5rem;
+  background: var(--gradient-podium-first);
+  border-color: var(--rim-world);
+
+  --color-text-muted: var(--color-on-band-secondary);
+  --color-hairline: var(--color-on-band-hairline);
+}
+
+.ui-podium__slot--second .ui-podium__card {
+  background-image: linear-gradient(180deg, var(--tint-cyan), transparent 70%);
+}
+
+.ui-podium__slot--third .ui-podium__card {
+  background-image: linear-gradient(180deg, var(--tint-violet), transparent 70%);
+}
+
+a.ui-podium__card:hover {
+  background-color: var(--color-surface-raised);
+}
+
+.ui-podium__slot--first a.ui-podium__card:hover {
+  filter: brightness(1.08);
+}
+
+.ui-podium__rank {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  padding: 0.1875rem 0.875rem;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.ui-podium__slot--first .ui-podium__rank {
+  border-color: var(--color-text);
+  background-color: var(--color-text);
+  color: var(--color-on-accent);
+}
+
+.ui-podium__slot--second .ui-podium__rank {
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
+}
+
+.ui-podium__slot--third .ui-podium__rank {
+  border-color: var(--color-violet-bright);
+  color: var(--color-violet-bright);
+}
+
+.ui-podium__name {
+  max-width: 100%;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-podium__slot--first .ui-podium__name {
+  font-size: 1.5rem;
+}
+
+.ui-podium__subtitle {
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.ui-podium__record {
+  font-family: var(--font-heading);
+  font-size: 1.375rem;
+  font-weight: 700;
+}
+
+.ui-podium__stats {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.ui-podium__stat dt {
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+  letter-spacing: 0.02em;
+}
+
+.ui-podium__stat dd {
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .ui-podium {
+    gap: 0.5rem;
+  }
+
+  .ui-podium__card,
+  .ui-podium__slot--first .ui-podium__card {
+    padding: 1.5rem 0.5rem 0.75rem;
+  }
+
+  /* Two lines, because a phone column is too narrow for most names. */
+  .ui-podium__name,
+  .ui-podium__slot--first .ui-podium__name {
+    display: -webkit-box;
+    font-size: 1rem;
+    line-height: 1.2;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .ui-podium__record {
+    font-size: 1rem;
+  }
+
+  .ui-podium__subtitle {
+    display: none;
+  }
+
+  /* The headline stat stays as a bare value under the record. */
+  .ui-podium__stats {
+    justify-content: center;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .ui-podium__stat:not(:first-child) {
+    display: none;
+  }
+
+  .ui-podium__stat dt {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .ui-podium .ui-avatar--xl {
+    width: 80px;
+    height: 80px;
+  }
+
+  .ui-podium .ui-avatar--lg {
+    width: 60px;
+    height: 60px;
+  }
+}

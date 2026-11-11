@@ -1,321 +1,134 @@
-.event-card-link {
-  text-decoration: none;
-  color: inherit;
-  display: block;
-}
-
 .event-card {
-  background: #2d2d2d;
-  border-radius: 8px;
-  padding: 16px 20px;
-  border-left: 4px solid #9ca3af;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  cursor: pointer;
-}
-
-.event-card.has-thumb {
   display: flex;
-  gap: 16px;
-  align-items: stretch;
+  align-items: center;
+  gap: 1rem;
+  min-height: 72px;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  transition: background-color 0.15s, border-color 0.15s;
 }
 
 .event-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-color: var(--color-cyan);
+  background-color: var(--color-surface-raised);
 }
 
-.event-card-thumb {
-  flex-shrink: 0;
-  width: 72px;
+.event-card:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.event-card__date {
   display: flex;
+  flex: none;
+  flex-direction: column;
   align-items: center;
+  width: 3rem;
 }
 
-.event-card-thumb-img {
-  width: 72px;
-  height: 72px;
-  object-fit: contain;
-  border-radius: 6px;
+.event-card__month {
+  color: var(--color-cyan);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.event-card-body {
+.event-card__day {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.event-card__body {
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  gap: 0.125rem;
   min-width: 0;
 }
 
-.event-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.event-card-name {
-  margin: 0;
-  font-size: 1.1rem;
-  color: white;
-  font-weight: 600;
-}
-
-.event-type-badge {
-  font-size: 0.7rem;
+.event-card__name {
+  overflow: hidden;
+  font-family: var(--font-heading);
+  font-size: 1.0625rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 3px 8px;
-  border-radius: 4px;
-  color: #1a1a1a;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
-.event-card-details {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.event-card-date {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #bbb;
-  font-size: 0.9rem;
-}
-
-.event-card-icon {
-  font-size: 0.85rem;
-}
-
-.event-card-meta {
+.event-card__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
+  gap: 0.125rem 0.75rem;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
 }
 
-.event-status-badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  border: 1px solid;
+.event-card__results {
+  color: var(--color-cyan);
 }
 
-.event-match-count {
-  font-size: 0.8rem;
-  color: #bbb;
-  background: #333;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.event-championship-count {
-  font-size: 0.8rem;
-  color: #d4af37;
-  background: rgba(212, 175, 55, 0.15);
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-weight: 600;
-}
-
-/* Completed event card modifier */
-.event-card.completed {
-  border-left-style: dashed;
-  border-left-color: #6b7280 !important;
-}
-
-.event-card.completed:hover {
-  border-left-color: #9ca3af !important;
-}
-
-/* View Results indicator for completed events */
-.event-card-view-results {
+.event-card__badges {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid #3a3a3a;
-  font-size: 0.8rem;
-  color: #888;
-  transition: color 0.15s ease;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.375rem;
 }
 
-.event-card-view-results-arrow {
-  transition: transform 0.15s ease, color 0.15s ease;
+.event-card__chevron {
+  flex: none;
+  color: var(--color-text-muted);
 }
 
-.event-card:hover .event-card-view-results {
-  color: #d4af37;
+/* A planned show has no event page yet, so it reads as a quieter row. */
+.event-card--planned {
+  border-style: dashed;
+  background-color: transparent;
 }
 
-.event-card:hover .event-card-view-results-arrow {
-  transform: translateX(3px);
-  color: #d4af37;
+.event-card--planned:hover {
+  border-color: var(--color-hairline);
+  background-color: transparent;
+}
+
+/* Staff tap a planned show to create its event. */
+button.event-card--create {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.event-card--create:hover {
+  border-color: var(--color-cyan);
+  background-color: var(--color-surface-raised);
+}
+
+.event-card--create .event-card__chevron {
+  color: var(--color-cyan);
 }
 
 @media (max-width: 768px) {
-  /* App-style event card (docs/design/mobile-app/league-szn-events): square
-     date block on the left, chevron on the right, pill badges. */
   .event-card {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    position: relative;
-    padding: 16px 34px 16px 14px;
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-left-width: 0;
-    border-radius: 14px;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
   }
 
-  .event-card::after {
-    content: '\203A';
-    position: absolute;
-    top: 50%;
-    right: 14px;
-    transform: translateY(-50%);
-    color: #d4af37;
-    font-size: 1.3rem;
-    font-weight: 700;
-    line-height: 1;
+  .event-card__body {
+    flex-basis: calc(100% - 6rem);
   }
 
-  .event-card.has-thumb {
-    gap: 12px;
-  }
-
-  .event-card-thumb {
-    width: 56px;
-  }
-
-  .event-card-thumb-img {
-    width: 56px;
-    height: 56px;
-  }
-
-  .event-card-dateblock {
-    flex-shrink: 0;
-    width: 56px;
-    height: 56px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1px;
-    background: #2d2d2d;
-    border: 1px solid #3f3f3f;
-    border-radius: 10px;
-  }
-
-  .event-card-dateblock-month {
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #94a3b8;
-  }
-
-  .event-card-dateblock-day {
-    font-size: 1.35rem;
-    font-weight: 800;
-    line-height: 1;
-    color: white;
-  }
-
-  .event-card-name {
-    font-size: 1rem;
-    text-transform: uppercase;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-  }
-
-  .event-card-header {
-    margin-bottom: 8px;
-  }
-
-  /* The date block replaces the inline date row on phones. */
-  .event-card-date {
-    display: none;
-  }
-
-  .event-type-badge {
-    background-color: #2d2d2d !important;
-    color: #9ca3af;
-    border-radius: 999px;
-  }
-
-  .event-match-count {
-    background: rgba(212, 175, 55, 0.08);
-    border: 1px solid rgba(212, 175, 55, 0.45);
-    color: #d4af37;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-size: 0.7rem;
-    border-radius: 999px;
-    padding: 2px 10px;
-  }
-
-  .event-status-badge {
-    border-radius: 999px;
-    padding: 2px 10px;
-  }
-
-  /* Live card: red LIVE pill + thin gold progress bar. */
-  .event-status-badge.event-status-in-progress {
-    background: #dc2626;
-    color: white !important;
-    border-color: #dc2626 !important;
-  }
-
-  .event-card-live-bar {
-    margin-top: 12px;
-    height: 4px;
-    border-radius: 999px;
-    background: #3a3a3a;
-    overflow: hidden;
-  }
-
-  .event-card-live-bar-fill {
-    height: 100%;
-    width: 60%;
-    border-radius: 999px;
-    background: #d4af37;
-    animation: event-live-bar-pulse 1.8s ease-in-out infinite;
-  }
-
-  @keyframes event-live-bar-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.55; }
-  }
-
-  /* Past events: slightly desaturated with a muted COMPLETED pill and a gold
-     "Results available" link. */
-  .event-card.completed {
-    filter: saturate(0.55);
-    opacity: 0.85;
-  }
-
-  .event-status-badge.event-status-completed {
-    background: #2d2d2d;
-    color: #9ca3af !important;
-    border-color: #3f3f3f !important;
-  }
-
-  .event-card-view-results {
-    color: #d4af37;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-size: 0.75rem;
-  }
-
-  .event-card-view-results-arrow {
-    color: #d4af37;
+  .event-card__badges {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
+    padding-left: 3.75rem;
   }
 }

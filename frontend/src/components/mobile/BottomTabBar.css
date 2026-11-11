@@ -18,27 +18,27 @@
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 1000;
+  z-index: var(--z-shell);
   display: flex;
   justify-content: space-around;
   align-items: stretch;
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.4);
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-hairline);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Tabs size to their labels, so a long label takes room from a short one and all five fit at 15px. */
 .bottom-tab-bar__item {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-width: 44px;
-  min-height: 56px;
+  min-height: var(--shell-bottom-bar-height);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
   margin: 0;
-  padding: 6px 2px;
+  padding: 6px 0;
   color: var(--color-text-muted);
   text-decoration: none;
   text-align: center;
@@ -55,7 +55,7 @@
 }
 
 /* Explicit :hover — global element rules like `button:where(...):hover`
-   carry (0,1,1) specificity and would otherwise repaint the More button. */
+   carry (0,1,1) specificity and would otherwise repaint tab items. */
 .bottom-tab-bar__item:hover {
   background: none;
 }
@@ -70,21 +70,19 @@
 }
 
 .bottom-tab-bar__item--active {
-  color: var(--color-primary);
-  transform: scale(1.08);
+  color: var(--section-accent);
 }
 
 .bottom-tab-bar__icon {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
 }
 
 .bottom-tab-bar__label {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   line-height: 1.2;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   white-space: nowrap;
 }

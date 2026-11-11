@@ -3,7 +3,16 @@ import { useTranslation } from 'react-i18next';
 import { matchesApi } from '../../services/api';
 import type { Match, Player } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
+import { formatMatchDate } from '../../utils/dateUtils';
+import { formatMatchType } from '../../utils/matchDisplay';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
 import './MatchResultForm.css';
+
+/** The API's wording for a result it refuses, so it can show translated. */
+const RESULT_ERROR_KEYS: Record<string, string> = {
+  'The current champion is no longer in this title match. Edit the match, or make it a non-title match, then record the result.': 'recordResult.championNotInMatch',
+};
 
 interface MatchResultFormProps {
   match: Match;
@@ -24,7 +33,6 @@ export default function MatchResultForm({
   const [winners, setWinners] = useState<string[]>([]);
   const [isDraw, setIsDraw] = useState(false);
   const [winningTeamIndex, setWinningTeamIndex] = useState<number | null>(null);
-  const [starRating, setStarRating] = useState<number | ''>('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +40,8 @@ export default function MatchResultForm({
 
   const getPlayerName = (playerId: string): string => {
     const player = players.find(p => p.playerId === playerId);
-    return player ? `${player.name} (${player.currentWrestler})` : 'Unknown';
+    if (!player) return t('common.unknown');
+    return player.currentWrestler ? `${player.name} (${player.currentWrestler})` : player.name;
   };
 
   const getPlayerNameShort = (playerId: string): string => {
@@ -77,209 +86,122 @@ export default function MatchResultForm({
 
   const handleSubmit = async () => {
     if (submitting) return;
+    setError(null);
+
+    if (!isDraw && isTagTeamMatch && (winningTeamIndex === null || winners.length === 0)) {
+      setError(t('recordResult.selectWinningTeam'));
+      return;
+    }
+    if (!isDraw && winners.length === 0) {
+      setError(t('recordResult.selectWinner'));
+      return;
+    }
+
+    const losers = match.participants.filter(playerId => !winners.includes(playerId));
+    const result = isDraw
+      ? { winners: match.participants, losers: [], isDraw: true }
+      : isTagTeamMatch && winningTeamIndex !== null
+        ? { winners, losers, winningTeam: winningTeamIndex }
+        : { winners, losers };
 
     setSubmitting(true);
-
-    if (isDraw) {
-      // Draw: all participants get draw stat
-      try {
-        setError(null);
-        const payload: { winners: string[]; losers: string[]; isDraw: boolean; starRating?: number } = {
-          winners: match.participants,
-          losers: [],
-          isDraw: true,
-        };
-        if (starRating !== '') payload.starRating = starRating as number;
-        await matchesApi.recordResult(match.matchId, payload);
-        onSuccess();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t('recordResult.error'));
-      } finally {
-        setSubmitting(false);
-      }
-    } else if (isTagTeamMatch) {
-      // Tag team match validation
-      if (winningTeamIndex === null || winners.length === 0) {
-        setError(t('recordResult.selectWinningTeam'));
-        setSubmitting(false);
-        return;
-      }
-
-      // All non-winning team members are losers
-      const losers = match.participants.filter(p => !winners.includes(p));
-
-      try {
-        setError(null);
-        const payload: { winners: string[]; losers: string[]; winningTeam: number; starRating?: number } = {
-          winners,
-          losers,
-          winningTeam: winningTeamIndex,
-        };
-        if (starRating !== '') payload.starRating = starRating as number;
-        await matchesApi.recordResult(match.matchId, payload);
-        onSuccess();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t('recordResult.error'));
-      } finally {
-        setSubmitting(false);
-      }
-    } else {
-      // Standard match validation
-      if (winners.length === 0) {
-        setError(t('recordResult.selectWinner'));
-        setSubmitting(false);
-        return;
-      }
-
-      const losers = match.participants.filter(p => !winners.includes(p));
-
-      try {
-        setError(null);
-        const payload: { winners: string[]; losers: string[]; starRating?: number } = { winners, losers };
-        if (starRating !== '') payload.starRating = starRating as number;
-        await matchesApi.recordResult(match.matchId, payload);
-        onSuccess();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t('recordResult.error'));
-      } finally {
-        setSubmitting(false);
-      }
+    try {
+      await matchesApi.recordResult(match.matchId, result);
+      onSuccess();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t('recordResult.error');
+      const translationKey = RESULT_ERROR_KEYS[message];
+      setError(translationKey ? t(translationKey) : message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <div className="match-result-form">
-      {error && <div className="error-message">{error}</div>}
+      {error && <p className="match-result-form__error" role="alert">{error}</p>}
 
-      <div className="match-details">
-        <div className="detail-row">
-          <strong>Match Type:</strong> {match.matchFormat}
+      <dl className="match-result-form__details">
+        <div>
+          <dt>{t('recordResult.matchType')}</dt>
+          <dd>{formatMatchType(match.matchFormat, t)}</dd>
         </div>
-        <div className="detail-row">
-          <strong>Date:</strong> {new Date(match.date).toLocaleString()}
+        <div>
+          <dt>{t('recordResult.date')}</dt>
+          <dd>{formatMatchDate(match.date)}</dd>
         </div>
-      </div>
+      </dl>
 
-      <div className="draw-toggle-row">
-        <label className="draw-toggle-label">
-          <input
-            type="checkbox"
-            checked={isDraw}
-            onChange={(e) => {
-              setIsDraw(e.target.checked);
-              if (e.target.checked) {
-                setWinners([]);
-                setWinningTeamIndex(null);
-              }
-            }}
-            className="draw-toggle-checkbox"
-          />
-          <span className="draw-toggle-text">Draw</span>
-        </label>
-        {isDraw && (
-          <span className="draw-hint">All participants will receive a draw.</span>
-        )}
-      </div>
+      <label className="match-result-form__draw">
+        <input
+          type="checkbox"
+          checked={isDraw}
+          onChange={(e) => {
+            setIsDraw(e.target.checked);
+            if (e.target.checked) {
+              setWinners([]);
+              setWinningTeamIndex(null);
+            }
+          }}
+        />
+        <span>{t('events.forms.draw', 'Draw')}</span>
+      </label>
 
-      <div className="participants-selection">
-        {isDraw ? (
-          <div className="draw-participants-list">
-            <h4>Draw Participants</h4>
+      {isDraw ? (
+        <div className="match-result-form__group">
+          <h3 className="match-result-form__heading">{t('events.forms.drawHint', 'All participants will receive a draw.')}</h3>
+          <ul className="match-result-form__draw-list">
             {match.participants.map(playerId => (
-              <div key={playerId} className="participant-option draw">
-                <div className="participant-info">
-                  {getPlayerName(playerId)}
-                </div>
-                <span className="draw-badge">Draw</span>
-              </div>
+              <li key={playerId}>{getPlayerName(playerId)}</li>
             ))}
-          </div>
-        ) : isTagTeamMatch ? (
-          <>
-            <h4>{t('recordResult.selectWinningTeamTitle')}</h4>
-            <div className="teams-list">
-              {match.teams!.map((team, teamIndex) => (
-                <div
-                  key={teamIndex}
-                  className={`team-option ${winningTeamIndex === teamIndex ? 'winner' : ''}`}
-                  onClick={() => handleTeamWinnerSelect(teamIndex)}
-                >
-                  <div className="team-info">
-                    <div className="team-label">{getTeamDisplayName(team)}</div>
-                    <div className="team-members-list">
-                      {team.map(playerId => (
-                        <span key={playerId} className="team-member-name">
-                          {getPlayerName(playerId)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  {winningTeamIndex === teamIndex && (
-                    <span className="winner-badge">{t('recordResult.winner')}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            <h4>{t('recordResult.selectWinners')}</h4>
-            <div className="participants-list">
-              {match.participants.map(playerId => (
-                <div
-                  key={playerId}
-                  className={`participant-option ${winners.includes(playerId) ? 'winner' : ''}`}
-                  onClick={() => handleWinnerToggle(playerId)}
-                >
-                  <div className="participant-info">
-                    {getPlayerName(playerId)}
-                  </div>
-                  {winners.includes(playerId) && (
-                    <span className="winner-badge">{t('recordResult.winner')}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-
-      <div className="rating-awards-block">
-        <div className="star-rating-row">
-          <span className="star-rating-label">{t('match.starRating')}</span>
-          <div className="star-rating-stars" role="group" aria-label={t('match.starRating')}>
-            {[1, 2, 3, 4, 5].map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={`star-btn ${typeof starRating === 'number' && starRating >= value ? 'filled' : ''}`}
-                onClick={() => setStarRating(starRating === value ? '' : value)}
-                title={`${value} ${value === 1 ? 'star' : 'stars'}`}
-                aria-pressed={typeof starRating === 'number' && starRating >= value}
-              >
-                {typeof starRating === 'number' && starRating >= value ? '\u2605' : '\u2606'}
-              </button>
-            ))}
-          </div>
-          {starRating !== '' && (
-            <button
-              type="button"
-              className="star-rating-clear"
-              onClick={() => setStarRating('')}
-            >
-              {t('match.clearRating')}
-            </button>
-          )}
+          </ul>
         </div>
-      </div>
+      ) : isTagTeamMatch ? (
+        <div className="match-result-form__group">
+          <h3 className="match-result-form__heading">{t('recordResult.selectWinningTeamTitle')}</h3>
+          {match.teams!.map((team, teamIndex) => (
+            <button
+              key={teamIndex}
+              type="button"
+              className={`team-option ${winningTeamIndex === teamIndex ? 'winner' : ''}`}
+              aria-pressed={winningTeamIndex === teamIndex}
+              onClick={() => handleTeamWinnerSelect(teamIndex)}
+            >
+              <span className="match-result-form__option-text">
+                <span className="match-result-form__option-name">{getTeamDisplayName(team)}</span>
+                <span className="match-result-form__option-meta">
+                  {team.map(playerId => getPlayerName(playerId)).join(', ')}
+                </span>
+              </span>
+              {winningTeamIndex === teamIndex && <Badge tone="win">{t('recordResult.winner')}</Badge>}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="match-result-form__group">
+          <h3 className="match-result-form__heading">{t('recordResult.selectWinners')}</h3>
+          {match.participants.map(playerId => (
+            <button
+              key={playerId}
+              type="button"
+              className={`participant-option ${winners.includes(playerId) ? 'winner' : ''}`}
+              aria-pressed={winners.includes(playerId)}
+              onClick={() => handleWinnerToggle(playerId)}
+            >
+              <span className="match-result-form__option-name">{getPlayerName(playerId)}</span>
+              {winners.includes(playerId) && <Badge tone="win">{t('recordResult.winner')}</Badge>}
+            </button>
+          ))}
+        </div>
+      )}
 
-      <div className="result-actions">
-        <button onClick={handleSubmit} disabled={(!isDraw && winners.length === 0) || submitting}>
-          {submitting ? 'Recording...' : 'Record Result'}
-        </button>
-        <button onClick={onCancel} className="cancel-btn" disabled={submitting}>
-          Cancel
-        </button>
+      <div className="match-result-form__actions">
+        <Button variant="secondary" onClick={onCancel} disabled={submitting}>
+          {t('common.cancel', 'Cancel')}
+        </Button>
+        <Button onClick={handleSubmit} disabled={!isDraw && winners.length === 0} loading={submitting}>
+          {t('recordResult.recordResult')}
+        </Button>
       </div>
     </div>
   );

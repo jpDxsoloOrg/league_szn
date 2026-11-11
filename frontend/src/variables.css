@@ -1,22 +1,240 @@
+/*
+ * Ringside Booker design tokens (docs/design/ringside-booker/DESIGN.md).
+ * An alternative look for the Main Event Arena redesign: same structure and
+ * token names, a booking-desk palette. Some names (violet, pink, magenta) are
+ * kept from that design so no page has to change; here they hold the
+ * signal-red family.
+ * This is the only stylesheet that should contain raw colour values.
+ *
+ * Section 1 holds the design tokens. Section 2 maps every legacy variable
+ * name onto them, so pages that have not been restyled still pick up the theme.
+ */
 :root {
-  --color-primary: #d4af37;
-  --color-primary-hover: #b8941f;
-  /* Canonical "text on gold" — use this anywhere `background: var(--color-primary)` is set so the
-     default `--color-text: #fff` doesn't inherit through and render unreadable white-on-gold.
-     Value is intentionally near-black to clear WCAG AA contrast at every realistic weight. */
-  --color-on-primary: #1a1a1a;
-  --color-bg: #0f0f0f;
-  --color-surface: #1a1a1a;
-  --color-surface-hover: #252525;
-  --color-border: #333;
-  --color-text: #fff;
-  --color-text-secondary: #bbb;
-  --color-text-muted: #666;
-  --color-success: #4ade80;
-  --color-danger: #dc3545;
-  --color-danger-alt: #f87171;
-  --color-warning: #fbbf24;
-  --color-info: #0ea5e9;
-  --color-neutral: #6b7280;
-  --color-neutral-light: #9ca3af;
+  color-scheme: dark;
+
+  /* 1. Design tokens ------------------------------------------------------ */
+
+  /* Surfaces */
+  --color-bg: #0a0d13;
+  --color-surface: #111620;
+  --color-surface-raised: #19202d;
+  --color-hairline: rgba(150, 172, 210, 0.18);
+  --color-scrim: rgba(4, 6, 10, 0.78);
+  --color-overlay-soft: rgba(150, 172, 210, 0.08);
+
+  /* Text */
+  --color-text: #f1f4f9;
+  --color-text-secondary: #b8c1d2;
+  --color-text-muted: #919db3;
+
+  /* Brand */
+  --color-violet: #c2371c;
+  --color-magenta: #f2c230;
+  --color-pink: #ff4d2e;
+  --color-cyan: #1fd5f9;
+  --color-cyan-bright: #7be7ff;
+  --color-on-accent: #0a0d13;
+  --gradient-hero: linear-gradient(120deg, #33160f, #161c29 48%, #0d2a36);
+  --gradient-wordmark: linear-gradient(90deg, #ff4d2e, #f2c230 55%, #1fd5f9);
+  --gradient-tile-scrim: linear-gradient(180deg, rgba(10, 13, 19, 0) 35%, rgba(10, 13, 19, 0.92) 100%);
+  --gradient-tile-scrim-strong: linear-gradient(180deg, rgba(10, 13, 19, 0) 25%, rgba(10, 13, 19, 0.88) 62%, rgba(10, 13, 19, 0.96) 100%);
+  --gradient-podium-first: linear-gradient(160deg, #3a2c08, #1c1a14 60%, #19202d);
+  --color-violet-bright: #ff7a5c;
+  --color-pink-bright: #ff7a5c;
+  /* Pink text on a tint: the tint lifts the background, so it needs a lighter pink for 4.5:1. */
+  --color-pink-on-tint: #ff9d85;
+  --color-magenta-bright: #f7d154;
+
+  /* Section identity: one colour per section, picked by data-section below.
+     Every band stop keeps --color-text and --color-on-band-secondary at 4.5:1 or better. */
+  --band-home: linear-gradient(100deg, rgba(255, 77, 46, 0.2), rgba(255, 77, 46, 0) 42%), #141a26;
+  --band-events: linear-gradient(100deg, rgba(255, 77, 46, 0.2), rgba(255, 77, 46, 0) 42%), #141a26;
+  --band-rankings: linear-gradient(100deg, rgba(31, 213, 249, 0.16), rgba(31, 213, 249, 0) 42%), #141a26;
+  --band-storylines: linear-gradient(100deg, rgba(242, 194, 48, 0.16), rgba(242, 194, 48, 0) 42%), #141a26;
+  --band-me: linear-gradient(100deg, rgba(31, 213, 249, 0.16), rgba(31, 213, 249, 0) 42%), #141a26;
+  --color-on-band-secondary: #c5cddc;
+  --color-on-band-hairline: rgba(150, 172, 210, 0.32);
+
+  /* Photo tile fallbacks: deep at the foot, so the caption stays readable. */
+  --tile-wash-none: linear-gradient(165deg, #a8361f, #1c2433 70%);
+  --tile-wash-world: linear-gradient(165deg, #b98a12, #2b2413 70%);
+  --tile-wash-us: linear-gradient(165deg, #0e8fa8, #13283a 70%);
+  --tile-wash-ic: linear-gradient(165deg, #1f9d6b, #12291f 70%);
+  --tile-wash-tag: linear-gradient(165deg, #b0471f, #2a1a14 70%);
+
+  /* Status */
+  --color-win: #3ddc97;
+  --color-loss: #ff6b6b;
+  --color-draw: #919db3;
+  --color-warn: #f2c230;
+
+  /* Title rim lights */
+  --rim-world: #f2c230;
+  --rim-us: #1fd5f9;
+  --rim-ic: #3ddc97;
+  --rim-tag: #ff7a5c;
+
+  /* Tints for badges and selected states */
+  --tint-violet: rgba(255, 77, 46, 0.16);
+  --tint-pink: rgba(255, 77, 46, 0.14);
+  --tint-cyan: rgba(31, 213, 249, 0.12);
+  --tint-win: rgba(61, 220, 151, 0.13);
+  --tint-loss: rgba(255, 107, 107, 0.14);
+  --tint-warn: rgba(242, 194, 48, 0.13);
+
+  /* Selected pills and in-page tabs. Section tabs use an underline instead. */
+  --color-selected: #ff4d2e;
+  --color-on-selected: var(--color-on-accent);
+
+  /* Edge fades for tab rows that scroll sideways. */
+  --fade-mask-end: linear-gradient(to right, black calc(100% - 2.5rem), transparent);
+  --fade-mask-start: linear-gradient(to left, black calc(100% - 2.5rem), transparent);
+  --fade-mask-both: linear-gradient(to right, transparent, black 2.5rem, black calc(100% - 2.5rem), transparent);
+
+  /* Glow: live and active items only */
+  --glow-pink: 0 0 0 1px rgba(255, 77, 46, 0.55), 0 0 16px rgba(255, 77, 46, 0.35);
+  --glow-cyan: 0 0 0 1px rgba(31, 213, 249, 0.5), 0 0 16px rgba(31, 213, 249, 0.28);
+  --shadow-overlay: 0 18px 48px rgba(0, 0, 0, 0.65);
+
+  /* Shape */
+  --radius-card: 2px;
+  --radius-control: 2px;
+  --radius-pill: 2px;
+
+  /* Type */
+  --font-heading: 'Barlow Condensed', 'Arial Narrow', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Inter Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  /* Small uppercase HUD labels: eyebrows, badges, tabs, table heads. */
+  --font-label: 'Chakra Petch', 'Segoe UI', system-ui, sans-serif;
+  --tracking-label: 0.08em;
+  /* Corner cuts for buttons and tags. */
+  --cut-button: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  --cut-tag: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  /* Faint hazard hatching for bands and heroes. */
+  --hatch: repeating-linear-gradient(135deg, rgba(150, 172, 210, 0.05) 0 2px, transparent 2px 10px);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --text-body: 1rem;
+  --text-dense: 0.9375rem;
+
+  /* Layout */
+  --touch-target: 44px;
+  --shell-max-width: 1280px;
+  --shell-header-height: 64px;
+  /* Real height of the sticky header: installed on iOS (black-translucent status
+     bar) the header also pads by the top safe-area inset, which is 0 in a tab. */
+  --shell-header-offset: calc(var(--shell-header-height) + env(safe-area-inset-top, 0px));
+  --shell-bottom-bar-height: 64px;
+  /* Installed in landscape, a side notch pushes the rail's content in. */
+  --shell-sidebar-width: calc(248px + env(safe-area-inset-left, 0px));
+  --shell-ticker-height: 36px;
+  --section-tabs-height: 46px;
+  --focus-ring: 2px solid var(--color-cyan);
+
+  /* Stacking */
+  --z-sticky: 50;
+  --z-shell: 100;
+  --z-dropdown: 200;
+  --z-modal: 1000;
+  --z-toast: 1100;
+
+  /* Defaults for anything outside a section, such as dialogs. */
+  --section-band: var(--band-home);
+  --section-accent: var(--color-pink);
+  --section-tint: rgba(255, 77, 46, 0.06);
+  --section-wash: none;
+  --page-header-padding: 1.25rem 1.5rem;
+
+  /* 2. Legacy names --------------------------------------------------------- */
+
+  --color-primary: var(--color-cyan);
+  --color-primary-hover: var(--color-cyan-bright);
+  --color-on-primary: var(--color-on-accent);
+  --color-surface-hover: var(--color-surface-raised);
+  --color-border: var(--color-hairline);
+  --color-success: var(--color-win);
+  --color-danger: #c81e3a;
+  --color-danger-hover: #a8182f;
+  --color-danger-alt: var(--color-loss);
+  --color-warning: var(--color-warn);
+  --color-info: var(--color-cyan);
+  --color-neutral: var(--color-draw);
+  --color-neutral-light: var(--color-text-secondary);
+
+  /* Names pages reference without a definition; they used per-page fallbacks. */
+  --color-accent-gold: var(--color-cyan);
+  --color-bg-elevated: var(--color-surface-raised);
+  --color-background: var(--color-bg);
+  --color-surface-2: var(--color-surface-raised);
+  --color-warning-bg: var(--tint-warn);
+  --color-warning-text: var(--color-warn);
+  --text-primary: var(--color-text);
+  --text-secondary: var(--color-text-secondary);
+  --text-muted: var(--color-text-muted);
+  --border-color: var(--color-hairline);
+  --card-bg: var(--color-surface);
+  --bg-color: var(--color-bg);
+  --bg-muted: var(--color-surface-raised);
+  --header-bg: var(--color-surface);
+  --input-bg: var(--color-surface);
+  --input-focus: var(--color-cyan);
+  --input-out-of-focus: var(--color-hairline);
+  --primary: var(--color-cyan);
+  --primary-dark: var(--color-cyan-bright);
+  --accent-color: var(--color-cyan);
+  --accent-bg: var(--tint-cyan);
+  --main-color: var(--color-cyan);
+  --link-color: var(--color-cyan);
+  --gold: var(--rim-world);
+  --info-color: var(--color-cyan);
+  --info-bg: var(--tint-cyan);
+}
+
+/* Section themes, set on .App from the current route. The legacy surface names
+   are repeated here so they follow the section's --color-surface. */
+[data-section] {
+  --color-surface-hover: var(--color-surface-raised);
+  --color-bg-elevated: var(--color-surface-raised);
+  --color-surface-2: var(--color-surface-raised);
+  --bg-muted: var(--color-surface-raised);
+  --card-bg: var(--color-surface);
+  --header-bg: var(--color-surface);
+  --input-bg: var(--color-surface);
+}
+
+[data-section='home'] {
+  --section-band: var(--band-home);
+}
+
+[data-section='events'] {
+  --section-band: var(--band-events);
+  --section-accent: var(--color-pink);
+  --section-tint: rgba(255, 77, 46, 0.06);
+}
+
+[data-section='rankings'] {
+  --section-band: var(--band-rankings);
+  --section-accent: var(--color-cyan);
+  --section-tint: rgba(31, 213, 249, 0.05);
+}
+
+[data-section='storylines'] {
+  --section-band: var(--band-storylines);
+  --section-accent: var(--color-magenta);
+  --section-tint: rgba(242, 194, 48, 0.05);
+}
+
+[data-section='me'] {
+  --section-band: var(--band-me);
+  --section-accent: var(--color-cyan);
+  --section-tint: rgba(31, 213, 249, 0.05);
+}
+
+/* Admin stays plain: dense tools, no page band. */
+[data-section='admin'] {
+  --section-band: none;
+  --section-wash: none;
+  --page-header-padding: 0;
+  --page-header-padding-phone: 0;
+  --color-on-band-secondary: var(--color-text-secondary);
+  --color-on-band-hairline: var(--color-hairline);
 }

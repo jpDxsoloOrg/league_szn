@@ -1,9 +1,11 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
+import { FORMER_MEMBER, resolveBilledName } from '../../lib/needsWrestler';
 import { getRepositories } from '../../lib/repositories';
 import type { MatchSlot, Player } from '../../lib/repositories/types';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { authenticate } from '../../lib/authenticate';
 import { getAuthContext } from '../../lib/auth';
+import { bookablePsnId } from '../../lib/disciplineGates';
 import { hydrateMatchSlots } from '../matches/hydrateSlots';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -110,14 +112,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const playerLookup = new Map<string, Player>();
         if (Array.isArray(match.participants) && match.participants.length > 0) {
           const playerPromises = (match.participants as string[]).map(async (playerId: string) => {
-            const player = await players.findById(playerId);
+            const player = await players.findByIdWithDeleted(playerId);
             if (player) playerLookup.set(playerId, player);
             const snapshot = slotSnapshotByPlayer.get(playerId);
             return {
               playerId,
-              playerName: player?.name || 'Unknown Player',
-              wrestlerName: snapshot ?? player?.currentWrestler ?? 'Unknown Wrestler',
-              psnId: player?.psnId,
+              playerName: player?.name || FORMER_MEMBER,
+              wrestlerName: resolveBilledName(snapshot, player, FORMER_MEMBER),
+              psnId: bookablePsnId(player),
             };
           });
           participantData.push(...(await Promise.all(playerPromises)));
@@ -155,6 +157,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             stipulationId: match.stipulationId,
             stipulationName,
             participants: participantData,
+            ...(match.teams && { teams: match.teams }),
             winners: match.winners,
             losers: match.losers,
             isChampionship: match.isChampionship || false,
@@ -180,6 +183,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
     const stack = err instanceof Error ? err.stack : undefined;
     console.error('Error fetching event:', detail, stack);
-    return serverError(`Failed to fetch event: ${detail}`);
+    return serverError('Failed to fetch event');
   }
 };

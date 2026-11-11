@@ -4,8 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { notificationsApi } from '../services/api/notifications.api';
+import { waitForPageRequests } from '../utils/deferShellRequest';
 import type { AppNotification } from '../types';
 import './NotificationBell.css';
+import { usePollWhileVisible } from '../hooks/usePollWhileVisible';
 
 const POLL_INTERVAL_MS = 60_000;
 const NOTIFICATIONS_LIMIT = 20;
@@ -31,18 +33,27 @@ function formatRelativeTime(dateStr: string, t: (key: string, opts?: Record<stri
 function sourceTypeLabel(sourceType: AppNotification['sourceType']): string {
   switch (sourceType) {
     case 'promo': return 'notifications.typePromo';
+    case 'challenge': return 'notifications.typeChallenge';
+    case 'rivalry': return 'notifications.typeRivalry';
     case 'match': return 'notifications.typeMatch';
+    case 'storyline_request': return 'notifications.typeStoryline';
     case 'announcement': return 'notifications.typeAnnouncement';
     case 'stable': return 'notifications.typeStable';
     case 'tag_team': return 'notifications.typeTagTeam';
     case 'transfer': return 'notifications.typeTransfer';
+    case 'discipline': return 'notifications.typeDiscipline';
     default: return 'notifications.typeAnnouncement';
   }
 }
 
-function getNavigationPath(notification: AppNotification, playerId: string | null): string {
+function getNavigationPath(notification: AppNotification, playerId: string | null, transfersEnabled: boolean): string {
   switch (notification.sourceType) {
-    case 'promo': return '/promos';
+    case 'promo':
+      return notification.sourceId ? `/promos/${notification.sourceId}` : '/promos';
+    case 'challenge':
+      return notification.sourceId ? `/challenges/${notification.sourceId}` : '/challenges';
+    case 'rivalry':
+      return notification.sourceId ? `/rivalries/${notification.sourceId}` : '/rivalries';
     case 'match': {
       const params = new URLSearchParams({ status: 'scheduled' });
       if (playerId) params.set('playerId', playerId);
@@ -50,10 +61,10 @@ function getNavigationPath(notification: AppNotification, playerId: string | nul
     }
     case 'stable': return '/my-faction';
     case 'tag_team': return '/my-tag-team';
-    case 'match_invitation': return '/';
-    case 'match_invitation_declined': return '/';
     case 'announcement': return '/';
-    case 'transfer': return '/profile';
+    case 'transfer': return transfersEnabled ? '/profile' : '/';
+    case 'storyline_request': return '/profile';
+    case 'discipline': return '/profile';
     default: return '/';
   }
 }
@@ -70,7 +81,6 @@ export default function NotificationBell() {
   const [isLoading, setIsLoading] = useState(false);
 
   const bellRef = useRef<HTMLDivElement>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const shouldShow = isAuthenticated && features.notifications;
 
@@ -100,20 +110,20 @@ export default function NotificationBell() {
     if (!shouldShow) return;
 
     const controller = new AbortController();
-    fetchUnreadCount(controller.signal);
-
-    intervalRef.current = setInterval(() => {
-      fetchUnreadCount();
-    }, POLL_INTERVAL_MS);
+    const fetchFirstCount = async () => {
+      await waitForPageRequests(controller.signal);
+      if (!controller.signal.aborted) await fetchUnreadCount(controller.signal);
+    };
+    void fetchFirstCount();
 
     return () => {
       controller.abort();
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
     };
   }, [shouldShow, fetchUnreadCount]);
+
+  usePollWhileVisible(() => {
+    void fetchUnreadCount();
+  }, POLL_INTERVAL_MS, shouldShow);
 
   // Fetch notifications when dropdown opens
   useEffect(() => {
@@ -171,8 +181,8 @@ export default function NotificationBell() {
     }
 
     setIsOpen(false);
-    navigate(getNavigationPath(notification, playerId));
-  }, [navigate, playerId]);
+    navigate(getNavigationPath(notification, playerId, features.transfers));
+  }, [navigate, playerId, features.transfers]);
 
   const handleDeleteNotification = useCallback(async (e: React.MouseEvent, notification: AppNotification) => {
     e.stopPropagation();

@@ -199,6 +199,11 @@ beforeEach(() => {
   mockUseAuth.mockReturnValue({ playerId: 'leader', isWrestler: true });
 });
 
+async function pickOption(label: string, option: string) {
+  await userEvent.click(screen.getByLabelText(label));
+  await userEvent.click(await screen.findByRole('option', { name: option }));
+}
+
 describe('FactionMembers tab (FAC-12)', () => {
   it('renders 5 members sorted by wins descending by default', async () => {
     renderTab();
@@ -215,7 +220,7 @@ describe('FactionMembers tab (FAC-12)', () => {
     renderTab();
     await screen.findAllByRole('article');
 
-    await userEvent.selectOptions(screen.getByLabelText('Sort members'), 'winPct');
+    await pickOption('Sort members', 'By Win%');
 
     const rows = screen.getAllByRole('article');
     expect(within(rows[0]).getByText('Edge')).toBeInTheDocument(); // 100%

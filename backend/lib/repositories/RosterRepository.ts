@@ -1,6 +1,8 @@
 import type { CrudRepository } from './CrudRepository';
 import type {
   Player,
+  PlayerDeactivation,
+  PlayerStrike,
   TagTeam,
   TagTeamStatus,
   Stable,
@@ -56,6 +58,16 @@ export interface PlayerPatch {
   bio?: string;
   signatures?: WrestlerMove[];
   finishers?: WrestlerMove[];
+}
+
+/** The only way to write discipline state. See `players.updateDiscipline`. */
+export interface PlayerDisciplinePatch {
+  strikes: PlayerStrike[];
+  deactivations: PlayerDeactivation[];
+  /** null removes the attribute. */
+  deactivatedAt: string | null;
+  /** Omitted leaves it unchanged. */
+  signupGuardKey?: string;
 }
 
 // ─── Tag Team input types ───────────────────────────────────────────
@@ -187,8 +199,25 @@ export interface WrestlersMethods
 // ─── Aggregate interface ────────────────────────────────────────────
 
 export interface RosterRepository {
+  /**
+   * `findById`, `list`, `findByUserId` and `update` treat a soft-deleted player
+   * (see `Player.deletedAt`) as missing, so a new consumer cannot pick one up by
+   * accident. `delete` removes the row outright and is only for undoing a
+   * player that was never completed.
+   */
   players: CrudRepository<Player, PlayerCreateInput, PlayerPatch> & {
     findByUserId(userId: string): Promise<Player | null>;
+    /** For resolving names on history only: the row even if soft-deleted. */
+    findByIdWithDeleted(playerId: string): Promise<Player | null>;
+    /** For resolving names on history only: every row, soft-deleted included. */
+    listWithDeleted(): Promise<Player[]>;
+    /**
+     * Writes discipline state only if `disciplineVersion` still equals
+     * `expectedVersion` (0 means the attribute is absent), then bumps it.
+     * Throws `ConcurrencyError` when the version moved on or the player is
+     * missing or soft-deleted.
+     */
+    updateDiscipline(playerId: string, patch: PlayerDisciplinePatch, expectedVersion: number): Promise<Player>;
   };
   tagTeams: CrudRepository<TagTeam, TagTeamCreateInput, TagTeamPatch> & {
     listByStatus(status: TagTeamStatus): Promise<TagTeam[]>;

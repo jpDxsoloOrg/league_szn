@@ -1,28 +1,37 @@
-# Herausforderer-Konfiguration
+# Herausforderer-Ranglisten
 
-Die Seite **Herausforderer-Konfig** ermöglicht die Einrichtung der automatischen #1-Herausforderer-Ranglisten pro Meisterschaft.
+Jede aktive Meisterschaft hat eine eigene #1-Herausforderer-Rangliste, zu sehen unter **Ranglisten → Herausforderer**. Sie entsteht und aktualisiert sich von selbst, und das Team kann eine Position mit einer Anpassung ändern.
 
-## So funktionieren die Herausforderer-Ranglisten
+## So funktionieren die Ranglisten
 
-- Die Ranglisten werden automatisch anhand der letzten Match-Ergebnisse berechnet
-- Jede Meisterschaft hat ihre eigene Herausforderer-Rangliste
-- Ranglisten können auf eine bestimmte Division beschränkt werden (z. B. nur Spieler der Schwergewichts-Division für die Schwergewichts-Meisterschaft)
-- Spieler müssen eine Mindestanzahl an Matches absolviert haben, um zu qualifizieren
+- Die Ranglisten nutzen abgeschlossene Matches der aktiven Saison. Ohne aktive Saison wird nichts berechnet
+- Die Wertung eines Spielers kombiniert Siegquote, aktuelle Serie, Qualität der Siege und wie aktuell seine Matches sind
+- Ein Spieler braucht mindestens 3 Matches, um zu erscheinen, und jeder Titel listet bis zu 10 Herausforderer
+- Der aktuelle Champion wird nicht aufgeführt, entfernte Spieler ebenfalls nicht
+- Ein auf eine Division beschränkter Titel (festgelegt unter **Meisterschaften**) wertet nur Spieler dieser Division
 
-## Ranglisten konfigurieren
+## Wann die Ranglisten aktualisiert werden
 
-1. Gehe zu **Herausforderer-Konfig**
-2. Wähle eine Meisterschaft zur Konfiguration
-3. Passe die Einstellungen an:
-   - **Ranglistenzeitraum (Tage)** — Wie weit Match-Daten zurückreichen (7–365 Tage)
-   - **Mindestanzahl Matches** — Wie viele Matches ein Spieler braucht, um in den Ranglisten zu erscheinen
-   - **Max. Herausforderer** — Wie viele platzierte Herausforderer angezeigt werden
-   - **Unentschieden einbeziehen** — Ob Unentschieden teilweise in die Ranglisten-Punkte zählen
-   - **Division beschränkt** — Nur Spieler derselben Division wie die Meisterschaft können antreten
-4. Klicke auf **Konfiguration speichern**, um zu übernehmen
+Du musst nichts starten. Die Ranglisten aller aktiven Titel werden neu berechnet:
 
-## Ranglisten neu berechnen
+- Nach jedem Match-Ergebnis
+- Alle 6 Stunden
 
-1. Nach dem Eintragen neuer Match-Ergebnisse klicke auf **Ranglisten neu berechnen**
-2. Die Ranglisten werden anhand der aktuellen Konfiguration und der letzten Match-Daten aktualisiert
-3. Die öffentliche Herausforderer-Seite zeigt die neuen Ranglisten sofort an
+## Herausforderer Anpassungen
+
+Unter **Herausforderer Anpassungen** änderst du eine Position aus Storyline- oder Disziplingründen:
+
+1. Wähle eine Meisterschaft und einen Spieler
+2. Wähle **Auf #1 Herausforderer setzen** oder **Ans Ende setzen**
+3. Gib einen Grund ein und optional ein Datum, an dem die Anpassung abläuft
+4. Klicke auf **Anpassung anwenden**
+
+Anpassungen gelten für jeden, der um den Titel antreten kann, unabhängig von seiner Bilanz:
+
+- **Auf #1 Herausforderer setzen** setzt den Spieler auf Platz 1, auch mit weniger als 3 Matches, ganz ohne Matches oder mit einer Wertung außerhalb der Top 10. Seine Zeile zeigt seine echten Werte der Saison, und der am niedrigsten platzierte Spieler fällt heraus, damit die Liste bei 10 bleibt
+- **Ans Ende setzen** setzt den Spieler auf den letzten Platz der Liste. Ein Spieler, der nicht auf der Liste steht, bleibt draußen, und die Seite sagt dir, dass sich nichts bewegt hat
+- Bei mehreren Anpassungen auf einem Titel steht die neueste Hochstufung auf Platz 1, ältere folgen darunter, und die neueste Anpassung **Ans Ende setzen** steht ganz hinten
+
+Der Spieler muss mit einem Wrestler-Namen im Roster stehen, und bei einem auf eine Division beschränkten Titel muss er in dieser Division sein. Der aktuelle Champion kann nicht angepasst werden.
+
+Das Anwenden einer Anpassung berechnet diesen Titel sofort neu, und die Seite zeigt dir den erreichten Platz oder warum der Spieler nicht auf der Liste steht. Auch das Entfernen berechnet den Titel neu. Die Spalte **Position** zeigt, wo jede aktive Anpassung gerade steht. Anpassungen bleiben bei jeder Neuberechnung bestehen, bis sie ablaufen oder du auf **Anpassung entfernen** klickst. Eine Anpassung endet von selbst, wenn der Spieler Champion wird.

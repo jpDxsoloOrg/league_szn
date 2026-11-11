@@ -123,6 +123,19 @@ describe('adminUpdateSlot', () => {
     expect(b.status).toBe('scheduled');
   });
 
+  it('books a hidden player without storing the placeholder as a snapshot', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch());
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1', currentWrestler: 'Needs Wrestler' });
+    captureTx();
+
+    const r = await adminUpdateSlot(ev({ playerId: 'p1' }), ctx, cb);
+
+    expect(r!.statusCode).toBe(200);
+    const [slot] = JSON.parse(r!.body).slots;
+    expect(slot.playerId).toBe('p1');
+    expect(slot.wrestlerNameSnapshot).toBeUndefined();
+  });
+
   it('clears a slot when playerId is null', async () => {
     mockMatchesFindByIdWithDate.mockResolvedValue(
       makeMatch({

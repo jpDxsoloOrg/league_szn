@@ -20,13 +20,16 @@ export interface Promo {
   targetPromoId?: string;
   matchId?: string;
   championshipId?: string;
+  /** The challenge this call-out produced. Older call-outs don't have one. */
+  challengeId?: string;
   imageUrl?: string;
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamName?: string;
   targetTagTeamName?: string;
   /** Optional pointer to the rivalry this promo advances (RIV-06). */
   rivalryId?: string;
-  reactions: Record<string, ReactionType>;
+  /** Keyed by account id, so public reads no longer carry it. */
+  reactions?: Record<string, ReactionType>;
   reactionCounts: Record<ReactionType, number>;
   isPinned: boolean;
   isHidden: boolean;
@@ -57,5 +60,7 @@ export interface CreatePromoInput {
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamName?: string;
   targetTagTeamName?: string;
+  /** The team a tag call-out names, so the server can check its members first. */
+  targetTagTeamId?: string;
   rivalryId?: string;
 }

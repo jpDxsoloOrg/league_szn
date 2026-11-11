@@ -2,6 +2,8 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
+import { bookingRefusal } from '../../lib/discipline';
+import { championIdsOf } from '../../lib/disciplineGates';
 
 interface AssignChampionBody {
   champion?: string | string[];
@@ -52,11 +54,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('A tag championship requires at least two champions');
     }
 
+    // A deactivated co-holder staying on the title must not stop this change.
+    const currentHolders = championIdsOf(championship.currentChampion);
     for (const playerId of championIds) {
       const player = await players.findById(playerId);
       if (!player) {
         return badRequest(`Player not found: ${playerId}`);
       }
+      const refusal = currentHolders.includes(playerId) ? null : bookingRefusal(player);
+      if (refusal) return refusal;
     }
 
     const newChampion = championIds.length === 1 ? championIds[0] : championIds;

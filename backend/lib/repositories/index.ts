@@ -63,6 +63,7 @@ export type {
   LeagueOpsRepository,
   EventCreateInput,
   EventPatch,
+  EventUpdateOptions,
   ShowCreateInput,
   ShowPatch,
   CompanyCreateInput,
@@ -73,10 +74,6 @@ export type {
   LocationPatch,
   LocationBulkImportResult,
   LocationsMethods,
-  PresenceRecord,
-  QueueRecord,
-  InvitationRecord,
-  MatchmakingMethods,
 } from './LeagueOpsRepository';
 
 export type {

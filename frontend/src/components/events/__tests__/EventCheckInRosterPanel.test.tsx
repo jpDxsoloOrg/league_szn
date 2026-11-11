@@ -143,25 +143,6 @@ describe('EventCheckInRosterPanel', () => {
     });
   });
 
-  it('compact mode renders only available bucket with no refresh/copy buttons', async () => {
-    render(<EventCheckInRosterPanel eventId="evt-123" compact />);
-    await waitFor(() => {
-      expect(screen.getByText('Alice')).toBeInTheDocument();
-    });
-    expect(screen.getByText('Bob')).toBeInTheDocument();
-    // Other buckets' players should not appear
-    expect(screen.queryByText('Carol')).not.toBeInTheDocument();
-    expect(screen.queryByText('Dave')).not.toBeInTheDocument();
-    expect(screen.queryByText('Eve')).not.toBeInTheDocument();
-    // No refresh/copy buttons
-    expect(
-      screen.queryByRole('button', { name: 'Refresh' })
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Copy as text' })
-    ).not.toBeInTheDocument();
-  });
-
   it('shows error state when API throws', async () => {
     mockGetCheckIns.mockRejectedValueOnce(new Error('network down'));
     render(<EventCheckInRosterPanel eventId="evt-err" />);

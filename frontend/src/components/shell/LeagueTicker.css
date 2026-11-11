@@ -1,0 +1,25 @@
+/* Docked to the bottom of the viewport; on phones it sits on top of the bottom tab bar. */
+.league-ticker {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: var(--shell-sidebar-width);
+  z-index: var(--z-shell);
+}
+
+/* Installed on a tablet, the strip stays above the home indicator. */
+.app-layout--desktop .league-ticker {
+  box-sizing: content-box;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.app-layout--mobile .league-ticker {
+  left: 0;
+  bottom: calc(var(--shell-bottom-bar-height) + env(safe-area-inset-bottom));
+}
+
+@media print {
+  .league-ticker {
+    display: none;
+  }
+}

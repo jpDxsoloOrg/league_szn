@@ -1,269 +1,150 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Megaphone } from 'lucide-react';
 import { challengesApi } from '../../services/api';
-import type { ChallengeWithPlayers } from '../../types/challenge';
-import { getInitial } from './challengeUtils';
+import type { ChallengeStatus, ChallengeWithPlayers } from '../../types/challenge';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Skeleton from '../ui/Skeleton';
+import Tabs from '../ui/Tabs';
+import ChallengeStatusBadge from './ChallengeStatusBadge';
+import ChallengeVersus from './ChallengeVersus';
+import { getDaysRemaining, getDisplayStatus } from './challengeUtils';
 import './ChallengeBoard.css';
 
 type FilterTab = 'active' | 'pending' | 'accepted' | 'recent';
 
-function getDaysRemaining(expiresAt: string): number {
-  const now = new Date();
-  const expires = new Date(expiresAt);
-  const diff = expires.getTime() - now.getTime();
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-}
+const CALL_OUT_PATH = '/promos/new?promoType=call-out';
+const BOARD_STATUSES: ReadonlyArray<ChallengeStatus> = ['pending', 'countered', 'accepted'];
 
 export default function ChallengeBoard() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState<FilterTab>('active');
   const [challenges, setChallenges] = useState<ChallengeWithPlayers[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
-    challengesApi
-      .getAll(undefined, controller.signal)
-      .then((data) => {
-        // Public board: only show pending, countered, accepted (hide scheduled, expired, cancelled)
-        const visible = data.filter((c) =>
-          ['pending', 'countered', 'accepted'].includes(c.status)
-        );
-        setChallenges(visible);
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data = await challengesApi.getAll(undefined, controller.signal);
+        if (controller.signal.aborted) return;
+        // Public board: open business only. Overdue challenges drop off here
+        // even before the expiry sweep has updated them.
+        setChallenges(data.filter((challenge) => BOARD_STATUSES.includes(getDisplayStatus(challenge))));
         setError(null);
-      })
-      .catch((err) => {
-        if (err.name !== 'AbortError') setError(err.message);
-      })
-      .finally(() => setLoading(false));
-
+      } catch (err) {
+        if (!controller.signal.aborted) setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    };
+    void load();
     return () => controller.abort();
-  }, []);
+  }, [reloadKey]);
 
   const filtered = useMemo(() => {
     switch (activeFilter) {
-      case 'active':
-        return challenges.filter((c) =>
-          ['pending', 'accepted', 'countered'].includes(c.status)
-        );
       case 'pending':
-        return challenges.filter((c) => c.status === 'pending');
+        return challenges.filter((challenge) => getDisplayStatus(challenge) === 'pending');
       case 'accepted':
-        return challenges.filter((c) => c.status === 'accepted');
+        return challenges.filter((challenge) => challenge.status === 'accepted');
       case 'recent':
-        return challenges.filter((c) => c.status === 'declined');
+        return challenges.filter((challenge) => challenge.status === 'declined');
       default:
         return challenges;
     }
   }, [activeFilter, challenges]);
 
-  const renderCountdown = (challenge: ChallengeWithPlayers) => {
-    if (challenge.status !== 'pending') return null;
-    const days = getDaysRemaining(challenge.expiresAt);
-    const isUrgent = days <= 1;
+  const renderFooter = (challenge: ChallengeWithPlayers) => {
+    if (getDisplayStatus(challenge) !== 'pending') {
+      return <span>{new Date(challenge.createdAt).toLocaleDateString()}</span>;
+    }
+    const days = getDaysRemaining(challenge);
     return (
-      <span className={`challenge-countdown ${isUrgent ? 'urgent' : ''}`}>
+      <span className={days <= 1 ? 'challenge-card__countdown--urgent' : undefined}>
         {days} {t('common.days')} {t('challenges.board.remaining')}
       </span>
     );
   };
 
-  const renderDate = (challenge: ChallengeWithPlayers) => {
-    const date = new Date(challenge.createdAt);
-    return date.toLocaleDateString();
+  const renderList = () => {
+    if (loading) return <Skeleton variant="cards" count={4} />;
+    if (error) {
+      return (
+        <EmptyState
+          title={t('challenges.board.loadError', 'Could not load challenges')}
+          description={error}
+          actionLabel={t('common.retry')}
+          onAction={() => setReloadKey((key) => key + 1)}
+        />
+      );
+    }
+    if (filtered.length === 0) {
+      return (
+        <EmptyState
+          icon={<Megaphone aria-hidden="true" />}
+          title={t('challenges.board.noChallenges')}
+          actionLabel={t('promos.editor.cutCallOut', 'Cut a Call-Out Promo')}
+          onAction={() => navigate(CALL_OUT_PATH)}
+        />
+      );
+    }
+    return (
+      <div className="challenge-board__grid">
+        {filtered.map((challenge) => (
+          <Card key={challenge.challengeId} to={`/challenges/${challenge.challengeId}`} className="challenge-card">
+            <div className="challenge-card__top">
+              <span className="challenge-card__match">
+                {challenge.matchType}
+                {challenge.stipulation && <span className="challenge-card__stipulation">{challenge.stipulation}</span>}
+              </span>
+              <ChallengeStatusBadge challenge={challenge} />
+            </div>
+            <ChallengeVersus challenge={challenge} />
+            {challenge.message && <p className="challenge-card__message">&ldquo;{challenge.message}&rdquo;</p>}
+            <div className="challenge-card__footer">
+              {renderFooter(challenge)}
+              {challenge.challengeMode === 'tag_team' && <Badge>{t('challenges.board.tagTeamMatch')}</Badge>}
+              {challenge.championshipId && <Badge tone="warning">{t('challenges.board.titleMatch')}</Badge>}
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
   };
-
-  if (loading) {
-    return (
-      <div className="challenge-board">
-        <div className="challenge-board-header">
-          <h2>{t('challenges.board.title')}</h2>
-        </div>
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Loading challenges...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="challenge-board">
-        <div className="challenge-board-header">
-          <h2>{t('challenges.board.title')}</h2>
-        </div>
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#ef4444' }}>Error: {error}</div>
-      </div>
-    );
-  }
 
   return (
     <div className="challenge-board">
-      <div className="challenge-board-header">
-        <h2>{t('challenges.board.title')}</h2>
-        <div className="challenge-board-actions">
-          <Link to="/challenges/my" className="btn-my">
-            {t('challenges.board.myChallenges')}
-          </Link>
-          <Link to="/promos/new?promoType=call-out" className="btn-issue">
-            + {t('promos.editor.cutCallOut', 'Cut a Call-Out Promo')}
-          </Link>
-        </div>
-      </div>
-
-      <div className="challenge-filter-tabs">
-        <button
-          className={activeFilter === 'active' ? 'active' : ''}
-          onClick={() => setActiveFilter('active')}
-        >
-          {t('challenges.board.filterActive')}
-        </button>
-        <button
-          className={activeFilter === 'pending' ? 'active' : ''}
-          onClick={() => setActiveFilter('pending')}
-        >
-          {t('challenges.board.filterPending')}
-        </button>
-        <button
-          className={activeFilter === 'accepted' ? 'active' : ''}
-          onClick={() => setActiveFilter('accepted')}
-        >
-          {t('challenges.board.filterAccepted')}
-        </button>
-        <button
-          className={activeFilter === 'recent' ? 'active' : ''}
-          onClick={() => setActiveFilter('recent')}
-        >
-          {t('challenges.board.filterRecent')}
-        </button>
-      </div>
-
-      {filtered.length === 0 ? (
-        <div className="challenge-board-empty">
-          <p>{t('challenges.board.noChallenges')}</p>
-          <Link to="/promos/new?promoType=call-out" className="btn-issue">
-            {t('promos.editor.cutCallOut', 'Cut a Call-Out Promo')}
-          </Link>
-        </div>
-      ) : (
-        <div className="challenge-grid">
-          {filtered.map((challenge) => (
-            <Link
-              to={`/challenges/${challenge.challengeId}`}
-              key={challenge.challengeId}
-              className="challenge-card"
-            >
-              <div className="challenge-card-top">
-                <div>
-                  <span className="challenge-matchtype">
-                    {challenge.matchType}
-                  </span>
-                  {challenge.stipulation && (
-                    <span className="challenge-stipulation">
-                      {challenge.stipulation}
-                    </span>
-                  )}
-                </div>
-                <span
-                  className={`challenge-status-badge ${challenge.status}`}
-                >
-                  {t(`challenges.status.${challenge.status}`)}
-                </span>
-              </div>
-
-              {challenge.challengeMode === 'tag_team' && (
-                <span className="challenge-tag-team-badge">
-                  {t('challenges.board.tagTeamMatch')}
-                </span>
-              )}
-
-              <div className="challenge-versus">
-                {challenge.challengeMode === 'tag_team' && challenge.challengerTagTeam ? (
-                  <>
-                    <div className="challenge-player">
-                      <div className="challenge-player-avatar">
-                        {getInitial(challenge.challengerTagTeam.tagTeamName)}
-                      </div>
-                      <div className="challenge-wrestler-name">
-                        {challenge.challengerTagTeam.tagTeamName}
-                      </div>
-                      <div className="challenge-team-members">
-                        {challenge.challengerTagTeam.player1.wrestlerName} &amp; {challenge.challengerTagTeam.player2.wrestlerName}
-                      </div>
-                    </div>
-                    <span className="challenge-vs-divider">
-                      {t('common.vs').toUpperCase()}
-                    </span>
-                    <div className="challenge-player">
-                      <div className="challenge-player-avatar">
-                        {getInitial(challenge.challengedTagTeam?.tagTeamName ?? challenge.challenged.wrestlerName)}
-                      </div>
-                      <div className="challenge-wrestler-name">
-                        {challenge.challengedTagTeam?.tagTeamName ?? challenge.challenged.wrestlerName}
-                      </div>
-                      {challenge.challengedTagTeam ? (
-                        <div className="challenge-team-members">
-                          {challenge.challengedTagTeam.player1.wrestlerName} &amp; {challenge.challengedTagTeam.player2.wrestlerName}
-                        </div>
-                      ) : (
-                        <div className="challenge-player-name">
-                          {challenge.challenged.playerName}
-                        </div>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="challenge-player">
-                      <div className="challenge-player-avatar">
-                        {getInitial(challenge.challenger.wrestlerName)}
-                      </div>
-                      <div className="challenge-wrestler-name">
-                        {challenge.challenger.wrestlerName}
-                      </div>
-                      <div className="challenge-player-name">
-                        {challenge.challenger.playerName}
-                      </div>
-                    </div>
-                    <span className="challenge-vs-divider">
-                      {t('common.vs').toUpperCase()}
-                    </span>
-                    <div className="challenge-player">
-                      <div className="challenge-player-avatar">
-                        {getInitial(challenge.challenged.wrestlerName)}
-                      </div>
-                      <div className="challenge-wrestler-name">
-                        {challenge.challenged.wrestlerName}
-                      </div>
-                      <div className="challenge-player-name">
-                        {challenge.challenged.playerName}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {challenge.message && (
-                <div className="challenge-card-message">
-                  &ldquo;{challenge.message}&rdquo;
-                </div>
-              )}
-
-              <div className="challenge-card-footer">
-                {renderCountdown(challenge) || (
-                  <span>{renderDate(challenge)}</span>
-                )}
-                {challenge.championshipId && (
-                  <span className="challenge-championship-badge">
-                    {t('challenges.board.titleMatch')}
-                  </span>
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+      <PageHeader
+        title={t('challenges.board.title')}
+        actions={(
+          <>
+            <Button variant="secondary" to="/challenges/my">{t('challenges.board.myChallenges')}</Button>
+            <Button to={CALL_OUT_PATH}>{t('promos.editor.cutCallOut', 'Cut a Call-Out Promo')}</Button>
+          </>
+        )}
+      />
+      <Tabs
+        label={t('challenges.board.filters')}
+        value={activeFilter}
+        onValueChange={(value) => setActiveFilter(value as FilterTab)}
+        items={[
+          { value: 'active', label: t('challenges.board.filterActive') },
+          { value: 'pending', label: t('challenges.board.filterPending') },
+          { value: 'accepted', label: t('challenges.board.filterAccepted') },
+          { value: 'recent', label: t('challenges.board.filterRecent') },
+        ]}
+      />
+      <div className="challenge-board__list">{renderList()}</div>
     </div>
   );
 }

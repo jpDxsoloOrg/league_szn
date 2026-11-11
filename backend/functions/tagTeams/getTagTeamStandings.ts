@@ -1,13 +1,18 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
+import { isPlayerVisible } from '../../lib/needsWrestler';
+import { hasHiddenMember } from './tagTeamVisibility';
 import {
   TagTeamRecord,
   FormResult,
   fetchCompletedMatches,
   buildTagTeamMatchMap,
   computeFormAndStreak,
+  computeTagTeamRecord,
+  resolveMemberName,
 } from './computeTagTeamStats';
+import { computeWinPercentage } from '../../lib/stats/record';
 
 interface TagTeamStanding {
   tagTeamId: string;
@@ -49,10 +54,12 @@ export const handler: APIGatewayProxyHandler = async () => {
     ]);
 
     // Build player name map
-    const playerMap = new Map<string, string>();
+    const playerMap = new Map<string, { name: string }>();
+    const hiddenIds = new Set<string>();
     for (const player of playerResults) {
       if (player) {
-        playerMap.set(player.playerId, player.name);
+        playerMap.set(player.playerId, player);
+        if (!isPlayerVisible(player)) hiddenIds.add(player.playerId);
       }
     }
 
@@ -63,25 +70,22 @@ export const handler: APIGatewayProxyHandler = async () => {
     const matchMap = buildTagTeamMatchMap(tagTeamRecords, completedMatches);
 
     // Build standings with recentForm and currentStreak
-    const standings: TagTeamStanding[] = tagTeams.map((team) => {
-      const totalMatches = team.wins + team.losses + team.draws;
-      const winPercentage =
-        totalMatches > 0
-          ? Math.round((team.wins / totalMatches) * 1000) / 1000
-          : 0;
-
+    const listedTagTeams = tagTeams.filter((team) => !hasHiddenMember(team, hiddenIds));
+    const standings: TagTeamStanding[] = listedTagTeams.map((team) => {
       const teamMatches = matchMap.get(team.tagTeamId) || [];
+      const { wins, losses, draws } = computeTagTeamRecord(teamMatches);
+      const winPercentage = computeWinPercentage(wins, losses, draws);
       const { recentForm, currentStreak } = computeFormAndStreak(teamMatches, 10);
 
       return {
         tagTeamId: team.tagTeamId,
         name: team.name,
         imageUrl: team.imageUrl,
-        player1Name: playerMap.get(team.player1Id) || 'Unknown',
-        player2Name: playerMap.get(team.player2Id) || 'Unknown',
-        wins: team.wins,
-        losses: team.losses,
-        draws: team.draws,
+        player1Name: resolveMemberName(playerMap.get(team.player1Id), team.player1WrestlerName),
+        player2Name: resolveMemberName(playerMap.get(team.player2Id), team.player2WrestlerName),
+        wins,
+        losses,
+        draws,
         winPercentage,
         recentForm,
         currentStreak,

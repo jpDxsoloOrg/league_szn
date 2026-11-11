@@ -1,11 +1,13 @@
 import { APIGatewayProxyEvent, APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import { badRequest, success, serverError } from '../../lib/response';
+import { badRequest, forbidden, success, serverError } from '../../lib/response';
 import { requireSuperAdmin } from '../../lib/auth';
 import { v4 as uuidv4 } from 'uuid';
 import {
   EXPORT_SCHEMA_VERSION,
   EXPORT_DATASET_KEYS,
+  BULK_DATA_BLOCKED_MESSAGE,
+  isBulkDataOperationAllowed,
   type ExportData,
   type SeedImportPayload,
 } from './dataTransferConfig';
@@ -116,7 +118,7 @@ function parseSeedRequest(body: string | null): { value?: ParsedSeedRequest; err
 
 function validateImportDatasetKeys(payload: SeedImportPayload): string | null {
   for (const key of EXPORT_DATASET_KEYS) {
-    const records = payload.data[key as keyof ExportData];
+    const records = payload.data[key];
     if (records && !Array.isArray(records)) {
       return `Dataset "${key}" must be an array`;
     }
@@ -158,13 +160,20 @@ function validateImportPayload(payload: unknown): { value?: SeedImportPayload; e
   const normalizedData: Partial<ExportData> = {};
   for (const key of EXPORT_DATASET_KEYS) {
     const dataset = data[key];
+    if (dataset === undefined) {
+      continue;
+    }
     if (!Array.isArray(dataset)) {
-      return { error: `Import payload is missing array dataset "${key}"` };
+      return { error: `Dataset "${key}" must be an array` };
     }
     if (!dataset.every(isRecord)) {
       return { error: `Dataset "${key}" must contain only objects` };
     }
-    normalizedData[key as keyof ExportData] = dataset as Record<string, unknown>[];
+    normalizedData[key] = dataset as Record<string, unknown>[];
+  }
+
+  if (Object.keys(normalizedData).length === 0) {
+    return { error: 'Import payload contains no known datasets' };
   }
 
   return {
@@ -172,7 +181,7 @@ function validateImportPayload(payload: unknown): { value?: SeedImportPayload; e
       version,
       exportedAt,
       stage,
-      data: normalizedData as ExportData,
+      data: normalizedData,
     },
   };
 }
@@ -260,6 +269,10 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       return denied;
     }
 
+    if (!isBulkDataOperationAllowed()) {
+      return forbidden(BULK_DATA_BLOCKED_MESSAGE);
+    }
+
     try {
       const payload = request.payload;
       if (payload == null) {
@@ -279,8 +292,12 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       if (errorMessage.includes('Dataset "')) {
         return badRequest(errorMessage);
       }
-      return serverError(`Failed to import data payload: ${errorMessage}`);
+      return serverError('Failed to import data payload');
     }
+  }
+
+  if (!isBulkDataOperationAllowed()) {
+    return forbidden(BULK_DATA_BLOCKED_MESSAGE);
   }
 
   const requestedModules = request.modules;
@@ -685,7 +702,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         playerId: contender.playerId,
         rank: i + 1,
         rankingScore: 80 - i * 15,
-        winPercentage: 0.6 - i * 0.1,
+        winPercentage: Math.round(((4 - i) / (5 + i)) * 1000) / 10,
         currentStreak: 3 - i,
         qualityScore: 70 - i * 10,
         recencyScore: 85 - i * 12,
@@ -715,7 +732,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         playerId: contender.playerId,
         rank: i + 1,
         rankingScore: 90 - i * 12,
-        winPercentage: 0.7 - i * 0.08,
+        winPercentage: Math.round(((5 - i) / (6 + i)) * 1000) / 10,
         currentStreak: 4 - i,
         qualityScore: 75 - i * 8,
         recencyScore: 88 - i * 10,
@@ -1307,7 +1324,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     // ── Import all data via repository layer ───────────────────
     console.log('Importing all seed data via repository layer...');
     const { importAllData } = getRepositories();
-    const seedData: Record<string, Record<string, unknown>[]> = {
+    const seedData: Required<ExportData> = {
       divisions,
       players,
       seasons: [season],
@@ -1342,6 +1359,6 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
     const stack = err instanceof Error ? err.stack : undefined;
     console.error('Error seeding data:', detail, stack);
-    return serverError(`Failed to seed data: ${detail}`);
+    return serverError('Failed to seed data');
   }
 };

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 
@@ -8,12 +8,14 @@ const {
   mockTagTeamsGetById,
   mockTagTeamsGetAll,
   mockTagTeamsUpdate,
+  mockTagTeamsDissolve,
   mockUseAuth,
 } = vi.hoisted(() => ({
   mockGetMyProfile: vi.fn(),
   mockTagTeamsGetById: vi.fn(),
   mockTagTeamsGetAll: vi.fn(),
   mockTagTeamsUpdate: vi.fn(),
+  mockTagTeamsDissolve: vi.fn(),
   mockUseAuth: vi.fn(),
 }));
 
@@ -25,6 +27,7 @@ vi.mock('../../../services/api', () => ({
     getById: mockTagTeamsGetById,
     getAll: mockTagTeamsGetAll,
     update: mockTagTeamsUpdate,
+    dissolve: mockTagTeamsDissolve,
   },
 }));
 
@@ -139,5 +142,24 @@ describe('MyTagTeam — TTP-01 edit-identity form', () => {
       player1WrestlerName: 'Brood Edge',
       player2WrestlerName: 'Brood Christian',
     });
+  });
+
+  it('dissolves the team only after confirming in the dialog', async () => {
+    const user = userEvent.setup();
+    mockTagTeamsDissolve.mockResolvedValue(undefined);
+    renderMyTagTeam();
+
+    await user.click(await screen.findByRole('button', { name: 'Dissolve Tag Team' }));
+    expect(mockTagTeamsDissolve).not.toHaveBeenCalled();
+
+    const dialog = await screen.findByRole('dialog', { name: 'Dissolve Tag Team' });
+    await user.click(within(dialog).getByRole('button', { name: 'Dissolve Tag Team' }));
+
+    await waitFor(() => expect(mockTagTeamsDissolve).toHaveBeenCalledWith('tt1'));
+  });
+
+  it('labels the status from the statusLabel keys', async () => {
+    renderMyTagTeam();
+    expect(await screen.findByText('Active')).toBeInTheDocument();
   });
 });

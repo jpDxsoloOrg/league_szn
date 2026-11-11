@@ -1,13 +1,23 @@
-import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { MapPin, Plus, Upload } from 'lucide-react';
 import { locationsApi } from '../../services/api';
 import type {
   Location,
   CreateLocationInput,
   BulkImportResult,
 } from '../../types/location';
+import Button from '../ui/Button';
+import DataTable from '../ui/DataTable';
+import EmptyState from '../ui/EmptyState';
+import Modal from '../ui/Modal';
+import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
-import './ManageLocations.css';
+import AdminFormModal from './AdminFormModal';
+import AdminNotice from './AdminNotice';
+import useAdminConfirm from './useAdminConfirm';
+import './adminContent.css';
 
 type FormState = {
   name: string;
@@ -172,9 +182,12 @@ function parseBulkInput(raw: string): { rows: CreateLocationInput[]; error?: str
 
 export default function ManageLocations() {
   const { t } = useTranslation();
+  const { confirm, confirmDialog } = useAdminConfirm();
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
@@ -189,22 +202,19 @@ export default function ManageLocations() {
   const [bulkResult, setBulkResult] = useState<BulkImportResult | null>(null);
   const [showSkippedNames, setShowSkippedNames] = useState(false);
 
-  const loadLocations = async () => {
+  const loadLocations = useCallback(async () => {
     try {
-      setLoading(true);
-      const data = await locationsApi.list();
-      setLocations(data);
-    } catch (_err) {
-      setError(t('admin.locations.loadFailed'));
+      setLocations(await locationsApi.list());
+    } catch {
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void loadLocations();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadLocations]);
 
   const handleFieldChange = (field: keyof FormState) =>
     (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -215,16 +225,18 @@ export default function ManageLocations() {
     setFormData(EMPTY_FORM);
     setShowAddForm(false);
     setEditingLocation(null);
+    setFormError(null);
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setFormError(null);
 
     const built = buildInputFromForm(formData);
     if (typeof built === 'string') {
-      setError(built);
+      setFormError(built);
       return;
     }
 
@@ -240,7 +252,7 @@ export default function ManageLocations() {
       resetForm();
       await loadLocations();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('admin.locations.saveFailed'));
+      setFormError(err instanceof Error ? err.message : t('admin.locations.saveFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -253,9 +265,12 @@ export default function ManageLocations() {
   };
 
   const handleDelete = async (location: Location) => {
-    if (!confirm(t('admin.locations.confirmDelete', { name: location.name }))) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: t('admin.locations.confirmDelete', { name: location.name }),
+      confirmLabel: t('common.delete'),
+    });
+    if (!confirmed) return;
+
     setDeleting(location.locationId);
     setError(null);
     setSuccess(null);
@@ -312,325 +327,192 @@ export default function ManageLocations() {
     setShowSkippedNames(false);
   };
 
+  const title = t('admin.locations.title');
+
   if (loading) {
-    return <Skeleton variant="block" count={4} />;
+    return (
+      <div className="ac-page">
+        <PageHeader title={title} />
+        <Skeleton variant="table" />
+      </div>
+    );
   }
 
   return (
-    <div className="manage-locations">
-      <div className="locations-header">
-        <div>
-          <h2>{t('admin.locations.title')}</h2>
-          <p className="locations-subtitle">{t('admin.locations.subtitle')}</p>
-        </div>
-        <div className="locations-header-actions">
-          {!showAddForm && (
-            <button onClick={() => setShowAddForm(true)} className="am-fab">
+    <div className="ac-page">
+      <PageHeader
+        title={title}
+        subtitle={t('admin.locations.subtitle')}
+        actions={(
+          <>
+            <Button variant="secondary" icon={<Upload aria-hidden="true" size={18} />} onClick={() => setShowBulkImport(true)}>
+              {t('admin.locations.bulkImport')}
+            </Button>
+            <Button icon={<Plus aria-hidden="true" size={18} />} onClick={() => setShowAddForm(true)}>
               {t('admin.locations.add')}
-            </button>
-          )}
-          <button
-            className="locations-bulk-btn"
-            onClick={() => setShowBulkImport(true)}
-          >
-            {t('admin.locations.bulkImport')}
-          </button>
-        </div>
-      </div>
-
-      {error && <div className="error-message">{error}</div>}
-      {success && <div className="success-message">{success}</div>}
-
-      {showAddForm && (
-        <div className="location-form-container">
-          <h3>
-            {editingLocation
-              ? t('admin.locations.edit')
-              : t('admin.locations.add')}
-          </h3>
-          <form onSubmit={handleSubmit} className="location-form">
-            <div className="location-form-grid">
-              <div className="form-group">
-                <label htmlFor="loc-name">
-                  {t('admin.locations.fields.name')} *
-                </label>
-                <input
-                  type="text"
-                  id="loc-name"
-                  value={formData.name}
-                  onChange={handleFieldChange('name')}
-                  required
-                  placeholder="Madison Square Garden"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="loc-city">
-                  {t('admin.locations.fields.city')}
-                </label>
-                <input
-                  type="text"
-                  id="loc-city"
-                  value={formData.city}
-                  onChange={handleFieldChange('city')}
-                  placeholder="New York"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="loc-state">
-                  {t('admin.locations.fields.state')}
-                </label>
-                <input
-                  type="text"
-                  id="loc-state"
-                  value={formData.state}
-                  onChange={handleFieldChange('state')}
-                  placeholder="NY"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="loc-country">
-                  {t('admin.locations.fields.country')}
-                </label>
-                <input
-                  type="text"
-                  id="loc-country"
-                  value={formData.country}
-                  onChange={handleFieldChange('country')}
-                  placeholder="USA"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="loc-capacity">
-                  {t('admin.locations.fields.capacity')}
-                </label>
-                <input
-                  type="number"
-                  id="loc-capacity"
-                  value={formData.capacity}
-                  onChange={handleFieldChange('capacity')}
-                  min={0}
-                  placeholder="20789"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="loc-lat">
-                  {t('admin.locations.fields.latitude')}
-                </label>
-                <input
-                  type="number"
-                  id="loc-lat"
-                  value={formData.latitude}
-                  onChange={handleFieldChange('latitude')}
-                  step="any"
-                  placeholder="40.7505"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="loc-lng">
-                  {t('admin.locations.fields.longitude')}
-                </label>
-                <input
-                  type="number"
-                  id="loc-lng"
-                  value={formData.longitude}
-                  onChange={handleFieldChange('longitude')}
-                  step="any"
-                  placeholder="-73.9934"
-                />
-              </div>
-              <div className="form-group form-group-full">
-                <label htmlFor="loc-imageUrl">
-                  {t('admin.locations.fields.imageUrl')}
-                </label>
-                <input
-                  type="url"
-                  id="loc-imageUrl"
-                  value={formData.imageUrl}
-                  onChange={handleFieldChange('imageUrl')}
-                  placeholder="https://example.com/venue.jpg"
-                />
-              </div>
-              <div className="form-group form-group-full">
-                <label htmlFor="loc-notes">
-                  {t('admin.locations.fields.notes')}
-                </label>
-                <textarea
-                  id="loc-notes"
-                  value={formData.notes}
-                  onChange={handleFieldChange('notes')}
-                  rows={3}
-                />
-              </div>
-            </div>
-
-            <div className="form-actions">
-              <button type="submit" disabled={submitting}>
-                {submitting
-                  ? t('common.saving')
-                  : editingLocation
-                  ? t('admin.locations.edit')
-                  : t('admin.locations.add')}
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="cancel-btn"
-                disabled={submitting}
-              >
-                {t('common.cancel')}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      <div className="locations-list">
-        <h3>
-          {t('admin.locations.title')} ({locations.length})
-        </h3>
-        {locations.length === 0 ? (
-          <div className="empty-state">
-            <p>{t('admin.locations.emptyTitle')}</p>
-            <p>{t('admin.locations.emptyHelp')}</p>
-          </div>
-        ) : (
-          <div className="locations-table-wrap">
-            <table className="locations-table">
-              <thead>
-                <tr>
-                  <th>{t('admin.locations.fields.name')}</th>
-                  <th>{t('admin.locations.fields.city')}</th>
-                  <th>{t('admin.locations.fields.state')}</th>
-                  <th>{t('admin.locations.fields.country')}</th>
-                  <th className="locations-col-num">
-                    {t('admin.locations.fields.capacity')}
-                  </th>
-                  <th className="locations-col-actions">
-                    {t('common.actions')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {locations.map((loc) => (
-                  <tr key={loc.locationId}>
-                    <td className="locations-col-name">{loc.name}</td>
-                    <td>{loc.city ?? '—'}</td>
-                    <td>{loc.state ?? '—'}</td>
-                    <td>{loc.country ?? '—'}</td>
-                    <td className="locations-col-num">
-                      {loc.capacity !== undefined
-                        ? loc.capacity.toLocaleString()
-                        : '—'}
-                    </td>
-                    <td className="locations-col-actions">
-                      <button
-                        onClick={() => handleEdit(loc)}
-                        className="locations-edit-btn"
-                      >
-                        {t('common.edit')}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(loc)}
-                        className="locations-delete-btn"
-                        disabled={deleting === loc.locationId}
-                      >
-                        {deleting === loc.locationId
-                          ? t('common.saving')
-                          : t('common.delete')}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+            </Button>
+          </>
         )}
-      </div>
+      />
 
-      {showBulkImport && (
-        <div
-          className="modal-overlay"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) handleBulkClose();
-          }}
-        >
-          <div className="modal-content">
-            <h3>{t('admin.locations.bulk.title')}</h3>
-            <p className="import-help">{t('admin.locations.bulk.helper')}</p>
+      {loadFailed && <AdminNotice tone="error">{t('admin.locations.loadFailed')}</AdminNotice>}
+      {error && <AdminNotice tone="error">{error}</AdminNotice>}
+      {success && <AdminNotice tone="success">{success}</AdminNotice>}
 
-            <div className="form-group">
-              <label htmlFor="bulk-text">
-                {t('admin.locations.bulk.inputLabel')}
-              </label>
-              <textarea
-                id="bulk-text"
-                value={bulkText}
-                onChange={(e) => setBulkText(e.target.value)}
-                rows={8}
-                placeholder={'[\n  { "name": "Madison Square Garden", "city": "New York" }\n]'}
-              />
-            </div>
-
-            {bulkParseError && (
-              <div className="error-message">{bulkParseError}</div>
-            )}
-
-            {bulkResult && (
-              <div className="import-result">
-                <h4>{t('admin.locations.bulk.resultTitle')}</h4>
-                <p>
-                  {t('admin.locations.bulk.summary', {
-                    created: bulkResult.created,
-                    skipped: bulkResult.skipped,
-                  })}
-                </p>
-                {bulkResult.skippedNames.length > 0 && (
-                  <div>
-                    <button
-                      type="button"
-                      className="bulk-toggle-btn"
-                      onClick={() => setShowSkippedNames((v) => !v)}
-                    >
-                      {showSkippedNames
-                        ? t('admin.locations.bulk.hideSkipped')
-                        : t('admin.locations.bulk.showSkipped', {
-                            count: bulkResult.skippedNames.length,
-                          })}
-                    </button>
-                    {showSkippedNames && (
-                      <ul className="import-error-list">
-                        {bulkResult.skippedNames.map((name, idx) => (
-                          <li key={idx}>{name}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                )}
+      <DataTable
+        caption={title}
+        density="dense"
+        rows={locations}
+        rowKey={(location) => location.locationId}
+        empty={(
+          <EmptyState
+            icon={<MapPin aria-hidden="true" size={32} />}
+            title={t('admin.locations.emptyTitle')}
+            description={t('admin.locations.emptyHelp')}
+          />
+        )}
+        columns={[
+          {
+            key: 'name',
+            header: t('admin.locations.fields.name'),
+            render: (location) => <span className="ac-cell__title">{location.name}</span>,
+            sortValue: (location) => location.name,
+          },
+          { key: 'city', header: t('admin.locations.fields.city'), render: (location) => location.city ?? '—', sortValue: (location) => location.city ?? '' },
+          { key: 'state', header: t('admin.locations.fields.state'), render: (location) => location.state ?? '—' },
+          { key: 'country', header: t('admin.locations.fields.country'), render: (location) => location.country ?? '—', sortValue: (location) => location.country ?? '' },
+          {
+            key: 'capacity',
+            header: t('admin.locations.fields.capacity'),
+            align: 'end',
+            render: (location) => (location.capacity !== undefined ? location.capacity.toLocaleString() : '—'),
+            sortValue: (location) => location.capacity ?? 0,
+          },
+          {
+            key: 'actions',
+            header: t('common.actions'),
+            align: 'end',
+            render: (location) => (
+              <div className="ac-actions ac-actions--end">
+                <Button variant="ghost" size="sm" onClick={() => handleEdit(location)}>{t('common.edit')}</Button>
+                <Button variant="ghost" size="sm" loading={deleting === location.locationId} onClick={() => handleDelete(location)}>
+                  {t('common.delete')}
+                </Button>
               </div>
-            )}
+            ),
+          },
+        ]}
+      />
 
-            <div className="form-actions">
-              <button
-                type="button"
-                onClick={handleBulkImport}
-                disabled={bulkSubmitting || bulkText.trim().length === 0}
-              >
-                {bulkSubmitting
-                  ? t('common.saving')
-                  : t('admin.locations.bulk.import')}
-              </button>
-              <button
-                type="button"
-                onClick={handleBulkClose}
-                className="cancel-btn"
-                disabled={bulkSubmitting}
-              >
-                {t('common.close')}
-              </button>
-            </div>
+      <AdminFormModal
+        open={showAddForm}
+        onClose={resetForm}
+        title={editingLocation ? t('admin.locations.edit') : t('admin.locations.add')}
+        size="lg"
+        submitLabel={editingLocation ? t('admin.locations.update', 'Update Location') : t('admin.locations.add')}
+        onSubmit={handleSubmit}
+        busy={submitting}
+        error={formError}
+      >
+        <div className="ac-form__row">
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="loc-name">{t('admin.locations.fields.name')} *</label>
+            <input type="text" id="loc-name" value={formData.name} onChange={handleFieldChange('name')} required placeholder="Madison Square Garden" />
+          </div>
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="loc-city">{t('admin.locations.fields.city')}</label>
+            <input type="text" id="loc-city" value={formData.city} onChange={handleFieldChange('city')} placeholder="New York" />
+          </div>
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="loc-state">{t('admin.locations.fields.state')}</label>
+            <input type="text" id="loc-state" value={formData.state} onChange={handleFieldChange('state')} placeholder="NY" />
+          </div>
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="loc-country">{t('admin.locations.fields.country')}</label>
+            <input type="text" id="loc-country" value={formData.country} onChange={handleFieldChange('country')} placeholder="USA" />
+          </div>
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="loc-capacity">{t('admin.locations.fields.capacity')}</label>
+            <input type="number" id="loc-capacity" value={formData.capacity} onChange={handleFieldChange('capacity')} min={0} placeholder="20789" />
+          </div>
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="loc-lat">{t('admin.locations.fields.latitude')}</label>
+            <input type="number" id="loc-lat" value={formData.latitude} onChange={handleFieldChange('latitude')} step="any" placeholder="40.7505" />
+          </div>
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="loc-lng">{t('admin.locations.fields.longitude')}</label>
+            <input type="number" id="loc-lng" value={formData.longitude} onChange={handleFieldChange('longitude')} step="any" placeholder="-73.9934" />
           </div>
         </div>
-      )}
+        <div className="ac-field">
+          <label className="ac-field__label" htmlFor="loc-imageUrl">{t('admin.locations.fields.imageUrl')}</label>
+          <input type="url" id="loc-imageUrl" value={formData.imageUrl} onChange={handleFieldChange('imageUrl')} placeholder="https://example.com/venue.jpg" />
+        </div>
+        <div className="ac-field">
+          <label className="ac-field__label" htmlFor="loc-notes">{t('admin.locations.fields.notes')}</label>
+          <textarea id="loc-notes" value={formData.notes} onChange={handleFieldChange('notes')} rows={3} />
+        </div>
+      </AdminFormModal>
+
+      <Modal
+        open={showBulkImport}
+        onClose={() => {
+          if (!bulkSubmitting) handleBulkClose();
+        }}
+        title={t('admin.locations.bulk.title')}
+        size="lg"
+        footer={(
+          <>
+            <Button variant="ghost" onClick={handleBulkClose} disabled={bulkSubmitting}>{t('common.close')}</Button>
+            <Button onClick={handleBulkImport} loading={bulkSubmitting} disabled={bulkText.trim().length === 0}>
+              {t('admin.locations.bulk.import')}
+            </Button>
+          </>
+        )}
+      >
+        <div className="ac-form">
+          <p className="ac-section__text">{t('admin.locations.bulk.helper')}</p>
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="bulk-text">{t('admin.locations.bulk.inputLabel')}</label>
+            <textarea
+              id="bulk-text"
+              value={bulkText}
+              onChange={(event) => setBulkText(event.target.value)}
+              rows={8}
+              placeholder={'[\n  { "name": "Madison Square Garden", "city": "New York" }\n]'}
+            />
+          </div>
+
+          {bulkParseError && <AdminNotice tone="error">{bulkParseError}</AdminNotice>}
+
+          {bulkResult && (
+            <div className="ac-section">
+              <h3 className="ac-section__title">{t('admin.locations.bulk.resultTitle')}</h3>
+              <p className="ac-section__text">
+                {t('admin.locations.bulk.summary', { created: bulkResult.created, skipped: bulkResult.skipped })}
+              </p>
+              {bulkResult.skippedNames.length > 0 && (
+                <div className="ac-actions">
+                  <Button variant="ghost" size="sm" onClick={() => setShowSkippedNames((shown) => !shown)}>
+                    {showSkippedNames
+                      ? t('admin.locations.bulk.hideSkipped')
+                      : t('admin.locations.bulk.showSkipped', { count: bulkResult.skippedNames.length })}
+                  </Button>
+                </div>
+              )}
+              {showSkippedNames && (
+                <ul className="ac-section__text">
+                  {bulkResult.skippedNames.map((name, index) => (
+                    <li key={index}>{name}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {confirmDialog}
     </div>
   );
 }

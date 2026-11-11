@@ -7,11 +7,13 @@ import {
   computeStableMatchResults,
   computeFormAndStreak,
   computeWinPercentage,
+  tallyRecord,
+  type StableStandingsData,
 } from './computeStableStats';
 
 // Note: fetchActiveStables and fetchCompletedMatches use dynamoDb directly — matches/stables scan migration deferred to Wave 5+
 
-interface StableStanding {
+interface StableStanding extends StableStandingsData {
   stableId: string;
   name: string;
   imageUrl?: string;
@@ -19,9 +21,6 @@ interface StableStanding {
   wins: number;
   losses: number;
   draws: number;
-  winPercentage: number;
-  recentForm: string[];
-  currentStreak: string;
 }
 
 export const handler: APIGatewayProxyHandler = async () => {
@@ -39,14 +38,7 @@ export const handler: APIGatewayProxyHandler = async () => {
       const { recentForm, currentStreak } = computeFormAndStreak(results, 10);
 
       // Compute W/L/D from actual match results
-      let wins = 0;
-      let losses = 0;
-      let draws = 0;
-      for (const r of results) {
-        if (r.outcome === 'W') wins++;
-        else if (r.outcome === 'L') losses++;
-        else draws++;
-      }
+      const { wins, losses, draws } = tallyRecord(results);
 
       return {
         stableId: stable.stableId,

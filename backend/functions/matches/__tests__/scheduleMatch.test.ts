@@ -13,6 +13,8 @@ const {
   mockMatchesCreate,
   mockChallengesFindById,
   mockChallengesUpdate,
+  mockChallengesListByChallenger,
+  mockMatchesFindById,
   mockPromosFindById,
   mockPromosUpdate,
   mockStipulationsFindById,
@@ -28,6 +30,8 @@ const {
   mockMatchesCreate: vi.fn(),
   mockChallengesFindById: vi.fn(),
   mockChallengesUpdate: vi.fn(),
+  mockChallengesListByChallenger: vi.fn(),
+  mockMatchesFindById: vi.fn(),
   mockPromosFindById: vi.fn(),
   mockPromosUpdate: vi.fn(),
   mockStipulationsFindById: vi.fn(),
@@ -43,7 +47,7 @@ vi.mock('../../../lib/repositories', () => ({
     competition: {
       championships: { findById: mockChampionshipsFindById },
       tournaments: { findById: mockTournamentsFindById },
-      matches: { create: mockMatchesCreate },
+      matches: { create: mockMatchesCreate, findById: mockMatchesFindById },
       stipulations: { findById: mockStipulationsFindById },
     },
     season: {
@@ -53,7 +57,11 @@ vi.mock('../../../lib/repositories', () => ({
       events: { findById: mockEventsFindById, update: mockEventsUpdate },
     },
     user: {
-      challenges: { findById: mockChallengesFindById, update: mockChallengesUpdate },
+      challenges: {
+        findById: mockChallengesFindById,
+        update: mockChallengesUpdate,
+        listByChallenger: mockChallengesListByChallenger,
+      },
     },
     content: {
       promos: { findById: mockPromosFindById, update: mockPromosUpdate },
@@ -198,6 +206,55 @@ describe('scheduleMatch', () => {
     expect(JSON.parse(r!.body).message).toContain('not in the correct division');
   });
 
+  it('returns 400 when the title is inactive', async () => {
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'singles', isActive: false });
+    const r = await scheduleMatch(ev({ body: validBody({ isChampionship: true, championshipId: 'c1' }) }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(JSON.parse(r!.body).message).toBe('This championship is inactive and cannot be defended');
+    expect(mockMatchesCreate).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when a tag title is put on a singles match', async () => {
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'tag', isActive: true });
+    const r = await scheduleMatch(ev({ body: validBody({ isChampionship: true, championshipId: 'c1' }) }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(JSON.parse(r!.body).message).toBe('A tag team title needs a tag team match type');
+  });
+
+  it('returns 400 when a singles title is put on a tag match', async () => {
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'singles', isActive: true });
+    const r = await scheduleMatch(ev({
+      body: validBody({ matchFormat: 'Tag Team', isChampionship: true, championshipId: 'c1' }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(JSON.parse(r!.body).message).toBe('A singles title cannot be decided in a tag team match');
+  });
+
+  it('books a tag title match from a challenge with its teams and title', async () => {
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'tag', isActive: true });
+    mockChallengesFindById.mockResolvedValue({ challengeId: 'ch1', status: 'accepted' });
+    const teams = [['p1', 'p2'], ['p3', 'p4']];
+    const r = await scheduleMatch(ev({
+      body: validBody({
+        matchFormat: 'Tag Team',
+        participants: teams.flat(),
+        teams,
+        isChampionship: true,
+        championshipId: 'c1',
+        challengeId: 'ch1',
+      }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(201);
+    expect(mockMatchesCreate).toHaveBeenCalledWith(expect.objectContaining({
+      isChampionship: true, championshipId: 'c1', teams, challengeId: 'ch1',
+    }));
+    expect(mockChallengesUpdate).toHaveBeenCalledWith('ch1', expect.objectContaining({ status: 'scheduled' }));
+  });
+
   it('returns 404 when tournamentId does not exist', async () => {
     mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
     mockTournamentsFindById.mockResolvedValue(null);
@@ -292,6 +349,243 @@ describe('scheduleMatch', () => {
       status: 'scheduled',
       matchId: 'test-uuid-match',
     }));
+  });
+
+  describe('booking a call-out and its challenge', () => {
+    const promo = {
+      promoId: 'pr1', playerId: 'p1', targetPlayerId: 'p2', promoType: 'call-out',
+      championshipId: 'c1', createdAt: '2026-01-01T10:00:00.000Z', challengeId: 'ch1',
+    };
+    const challenge = {
+      challengeId: 'ch1', challengerId: 'p1', challengedId: 'p2', status: 'accepted',
+      championshipId: 'c1', createdAt: '2026-01-01T10:00:05.000Z',
+    };
+    const scheduleFromPromo = (extra: Record<string, unknown> = {}) => scheduleMatch(
+      ev({ body: validBody({ promoId: 'pr1', ...extra }) }), ctx, cb,
+    );
+
+    beforeEach(() => {
+      mockPlayersFindById.mockImplementation(async (playerId: string) => ({ playerId }));
+      mockMatchesCreate.mockResolvedValue({});
+      mockPromosFindById.mockResolvedValue(promo);
+      mockChallengesFindById.mockImplementation(async (id: string) => (id === 'ch1' ? challenge : null));
+      mockChallengesListByChallenger.mockResolvedValue([]);
+      mockMatchesFindById.mockResolvedValue(null);
+    });
+
+    it('marks the linked challenge scheduled and links both to the match', async () => {
+      const result = await scheduleFromPromo();
+
+      expect(result!.statusCode).toBe(201);
+      expect(mockChallengesUpdate).toHaveBeenCalledWith('ch1', expect.objectContaining({
+        status: 'scheduled', matchId: 'test-uuid-match',
+      }));
+      expect(mockPromosUpdate).toHaveBeenCalledWith('pr1', expect.objectContaining({
+        isHidden: true, matchId: 'test-uuid-match',
+      }));
+      expect(mockMatchesCreate).toHaveBeenCalledWith(expect.objectContaining({ promoId: 'pr1', challengeId: 'ch1' }));
+    });
+
+    it('finds the challenge of an older promo that holds no link', async () => {
+      mockPromosFindById.mockResolvedValue({ ...promo, challengeId: undefined });
+      mockChallengesListByChallenger.mockResolvedValue([
+        { ...challenge, challengeId: 'unrelated-old', createdAt: '2025-12-01T10:00:00.000Z' },
+        { ...challenge, challengeId: 'other-title', championshipId: 'c2' },
+        { ...challenge, challengeId: 'other-player', challengedId: 'p9' },
+        challenge,
+      ]);
+
+      await scheduleFromPromo();
+
+      expect(mockChallengesUpdate).toHaveBeenCalledTimes(1);
+      expect(mockChallengesUpdate).toHaveBeenCalledWith('ch1', expect.objectContaining({ status: 'scheduled' }));
+    });
+
+    it('leaves challenges alone for an older promo with no challenge near it', async () => {
+      mockPromosFindById.mockResolvedValue({ ...promo, challengeId: undefined });
+      mockChallengesListByChallenger.mockResolvedValue([
+        { ...challenge, createdAt: '2026-01-03T10:00:00.000Z' },
+      ]);
+
+      const result = await scheduleFromPromo();
+
+      expect(result!.statusCode).toBe(201);
+      expect(mockChallengesUpdate).not.toHaveBeenCalled();
+    });
+
+    it('books the counter when the linked challenge was countered', async () => {
+      mockChallengesFindById.mockImplementation(async (id: string) => {
+        if (id === 'ch1') return { ...challenge, status: 'countered', counteredChallengeId: 'ch2' };
+        if (id === 'ch2') return { ...challenge, challengeId: 'ch2', status: 'accepted' };
+        return null;
+      });
+
+      await scheduleFromPromo();
+
+      expect(mockChallengesUpdate).toHaveBeenCalledTimes(1);
+      expect(mockChallengesUpdate).toHaveBeenCalledWith('ch2', expect.objectContaining({ status: 'scheduled' }));
+    });
+
+    it('refuses the same call-out a second time', async () => {
+      mockChallengesFindById.mockResolvedValue({ ...challenge, status: 'scheduled', matchId: 'm-first' });
+      mockMatchesFindById.mockResolvedValue({ matchId: 'm-first', status: 'scheduled' });
+
+      const result = await scheduleFromPromo();
+
+      expect(result!.statusCode).toBe(400);
+      expect(JSON.parse(result!.body).message).toBe('This call-out or challenge already has a match booked');
+      expect(mockMatchesCreate).not.toHaveBeenCalled();
+      expect(mockPromosUpdate).not.toHaveBeenCalled();
+    });
+
+    it('refuses a challenge booked from the Promos side when scheduled from Challenges', async () => {
+      mockChallengesFindById.mockResolvedValue({ ...challenge, status: 'scheduled', matchId: 'm-first' });
+      mockMatchesFindById.mockResolvedValue({ matchId: 'm-first', status: 'completed' });
+
+      const result = await scheduleMatch(ev({ body: validBody({ challengeId: 'ch1' }) }), ctx, cb);
+
+      expect(result!.statusCode).toBe(400);
+      expect(mockMatchesCreate).not.toHaveBeenCalled();
+    });
+
+    it('refuses a call-out already booked before it had a link to its challenge', async () => {
+      mockPromosFindById.mockResolvedValue({ ...promo, challengeId: undefined, matchId: 'm-first' });
+      mockMatchesFindById.mockResolvedValue({ matchId: 'm-first', status: 'scheduled' });
+
+      const result = await scheduleFromPromo();
+
+      expect(result!.statusCode).toBe(400);
+      expect(mockMatchesCreate).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['deleted', null],
+      ['cancelled', { matchId: 'm-first', status: 'cancelled' }],
+    ])('allows rebooking once the first match is %s', async (_state, firstMatch) => {
+      mockChallengesFindById.mockResolvedValue({ ...challenge, status: 'scheduled', matchId: 'm-first' });
+      mockMatchesFindById.mockResolvedValue(firstMatch);
+
+      const result = await scheduleFromPromo();
+
+      expect(result!.statusCode).toBe(201);
+      expect(mockChallengesUpdate).toHaveBeenCalledWith('ch1', expect.objectContaining({ matchId: 'test-uuid-match' }));
+    });
+
+    it('hides the linked promo when booked from the challenge', async () => {
+      mockChallengesFindById.mockResolvedValue({ ...challenge, promoId: 'pr1' });
+
+      await scheduleMatch(ev({ body: validBody({ challengeId: 'ch1' }) }), ctx, cb);
+
+      expect(mockPromosUpdate).toHaveBeenCalledWith('pr1', expect.objectContaining({ isHidden: true, matchId: 'test-uuid-match' }));
+      expect(mockMatchesCreate).toHaveBeenCalledWith(expect.objectContaining({ promoId: 'pr1', challengeId: 'ch1' }));
+    });
+
+    it('leaves a declined challenge declined, and still books the promo', async () => {
+      mockChallengesFindById.mockResolvedValue({ ...challenge, status: 'declined' });
+
+      const result = await scheduleFromPromo();
+
+      expect(result!.statusCode).toBe(201);
+      expect(mockChallengesUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('title matches from a challenge', () => {
+    const challenge = { challengeId: 'ch1', challengerId: 'p1', challengedId: 'p2', status: 'accepted', championshipId: 'c1' };
+    const titleBody = (extra: Record<string, unknown> = {}) => validBody({
+      isChampionship: true, championshipId: 'c1', challengeId: 'ch1', ...extra,
+    });
+
+    beforeEach(() => {
+      mockPlayersFindById.mockImplementation(async (playerId: string) => ({ playerId }));
+      mockMatchesCreate.mockResolvedValue({});
+      mockChallengesFindById.mockResolvedValue(challenge);
+    });
+
+    it('refuses when the title changed hands and the champion is not in the match', async () => {
+      mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'singles', currentChampion: 'new-champ' });
+
+      const result = await scheduleMatch(ev({ body: titleBody() }), ctx, cb);
+
+      expect(result!.statusCode).toBe(400);
+      expect(JSON.parse(result!.body).message).toContain('must include the current champion');
+      expect(mockMatchesCreate).not.toHaveBeenCalled();
+      expect(mockChallengesUpdate).not.toHaveBeenCalled();
+    });
+
+    it('applies the same rule to a challenge reached through its promo', async () => {
+      mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'singles', currentChampion: 'new-champ' });
+      mockPromosFindById.mockResolvedValue({ promoId: 'pr1', promoType: 'call-out', challengeId: 'ch1' });
+
+      const result = await scheduleMatch(
+        ev({ body: titleBody({ challengeId: undefined, promoId: 'pr1' }) }), ctx, cb,
+      );
+
+      expect(result!.statusCode).toBe(400);
+      expect(mockMatchesCreate).not.toHaveBeenCalled();
+    });
+
+    it('allows it when the champion is one of the participants', async () => {
+      mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'singles', currentChampion: 'p1' });
+
+      expect((await scheduleMatch(ev({ body: titleBody() }), ctx, cb))!.statusCode).toBe(201);
+    });
+
+    it('allows it when staff add the new champion to the match', async () => {
+      mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'singles', currentChampion: 'new-champ' });
+
+      const result = await scheduleMatch(
+        ev({ body: titleBody({ matchFormat: 'Triple Threat', participants: ['p1', 'p2', 'new-champ'] }) }), ctx, cb,
+      );
+
+      expect(result!.statusCode).toBe(201);
+    });
+
+    it('allows a vacant title', async () => {
+      mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'singles' });
+
+      expect((await scheduleMatch(ev({ body: titleBody() }), ctx, cb))!.statusCode).toBe(201);
+    });
+
+    it('allows the same challenge as a non-title match', async () => {
+      mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'singles', currentChampion: 'new-champ' });
+
+      const result = await scheduleMatch(ev({ body: validBody({ challengeId: 'ch1' }) }), ctx, cb);
+
+      expect(result!.statusCode).toBe(201);
+    });
+
+    it('needs both tag champions on the same team', async () => {
+      mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'tag', currentChampion: ['p1', 'p3'] });
+      const tagBody = (teams: string[][]) => titleBody({ matchFormat: 'Tag Team', participants: teams.flat(), teams });
+
+      const split = await scheduleMatch(ev({ body: tagBody([['p1', 'p2'], ['p3', 'p4']]) }), ctx, cb);
+      const together = await scheduleMatch(ev({ body: tagBody([['p1', 'p3'], ['p2', 'p4']]) }), ctx, cb);
+
+      expect(split!.statusCode).toBe(400);
+      expect(together!.statusCode).toBe(201);
+    });
+
+    it('does not count an open slot as the champion', async () => {
+      mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'singles', currentChampion: 'new-champ' });
+
+      const result = await scheduleMatch(ev({
+        body: JSON.stringify({
+          matchFormat: 'Singles', isChampionship: true, championshipId: 'c1', challengeId: 'ch1',
+          slotsRequired: 2, slots: [{ position: 1, playerId: 'p1' }, { position: 2 }],
+        }),
+      }), ctx, cb);
+
+      expect(result!.statusCode).toBe(400);
+    });
+
+    it('does not restrict a title match staff book without a challenge', async () => {
+      mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'singles', currentChampion: 'someone-else' });
+
+      const result = await scheduleMatch(ev({ body: titleBody({ challengeId: undefined }) }), ctx, cb);
+
+      expect(result!.statusCode).toBe(201);
+    });
   });
 
   it('updates promo to hidden when promoId provided', async () => {

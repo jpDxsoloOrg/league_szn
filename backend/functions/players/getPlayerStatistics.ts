@@ -1,6 +1,9 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, notFound, serverError } from '../../lib/response';
+import { isPlayerVisible } from '../../lib/needsWrestler';
+import { canViewHiddenPlayer } from '../../lib/optionalCaller';
+import { matchWinners } from '../../lib/matchResult';
 
 interface MatchRecord {
   matchId: string;
@@ -10,6 +13,7 @@ interface MatchRecord {
   participants: string[];
   winners?: string[];
   losers?: string[];
+  isDraw?: boolean;
   isChampionship: boolean;
   status: string;
   seasonId?: string;
@@ -41,7 +45,7 @@ function computeStatsForType(
   let draws = 0;
 
   for (const match of matches) {
-    if (match.winners?.includes(playerId)) {
+    if (matchWinners(match).includes(playerId)) {
       wins++;
     } else if (match.losers?.includes(playerId)) {
       losses++;
@@ -71,6 +75,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const player = await players.findById(playerId);
 
     if (!player) {
+      return notFound('Player not found');
+    }
+
+    // Hidden players read as missing to everyone but themselves and staff.
+    if (!isPlayerVisible(player) && !(await canViewHiddenPlayer(event, player))) {
       return notFound('Player not found');
     }
 

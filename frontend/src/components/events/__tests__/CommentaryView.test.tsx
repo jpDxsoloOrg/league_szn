@@ -175,7 +175,7 @@ describe('CommentaryView', () => {
     ];
     renderView({ ...base, matches: [m] });
 
-    expect(await screen.findByText('Triple Threat')).toBeInTheDocument();
+    expect(await screen.findByText('matchFormats.tripleThreat')).toBeInTheDocument();
     const table = screen.getByRole('table');
     const rows = within(table).getAllByRole('row');
     expect(rows).toHaveLength(4); // header + 3

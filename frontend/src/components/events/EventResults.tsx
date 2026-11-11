@@ -1,20 +1,18 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ArrowLeft } from 'lucide-react';
 import { eventsApi } from '../../services/api';
-import type { MatchDesignation, EventWithMatches } from '../../types/event';
-import Skeleton from '../ui/Skeleton';
+import type { EventWithMatches } from '../../types/event';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Skeleton from '../ui/Skeleton';
 import { StarRating } from '../matches/StarRating';
+import { DESIGNATION_LABEL_KEYS } from './eventDisplay';
+import { formatMatchType } from '../../utils/matchDisplay';
 import './EventResults.css';
-
-const designationLabels: Record<MatchDesignation, string> = {
-  'pre-show': 'events.designations.preShow',
-  'opener': 'events.designations.opener',
-  'midcard': 'events.designations.midcard',
-  'co-main': 'events.designations.coMain',
-  'main-event': 'events.designations.mainEvent',
-};
 
 export default function EventResults() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -56,17 +54,18 @@ export default function EventResults() {
   if (error || !eventData) {
     return (
       <div className="event-results-page">
-        <div className="results-not-found">
-          <p>{error || t('events.results.notFound')}</p>
-          <Link to="/events" className="results-back-link">{t('events.detail.backToEvents')}</Link>
-        </div>
+        <EmptyState
+          title={error || t('events.results.notFound')}
+          actionLabel={t('events.detail.backToEvents')}
+          onAction={() => navigate('/events')}
+        />
       </div>
     );
   }
 
   const enrichedMatches = eventData.enrichedMatches || [];
-  const completedMatches = enrichedMatches.filter(
-    (m) => m.matchData?.status === 'completed'
+  const completedMatches = enrichedMatches.flatMap((m) =>
+    m.matchData?.status === 'completed' ? [{ ...m, matchData: m.matchData }] : [],
   );
 
   if (completedMatches.length === 0) {
@@ -82,134 +81,99 @@ export default function EventResults() {
     );
   }
 
-  const titleChanges = completedMatches.filter(
+  const titleMatches = completedMatches.filter(
     (m) => m.matchData.isChampionship && m.matchData.winners && m.matchData.winners.length > 0
   );
 
-  const renderStarRating = (rating: number) => {
-    const stars: string[] = [];
-    for (let i = 1; i <= 5; i++) {
-      if (i <= Math.floor(rating)) {
-        stars.push('\u2605');
-      } else if (i === Math.ceil(rating) && rating % 1 >= 0.5) {
-        stars.push('\u2605');
-      } else {
-        stars.push('\u2606');
-      }
-    }
-    return stars.join('');
-  };
-
   return (
     <div className="event-results-page">
-      <Link to={`/events/${eventId}`} className="results-back-link">
-        &larr; {t('events.results.backToEvent')}
-      </Link>
+      <Button className="event-results-back" variant="ghost" size="sm" to={`/events/${eventId}`} icon={<ArrowLeft aria-hidden="true" size={18} />}>
+        {t('events.results.backToEvent')}
+      </Button>
 
-      {/* Results Header */}
-      <div className="results-header">
-        <h2 className="results-event-name">{eventData.name}</h2>
-        <p className="results-subtitle">{t('events.results.title')}</p>
+      <PageHeader title={eventData.name} eyebrow={t('events.results.title')} />
 
-        {eventData.rating && (
-          <div className="results-rating">
-            <span className="results-stars">{renderStarRating(eventData.rating)}</span>
-            <span className="results-rating-value">{eventData.rating} / 5</span>
+      <dl className="event-results-stats">
+        <div>
+          <dt>{t('events.results.totalMatches')}</dt>
+          <dd>{completedMatches.length}</dd>
+        </div>
+        <div>
+          <dt>{t('events.results.titleChanges')}</dt>
+          <dd>{titleMatches.length}</dd>
+        </div>
+        {eventData.attendance && (
+          <div>
+            <dt>{t('events.results.attendance')}</dt>
+            <dd>{eventData.attendance.toLocaleString()}</dd>
           </div>
         )}
-
-        <div className="results-summary">
-          <div className="results-stat">
-            <span className="results-stat-value">{completedMatches.length}</span>
-            <span className="results-stat-label">{t('events.results.totalMatches')}</span>
+        {eventData.rating && (
+          <div>
+            <dt>{t('events.detail.rating')}</dt>
+            <dd>{eventData.rating} / 5</dd>
           </div>
-          <div className="results-stat">
-            <span className="results-stat-value results-title-changes">
-              {titleChanges.length}
-            </span>
-            <span className="results-stat-label">{t('events.results.titleChanges')}</span>
-          </div>
-          {eventData.attendance && (
-            <div className="results-stat">
-              <span className="results-stat-value">{eventData.attendance.toLocaleString()}</span>
-              <span className="results-stat-label">{t('events.results.attendance')}</span>
-            </div>
-          )}
-        </div>
-      </div>
+        )}
+      </dl>
 
-      {/* Results List */}
-      <div className="results-match-list">
-        <h3 className="results-section-title">{t('events.results.matchResults')}</h3>
+      <section className="event-results-section">
+        <h2 className="event-results-section__title">{t('events.results.matchResults')}</h2>
 
-        {completedMatches.map((match, index) => {
-          const { matchData, designation } = match;
-          const winnerNames = matchData.participants
-            .filter((p) => matchData.winners?.includes(p.playerId))
-            .map((p) => p.wrestlerName);
-          const loserNames = matchData.participants
-            .filter((p) => matchData.losers?.includes(p.playerId))
-            .map((p) => p.wrestlerName);
+        <ol className="event-results-list">
+          {completedMatches.map((match) => {
+            const { matchData, designation } = match;
+            const winnerNames = matchData.participants
+              .filter((p) => matchData.winners?.includes(p.playerId))
+              .map((p) => p.wrestlerName);
+            const loserNames = matchData.participants
+              .filter((p) => matchData.losers?.includes(p.playerId))
+              .map((p) => p.wrestlerName);
+            // A draw is stored with every participant as a winner and no losers.
+            const isDraw = loserNames.length === 0;
 
-          return (
-            <div
-              key={match.matchId}
-              className={`results-match-entry ${matchData.isChampionship ? 'championship-result' : ''} ${designation === 'main-event' ? 'main-event-result' : ''}`}
-            >
-              <div className="results-match-number">#{index + 1}</div>
-              <div className="results-match-content">
-                <div className="results-match-meta">
-                  <span className="results-designation">
-                    {t(designationLabels[designation])}
-                  </span>
-                  <span className="results-match-type">
-                    {matchData.matchFormat}
-                    {matchData.stipulationName && ` - ${matchData.stipulationName}`}
+            return (
+              <li
+                key={match.matchId}
+                className={`event-result${designation === 'main-event' ? ' event-result--main' : ''}`}
+              >
+                <div className="event-result__meta">
+                  <Badge tone={designation === 'main-event' ? 'pink' : 'neutral'}>{t(DESIGNATION_LABEL_KEYS[designation])}</Badge>
+                  <span>
+                    {formatMatchType(matchData.matchFormat, t)}
+                    {matchData.stipulationName && ` · ${matchData.stipulationName}`}
                   </span>
                   {matchData.isChampionship && (
-                    <span className="results-championship-tag">
-                      {matchData.championshipName}
-                    </span>
+                    <Badge tone="warning">{matchData.championshipName || t('events.results.titleChange')}</Badge>
                   )}
                 </div>
 
-                <div className="results-outcome">
-                  <div className="results-winners">
-                    <span className="outcome-label">{t('events.results.winnersLabel')}:</span>
-                    <span className="winner-names">{winnerNames.join(' & ')}</span>
-                  </div>
-                  <div className="results-losers">
-                    <span className="outcome-label">{t('events.results.defeatedLabel')}:</span>
-                    <span className="loser-names">{loserNames.join(' & ')}</span>
-                  </div>
-                </div>
+                {isDraw ? (
+                  <p className="event-result__outcome">
+                    <span className="event-result__winners">{winnerNames.join(' & ')}</span>
+                    <span className="event-result__def">{t('events.results.draw', 'Draw')}</span>
+                  </p>
+                ) : (
+                  <p className="event-result__outcome">
+                    <span className="sr-only">{t('events.results.winnersLabel')}: </span>
+                    <span className="event-result__winners">{winnerNames.join(' & ')}</span>
+                    <span className="event-result__def">{t('events.results.defeatedLabel')}</span>
+                    <span className="event-result__losers">{loserNames.join(' & ')}</span>
+                  </p>
+                )}
 
-                {matchData.isChampionship && (
-                  <div className="title-change-indicator">
-                    {t('events.results.titleChange')}
-                  </div>
-                )}
                 {(matchData.starRating != null || matchData.matchOfTheNight) && (
-                  <div className="results-match-awards">
+                  <div className="event-result__awards">
                     {matchData.starRating != null && (
-                      <span className="results-match-rating">
-                        <StarRating
-                          starRating={matchData.starRating}
-                          ratingsCount={matchData.ratingsCount}
-                          size="sm"
-                        />
-                      </span>
+                      <StarRating starRating={matchData.starRating} ratingsCount={matchData.ratingsCount} size="sm" />
                     )}
-                    {matchData.matchOfTheNight && (
-                      <span className="results-motn-badge">{t('match.matchOfTheNightBadge')}</span>
-                    )}
+                    {matchData.matchOfTheNight && <Badge tone="violet">{t('match.matchOfTheNightBadge')}</Badge>}
                   </div>
                 )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
     </div>
   );
 }

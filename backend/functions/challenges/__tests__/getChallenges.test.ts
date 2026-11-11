@@ -41,13 +41,15 @@ function mockPlayerLookup() {
   });
 }
 
+const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
+
 const mockChallenge1 = {
   challengeId: 'ch1', challengerId: 'p1', challengedId: 'p2',
-  matchType: 'Singles', status: 'pending', createdAt: '2025-01-15T10:00:00.000Z',
+  matchType: 'Singles', status: 'pending', createdAt: hoursAgo(2),
 };
 const mockChallenge2 = {
   challengeId: 'ch2', challengerId: 'p2', challengedId: 'p1',
-  matchType: 'Cage', status: 'accepted', createdAt: '2025-01-16T10:00:00.000Z',
+  matchType: 'Cage', status: 'accepted', createdAt: hoursAgo(1),
 };
 
 // ─── getChallenges ──────────────────────────────────────────────────
@@ -191,6 +193,22 @@ describe('getChallenges', () => {
     );
     expect(mockScanAll).not.toHaveBeenCalled();
   });
+
+  it('adds the title name to a title challenge', async () => {
+    mockScanAll.mockResolvedValue([{ ...mockChallenge1, championshipId: 'world' }, mockChallenge2]);
+    mockGet.mockImplementation(({ Key }: { Key: Record<string, string> }) => {
+      if (Key.championshipId) return Promise.resolve({ Item: { championshipId: 'world', name: 'World Title' } });
+      return Promise.resolve({ Item: Key.playerId === 'p1' ? p1 : p2 });
+    });
+
+    const result = await getChallenges(makeEvent(), ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    const titleChallenge = body.find((challenge: { challengeId: string }) => challenge.challengeId === 'ch1');
+    const otherChallenge = body.find((challenge: { challengeId: string }) => challenge.challengeId !== 'ch1');
+    expect(titleChallenge.championshipName).toBe('World Title');
+    expect(otherChallenge.championshipName).toBeUndefined();
+  });
 });
 
 // ─── getChallenge ───────────────────────────────────────────────────
@@ -256,5 +274,18 @@ describe('getChallenge', () => {
 
     expect(result!.statusCode).toBe(500);
     expect(JSON.parse(result!.body).message).toBe('Failed to fetch challenge');
+  });
+
+  it('adds the title name to a title challenge', async () => {
+    mockGet.mockImplementation(({ Key }: { Key: Record<string, string> }) => {
+      if (Key.challengeId) return Promise.resolve({ Item: { ...mockChallenge1, championshipId: 'world' } });
+      if (Key.championshipId) return Promise.resolve({ Item: { championshipId: 'world', name: 'World Title' } });
+      return Promise.resolve({ Item: Key.playerId === 'p1' ? p1 : p2 });
+    });
+
+    const result = await getChallenge(makeEvent({ pathParameters: { challengeId: 'ch1' } }), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body).championshipName).toBe('World Title');
   });
 });

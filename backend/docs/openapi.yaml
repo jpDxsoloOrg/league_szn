@@ -47,7 +47,6 @@ tags:
   - name: Shows
   - name: Locations
   - name: Wrestlers
-  - name: Matchmaking
   - name: Stables
   - name: Tag Teams
   - name: Videos
@@ -84,8 +83,183 @@ components:
         draws: { type: integer }
         imageUrl: { type: string }
         divisionId: { type: string }
+        discipline:
+          description: Only for staff and the player themselves.
+          allOf: [{ $ref: '#/components/schemas/PlayerDisciplineSummary' }]
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+
+    Refusal:
+      type: object
+      required: [message, code]
+      properties:
+        message: { type: string, description: English. Clients translate by code. }
+        code:
+          type: string
+          enum:
+            - SIGNUP_BLOCKED
+            - PLAYER_DEACTIVATED
+            - PLAYER_UNAVAILABLE
+            - ALREADY_DEACTIVATED
+            - NOT_DEACTIVATED
+            - STAFF_PROTECTED
+            - DISCIPLINE_CONFLICT
+            - STRIKE_NOT_ACTIVE
+            - DISCIPLINE_ACTIVE
+            - PSN_ID_UNAVAILABLE
+            - PSN_ID_LOCKED
+        blockedUntil: { type: string, format: date-time }
+
+    StrikeOutcome:
+      type: string
+      enum: [warned, signup-blocked, deactivated]
+
+    PlayerDisciplineSummary:
+      type: object
+      required: [status, activeStrikeCount, activeStrikes, cooldownEndsAt, signupBlockedUntil, deactivatedAt]
+      properties:
+        status:
+          type: string
+          enum: [clear, warned, signup-blocked, cooldown, deactivated]
+        activeStrikeCount: { type: integer }
+        activeStrikes:
+          type: array
+          description: Oldest first. Issuer identity is left out on purpose.
+          items:
+            type: object
+            required: [strikeId, issuedAt, reason]
+            properties:
+              strikeId: { type: string }
+              issuedAt: { type: string, format: date-time }
+              reason: { type: string }
+        cooldownEndsAt: { type: string, format: date-time, nullable: true }
+        signupBlockedUntil:
+          type: string
+          format: date-time
+          nullable: true
+          description: Non-null only while status is signup-blocked.
+        deactivatedAt: { type: string, format: date-time, nullable: true }
+
+    PlayerStrike:
+      type: object
+      required: [strikeId, issuedAt, issuedBy, issuedByName, reason]
+      properties:
+        strikeId: { type: string }
+        issuedAt: { type: string, format: date-time }
+        issuedBy: { type: string }
+        issuedByName: { type: string }
+        reason: { type: string }
+        clearedAt: { type: string, format: date-time }
+        clearedBy: { type: string }
+        clearedByName: { type: string }
+        clearedReason: { type: string }
+        clearedKind: { type: string, enum: [removed, reactivated] }
+
+    PlayerDeactivation:
+      type: object
+      required: [deactivatedAt, deactivatedBy, deactivatedByName, strikeId]
+      properties:
+        deactivatedAt: { type: string, format: date-time }
+        deactivatedBy: { type: string }
+        deactivatedByName: { type: string }
+        strikeId: { type: string }
+        cognitoAlreadyDisabled: { type: boolean }
+        reactivatedAt: { type: string, format: date-time }
+        reactivatedBy: { type: string }
+        reactivatedByName: { type: string }
+        reactivationReason: { type: string }
+
+    DisciplineHoldings:
+      type: object
+      required: [titles, matches, challenges, tournaments]
+      properties:
+        titles:
+          type: array
+          items:
+            type: object
+            properties:
+              championshipId: { type: string }
+              name: { type: string }
+        matches:
+          type: array
+          items:
+            type: object
+            properties:
+              matchId: { type: string }
+              date: { type: string, format: date-time }
+              status: { type: string, enum: [scheduled, open-signups] }
+              matchFormat: { type: string }
+              opponents:
+                type: array
+                description: Names of the other side, partners left out. Empty while the other spots are open.
+                items: { type: string }
+              eventId: { type: string }
+              tournamentId: { type: string }
+        challenges:
+          type: array
+          items:
+            type: object
+            properties:
+              challengeId: { type: string }
+              opponentName: { type: string }
+        tournaments:
+          type: array
+          items:
+            type: object
+            properties:
+              tournamentId: { type: string }
+              name: { type: string }
+              status: { type: string }
+
+    PlayerDisciplineDetail:
+      type: object
+      required:
+        - playerId
+        - version
+        - summary
+        - nextStrikeOutcome
+        - strikes
+        - deactivations
+        - hasLinkedAccount
+        - isStaffAccount
+        - accountEnabled
+        - holdings
+      properties:
+        playerId: { type: string }
+        version: { type: integer, description: Send back as expectedVersion. }
+        summary: { $ref: '#/components/schemas/PlayerDisciplineSummary' }
+        nextStrikeOutcome:
+          description: Null while deactivated. Send back as expectedOutcome.
+          nullable: true
+          allOf: [{ $ref: '#/components/schemas/StrikeOutcome' }]
+        strikes:
+          type: array
+          description: Full history, newest first.
+          items: { $ref: '#/components/schemas/PlayerStrike' }
+        deactivations:
+          type: array
+          description: Newest first.
+          items: { $ref: '#/components/schemas/PlayerDeactivation' }
+        hasLinkedAccount: { type: boolean, description: False for an unlinked player or a dead link. }
+        isStaffAccount: { type: boolean, nullable: true, description: False when unlinked. Null on a Cognito error. }
+        accountEnabled: { type: boolean, nullable: true, description: Null when unlinked or on a Cognito error. }
+        holdings: { $ref: '#/components/schemas/DisciplineHoldings' }
+
+    DisciplineActionResult:
+      type: object
+      required: [playerId, version, summary, accountSync, softHoldsCleared, holdings]
+      properties:
+        playerId: { type: string }
+        version: { type: integer }
+        summary: { $ref: '#/components/schemas/PlayerDisciplineSummary' }
+        accountSync:
+          type: string
+          enum: [ok, failed, not-linked, not-needed]
+          description: not-needed means no Cognito change was due.
+        softHoldsCleared: { type: boolean, description: False only when cleanup was due and did not finish. }
+        holdings:
+          description: Filled only when the action deactivated the player.
+          allOf: [{ $ref: '#/components/schemas/DisciplineHoldings' }]
 
     Match:
       type: object
@@ -315,6 +489,7 @@ components:
         responseMessage: { type: string }
         counteredChallengeId: { type: string }
         matchId: { type: string }
+        promoId: { type: string, description: The call-out promo this challenge came from }
         expiresAt: { type: string }
         createdAt: { type: string }
         updatedAt: { type: string }
@@ -343,6 +518,7 @@ components:
         stipulation: { type: string }
         championshipId: { type: string }
         message: { type: string }
+        promoId: { type: string, description: The caller's own call-out promo to link this challenge to }
 
     RespondChallengeInput:
       type: object
@@ -393,6 +569,10 @@ components:
         targetPromoId: { type: string }
         matchId: { type: string }
         championshipId: { type: string }
+        challengeMode: { type: string, enum: [singles, tag_team] }
+        challengerTagTeamName: { type: string }
+        targetTagTeamName: { type: string }
+        targetTagTeamId: { type: string, description: 'The team a tag call-out names. Its members are checked before the promo is published. Not stored.' }
 
     ReactToPromoInput:
       type: object
@@ -752,18 +932,6 @@ components:
         wrestlerName: { type: string }
         playerImageUrl: { type: string }
 
-    MatchmakingInvitation:
-      type: object
-      properties:
-        invitationId: { type: string }
-        fromPlayerId: { type: string }
-        toPlayerId: { type: string }
-        matchFormat: { type: string }
-        stipulationId: { type: string }
-        status: { type: string, enum: [pending, accepted, declined] }
-        createdAt: { type: string, format: date-time }
-        expiresAt: { type: string, format: date-time }
-
     DeleteUserInput:
       type: object
       required: [userId]
@@ -888,6 +1056,16 @@ paths:
     get:
       tags: [Players]
       summary: List players
+      description: Public. Leaves out players with no real wrestler name unless a mode below applies.
+      parameters:
+        - name: includeHidden
+          in: query
+          description: 'When "true", includes hidden players. Honoured for an authenticated Admin or Moderator; ignored otherwise.'
+          schema: { type: string, enum: ['true'] }
+        - name: view
+          in: query
+          description: 'When "directory", returns only playerId, name and currentWrestler (null if unset) for all players.'
+          schema: { type: string, enum: [directory] }
       responses:
         '200': { description: List of players }
     post:
@@ -1660,6 +1838,14 @@ paths:
         - name: promoType
           in: query
           schema: { type: string }
+        - name: includeHidden
+          in: query
+          description: 'When "true", includes moderated promos and promos by hidden players. Honoured for an authenticated Admin or Moderator; ignored otherwise.'
+          schema: { type: string, enum: ['true'] }
+        - name: includeArchived
+          in: query
+          description: 'When "true", includes call-outs and responses past the archive window. Honoured for an authenticated Admin or Moderator; ignored otherwise.'
+          schema: { type: string, enum: ['true'] }
       responses:
         '200': { description: List of promos }
     post:
@@ -1675,6 +1861,7 @@ paths:
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'A member of either team in a tag call-out is unavailable', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
 
   /promos/{promoId}:
     get:
@@ -1896,6 +2083,132 @@ paths:
       responses:
         '200': { description: Player stats with overall and per-match-type breakdown }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Player Discipline ─────────────────────────────────────────────
+
+  /players/{playerId}/discipline:
+    get:
+      tags: [Players]
+      summary: Get a player's discipline status, history and holdings (Admin or Moderator)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Full discipline detail. Cognito fields are null on a Cognito error.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlayerDisciplineDetail' }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /players/{playerId}/strikes:
+    post:
+      tags: [Players]
+      summary: Issue a strike (Admin only)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason, expectedVersion, expectedOutcome]
+              properties:
+                reason: { type: string, minLength: 3, maxLength: 500 }
+                expectedVersion: { type: integer, description: The version read from GET discipline. }
+                expectedOutcome: { $ref: '#/components/schemas/StrikeOutcome' }
+      responses:
+        '201':
+          description: Strike issued
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DisciplineActionResult' }
+        '400': { description: 'Bad reason, or a missing expectedVersion', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'ALREADY_DEACTIVATED, STAFF_PROTECTED or DISCIPLINE_CONFLICT', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
+
+  /players/{playerId}/strikes/{strikeId}/remove:
+    post:
+      tags: [Players]
+      summary: Remove an active strike (Admin only)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: strikeId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason, expectedVersion]
+              properties:
+                reason: { type: string, minLength: 3, maxLength: 500 }
+                expectedVersion: { type: integer }
+      responses:
+        '200':
+          description: Strike removed and kept in history as cleared
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DisciplineActionResult' }
+        '400': { description: 'Bad reason, or a missing expectedVersion', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'PLAYER_DEACTIVATED, STRIKE_NOT_ACTIVE or DISCIPLINE_CONFLICT', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
+
+  /players/{playerId}/reactivate:
+    post:
+      tags: [Players]
+      summary: Reactivate a deactivated player (Admin only)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason, expectedVersion]
+              properties:
+                reason: { type: string, minLength: 3, maxLength: 500 }
+                expectedVersion: { type: integer }
+                restorePriorStrikes:
+                  type: boolean
+                  description: Clear only the deactivating strike. The others keep their own dates.
+      responses:
+        '200':
+          description: Player reactivated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DisciplineActionResult' }
+        '400': { description: 'Bad reason, or a missing expectedVersion', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'NOT_DEACTIVATED or DISCIPLINE_CONFLICT', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
 
   # ── Companies ─────────────────────────────────────────────────────
 
@@ -2481,10 +2794,11 @@ paths:
           in: query
           schema: { type: string }
       responses:
-        '200': { description: List of overrides with player info }
+        '200': { description: 'List of overrides with player info and currentRank, the stored position or null when the player is not on the list' }
     post:
       tags: [Contenders]
       summary: Set contender override
+      description: Saves the override, recalculates the title and reports where the player ended up.
       security: [{ BearerAuth: [] }]
       requestBody:
         content:
@@ -2499,7 +2813,8 @@ paths:
                 reason: { type: string }
                 expiresAt: { type: string, format: date-time }
       responses:
-        '201': { description: Override created }
+        '201':
+          description: Override created. placement.status is onList, notOnList, noActiveSeason or recalculationFailed, and placement.rank is set for onList.
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
@@ -2523,146 +2838,6 @@ paths:
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  # ── Matchmaking ────────────────────────────────────────────────────
-
-  /matchmaking/heartbeat:
-    post:
-      tags: [Matchmaking]
-      summary: Send presence heartbeat
-      security: [{ BearerAuth: [] }]
-      responses:
-        '200': { description: Heartbeat acknowledged }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  /matchmaking/presence:
-    delete:
-      tags: [Matchmaking]
-      summary: Leave presence (go offline)
-      security: [{ BearerAuth: [] }]
-      responses:
-        '200': { description: Presence removed }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  /matchmaking/queue:
-    get:
-      tags: [Matchmaking]
-      summary: Get active matchmaking queue
-      security: [{ BearerAuth: [] }]
-      responses:
-        '200': { description: Queue entries with player info }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  /matchmaking/queue/join:
-    post:
-      tags: [Matchmaking]
-      summary: Join matchmaking queue
-      security: [{ BearerAuth: [] }]
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                matchFormat: { type: string }
-                stipulationId: { type: string }
-                expiresInMinutes: { type: integer, default: 15 }
-      responses:
-        '200': { description: Queued }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-        '409': { description: 'Conflict – no active presence', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  /matchmaking/queue/leave:
-    post:
-      tags: [Matchmaking]
-      summary: Leave matchmaking queue
-      security: [{ BearerAuth: [] }]
-      responses:
-        '200': { description: Left queue }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  /matchmaking/online:
-    get:
-      tags: [Matchmaking]
-      summary: Get online players
-      security: [{ BearerAuth: [] }]
-      responses:
-        '200': { description: List of online presence records }
-
-  /matchmaking/invite:
-    post:
-      tags: [Matchmaking]
-      summary: Create match invitation
-      security: [{ BearerAuth: [] }]
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [targetPlayerId]
-              properties:
-                targetPlayerId: { type: string }
-                matchFormat: { type: string }
-                stipulationId: { type: string }
-      responses:
-        '201': { description: Invitation created }
-        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-        '409': { description: 'Conflict – duplicate or target offline', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  /matchmaking/invitations:
-    get:
-      tags: [Matchmaking]
-      summary: Get my invitations (incoming + outgoing)
-      security: [{ BearerAuth: [] }]
-      responses:
-        '200':
-          description: Invitations with player info
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  incoming: { type: array, items: { $ref: '#/components/schemas/MatchmakingInvitation' } }
-                  outgoing: { type: array, items: { $ref: '#/components/schemas/MatchmakingInvitation' } }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  /matchmaking/invitations/{invitationId}/accept:
-    post:
-      tags: [Matchmaking]
-      summary: Accept match invitation
-      security: [{ BearerAuth: [] }]
-      parameters:
-        - name: invitationId
-          in: path
-          required: true
-          schema: { type: string }
-      responses:
-        '200':
-          description: Match created from invitation
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  matchId: { type: string }
-                  invitation: { $ref: '#/components/schemas/MatchmakingInvitation' }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-        '409': { description: 'Conflict – expired or already responded', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  /matchmaking/invitations/{invitationId}/decline:
-    post:
-      tags: [Matchmaking]
-      summary: Decline match invitation
-      security: [{ BearerAuth: [] }]
-      parameters:
-        - name: invitationId
-          in: path
-          required: true
-          schema: { type: string }
-      responses:
-        '200': { description: Declined }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   # ── Stables ────────────────────────────────────────────────────────
 
@@ -3345,6 +3520,7 @@ paths:
         '200': { description: Transfer request created }
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not permitted, or the transfers feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /transfers/me:
     get:

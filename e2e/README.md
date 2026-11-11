@@ -37,14 +37,29 @@ npm run test:dev
 Tests can run against different environments:
 
 - **Local**: `http://localhost:3000`
-- **Dev**: `http://dev.leagueszn.jpdxsolo.com`
-- **Prod**: `http://leagueszn.jpdxsolo.com`
+- **Dev**: `https://dev.leagueszn.jpdxsolo.com`
+- **Prod**: `https://leagueszn.jpdxsolo.com`
 
 Set the environment using `TEST_ENV`:
 
 ```bash
 TEST_ENV=prod npm test
 ```
+
+## Admin Credentials
+
+Credentials are not stored in this repo. Tests that sign in read them from the environment:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `E2E_ADMIN_PASSWORD` | Yes | Password of the Admin account |
+| `E2E_ADMIN_USERNAME` | Yes on deployed environments | Sign-in email of the Admin account (the user pool signs in by email) |
+
+```bash
+E2E_ADMIN_USERNAME=you@example.com E2E_ADMIN_PASSWORD='...' npm run test:admin
+```
+
+Tests that sign in fail with a clear error if the password is not set. Public page tests run without these variables.
 
 ## Test Structure
 

@@ -44,20 +44,21 @@ A serverless web application for managing a WWE 2K league with player standings,
 | Service | How It's Used |
 |---------|---------------|
 | **AWS Lambda** | Serverless functions for all API endpoints - organized by feature: `auth/`, `players/`, `matches/`, `championships/`, `tournaments/`, `standings/`, `seasons/`, `divisions/`, `images/`, `admin/` |
-| **API Gateway** | REST API exposing Lambda functions via HTTP; CORS configured for browser access; custom authorizer validates JWT tokens for admin routes |
-| **DynamoDB** | NoSQL database with 8 tables: Players, Matches (with TournamentIndex GSI), Championships, ChampionshipHistory, Tournaments, Seasons, SeasonStandings (with PlayerIndex GSI), Divisions - all use on-demand (PAY_PER_REQUEST) billing |
+| **API Gateway** | REST API exposing Lambda functions via HTTP; CORS configured for browser access; custom authorizer validates JWT tokens on most admin routes; the rest authenticate inside the Lambda |
+| **DynamoDB** | NoSQL database with 41 tables defined in `backend/serverless.yml`, including Players, Matches (with TournamentIndex GSI), Championships, ChampionshipHistory, Tournaments, Seasons, SeasonStandings (with PlayerIndex GSI), Divisions - all use on-demand (PAY_PER_REQUEST) billing |
 | **Amazon S3** | Two purposes: (1) hosts frontend static files, (2) stores player/championship images with public read access and presigned URL uploads |
 | **CloudFront** | CDN in front of S3; custom error responses redirect 403/404 to /index.html for SPA routing; HTTPS enforced |
-| **AWS Cognito** | User Pool for admin authentication - username-based login (not email), 24hr access tokens, 30-day refresh tokens |
+| **AWS Cognito** | User Pool for authentication - email-based sign-in (`UsernameAttributes: email`), 24hr access tokens, 30-day refresh tokens |
 | **ACM** | SSL/TLS certificates for CloudFront HTTPS |
 
 ### CI/CD & DevOps
 
 | Technology | How It's Used |
 |------------|---------------|
-| **GitHub Actions** | Two workflows automate deployment |
+| **GitHub Actions** | Two workflows automate deployment; both call `ci-checks.yml` first |
+| **ci-checks.yml** | Reusable workflow - backend lint, typecheck and tests, embedded API docs check, gitleaks secret scan. A failure blocks the deploy |
 | **deploy-dev.yml** | Triggered on PRs to main - builds frontend with `.env.devtest`, deploys backend to `devtest` stage, syncs to dev S3 bucket |
-| **deploy-prod.yml** | Triggered on merged PRs - builds frontend with `.env.production`, deploys backend to `dev` stage (production), syncs to prod S3 bucket, invalidates CloudFront cache |
+| **deploy-prod.yml** | Manually triggered (`workflow_dispatch`), deploys from `main` only - builds frontend with `.env.production`, deploys backend to `dev` stage (production), syncs to prod S3 bucket, invalidates CloudFront cache |
 | **Docker** | Runs DynamoDB Local (`amazon/dynamodb-local`) for offline development |
 
 ### Local Development Stack
@@ -167,7 +168,7 @@ wwe-2k-league/
 4. **Tournaments** - View tournament brackets and round-robin standings
 
 ### Admin Features (Requires Login)
-Credentials: **admin / FireGreen48!**
+Sign in with your own Admin account. Credentials are not stored in this repo; E2E tests read `E2E_ADMIN_USERNAME` and `E2E_ADMIN_PASSWORD` from the environment.
 
 1. **Manage Players** - Add new players, edit wrestlers, upload images, delete players
 2. **Schedule Match** - Create matches with participants, stipulations, championships (assign to season)
@@ -187,18 +188,19 @@ When a match result is recorded (`recordResult.ts`):
 3. If match has seasonId: updates season-specific standings in SeasonStandings table
 4. If championship match: updates current champion and creates history entry
 5. If tournament match: updates tournament brackets/standings
-6. All updates are transactional
+
+Steps 1-3 commit in one transaction (`runInTransaction`). Championship and tournament updates are not part of it: they run afterwards as separate writes.
 
 ### Tournament Types
 1. **Single Elimination**: Bracket-style, requires power of 2 participants (or gives byes)
 2. **Round Robin**: Everyone faces everyone, 2pts for win, 1pt for draw (G1 Climax style)
 
 ### Authentication & Authorization
-- Uses AWS Cognito User Pool for admin authentication
-- Username-based login (not email)
+- Uses AWS Cognito User Pool for authentication
+- Email-based sign-in (`UsernameAttributes: email`)
 - JWT tokens with 24-hour validity, 30-day refresh tokens
 - Lambda authorizer (`functions/auth/authorizer.ts`) validates tokens using aws-jwt-verify
-- All admin endpoints protected with custom authorizer in API Gateway
+- Admin endpoints are protected in one of two ways: 56 routes use the `adminAuthorizer` custom authorizer in API Gateway, and the others authenticate inside the Lambda (for example `functions/contenders/handler.ts` via `lib/authenticate`)
 
 ### Standings and dashboard data sources (no mock data)
 - **Standings "Last 5" (form)**: The form column comes from the standings API response (`recentForm` and `currentStreak`). The backend (`functions/standings/getStandings.ts`) computes these from the last 5 completed matches per player (DynamoDB Matches with `status = 'completed'`). The frontend displays only what the API returns; there is no client-side mock or fallback data.
@@ -244,10 +246,12 @@ npm run dev  # Starts at http://localhost:3000
 - `GET /seasons` - All seasons
 - `GET /divisions` - All divisions
 
+### Setup
+- `POST /auth/setup` - Create admin user (one-time setup). Not JWT-protected; requires the deployment's `ADMIN_SETUP_KEY`
+
 ### Admin (Requires Auth)
 All admin endpoints require a valid JWT token from Cognito in the `Authorization` header.
 
-- `POST /auth/setup` - Create admin user (one-time setup)
 - `POST /players` - Create player
 - `PUT /players/{id}` - Update player
 - `DELETE /players/{id}` - Delete player (fails if holds championship)
@@ -328,16 +332,12 @@ await standingsApi.get(seasonId);
 ### AWS Configuration
 
 **AWS CLI Profile**: `league-szn`
-- Access Key ID: `AKIAWKVRVMVFLQSXGRHD`
-- Secret Access Key: `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`
 - Region: `us-east-1`
 - Account ID: `435238036810`
 
-To configure (if not already set up):
+Credentials are never stored in this repo. Ask the account owner for your own access key, then set up the profile locally:
 ```bash
-aws configure set aws_access_key_id AKIAWKVRVMVFLQSXGRHD --profile league-szn
-aws configure set aws_secret_access_key xIvJd4Vyt2kAZbbK1ZNdtm/W8CvHtSFdjxxBpXwC --profile league-szn
-aws configure set region us-east-1 --profile league-szn
+aws configure --profile league-szn
 ```
 
 ---
@@ -346,8 +346,8 @@ aws configure set region us-east-1 --profile league-szn
 
 | Environment | Frontend URL | Backend API | S3 Bucket | Serverless Stage |
 |-------------|--------------|-------------|-----------|------------------|
-| **Prod** | http://leagueszn.jpdxsolo.com | https://9pcccl0caj.execute-api.us-east-1.amazonaws.com/dev | `leagueszn.jpdxsolo.com` | `dev` (default) |
-| **Dev** | http://dev.leagueszn.jpdxsolo.com | https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest | `dev.leagueszn.jpdxsolo.com` | `devtest` |
+| **Prod** | https://leagueszn.jpdxsolo.com | https://9pcccl0caj.execute-api.us-east-1.amazonaws.com/dev | `leagueszn.jpdxsolo.com` | `dev` (default) |
+| **Dev** | https://dev.leagueszn.jpdxsolo.com | https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest | `dev.leagueszn.jpdxsolo.com` | `devtest` |
 
 **Note**: Prod uses serverless stage `dev` for historical reasons (to preserve existing table names). Dev uses stage `devtest`.
 
@@ -359,34 +359,29 @@ This deploys:
 - DynamoDB tables (Players, Matches, Championships, ChampionshipHistory, Tournaments, Seasons, SeasonStandings)
 ### Deploy to PROD
 
-Deploy backend and frontend to production:
+Production deploys run through GitHub Actions, not from a local machine. Run the **Deploy to Production** workflow from `main`, either in the Actions tab or with:
 
 ```bash
-# Backend only
-cd backend && npx serverless deploy --aws-profile league-szn
-
-# Frontend only
-cd frontend && npm run build && aws s3 sync dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
-
-# Full deployment (both)
-cd backend && npx serverless deploy --aws-profile league-szn && cd ../frontend && npm run build && aws s3 sync dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
+gh workflow run deploy-prod.yml --ref main
 ```
+
+The workflow runs the checks, supplies the required secrets, and uploads the frontend with the right cache headers.
 
 ---
 
 ### Deploy to DEV
 
-Deploy backend and frontend to dev/testing environment:
+Deploy backend and frontend to dev/testing environment. Export `ADMIN_SETUP_KEY` and `DEV_ACM_CERTIFICATE_ARN` first. Do not add `--delete` to the frontend sync: old files in `assets/` must stay so open tabs can still load their chunks.
 
 ```bash
 # Backend only
 cd backend && npx serverless deploy --stage devtest --aws-profile league-szn
 
 # Frontend only (uses .env.devtest)
-cd frontend && npm run build -- --mode devtest && aws s3 sync dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn --delete
+cd frontend && npm run build -- --mode devtest && aws s3 sync dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn
 
 # Full deployment (both)
-cd backend && npx serverless deploy --stage devtest --aws-profile league-szn && cd ../frontend && npm run build -- --mode devtest && aws s3 sync dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn --delete
+cd backend && npx serverless deploy --stage devtest --aws-profile league-szn && cd ../frontend && npm run build -- --mode devtest && aws s3 sync dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn
 ```
 
 ---
@@ -472,7 +467,7 @@ vi.mock('../../../lib/repositories', () => ({
 }));
 ```
 
-**Migration status**: ~46 handlers under `backend/functions/` still import from `backend/lib/dynamodb` directly (matchmaking, some CRUD handlers). These are targeted for future cleanup but do not block new feature development — new code should always use the repository pattern.
+**Migration status**: Handlers under `backend/functions/` no longer import `backend/lib/dynamodb` directly. New code should keep using the repository pattern.
 
 ## Code Style
 
@@ -500,5 +495,5 @@ Current active branches:
 
 ## Contact / Repository
 
-- GitHub: https://github.com/jpDxsolo/league_szn
+- GitHub: https://github.com/jpDxsoloOrg/league_szn
 - Owner: jpDxsolo

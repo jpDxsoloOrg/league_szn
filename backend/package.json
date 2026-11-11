@@ -7,7 +7,7 @@
     "deploy": "serverless deploy",
     "validate-api-docs": "npx @redocly/cli lint docs/openapi.yaml",
     "embed-docs": "node scripts/embed-docs.js",
-    "remove": "serverless remove",
+    "remove": "echo 'npm run remove is disabled: the dev stage is production. Run npx serverless remove --stage <stage> by hand for a non-production stage.' >&2 && exit 1",
     "logs": "serverless logs",
     "offline": "SLS_RUNTIME=nodejs20.x serverless offline start --stage offline --noPrependStageInUrl --prefix dev",
     "create-tables": "ts-node scripts/create-tables.ts",
@@ -18,6 +18,7 @@
     "notify-pending-invites:prod": "AWS_PROFILE=league-szn DYNAMODB_ENDPOINT=https://dynamodb.us-east-1.amazonaws.com SERVICE_NAME=wwe-2k-league-api STAGE=dev ts-node scripts/notify-pending-invites.ts",
     "migrate:wrestlers-roster": "ts-node scripts/migrate-wrestlers-roster.ts",
     "backfill-rivalry-heat": "ts-node scripts/backfill-rivalry-heat.ts",
+    "delete-transfer-requests": "ts-node scripts/delete-transfer-requests.ts",
     "lint": "eslint functions/ lib/",
     "test": "vitest run",
     "test:watch": "vitest"

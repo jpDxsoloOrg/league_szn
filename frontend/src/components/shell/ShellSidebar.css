@@ -1,0 +1,98 @@
+/* Desktop navigation rail, fixed to the left edge above the ticker. */
+.shell-sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--z-shell);
+  display: flex;
+  flex-direction: column;
+  width: var(--shell-sidebar-width);
+  /* Installed, the status bar and a side notch overlay the page. */
+  padding: env(safe-area-inset-top) 0 0 env(safe-area-inset-left);
+  background-color: var(--color-surface);
+  border-right: 1px solid var(--color-hairline);
+}
+
+.shell-sidebar__brand {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-height: var(--shell-header-height);
+  padding: 0 1rem;
+  border-top: 2px solid var(--color-pink);
+  border-bottom: 1px solid var(--color-hairline);
+  background-image: var(--hatch);
+}
+
+.shell-sidebar__nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0.75rem 0 1.25rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.shell-sidebar__sections,
+.shell-sidebar__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shell-sidebar__section + .shell-sidebar__section {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.shell-sidebar__heading {
+  margin: 0 0 0.25rem;
+  padding: 0 1rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.shell-sidebar__link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 40px;
+  padding: 0 1rem;
+  border-left: 3px solid transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-label);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.shell-sidebar__link:hover {
+  background-color: var(--color-overlay-soft);
+  color: var(--color-text);
+}
+
+/* The active page is a slanted plate in the section colour, as on the booking desk. */
+.shell-sidebar__link--active {
+  border-left-color: var(--section-accent);
+  background-color: var(--color-surface-raised);
+  background-image: linear-gradient(100deg, var(--section-tint), transparent 70%);
+  color: var(--section-accent);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 0.75rem) 100%, 0 100%);
+}
+
+.shell-sidebar__link:focus-visible {
+  outline-offset: -2px;
+}
+
+@media print {
+  .shell-sidebar {
+    display: none;
+  }
+}

@@ -1,9 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
-import { NotFoundError } from '../errors';
+import { ConcurrencyError, NotFoundError } from '../errors';
 import type {
   RosterRepository,
   PlayerCreateInput,
   PlayerPatch,
+  PlayerDisciplinePatch,
   TagTeamCreateInput,
   TagTeamPatch,
   StableCreateInput,
@@ -48,10 +49,19 @@ export class InMemoryRosterRepository implements RosterRepository {
 
   players: RosterRepository['players'] = {
     findById: async (playerId: string): Promise<Player | null> => {
-      return this.playersStore.get(playerId) ?? null;
+      const player = this.playersStore.get(playerId);
+      return player && !player.deletedAt ? player : null;
     },
 
     list: async (): Promise<Player[]> => {
+      return Array.from(this.playersStore.values()).filter((player) => !player.deletedAt);
+    },
+
+    findByIdWithDeleted: async (playerId: string): Promise<Player | null> => {
+      return this.playersStore.get(playerId) ?? null;
+    },
+
+    listWithDeleted: async (): Promise<Player[]> => {
       return Array.from(this.playersStore.values());
     },
 
@@ -81,7 +91,7 @@ export class InMemoryRosterRepository implements RosterRepository {
 
     update: async (playerId: string, patch: PlayerPatch): Promise<Player> => {
       const existing = this.playersStore.get(playerId);
-      if (!existing) throw new NotFoundError('Player', playerId);
+      if (!existing || existing.deletedAt) throw new NotFoundError('Player', playerId);
       const updated: Player = {
         ...existing,
         ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)),
@@ -95,9 +105,32 @@ export class InMemoryRosterRepository implements RosterRepository {
       this.playersStore.delete(playerId);
     },
 
+    updateDiscipline: async (
+      playerId: string,
+      patch: PlayerDisciplinePatch,
+      expectedVersion: number,
+    ): Promise<Player> => {
+      const existing = this.playersStore.get(playerId);
+      if (!existing || existing.deletedAt || (existing.disciplineVersion ?? 0) !== expectedVersion) {
+        throw new ConcurrencyError('Player', playerId);
+      }
+      const { deactivatedAt: _removed, ...withoutDeactivatedAt } = existing;
+      const updated: Player = {
+        ...withoutDeactivatedAt,
+        strikes: patch.strikes,
+        deactivations: patch.deactivations,
+        ...(patch.deactivatedAt !== null ? { deactivatedAt: patch.deactivatedAt } : {}),
+        ...(patch.signupGuardKey !== undefined ? { signupGuardKey: patch.signupGuardKey } : {}),
+        disciplineVersion: expectedVersion + 1,
+        updatedAt: new Date().toISOString(),
+      };
+      this.playersStore.set(playerId, updated);
+      return updated;
+    },
+
     findByUserId: async (userId: string): Promise<Player | null> => {
       for (const player of this.playersStore.values()) {
-        if (player.userId === userId) {
+        if (player.userId === userId && !player.deletedAt) {
           return player;
         }
       }

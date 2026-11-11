@@ -43,6 +43,17 @@ export interface ContenderOverride {
   createdAt: string;
   expiresAt?: string;
   active: boolean;
+  /** Stored position on the title's list, or null when the player isn't on it. */
+  currentRank?: number | null;
+}
+
+/** Where a new override left the player, once the title was recalculated. */
+export type OverridePlacement =
+  | { status: 'onList'; rank: number }
+  | { status: 'notOnList' | 'noActiveSeason' | 'recalculationFailed'; rank: null };
+
+export interface SetOverrideResult extends ContenderOverride {
+  placement: OverridePlacement;
 }
 
 export interface SetOverrideRequest {

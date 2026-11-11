@@ -1,0 +1,153 @@
+.shell-header {
+  /* iPad and landscape iPhone use this bar. Installed, the status bar overlays
+     the page; the sidebar covers the left edge, so only the right can be notched. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 0;
+  background-color: var(--color-surface);
+  border-top: 2px solid var(--color-pink);
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.shell-header__inner {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  min-height: calc(var(--shell-header-height) - 3px);
+  padding: 0 1.5rem;
+}
+
+/* "SECTION // PAGE", led by a square marker in the section colour. */
+.shell-header__crumb {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.shell-header__crumb::before {
+  content: '';
+  width: 0.625rem;
+  height: 0.625rem;
+  transform: skewX(-9deg);
+  background-color: var(--section-accent);
+}
+
+.shell-header__crumb-section {
+  color: var(--section-accent);
+}
+
+.shell-header__crumb-page {
+  color: var(--color-text);
+}
+
+.shell-header__crumb-page::before {
+  content: '//';
+  margin-right: 0.625rem;
+  color: var(--color-text-muted);
+}
+
+.shell-header__status {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+}
+
+.shell-header__stat {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0 1rem;
+  border-left: 1px solid var(--color-hairline);
+  font-family: var(--font-label);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.shell-header__stat-label {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+/* The show name is the long one, so it is the one that gives way. */
+.shell-header__stat:has(.shell-header__stat-value--link) {
+  flex: 0 1 auto;
+}
+
+.shell-header__stat-value {
+  overflow: hidden;
+  color: var(--color-cyan);
+  text-overflow: ellipsis;
+}
+
+.shell-header__stat-value--link {
+  text-decoration: none;
+}
+
+.shell-header__stat-value--link:hover {
+  color: var(--color-cyan-bright);
+}
+
+.shell-header__live {
+  display: inline-flex;
+  text-decoration: none;
+}
+
+.shell-header__tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shell-header__sign-in {
+  margin-left: 0.5rem;
+}
+
+.shell-header__icon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border-radius: var(--radius-control);
+  color: var(--color-text-secondary);
+}
+
+.shell-header__icon-link:hover {
+  background-color: var(--color-overlay-soft);
+  color: var(--color-text);
+}
+
+.shell-header__icon-link--active {
+  color: var(--section-accent);
+}
+
+/* The status strip gives way first, then the page name, so the tools always fit. */
+@media (max-width: 1279px) {
+  .shell-header__status {
+    visibility: hidden;
+  }
+}
+
+@media (max-width: 1023px) {
+  .shell-header__crumb-page {
+    display: none;
+  }
+}

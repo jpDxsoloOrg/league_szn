@@ -1,0 +1,13 @@
+.ui-show-more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.ui-show-more__count {
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+}

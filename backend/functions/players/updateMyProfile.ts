@@ -1,14 +1,18 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { NotFoundError } from '../../lib/repositories/errors';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { success, badRequest, notFound, refused, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
-import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
+import { NEEDS_WRESTLER, isNeedsWrestler } from '../../lib/needsWrestler';
 import { applyMovesetFields } from './movesetFields';
 import { getAuthContext, requireRole } from '../../lib/auth';
+import { isSignupRefused } from '../../lib/accountStatus';
+import { isSignupBlocked } from '../../lib/discipline';
+import { toOwnPlayer } from '../../lib/publicPlayer';
 import type { PlayerPatch } from '../../lib/repositories';
 import {
   filterExistingWrestlerIds,
+  parseSlotChange,
   rejectDuplicateSlotAssignment,
   resolveWrestlerForAssignment,
 } from './wrestlerAssignment';
@@ -25,16 +29,7 @@ const FK_FIELDS = ['currentWrestlerId', 'alternateWrestlerId'] as const;
 const MAX_NAME_LENGTH = 100;
 const MAX_URL_LENGTH = 2048;
 
-type SlotChange = { present: false } | { present: true; newId: string | null };
-
-function parseSlotChange(value: unknown): SlotChange {
-  if (value === undefined) return { present: false };
-  if (value === null || value === '') return { present: true, newId: null };
-  if (typeof value === 'string' && value.length > 0) {
-    return { present: true, newId: value };
-  }
-  return { present: false };
-}
+const normalizePsnId = (psnId: string | undefined): string => (psnId ?? '').trim().toLowerCase();
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Wrestler');
@@ -53,6 +48,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const patch: PlayerPatch = {};
     let hasChanges = false;
 
+    // Parse FK changes.
+    const currentChange = parseSlotChange(body.currentWrestlerId, player.currentWrestlerId);
+    const alternateChange = parseSlotChange(body.alternateWrestlerId, player.alternateWrestlerId);
+
     // Validate and apply string fields.
     for (const field of STRING_FIELDS) {
       if (body[field] === undefined) continue;
@@ -63,7 +62,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
       if (field === 'alternateWrestler' && value === '') {
         // Only let the legacy text clear when no FK is being set on the slot.
-        if (body.alternateWrestlerId === undefined) {
+        if (!alternateChange.present) {
           patch.alternateWrestler = undefined;
           hasChanges = true;
         }
@@ -104,16 +103,39 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         return badRequest(`Image URL must be ${MAX_URL_LENGTH} characters or less`);
       }
 
-      // Skip the legacy text when an FK is set on the same slot — FK wins.
-      if (field === 'currentWrestler' && body.currentWrestlerId !== undefined) {
+      // Skip the legacy text when an FK changes the same slot — FK wins.
+      if (field === 'currentWrestler' && currentChange.present) {
         continue;
       }
-      if (field === 'alternateWrestler' && body.alternateWrestlerId !== undefined) {
+      if (field === 'alternateWrestler' && alternateChange.present) {
         continue;
       }
 
-      (patch as Record<string, unknown>)[field] = value;
+      // A blank wrestler name falls back to the placeholder, never '' or spaces.
+      (patch as Record<string, unknown>)[field] =
+        field === 'currentWrestler' && isNeedsWrestler(value) ? NEEDS_WRESTLER : value;
       hasChanges = true;
+    }
+
+    const newPsnId = normalizePsnId(patch.psnId);
+    const oldPsnId = normalizePsnId(player.psnId);
+    const psnIdChanges = patch.psnId !== undefined && newPsnId !== oldPsnId;
+
+    // The signup guard reads the PSN ID off a blocked row, so moving it away
+    // would free it for a new account. A row with none has nothing to move.
+    // Case counts as a change here. Surrounding spaces do not, because the profile
+    // form trims what it sends, but the stored value is still left as it is.
+    if (patch.psnId !== undefined && oldPsnId && isSignupBlocked(player)) {
+      if (patch.psnId.trim() !== (player.psnId ?? '').trim()) {
+        return refused(403, 'PSN_ID_LOCKED', 'A PSN ID cannot be changed while sign-ups are blocked');
+      }
+      delete patch.psnId;
+    }
+
+    // Claiming the PSN ID of someone blocked or deactivated would get round the
+    // signup guard, which checks the same IDs. The answer says nothing about why.
+    if (psnIdChanges && newPsnId && await isSignupRefused({ psnId: patch.psnId, excludePlayerId: playerId })) {
+      return refused(409, 'PSN_ID_UNAVAILABLE', 'That PSN ID cannot be used');
     }
 
     const movesetError = applyMovesetFields(body, patch);
@@ -121,10 +143,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (body.bio !== undefined || body.signatures !== undefined || body.finishers !== undefined) {
       hasChanges = true;
     }
-
-    // Parse FK changes.
-    const currentChange = parseSlotChange(body.currentWrestlerId);
-    const alternateChange = parseSlotChange(body.alternateWrestlerId);
 
     if (currentChange.present || alternateChange.present) {
       const finalCurrent = currentChange.present
@@ -208,11 +226,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         tx.updatePlayer(playerId, patch as Record<string, unknown>);
       });
       const refreshed = await roster.players.findById(playerId);
-      return success(refreshed);
+      return success(refreshed && toOwnPlayer(refreshed));
     }
 
     const updated = await roster.players.update(playerId, patch);
-    return success(updated);
+    return success(toOwnPlayer(updated));
   } catch (err) {
     if (err instanceof NotFoundError) return notFound(err.message);
     console.error('Error updating player profile:', err);

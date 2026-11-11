@@ -17,14 +17,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return notFound('Championship not found');
     }
 
-    // Delete the championship
-    await championships.delete(championshipId);
-
-    // Also delete championship history
+    // History goes first: if a step fails the championship still exists, so
+    // the delete can be retried and no orphaned history is left behind.
     const history = await championships.listHistory(championshipId);
     for (const entry of history) {
       await championships.deleteHistoryEntry(championshipId, entry.wonDate);
     }
+
+    await championships.delete(championshipId);
 
     return noContent();
   } catch (err) {

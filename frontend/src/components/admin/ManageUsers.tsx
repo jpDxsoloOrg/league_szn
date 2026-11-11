@@ -1,8 +1,26 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { usersApi, playersApi, divisionsApi, wrestlersApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Division, Wrestler } from '../../types';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
 import { buildWrestlerOptionGroups } from '../../utils/wrestlerOptions';
+import Badge from '../ui/Badge';
+import type { BadgeTone } from '../ui/Badge';
+import Button from '../ui/Button';
+import DataTable from '../ui/DataTable';
+import type { DataTableColumn } from '../ui/DataTable';
+import EmptyState from '../ui/EmptyState';
+import Modal from '../ui/Modal';
+import PageHeader from '../ui/PageHeader';
+import Skeleton from '../ui/Skeleton';
+import Tabs from '../ui/Tabs';
+import AdminNotice from './AdminNotice';
+import ConfirmModal from './ConfirmModal';
+import SourceLoadNotice from './SourceLoadNotice';
+import { settleSources } from './loadSources';
+import HiddenBadge from './HiddenBadge';
+import './adminRoster.css';
 import './ManageUsers.css';
 
 /**
@@ -35,7 +53,22 @@ interface CognitoUser {
 
 type FilterTab = 'all' | 'wrestler-requests' | 'wrestlers' | 'admins' | 'disabled';
 
+const ROLE_TONES: Record<string, BadgeTone> = {
+  Admin: 'pink',
+  Moderator: 'violet',
+  Wrestler: 'primary',
+};
+
+const USER_SOURCES = {
+  users: () => usersApi.list(),
+  divisions: () => divisionsApi.getAll(),
+  wrestlers: () => wrestlersApi.getAll(),
+};
+
+type UserSource = keyof typeof USER_SOURCES;
+
 export default function ManageUsers() {
+  const { t } = useTranslation();
   const { isSuperAdmin } = useAuth();
   const [users, setUsers] = useState<CognitoUser[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
@@ -48,24 +81,19 @@ export default function ManageUsers() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
+  const [managedUsername, setManagedUsername] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [failedSources, setFailedSources] = useState<UserSource[]>([]);
 
   const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const [usersResult, divisionsData, wrestlersData] = await Promise.all([
-        usersApi.list(),
-        divisionsApi.getAll(),
-        wrestlersApi.getAll(),
-      ]);
-      setUsers(usersResult.users);
-      setDivisions(divisionsData);
-      setWrestlers(wrestlersData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load data');
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    setError(null);
+    const { values, failed } = await settleSources(USER_SOURCES);
+    if (values.users) setUsers(values.users.users);
+    if (values.divisions) setDivisions(values.divisions);
+    if (values.wrestlers) setWrestlers(values.wrestlers);
+    setFailedSources(failed);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -75,7 +103,7 @@ export default function ManageUsers() {
   const handleDivisionChange = async (playerId: string, divisionId: string) => {
     setDivisionLoading(playerId);
     try {
-      await playersApi.update(playerId, { divisionId: divisionId || undefined });
+      await playersApi.update(playerId, { divisionId });
       setUsers(prev =>
         prev.map(u =>
           u.player?.playerId === playerId
@@ -84,7 +112,7 @@ export default function ManageUsers() {
         )
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update division');
+      setError(err instanceof Error ? err.message : t('adminRoster.users.divisionError', 'Failed to update division'));
     } finally {
       setDivisionLoading(null);
     }
@@ -121,7 +149,7 @@ export default function ManageUsers() {
       // rows' dropdowns (and any released one comes back).
       setWrestlers(await wrestlersApi.getAll());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to assign wrestler');
+      setError(err instanceof Error ? err.message : t('adminRoster.users.wrestlerError', 'Failed to assign wrestler'));
     } finally {
       setWrestlerLoading(null);
     }
@@ -138,13 +166,21 @@ export default function ManageUsers() {
     setSyncResult(null);
     try {
       const result = await usersApi.syncRoles();
+      const summary = t('adminRoster.users.syncResult', {
+        defaultValue: 'Synced {{total}} players — {{granted}} shown, {{revoked}} hidden, {{unchanged}} unchanged',
+        total: result.totalPlayers,
+        granted: result.granted,
+        revoked: result.revoked,
+        unchanged: result.unchanged,
+      });
       setSyncResult(
-        `Synced ${result.totalPlayers} players — ${result.granted} shown, ${result.revoked} hidden, ${result.unchanged} unchanged` +
-          (result.skipped > 0 ? `, ${result.skipped} skipped` : '')
+        result.skipped > 0
+          ? `${summary}, ${t('adminRoster.users.syncSkipped', { defaultValue: '{{count}} skipped', count: result.skipped })}`
+          : summary,
       );
       await fetchData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sync wrestler roles');
+      setError(err instanceof Error ? err.message : t('adminRoster.users.syncError', 'Failed to sync wrestler roles'));
     } finally {
       setSyncing(false);
     }
@@ -167,7 +203,7 @@ export default function ManageUsers() {
         setUsers(refreshed.users);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update role');
+      setError(err instanceof Error ? err.message : t('adminRoster.users.roleError', 'Failed to update role'));
     } finally {
       setActionLoading(null);
     }
@@ -183,24 +219,24 @@ export default function ManageUsers() {
         )
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update user status');
+      setError(err instanceof Error ? err.message : t('adminRoster.users.statusError', 'Failed to update user status'));
     } finally {
       setActionLoading(null);
     }
   };
 
-  const handleDeleteUser = async (username: string) => {
-    if (!confirm(`Permanently delete user "${username}"? This cannot be undone.`)) {
-      return;
-    }
+  const handleDeleteUser = async () => {
+    if (!pendingDelete) return;
+    const username = pendingDelete;
     setActionLoading(username);
     try {
       await usersApi.deleteUser(username);
       setUsers((prev) => prev.filter((u) => u.username !== username));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete user');
+      setError(err instanceof Error ? err.message : t('adminRoster.users.deleteError', 'Failed to delete user'));
     } finally {
       setActionLoading(null);
+      setPendingDelete(null);
     }
   };
 
@@ -225,303 +261,268 @@ export default function ManageUsers() {
     }
   })();
 
-  const getRoleBadges = (groups: string[]) => {
-    return groups.map((group) => (
-      <span key={group} className={`role-badge role-${group.toLowerCase()}`}>
-        {group}
+  const managedUser = users.find((user) => user.username === managedUsername) ?? null;
+
+  const renderWrestlerCell = (user: CognitoUser) => {
+    const linkedPlayer = user.player;
+    if (!linkedPlayer) return '—';
+    if (wrestlerLoading === linkedPlayer.playerId) {
+      return <span className="ar-sub">{t('common.saving', 'Saving...')}</span>;
+    }
+    const options = buildWrestlerOptionGroups(wrestlers, linkedPlayer.currentWrestlerId || undefined, undefined);
+    return (
+      <span className="ar-stack">
+        <select
+          className="ar-input"
+          aria-label={`${t('adminRoster.users.assignedWrestlerFor', 'Assigned wrestler for')} ${user.email}`}
+          value={linkedPlayer.currentWrestlerId}
+          onChange={(e) => handleWrestlerChange(linkedPlayer.playerId, e.target.value)}
+        >
+          <option value="">{t('adminRoster.users.noWrestler', 'No Wrestler')}</option>
+          {options.map(({ promotion, wrestlers: group }) => (
+            <optgroup key={promotion} label={promotion}>
+              {group.map((w) => (
+                <option key={w.wrestlerId} value={w.wrestlerId}>{w.name}</option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+        {isNeedsWrestler(linkedPlayer.currentWrestler) && <HiddenBadge />}
       </span>
-    ));
+    );
   };
 
-  if (loading) {
-    return <div className="manage-users"><p>Loading users...</p></div>;
-  }
+  const renderDivisionCell = (user: CognitoUser) => {
+    const linkedPlayer = user.player;
+    if (!linkedPlayer) return '—';
+    if (divisionLoading === linkedPlayer.playerId) {
+      return <span className="ar-sub">{t('common.saving', 'Saving...')}</span>;
+    }
+    return (
+      <select
+        className="ar-input"
+        aria-label={`${t('adminRoster.users.divisionFor', 'Division for')} ${user.email}`}
+        value={linkedPlayer.divisionId || ''}
+        onChange={(e) => handleDivisionChange(linkedPlayer.playerId, e.target.value)}
+      >
+        <option value="">{t('adminRoster.players.noDivision', 'No Division')}</option>
+        {divisions.map((division) => (
+          <option key={division.divisionId} value={division.divisionId}>{division.name}</option>
+        ))}
+      </select>
+    );
+  };
+
+  const columns: DataTableColumn<CognitoUser>[] = [
+    {
+      key: 'user',
+      header: t('adminRoster.users.user', 'User'),
+      sortValue: (user) => user.email,
+      render: (user) => (
+        <span className="ar-stack">
+          <span className="ar-strong">{user.email}</span>
+          {user.wrestlerName && <span className="ar-sub">{user.wrestlerName}</span>}
+        </span>
+      ),
+    },
+    {
+      key: 'roles',
+      header: t('adminRoster.users.roles', 'Roles'),
+      render: (user) => (
+        <span className="ar-badges">
+          {user.groups.length > 0
+            ? user.groups.map((group) => <Badge key={group} tone={ROLE_TONES[group] ?? 'neutral'}>{group}</Badge>)
+            : <span className="ar-sub">{t('adminRoster.users.noRoles', 'No roles')}</span>}
+        </span>
+      ),
+    },
+    { key: 'wrestler', header: t('adminRoster.users.assignedWrestler', 'Assigned Wrestler'), render: renderWrestlerCell },
+    { key: 'division', header: t('adminRoster.users.division', 'Division'), render: renderDivisionCell },
+    {
+      key: 'status',
+      header: t('adminRoster.users.status', 'Status'),
+      sortValue: (user) => (user.enabled ? user.status : ''),
+      render: (user) => (
+        <span className="ar-stack">
+          <Badge tone={user.enabled ? 'neutral' : 'loss'}>
+            {user.enabled ? user.status : t('adminRoster.users.disabled', 'Disabled')}
+          </Badge>
+          {user.created && <span className="ar-sub">{new Date(user.created).toLocaleDateString()}</span>}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: t('common.actions', 'Actions'),
+      align: 'end',
+      render: (user) => (
+        <div className="ar-row-actions">
+          {user.wrestlerName && !user.groups.includes('Wrestler') && (
+            <Button
+              size="sm"
+              loading={actionLoading === user.username}
+              onClick={() => handleRoleAction(user.username, 'Wrestler', 'promote')}
+            >
+              {t('adminRoster.users.approveWrestler', 'Approve Wrestler')}
+            </Button>
+          )}
+          <Button variant="secondary" size="sm" onClick={() => setManagedUsername(user.username)}>
+            {t('adminRoster.users.manage', 'Manage')}
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  /** One role button in the Manage dialog. */
+  const roleButton = (user: CognitoUser, role: string, action: 'promote' | 'demote', label: string) => (
+    <Button
+      variant={action === 'promote' ? 'secondary' : 'ghost'}
+      disabled={actionLoading === user.username}
+      onClick={() => handleRoleAction(user.username, role, action)}
+    >
+      {label}
+    </Button>
+  );
 
   return (
-    <div className="manage-users">
-      <div className="users-header">
-        <h2>User Management</h2>
-        <div className="users-header-actions">
-          <button
-            className="btn-refresh"
-            onClick={handleSyncRoles}
-            disabled={syncing}
-            title="Update every player's visibility from their Cognito Wrestler role"
-          >
-            {syncing ? 'Syncing...' : 'Sync Wrestler Roles'}
-          </button>
-          <button className="btn-refresh" onClick={fetchData}>
-            Refresh
-          </button>
-        </div>
-      </div>
+    <div className="ar-page manage-users">
+      <PageHeader
+        title={t('adminRoster.users.title', 'User Management')}
+        actions={(
+          <>
+            <Button
+              variant="secondary"
+              loading={syncing}
+              onClick={handleSyncRoles}
+              title={t('adminRoster.users.syncHint', "Update every player's visibility from their Cognito Wrestler role")}
+            >
+              {syncing ? t('adminRoster.users.syncing', 'Syncing...') : t('adminRoster.users.sync', 'Sync Wrestler Roles')}
+            </Button>
+            <Button variant="ghost" onClick={fetchData}>{t('adminRoster.users.refresh', 'Refresh')}</Button>
+          </>
+        )}
+      />
 
       {syncResult && (
-        <div className="success-message" role="status">
+        <AdminNotice tone="success" dismissLabel={t('adminRoster.dismiss', 'Dismiss')} onDismiss={() => setSyncResult(null)}>
           {syncResult}
-          <button onClick={() => setSyncResult(null)} className="dismiss-btn">Dismiss</button>
-        </div>
+        </AdminNotice>
       )}
 
       {wrestlerRequests.length > 0 && (
-        <div className="wrestler-requests-banner">
-          <strong>{wrestlerRequests.length} wrestler request{wrestlerRequests.length !== 1 ? 's' : ''}</strong> pending approval
-        </div>
+        <AdminNotice tone="warning">
+          {t('adminRoster.users.requestsPending', {
+            defaultValue: '{{count}} wrestler request(s) pending approval',
+            count: wrestlerRequests.length,
+          })}
+        </AdminNotice>
       )}
 
+      <SourceLoadNotice failed={failedSources} onRetry={fetchData} retrying={loading} />
       {error && (
-        <div className="error-message" role="alert">
+        <AdminNotice tone="error" dismissLabel={t('adminRoster.dismiss', 'Dismiss')} onDismiss={() => setError(null)}>
           {error}
-          <button onClick={() => setError(null)} className="dismiss-btn">Dismiss</button>
-        </div>
+        </AdminNotice>
       )}
 
-      <div className="filter-tabs">
-        <button
-          className={activeFilter === 'all' ? 'active' : ''}
-          onClick={() => setActiveFilter('all')}
-        >
-          All Users ({users.length})
-        </button>
-        <button
-          className={activeFilter === 'wrestler-requests' ? 'active' : ''}
-          onClick={() => setActiveFilter('wrestler-requests')}
-        >
-          Wrestler Requests ({wrestlerRequests.length})
-        </button>
-        <button
-          className={activeFilter === 'wrestlers' ? 'active' : ''}
-          onClick={() => setActiveFilter('wrestlers')}
-        >
-          Wrestlers
-        </button>
-        <button
-          className={activeFilter === 'admins' ? 'active' : ''}
-          onClick={() => setActiveFilter('admins')}
-        >
-          Admins
-        </button>
-        <button
-          className={activeFilter === 'disabled' ? 'active' : ''}
-          onClick={() => setActiveFilter('disabled')}
-        >
-          Disabled ({disabledUsers.length})
-        </button>
-      </div>
+      {loading ? <Skeleton variant="table" /> : (
+        <>
+          <Tabs
+            label={t('adminRoster.users.filterLabel', 'Filter users')}
+            value={activeFilter}
+            onValueChange={(value) => setActiveFilter(value as FilterTab)}
+            items={[
+              { value: 'all', label: `${t('adminRoster.users.tabAll', 'All Users')} (${users.length})` },
+              { value: 'wrestler-requests', label: `${t('adminRoster.users.tabRequests', 'Wrestler Requests')} (${wrestlerRequests.length})` },
+              { value: 'wrestlers', label: t('adminRoster.users.tabWrestlers', 'Wrestlers') },
+              { value: 'admins', label: t('adminRoster.users.tabAdmins', 'Admins') },
+              { value: 'disabled', label: `${t('adminRoster.users.tabDisabled', 'Disabled')} (${disabledUsers.length})` },
+            ]}
+          />
 
-      <div className="users-table-container">
-        <table className="users-table">
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>Wrestler Name</th>
-              <th>Roles</th>
-              <th>Assigned Wrestler</th>
-              <th>Division</th>
-              <th>Status</th>
-              <th>Joined</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.map((user) => (
-              <tr key={user.username} className={`${user.wrestlerName && !user.groups.includes('Wrestler') ? 'wrestler-request-row' : ''} ${!user.enabled ? 'disabled-user-row' : ''}`}>
-                <td>{user.email}</td>
-                <td>
-                  {user.wrestlerName ? (
-                    <span className="wrestler-name">{user.wrestlerName}</span>
-                  ) : (
-                    <span className="no-value">-</span>
-                  )}
-                </td>
-                <td>
-                  <div className="roles-cell-content">
-                    {user.groups.length > 0 ? getRoleBadges(user.groups) : (
-                      <span className="no-value">No roles</span>
-                    )}
-                  </div>
-                </td>
-                <td>
-                  {(() => {
-                    const linkedPlayer = user.player;
-                    if (!linkedPlayer) return <span className="no-value">-</span>;
-                    if (wrestlerLoading === linkedPlayer.playerId) {
-                      return <span className="action-loading">Saving...</span>;
-                    }
-                    const options = buildWrestlerOptionGroups(
-                      wrestlers,
-                      linkedPlayer.currentWrestlerId || undefined,
-                      undefined,
-                    );
-                    return (
-                      <select
-                        className="wrestler-select"
-                        aria-label={`Assigned wrestler for ${user.email}`}
-                        value={linkedPlayer.currentWrestlerId}
-                        onChange={(e) => handleWrestlerChange(linkedPlayer.playerId, e.target.value)}
-                      >
-                        <option value="">No Wrestler</option>
-                        {options.map(({ promotion, wrestlers: group }) => (
-                          <optgroup key={promotion} label={promotion}>
-                            {group.map((w) => (
-                              <option key={w.wrestlerId} value={w.wrestlerId}>{w.name}</option>
-                            ))}
-                          </optgroup>
-                        ))}
-                      </select>
-                    );
-                  })()}
-                </td>
-                <td>
-                  {(() => {
-                    const linkedPlayer = user.player;
-                    if (!linkedPlayer) return <span className="no-value">-</span>;
-                    return divisionLoading === linkedPlayer.playerId ? (
-                      <span className="action-loading">Saving...</span>
-                    ) : (
-                      <select
-                        className="division-select"
-                        aria-label={`Division for ${user.email}`}
-                        value={linkedPlayer.divisionId || ''}
-                        onChange={(e) => handleDivisionChange(linkedPlayer.playerId, e.target.value)}
-                      >
-                        <option value="">No Division</option>
-                        {divisions.map((d) => (
-                          <option key={d.divisionId} value={d.divisionId}>{d.name}</option>
-                        ))}
-                      </select>
-                    );
-                  })()}
-                </td>
-                <td>
-                  <span className={`status-badge ${!user.enabled ? 'status-disabled' : `status-${user.status?.toLowerCase()}`}`}>
-                    {!user.enabled ? 'Disabled' : user.status}
-                  </span>
-                </td>
-                <td>{user.created ? new Date(user.created).toLocaleDateString() : '-'}</td>
-                <td>
-                  <div className="actions-cell-content">
-                    {actionLoading === user.username ? (
-                      <span className="action-loading">Updating...</span>
-                    ) : (
-                      <>
-                        {/* Approve as Wrestler */}
-                        {user.wrestlerName && !user.groups.includes('Wrestler') && (
-                          <button
-                            className="btn-action btn-approve"
-                            onClick={() => handleRoleAction(user.username, 'Wrestler', 'promote')}
-                            title="Approve as Wrestler"
-                          >
-                            Approve Wrestler
-                          </button>
-                        )}
+          <DataTable
+            className="ar-table users-table"
+            caption={t('adminRoster.users.title', 'User Management')}
+            density="dense"
+            columns={columns}
+            rows={filteredUsers}
+            rowKey={(user) => user.username}
+            empty={failedSources.includes('users')
+              ? undefined
+              : <EmptyState title={t('adminRoster.users.empty', 'No users found for this filter.')} />}
+          />
+        </>
+      )}
 
-                        {/* Promote to Wrestler (no wrestler name) */}
-                        {!user.groups.includes('Wrestler') && !user.wrestlerName && (
-                          <button
-                            className="btn-action btn-promote"
-                            onClick={() => handleRoleAction(user.username, 'Wrestler', 'promote')}
-                            title="Promote to Wrestler"
-                          >
-                            Make Wrestler
-                          </button>
-                        )}
+      <Modal
+        open={managedUser !== null}
+        onClose={() => setManagedUsername(null)}
+        title={managedUser?.email ?? t('adminRoster.users.manage', 'Manage')}
+        description={t('adminRoster.users.manageHint', 'Change this account\'s roles and access.')}
+      >
+        {managedUser && (
+          <div className="ar-form">
+            <section className="ar-field" aria-label={t('adminRoster.users.roles', 'Roles')}>
+              <span className="ar-field__label">{t('adminRoster.users.roles', 'Roles')}</span>
+              <div className="user-manage-actions">
+                {managedUser.wrestlerName && !managedUser.groups.includes('Wrestler')
+                  && roleButton(managedUser, 'Wrestler', 'promote', t('adminRoster.users.approveWrestler', 'Approve Wrestler'))}
+                {!managedUser.groups.includes('Wrestler') && !managedUser.wrestlerName
+                  && roleButton(managedUser, 'Wrestler', 'promote', t('adminRoster.users.makeWrestler', 'Make Wrestler'))}
+                {managedUser.groups.includes('Wrestler')
+                  && roleButton(managedUser, 'Wrestler', 'demote', t('adminRoster.users.removeWrestler', 'Remove Wrestler'))}
+                {isSuperAdmin && !managedUser.groups.includes('Admin') && !managedUser.groups.includes('Moderator')
+                  && roleButton(managedUser, 'Moderator', 'promote', t('adminRoster.users.makeModerator', 'Make Moderator'))}
+                {isSuperAdmin && managedUser.groups.includes('Moderator')
+                  && roleButton(managedUser, 'Moderator', 'demote', t('adminRoster.users.removeModerator', 'Remove Moderator'))}
+                {isSuperAdmin && !managedUser.groups.includes('Admin')
+                  && roleButton(managedUser, 'Admin', 'promote', t('adminRoster.users.makeAdmin', 'Make Admin'))}
+                {isSuperAdmin && managedUser.groups.includes('Admin')
+                  && roleButton(managedUser, 'Admin', 'demote', t('adminRoster.users.removeAdmin', 'Remove Admin'))}
+              </div>
+            </section>
 
-                        {/* Demote from Wrestler */}
-                        {user.groups.includes('Wrestler') && (
-                          <button
-                            className="btn-action btn-demote"
-                            onClick={() => handleRoleAction(user.username, 'Wrestler', 'demote')}
-                            title="Remove Wrestler role"
-                          >
-                            Remove Wrestler
-                          </button>
-                        )}
+            <section className="ar-field" aria-label={t('adminRoster.users.account', 'Account')}>
+              <span className="ar-field__label">{t('adminRoster.users.account', 'Account')}</span>
+              <div className="user-manage-actions">
+                <Button
+                  variant="secondary"
+                  disabled={actionLoading === managedUser.username}
+                  onClick={() => handleToggleEnabled(managedUser.username, managedUser.enabled)}
+                >
+                  {managedUser.enabled ? t('adminRoster.users.disable', 'Disable') : t('adminRoster.users.enable', 'Enable')}
+                </Button>
+                {!managedUser.enabled && (
+                  <Button
+                    variant="danger"
+                    disabled={actionLoading === managedUser.username}
+                    onClick={() => {
+                      setPendingDelete(managedUser.username);
+                      setManagedUsername(null);
+                    }}
+                  >
+                    {t('common.delete', 'Delete')}
+                  </Button>
+                )}
+              </div>
+            </section>
+          </div>
+        )}
+      </Modal>
 
-                        {/* Admin/Moderator management - Super Admin only */}
-                        {isSuperAdmin && (
-                          <>
-                            {/* Promote to Moderator */}
-                            {!user.groups.includes('Admin') && !user.groups.includes('Moderator') && (
-                              <button
-                                className="btn-action btn-promote-moderator"
-                                onClick={() => handleRoleAction(user.username, 'Moderator', 'promote')}
-                                title="Promote to Moderator"
-                              >
-                                Make Moderator
-                              </button>
-                            )}
-
-                            {/* Demote from Moderator */}
-                            {user.groups.includes('Moderator') && (
-                              <button
-                                className="btn-action btn-demote"
-                                onClick={() => handleRoleAction(user.username, 'Moderator', 'demote')}
-                                title="Remove Moderator role"
-                              >
-                                Remove Moderator
-                              </button>
-                            )}
-
-                            {/* Promote to Admin */}
-                            {!user.groups.includes('Admin') && (
-                              <button
-                                className="btn-action btn-promote-admin"
-                                onClick={() => handleRoleAction(user.username, 'Admin', 'promote')}
-                                title="Promote to Admin"
-                              >
-                                Make Admin
-                              </button>
-                            )}
-
-                            {/* Demote from Admin */}
-                            {user.groups.includes('Admin') && (
-                              <button
-                                className="btn-action btn-demote"
-                                onClick={() => handleRoleAction(user.username, 'Admin', 'demote')}
-                                title="Remove Admin role"
-                              >
-                                Remove Admin
-                              </button>
-                            )}
-                          </>
-                        )}
-
-                        {/* Enable/Disable user */}
-                        <button
-                          className={`btn-action ${user.enabled ? 'btn-disable' : 'btn-enable'}`}
-                          onClick={() => handleToggleEnabled(user.username, user.enabled)}
-                          title={user.enabled ? 'Disable user account' : 'Enable user account'}
-                        >
-                          {user.enabled ? 'Disable' : 'Enable'}
-                        </button>
-
-                        {/* Delete disabled user from Cognito */}
-                        {!user.enabled && (
-                          <button
-                            className="btn-action btn-delete"
-                            onClick={() => handleDeleteUser(user.username)}
-                            title="Permanently delete this user from Cognito"
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {filteredUsers.length === 0 && (
-              <tr>
-                <td colSpan={8} className="empty-state">
-                  No users found for this filter.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <ConfirmModal
+        open={pendingDelete !== null}
+        title={t('adminRoster.users.deleteTitle', 'Delete user')}
+        message={t('adminRoster.users.deleteConfirm', {
+          defaultValue: 'Permanently delete user "{{username}}"? This cannot be undone.',
+          username: pendingDelete ?? '',
+        })}
+        confirmLabel={t('common.delete', 'Delete')}
+        busy={actionLoading !== null}
+        onConfirm={handleDeleteUser}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

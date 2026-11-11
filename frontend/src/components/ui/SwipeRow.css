@@ -1,0 +1,51 @@
+.ui-swipe {
+  --swipe-row-slide: min(70vw, 280px);
+  --swipe-row-gap: 1rem;
+  position: relative;
+}
+
+.ui-swipe__viewport {
+  overflow: hidden;
+}
+
+.ui-swipe__track {
+  display: flex;
+  gap: var(--swipe-row-gap);
+  touch-action: pan-y pinch-zoom;
+}
+
+.ui-swipe__slide {
+  flex: 0 0 var(--swipe-row-slide);
+  min-width: 0;
+}
+
+.ui-swipe__controls {
+  display: none;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.ui-swipe__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 1px solid var(--color-hairline);
+  border-radius: 50%;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.ui-swipe__arrow:hover:not(:disabled) {
+  background-color: var(--color-surface-raised);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ui-swipe__controls {
+    display: flex;
+  }
+}

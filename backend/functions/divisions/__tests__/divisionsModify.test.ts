@@ -209,6 +209,25 @@ describe('deleteDivision', () => {
     expect(JSON.parse(result!.body).message).toContain('1 player(s)');
   });
 
+  it('returns 409 naming the championship locked to the division', async () => {
+    const division = await repos.leagueOps.divisions.create({ name: 'Raw' });
+    await repos.competition.championships.create({
+      name: 'Raw Title',
+      type: 'singles',
+      divisionId: division.divisionId,
+    });
+
+    const result = await deleteDivision(
+      makeEvent({ pathParameters: { divisionId: division.divisionId } }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(409);
+    expect(JSON.parse(result!.body).message).toContain('Raw Title');
+    expect(await repos.leagueOps.divisions.findById(division.divisionId)).not.toBeNull();
+  });
+
   it('deletes when no players are assigned', async () => {
     const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
 

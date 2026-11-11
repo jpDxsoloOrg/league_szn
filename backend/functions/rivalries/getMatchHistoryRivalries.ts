@@ -2,6 +2,8 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { Match, Player } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
+import { isPlayerVisible } from '../../lib/needsWrestler';
+import { matchWinners } from '../../lib/matchResult';
 
 const MIN_MATCHES_FOR_RIVALRY = 3;
 const MAX_RIVALRIES_RETURNED = 20;
@@ -38,8 +40,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       matches.list(),
     ]);
 
-    // Only include players who have a wrestler assigned (exclude Fantasy-only users)
-    const filteredPlayers = allPlayers.filter((p: Player) => p.currentWrestler);
+    // Only include players who have a real wrestler name (exclude Fantasy-only users)
+    const filteredPlayers = allPlayers.filter((p: Player) => isPlayerVisible(p));
     let completed = allMatches.filter((m: Match) => m.status === 'completed');
     if (seasonId) {
       completed = completed.filter((m: Match) => m.seasonId === seasonId);
@@ -55,16 +57,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const [a, b] = participants;
       const key = pairKey(a, b);
       const existing = aggMap.get(key);
-      const p1Won = match.winners?.includes(a);
-      const p2Won = match.winners?.includes(b);
-      const isDraw = !p1Won && !p2Won;
+      const winners = matchWinners(match);
+      const isDraw = !winners.includes(a) && !winners.includes(b);
 
       if (!existing) {
         aggMap.set(key, {
           player1Id: a,
           player2Id: b,
-          player1Wins: p1Won ? 1 : 0,
-          player2Wins: p2Won ? 1 : 0,
+          player1Wins: winners.includes(a) ? 1 : 0,
+          player2Wins: winners.includes(b) ? 1 : 0,
           draws: isDraw ? 1 : 0,
           matchCount: 1,
           lastMatchDate: match.date,
@@ -72,8 +73,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           recentMatchIds: [match.matchId],
         });
       } else {
-        existing.player1Wins += p1Won ? 1 : 0;
-        existing.player2Wins += p2Won ? 1 : 0;
+        // Participant order varies between matches, so credit by player id.
+        existing.player1Wins += winners.includes(existing.player1Id) ? 1 : 0;
+        existing.player2Wins += winners.includes(existing.player2Id) ? 1 : 0;
         existing.draws += isDraw ? 1 : 0;
         existing.matchCount += 1;
         if (new Date(match.date) > new Date(existing.lastMatchDate)) {
@@ -86,6 +88,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const rivalries = Array.from(aggMap.values())
       .filter((r) => r.matchCount >= MIN_MATCHES_FOR_RIVALRY)
+      // Before the slice, so a dropped pair doesn't cost a visible rivalry its place.
+      .filter((r) => playerMap.has(r.player1Id) && playerMap.has(r.player2Id))
       .map((r) => {
         const sorted = [...r.recentMatchIds].sort(
           (id1, id2) => {

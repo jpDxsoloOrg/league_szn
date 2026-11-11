@@ -1,0 +1,283 @@
+/*
+ * The news crawl: a label badge, the moving headlines and a pause button on one
+ * strip. The track holds the list twice and slides left by half its width, so
+ * the loop has no seam.
+ */
+.ui-ticker {
+  --ticker-seconds-per-item: 9s;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  height: var(--shell-ticker-height);
+  padding-right: 0.25rem;
+  border-top: 2px solid var(--color-pink);
+  background-color: var(--color-surface);
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ui-ticker__badge {
+  flex: none;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 1.125rem 0 1rem;
+  background-color: var(--color-pink);
+  color: var(--color-on-accent);
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 0.5rem) 100%, 0 100%);
+}
+
+.ui-ticker__viewport {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ui-ticker__track {
+  display: flex;
+  width: max-content;
+}
+
+.ui-ticker__list {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin: 0;
+  padding: 0 2rem 0 0;
+  list-style: none;
+  white-space: nowrap;
+}
+
+.ui-ticker__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text);
+}
+
+/* A square marker between headlines. */
+.ui-ticker__item + .ui-ticker__item::before {
+  content: '';
+  flex: none;
+  width: 0.375rem;
+  height: 0.375rem;
+  margin-right: 1.5rem;
+  background-color: var(--color-text-muted);
+}
+
+.ui-ticker__headline {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+a.ui-ticker__headline:hover {
+  color: var(--color-cyan-bright);
+}
+
+a.ui-ticker__headline:focus-visible {
+  outline-offset: -2px;
+}
+
+.ui-ticker__tag {
+  flex: none;
+  padding: 0 0.5rem;
+  transform: skewX(-9deg);
+  color: var(--color-on-accent);
+  font-weight: 800;
+}
+
+.ui-ticker__tag--action {
+  background-color: var(--color-pink);
+}
+
+.ui-ticker__tag--data {
+  background-color: var(--color-cyan);
+}
+
+.ui-ticker__tag--prestige {
+  background-color: var(--rim-world);
+}
+
+.ui-ticker__pause {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--shell-ticker-height);
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-control);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.ui-ticker__pause:hover {
+  color: var(--color-text);
+}
+
+/* The strip is only as tall as the button, so its focus ring is drawn inside it. */
+.ui-ticker__pause:focus-visible {
+  outline-offset: -2px;
+}
+
+/* The crawl takes longer the more headlines it carries. */
+.ui-ticker__track[data-items='1'] {
+  --ticker-items: 1;
+}
+
+.ui-ticker__track[data-items='2'] {
+  --ticker-items: 2;
+}
+
+.ui-ticker__track[data-items='3'] {
+  --ticker-items: 3;
+}
+
+.ui-ticker__track[data-items='4'] {
+  --ticker-items: 4;
+}
+
+.ui-ticker__track[data-items='5'] {
+  --ticker-items: 5;
+}
+
+.ui-ticker__track[data-items='6'] {
+  --ticker-items: 6;
+}
+
+.ui-ticker__track[data-items='7'] {
+  --ticker-items: 7;
+}
+
+.ui-ticker__track[data-items='8'] {
+  --ticker-items: 8;
+}
+
+.ui-ticker__track[data-items='9'] {
+  --ticker-items: 9;
+}
+
+.ui-ticker__track[data-items='10'] {
+  --ticker-items: 10;
+}
+
+.ui-ticker__track[data-items='11'] {
+  --ticker-items: 11;
+}
+
+.ui-ticker__track[data-items='12'] {
+  --ticker-items: 12;
+}
+
+.ui-ticker__track[data-items='13'] {
+  --ticker-items: 13;
+}
+
+.ui-ticker__track[data-items='14'] {
+  --ticker-items: 14;
+}
+
+.ui-ticker__track[data-items='15'] {
+  --ticker-items: 15;
+}
+
+.ui-ticker__track[data-items='16'] {
+  --ticker-items: 16;
+}
+
+.ui-ticker__track[data-items='17'] {
+  --ticker-items: 17;
+}
+
+.ui-ticker__track[data-items='18'] {
+  --ticker-items: 18;
+}
+
+.ui-ticker__track[data-items='19'] {
+  --ticker-items: 19;
+}
+
+.ui-ticker__track[data-items='20'] {
+  --ticker-items: 20;
+}
+
+.ui-ticker__track[data-items='21'] {
+  --ticker-items: 21;
+}
+
+.ui-ticker__track[data-items='22'] {
+  --ticker-items: 22;
+}
+
+.ui-ticker__track[data-items='23'] {
+  --ticker-items: 23;
+}
+
+.ui-ticker__track[data-items='24'] {
+  --ticker-items: 24;
+}
+
+.ui-ticker--crawling .ui-ticker__track {
+  animation: ui-ticker-crawl calc(var(--ticker-seconds-per-item) * var(--ticker-items, 1)) linear infinite;
+}
+
+/* Pauses while focus is on a headline or from the pause button. */
+.ui-ticker--crawling .ui-ticker__viewport:focus-within .ui-ticker__track,
+.ui-ticker--paused .ui-ticker__track {
+  animation-play-state: paused;
+}
+
+/* Pauses under a real pointer. A tap leaves :hover stuck on touch screens, so they skip this. */
+@media (hover: hover) {
+  .ui-ticker--crawling .ui-ticker__viewport:hover .ui-ticker__track {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes ui-ticker-crawl {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Reduced motion: no crawl, the strip scrolls sideways by hand. */
+.ui-ticker--static .ui-ticker__viewport {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ui-ticker--static .ui-ticker__viewport::-webkit-scrollbar {
+  display: none;
+}
+
+/* The script switches to the static list; this covers the first paint. The
+   site-wide reduced-motion rule would otherwise run the crawl in an instant. */
+@media (prefers-reduced-motion: reduce) {
+  .ui-ticker .ui-ticker__track {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .ui-ticker {
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+  }
+
+  .ui-ticker__badge {
+    padding: 0 0.875rem 0 0.75rem;
+  }
+}

@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
+import { firstBookingRefusal } from '../../lib/disciplineGates';
 
 interface CreateTournamentBody {
   name: string;
@@ -81,7 +82,7 @@ const initializeRoundRobinStandings = (participants: string[]): Record<string, u
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const { competition: { tournaments } } = getRepositories();
+    const { competition: { tournaments }, roster: { players } } = getRepositories();
     const { data: body, error: parseError } = parseBody<CreateTournamentBody>(event);
     if (parseError) return parseError;
 
@@ -102,6 +103,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         return badRequest('Single elimination tournaments require a power-of-two participant count (4, 8, 16, ...)');
       }
     }
+
+    const entrants = await Promise.all(body.participants.map((id) => players.findById(id)));
+    const entrantBlocked = firstBookingRefusal(entrants);
+    if (entrantBlocked) return entrantBlocked;
 
     const tournament: Record<string, unknown> = {
       tournamentId: uuidv4(),

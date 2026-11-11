@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
@@ -19,7 +19,7 @@ const {
 
 vi.mock('../../../services/api', () => ({
   seasonsApi: { getAll: mockGetAllSeasons },
-  playersApi: { getAll: mockGetAllPlayers },
+  playersApi: { getAllIncludingHidden: mockGetAllPlayers },
   seasonAwardsApi: {
     getAll: mockGetAwards,
     create: mockCreateAward,
@@ -55,8 +55,6 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('../ManageSeasonAwards.css', () => ({}));
-
 import ManageSeasonAwards from '../ManageSeasonAwards';
 
 // --- Test data ---
@@ -91,7 +89,6 @@ function renderComponent() {
 describe('ManageSeasonAwards', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   it('renders season list and awards after loading', async () => {
@@ -106,17 +103,33 @@ describe('ManageSeasonAwards', () => {
     });
 
     // Season selector
-    expect(screen.getByLabelText('Season')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Season')).toBeInTheDocument();
 
     // Auto awards section
     await waitFor(() => {
-      expect(screen.getByText('Auto-Generated Awards')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Auto-Generated Awards' })).toBeInTheDocument();
     });
     expect(screen.getByText('MVP')).toBeInTheDocument();
 
     // Custom awards section
-    expect(screen.getByText('Custom Awards')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Custom Awards' })).toBeInTheDocument();
     expect(screen.getByText('Best Promo')).toBeInTheDocument();
+  });
+
+  it('leaves hidden players out of the award picker', async () => {
+    mockGetAllSeasons.mockResolvedValue(mockSeasons);
+    mockGetAllPlayers.mockResolvedValue([
+      ...mockPlayers,
+      { playerId: 'p3', name: 'Newbie', currentWrestler: 'Needs Wrestler', wins: 0, losses: 0, draws: 0, createdAt: '2025-01-01', updatedAt: '2025-01-01' },
+    ]);
+    mockGetAwards.mockResolvedValue({ seasonId: 's1', autoAwards: [], customAwards: [] });
+
+    renderComponent();
+
+    fireEvent.click(await screen.findByText('Create Award'));
+
+    expect(await screen.findByRole('option', { name: 'Player One' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Newbie' })).not.toBeInTheDocument();
   });
 
   it('creates a custom award via the form', async () => {
@@ -172,18 +185,35 @@ describe('ManageSeasonAwards', () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText('Custom Awards')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Custom Awards' })).toBeInTheDocument();
     });
 
     const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
     fireEvent.click(deleteButtons[0]);
 
-    expect(window.confirm).toHaveBeenCalledWith(
-      expect.stringContaining('Best Promo')
-    );
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('Best Promo');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
     await waitFor(() => {
       expect(mockDeleteAward).toHaveBeenCalledWith('s1', 'c1');
     });
+  });
+
+  it('aborts the previous request when the selected season changes', async () => {
+    mockGetAllSeasons.mockResolvedValue(mockSeasons);
+    mockGetAllPlayers.mockResolvedValue(mockPlayers);
+    mockGetAwards.mockReturnValue(new Promise(() => undefined));
+
+    const { unmount } = renderComponent();
+
+    await waitFor(() => {
+      expect(mockGetAwards).toHaveBeenCalledWith('s1', expect.any(AbortSignal));
+    });
+    const firstSignal = mockGetAwards.mock.calls[0]?.[1] as AbortSignal;
+    expect(firstSignal.aborted).toBe(false);
+
+    unmount();
+    expect(firstSignal.aborted).toBe(true);
   });
 });

@@ -1,12 +1,13 @@
 import { v4 as uuidv4 } from 'uuid';
 import { dynamoDb, TableNames } from '../../dynamodb';
-import { NotFoundError } from '../errors';
+import { ConflictError, NotFoundError } from '../errors';
 import { buildUpdateExpression } from './util';
 import { DynamoCrudRepository } from './DynamoCrudRepository';
 import type {
   LeagueOpsRepository,
   EventCreateInput,
   EventPatch,
+  EventUpdateOptions,
   ShowCreateInput,
   ShowPatch,
   CompanyCreateInput,
@@ -16,10 +17,6 @@ import type {
   LocationCreateInput,
   LocationPatch,
   LocationBulkImportResult,
-  MatchmakingMethods,
-  PresenceRecord,
-  QueueRecord,
-  InvitationRecord,
 } from '../LeagueOpsRepository';
 import type {
   LeagueEvent,
@@ -214,20 +211,26 @@ export class DynamoLeagueOpsRepository implements LeagueOpsRepository {
       return item;
     },
 
-    update: async (eventId: string, patch: EventPatch): Promise<LeagueEvent> => {
+    update: async (eventId: string, patch: EventPatch, options?: EventUpdateOptions): Promise<LeagueEvent> => {
       const expr = buildUpdateExpression(patch, new Date().toISOString());
+      const expectedMatchCards = options?.expectedMatchCards;
       const result = await dynamoDb
         .update({
           TableName: TableNames.EVENTS,
           Key: { eventId },
           UpdateExpression: expr.UpdateExpression,
           ExpressionAttributeNames: expr.ExpressionAttributeNames,
-          ExpressionAttributeValues: expr.ExpressionAttributeValues,
-          ConditionExpression: 'attribute_exists(eventId)',
+          ExpressionAttributeValues: expectedMatchCards
+            ? { ...expr.ExpressionAttributeValues, ':expectedMatchCards': expectedMatchCards }
+            : expr.ExpressionAttributeValues,
+          ConditionExpression: expectedMatchCards
+            ? 'attribute_exists(eventId) AND matchCards = :expectedMatchCards'
+            : 'attribute_exists(eventId)',
           ReturnValues: 'ALL_NEW',
         })
         .catch((err: { name?: string }) => {
           if (err.name === 'ConditionalCheckFailedException') {
+            if (expectedMatchCards) throw new ConflictError('The match card has changed');
             throw new NotFoundError('Event', eventId);
           }
           throw err;
@@ -333,127 +336,6 @@ export class DynamoLeagueOpsRepository implements LeagueOpsRepository {
         TableName: TableNames.EVENT_CHECK_INS,
         Key: { eventId, playerId },
       });
-    },
-  };
-
-  // ─── Matchmaking (direct implementation) ─────────────────────────
-
-  matchmaking: MatchmakingMethods = {
-    // ── Presence ────────────────────────────────────────────────────
-
-    putPresence: async (record: PresenceRecord): Promise<void> => {
-      await dynamoDb.put({ TableName: TableNames.PRESENCE, Item: record });
-    },
-
-    getPresence: async (playerId: string): Promise<PresenceRecord | null> => {
-      const result = await dynamoDb.get({
-        TableName: TableNames.PRESENCE,
-        Key: { playerId },
-      });
-      return (result.Item as PresenceRecord | undefined) ?? null;
-    },
-
-    listPresence: async (): Promise<PresenceRecord[]> => {
-      return (await dynamoDb.scanAll({
-        TableName: TableNames.PRESENCE,
-      })) as unknown as PresenceRecord[];
-    },
-
-    deletePresence: async (playerId: string): Promise<void> => {
-      await dynamoDb.delete({ TableName: TableNames.PRESENCE, Key: { playerId } });
-    },
-
-    // ── Queue ───────────────────────────────────────────────────────
-
-    putQueue: async (record: QueueRecord): Promise<void> => {
-      await dynamoDb.put({ TableName: TableNames.MATCHMAKING_QUEUE, Item: record });
-    },
-
-    listQueue: async (): Promise<QueueRecord[]> => {
-      return (await dynamoDb.scanAll({
-        TableName: TableNames.MATCHMAKING_QUEUE,
-      })) as unknown as QueueRecord[];
-    },
-
-    deleteQueue: async (playerId: string): Promise<void> => {
-      await dynamoDb.delete({ TableName: TableNames.MATCHMAKING_QUEUE, Key: { playerId } });
-    },
-
-    // ── Invitations ─────────────────────────────────────────────────
-
-    putInvitation: async (record: InvitationRecord): Promise<void> => {
-      await dynamoDb.put({ TableName: TableNames.MATCH_INVITATIONS, Item: record });
-    },
-
-    getInvitation: async (invitationId: string): Promise<InvitationRecord | null> => {
-      const result = await dynamoDb.get({
-        TableName: TableNames.MATCH_INVITATIONS,
-        Key: { invitationId },
-      });
-      return (result.Item as InvitationRecord | undefined) ?? null;
-    },
-
-    listInvitationsByToPlayer: async (toPlayerId: string): Promise<InvitationRecord[]> => {
-      const result = await dynamoDb.query({
-        TableName: TableNames.MATCH_INVITATIONS,
-        IndexName: 'ToPlayerIndex',
-        KeyConditionExpression: 'toPlayerId = :pid',
-        ExpressionAttributeValues: { ':pid': toPlayerId },
-      });
-      return (result.Items ?? []) as unknown as InvitationRecord[];
-    },
-
-    listInvitationsByFromPlayer: async (fromPlayerId: string): Promise<InvitationRecord[]> => {
-      const result = await dynamoDb.query({
-        TableName: TableNames.MATCH_INVITATIONS,
-        IndexName: 'FromPlayerIndex',
-        KeyConditionExpression: 'fromPlayerId = :pid',
-        ExpressionAttributeValues: { ':pid': fromPlayerId },
-      });
-      return (result.Items ?? []) as unknown as InvitationRecord[];
-    },
-
-    updateInvitation: async (
-      invitationId: string,
-      patch: Record<string, unknown>,
-      conditionStatus?: string,
-    ): Promise<InvitationRecord> => {
-      const setExpressions: string[] = [];
-      const names: Record<string, string> = {};
-      const values: Record<string, unknown> = {};
-
-      for (const [field, value] of Object.entries(patch)) {
-        if (value === undefined) continue;
-        const tok = field.replace(/[^a-zA-Z0-9_]/g, '_');
-        setExpressions.push(`#${tok} = :${tok}`);
-        names[`#${tok}`] = field;
-        values[`:${tok}`] = value;
-      }
-
-      if (setExpressions.length === 0) {
-        const existing = await this.matchmaking.getInvitation(invitationId);
-        if (!existing) throw new Error('Invitation not found');
-        return existing;
-      }
-
-      let conditionExpression: string | undefined;
-      if (conditionStatus) {
-        names['#condStatus'] = 'status';
-        values[':condStatusVal'] = conditionStatus;
-        conditionExpression = '#condStatus = :condStatusVal';
-      }
-
-      const result = await dynamoDb.update({
-        TableName: TableNames.MATCH_INVITATIONS,
-        Key: { invitationId },
-        UpdateExpression: `SET ${setExpressions.join(', ')}`,
-        ExpressionAttributeNames: names,
-        ExpressionAttributeValues: values,
-        ...(conditionExpression ? { ConditionExpression: conditionExpression } : {}),
-        ReturnValues: 'ALL_NEW',
-      });
-
-      return result.Attributes as InvitationRecord;
     },
   };
 }

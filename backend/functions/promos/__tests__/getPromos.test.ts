@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Hoisted mocks ──────────────────────────────────────────────────
@@ -40,7 +40,49 @@ const body = (r: any) => JSON.parse(r!.body);
 // ─── getPromos ───────────────────────────────────────────────────────
 
 describe('getPromos', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Fixtures are dated early 2024; keep them inside the call-out archive window.
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2024-01-03T00:00:00Z') });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('leaves the per-account reactions map out of the feed', async () => {
+    mockScanAll.mockResolvedValueOnce([{
+      promoId: 'pr1', playerId: 'pl1', promoType: 'open-mic', content: 'x'.repeat(60),
+      reactions: { 'account-sub-1': 'fire' },
+      reactionCounts: { fire: 1, mic: 0, trash: 0, 'mind-blown': 0, clap: 0 },
+      isHidden: false, isPinned: false,
+      createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z',
+    }]);
+    mockGet.mockResolvedValue({ Item: { playerId: 'pl1', name: 'A', currentWrestler: 'Edge' } });
+
+    const result = await getPromos(makeEvent(), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(result!.body).not.toContain('account-sub-1');
+    expect(body(result)[0].reactionCounts.fire).toBe(1);
+  });
+
+  it('names the title on the line, and leaves it out for a deleted title', async () => {
+    mockScanAll.mockResolvedValueOnce([
+      { promoId: 'p1', playerId: 'pl1', promoType: 'call-out', championshipId: 'c1', isHidden: false, createdAt: '2024-01-02T00:00:00Z' },
+      { promoId: 'p2', playerId: 'pl1', promoType: 'call-out', championshipId: 'gone', isHidden: false, createdAt: '2024-01-01T00:00:00Z' },
+      { promoId: 'p3', playerId: 'pl1', promoType: 'open-mic', isHidden: false, createdAt: '2024-01-01T00:00:00Z' },
+    ]);
+    mockGet.mockImplementation(async (params: any) => {
+      if (params.Key.championshipId === 'c1') return { Item: { championshipId: 'c1', name: 'World Title' } };
+      if (params.Key.playerId) return { Item: { playerId: 'pl1', name: 'A', currentWrestler: 'Edge' } };
+      return { Item: undefined };
+    });
+
+    const rows = body(await getPromos(makeEvent(), ctx, cb));
+    const nameOf = (promoId: string) => rows.find((row: any) => row.promoId === promoId).championshipName;
+
+    expect(nameOf('p1')).toBe('World Title');
+    expect(nameOf('p2')).toBeUndefined();
+    expect(nameOf('p3')).toBeUndefined();
+  });
 
   it('returns all non-hidden promos via scan when no filters are provided', async () => {
     mockScanAll.mockResolvedValue([
@@ -127,7 +169,7 @@ describe('getPromos', () => {
     expect(data[0].targetWrestlerName).toBe('Bianca');
   });
 
-  it('shows "Unknown" for player name when player has been deleted', async () => {
+  it('shows "Former member" for player name when player has been deleted', async () => {
     mockScanAll.mockResolvedValue([
       { promoId: 'p1', playerId: 'deleted-player', isHidden: false, createdAt: '2024-01-01T00:00:00Z' },
     ]);
@@ -137,8 +179,8 @@ describe('getPromos', () => {
 
     expect(result!.statusCode).toBe(200);
     const data = body(result);
-    expect(data[0].playerName).toBe('Unknown');
-    expect(data[0].wrestlerName).toBe('Unknown');
+    expect(data[0].playerName).toBe('Former member');
+    expect(data[0].wrestlerName).toBe('Former member');
   });
 
   it('counts responses for target promos via responseCount', async () => {

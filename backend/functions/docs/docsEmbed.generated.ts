@@ -41,6 +41,22 @@ tags:
   - name: Challenges
   - name: Promos
   - name: Statistics
+  - name: Dashboard
+  - name: Activity
+  - name: Rivalries
+  - name: Season Awards
+  - name: Companies
+  - name: Shows
+  - name: Locations
+  - name: Wrestlers
+  - name: Stables
+  - name: Tag Teams
+  - name: Videos
+  - name: Announcements
+  - name: Notifications
+  - name: Transfers
+  - name: Storyline Requests
+  - name: Overalls
 
 components:
   securitySchemes:
@@ -69,8 +85,183 @@ components:
         draws: { type: integer }
         imageUrl: { type: string }
         divisionId: { type: string }
+        discipline:
+          description: Only for staff and the player themselves.
+          allOf: [{ $ref: '#/components/schemas/PlayerDisciplineSummary' }]
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+
+    Refusal:
+      type: object
+      required: [message, code]
+      properties:
+        message: { type: string, description: English. Clients translate by code. }
+        code:
+          type: string
+          enum:
+            - SIGNUP_BLOCKED
+            - PLAYER_DEACTIVATED
+            - PLAYER_UNAVAILABLE
+            - ALREADY_DEACTIVATED
+            - NOT_DEACTIVATED
+            - STAFF_PROTECTED
+            - DISCIPLINE_CONFLICT
+            - STRIKE_NOT_ACTIVE
+            - DISCIPLINE_ACTIVE
+            - PSN_ID_UNAVAILABLE
+            - PSN_ID_LOCKED
+        blockedUntil: { type: string, format: date-time }
+
+    StrikeOutcome:
+      type: string
+      enum: [warned, signup-blocked, deactivated]
+
+    PlayerDisciplineSummary:
+      type: object
+      required: [status, activeStrikeCount, activeStrikes, cooldownEndsAt, signupBlockedUntil, deactivatedAt]
+      properties:
+        status:
+          type: string
+          enum: [clear, warned, signup-blocked, cooldown, deactivated]
+        activeStrikeCount: { type: integer }
+        activeStrikes:
+          type: array
+          description: Oldest first. Issuer identity is left out on purpose.
+          items:
+            type: object
+            required: [strikeId, issuedAt, reason]
+            properties:
+              strikeId: { type: string }
+              issuedAt: { type: string, format: date-time }
+              reason: { type: string }
+        cooldownEndsAt: { type: string, format: date-time, nullable: true }
+        signupBlockedUntil:
+          type: string
+          format: date-time
+          nullable: true
+          description: Non-null only while status is signup-blocked.
+        deactivatedAt: { type: string, format: date-time, nullable: true }
+
+    PlayerStrike:
+      type: object
+      required: [strikeId, issuedAt, issuedBy, issuedByName, reason]
+      properties:
+        strikeId: { type: string }
+        issuedAt: { type: string, format: date-time }
+        issuedBy: { type: string }
+        issuedByName: { type: string }
+        reason: { type: string }
+        clearedAt: { type: string, format: date-time }
+        clearedBy: { type: string }
+        clearedByName: { type: string }
+        clearedReason: { type: string }
+        clearedKind: { type: string, enum: [removed, reactivated] }
+
+    PlayerDeactivation:
+      type: object
+      required: [deactivatedAt, deactivatedBy, deactivatedByName, strikeId]
+      properties:
+        deactivatedAt: { type: string, format: date-time }
+        deactivatedBy: { type: string }
+        deactivatedByName: { type: string }
+        strikeId: { type: string }
+        cognitoAlreadyDisabled: { type: boolean }
+        reactivatedAt: { type: string, format: date-time }
+        reactivatedBy: { type: string }
+        reactivatedByName: { type: string }
+        reactivationReason: { type: string }
+
+    DisciplineHoldings:
+      type: object
+      required: [titles, matches, challenges, tournaments]
+      properties:
+        titles:
+          type: array
+          items:
+            type: object
+            properties:
+              championshipId: { type: string }
+              name: { type: string }
+        matches:
+          type: array
+          items:
+            type: object
+            properties:
+              matchId: { type: string }
+              date: { type: string, format: date-time }
+              status: { type: string, enum: [scheduled, open-signups] }
+              matchFormat: { type: string }
+              opponents:
+                type: array
+                description: Names of the other side, partners left out. Empty while the other spots are open.
+                items: { type: string }
+              eventId: { type: string }
+              tournamentId: { type: string }
+        challenges:
+          type: array
+          items:
+            type: object
+            properties:
+              challengeId: { type: string }
+              opponentName: { type: string }
+        tournaments:
+          type: array
+          items:
+            type: object
+            properties:
+              tournamentId: { type: string }
+              name: { type: string }
+              status: { type: string }
+
+    PlayerDisciplineDetail:
+      type: object
+      required:
+        - playerId
+        - version
+        - summary
+        - nextStrikeOutcome
+        - strikes
+        - deactivations
+        - hasLinkedAccount
+        - isStaffAccount
+        - accountEnabled
+        - holdings
+      properties:
+        playerId: { type: string }
+        version: { type: integer, description: Send back as expectedVersion. }
+        summary: { $ref: '#/components/schemas/PlayerDisciplineSummary' }
+        nextStrikeOutcome:
+          description: Null while deactivated. Send back as expectedOutcome.
+          nullable: true
+          allOf: [{ $ref: '#/components/schemas/StrikeOutcome' }]
+        strikes:
+          type: array
+          description: Full history, newest first.
+          items: { $ref: '#/components/schemas/PlayerStrike' }
+        deactivations:
+          type: array
+          description: Newest first.
+          items: { $ref: '#/components/schemas/PlayerDeactivation' }
+        hasLinkedAccount: { type: boolean, description: False for an unlinked player or a dead link. }
+        isStaffAccount: { type: boolean, nullable: true, description: False when unlinked. Null on a Cognito error. }
+        accountEnabled: { type: boolean, nullable: true, description: Null when unlinked or on a Cognito error. }
+        holdings: { $ref: '#/components/schemas/DisciplineHoldings' }
+
+    DisciplineActionResult:
+      type: object
+      required: [playerId, version, summary, accountSync, softHoldsCleared, holdings]
+      properties:
+        playerId: { type: string }
+        version: { type: integer }
+        summary: { $ref: '#/components/schemas/PlayerDisciplineSummary' }
+        accountSync:
+          type: string
+          enum: [ok, failed, not-linked, not-needed]
+          description: not-needed means no Cognito change was due.
+        softHoldsCleared: { type: boolean, description: False only when cleanup was due and did not finish. }
+        holdings:
+          description: Filled only when the action deactivated the player.
+          allOf: [{ $ref: '#/components/schemas/DisciplineHoldings' }]
 
     Match:
       type: object
@@ -300,6 +491,7 @@ components:
         responseMessage: { type: string }
         counteredChallengeId: { type: string }
         matchId: { type: string }
+        promoId: { type: string, description: The call-out promo this challenge came from }
         expiresAt: { type: string }
         createdAt: { type: string }
         updatedAt: { type: string }
@@ -328,6 +520,7 @@ components:
         stipulation: { type: string }
         championshipId: { type: string }
         message: { type: string }
+        promoId: { type: string, description: The caller's own call-out promo to link this challenge to }
 
     RespondChallengeInput:
       type: object
@@ -378,6 +571,10 @@ components:
         targetPromoId: { type: string }
         matchId: { type: string }
         championshipId: { type: string }
+        challengeMode: { type: string, enum: [singles, tag_team] }
+        challengerTagTeamName: { type: string }
+        targetTagTeamName: { type: string }
+        targetTagTeamId: { type: string, description: 'The team a tag call-out names. Its members are checked before the promo is published. Not stored.' }
 
     ReactToPromoInput:
       type: object
@@ -533,6 +730,216 @@ components:
       description: Response shape varies by query param section (overall, headToHead, leaderboards, records, achievements, etc.)
       additionalProperties: true
 
+    Company:
+      type: object
+      properties:
+        companyId: { type: string }
+        name: { type: string }
+        abbreviation: { type: string }
+        imageUrl: { type: string }
+        description: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Show:
+      type: object
+      properties:
+        showId: { type: string }
+        name: { type: string }
+        companyId: { type: string }
+        description: { type: string }
+        schedule: { type: string }
+        dayOfWeek: { type: string }
+        ppvDate: { type: string }
+        imageUrl: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Location:
+      type: object
+      properties:
+        locationId: { type: string }
+        name: { type: string }
+        city: { type: string }
+        state: { type: string }
+        country: { type: string }
+        capacity: { type: integer }
+        latitude: { type: number }
+        longitude: { type: number }
+        imageUrl: { type: string }
+        notes: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Wrestler:
+      type: object
+      properties:
+        wrestlerId: { type: string }
+        promotion: { type: string, enum: [AAA, AEW, NJPW, ROH, TNA, WCW, WWE, OTHER] }
+        name: { type: string }
+        overallCap: { type: integer, minimum: 70, maximum: 93 }
+        isInUse: { type: boolean }
+        assignedPlayerId: { type: string }
+        assignedSlot: { type: string, enum: [primary, alternate] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Stable:
+      type: object
+      properties:
+        stableId: { type: string }
+        name: { type: string }
+        leaderId: { type: string }
+        memberIds: { type: array, items: { type: string } }
+        imageUrl: { type: string }
+        status: { type: string, enum: [pending, approved, active, disbanded] }
+        wins: { type: integer }
+        losses: { type: integer }
+        draws: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        disbandedAt: { type: string, format: date-time }
+
+    StableInvitation:
+      type: object
+      properties:
+        invitationId: { type: string }
+        stableId: { type: string }
+        invitedPlayerId: { type: string }
+        invitedByPlayerId: { type: string }
+        status: { type: string, enum: [pending, accepted, declined, expired] }
+        message: { type: string }
+        expiresAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    TagTeam:
+      type: object
+      properties:
+        tagTeamId: { type: string }
+        name: { type: string }
+        player1Id: { type: string }
+        player2Id: { type: string }
+        imageUrl: { type: string }
+        status: { type: string, enum: [pending_partner, pending_admin, active, dissolved] }
+        wins: { type: integer }
+        losses: { type: integer }
+        draws: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        dissolvedAt: { type: string, format: date-time }
+
+    Video:
+      type: object
+      properties:
+        videoId: { type: string }
+        title: { type: string }
+        description: { type: string }
+        videoUrl: { type: string }
+        thumbnailUrl: { type: string }
+        category: { type: string, enum: [match, highlight, promo, other] }
+        tags: { type: array, items: { type: string } }
+        isPublished: { type: boolean }
+        uploadedBy: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    Announcement:
+      type: object
+      properties:
+        announcementId: { type: string }
+        title: { type: string }
+        body: { type: string }
+        priority: { type: integer }
+        isActive: { type: boolean }
+        expiresAt: { type: string, format: date-time }
+        videoUrl: { type: string }
+        createdBy: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Notification:
+      type: object
+      properties:
+        notificationId: { type: string }
+        userId: { type: string }
+        type: { type: string }
+        message: { type: string }
+        sourceId: { type: string }
+        sourceType: { type: string }
+        isRead: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    TransferRequest:
+      type: object
+      properties:
+        requestId: { type: string }
+        playerId: { type: string }
+        fromDivisionId: { type: string }
+        toDivisionId: { type: string }
+        reason: { type: string }
+        status: { type: string, enum: [pending, approved, rejected] }
+        reviewNote: { type: string }
+        reviewedBy: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    StorylineRequest:
+      type: object
+      properties:
+        requestId: { type: string }
+        requesterId: { type: string }
+        targetPlayerIds: { type: array, items: { type: string } }
+        requestType: { type: string, enum: [storyline, backstage_attack, rivalry] }
+        description: { type: string }
+        status: { type: string, enum: [pending, acknowledged, declined] }
+        gmNote: { type: string }
+        reviewedBy: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    OverallSubmission:
+      type: object
+      properties:
+        playerId: { type: string }
+        mainOverall: { type: integer, minimum: 60, maximum: 99 }
+        alternateOverall: { type: integer, minimum: 60, maximum: 99 }
+        submittedAt: { type: string, format: date-time }
+
+    SeasonAward:
+      type: object
+      properties:
+        awardId: { type: string }
+        seasonId: { type: string }
+        name: { type: string }
+        awardType: { type: string }
+        playerId: { type: string }
+        playerName: { type: string }
+        description: { type: string }
+        value: { type: string }
+        autoGenerated: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    ContenderOverride:
+      type: object
+      properties:
+        championshipId: { type: string }
+        playerId: { type: string }
+        overrideType: { type: string, enum: [bump_to_top, send_to_bottom] }
+        reason: { type: string }
+        createdBy: { type: string }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        active: { type: boolean }
+        playerName: { type: string }
+        wrestlerName: { type: string }
+        playerImageUrl: { type: string }
+
+    DeleteUserInput:
+      type: object
+      required: [userId]
+      properties:
+        userId: { type: string }
+
 paths:
   /auth/setup:
     post:
@@ -651,6 +1058,16 @@ paths:
     get:
       tags: [Players]
       summary: List players
+      description: Public. Leaves out players with no real wrestler name unless a mode below applies.
+      parameters:
+        - name: includeHidden
+          in: query
+          description: 'When "true", includes hidden players. Honoured for an authenticated Admin or Moderator; ignored otherwise.'
+          schema: { type: string, enum: ['true'] }
+        - name: view
+          in: query
+          description: 'When "directory", returns only playerId, name and currentWrestler (null if unset) for all players.'
+          schema: { type: string, enum: [directory] }
       responses:
         '200': { description: List of players }
     post:
@@ -1423,6 +1840,14 @@ paths:
         - name: promoType
           in: query
           schema: { type: string }
+        - name: includeHidden
+          in: query
+          description: 'When "true", includes moderated promos and promos by hidden players. Honoured for an authenticated Admin or Moderator; ignored otherwise.'
+          schema: { type: string, enum: ['true'] }
+        - name: includeArchived
+          in: query
+          description: 'When "true", includes call-outs and responses past the archive window. Honoured for an authenticated Admin or Moderator; ignored otherwise.'
+          schema: { type: string, enum: ['true'] }
       responses:
         '200': { description: List of promos }
     post:
@@ -1438,6 +1863,7 @@ paths:
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'A member of either team in a tag call-out is unavailable', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
 
   /promos/{promoId}:
     get:
@@ -1518,6 +1944,1742 @@ paths:
             schema: { $ref: '#/components/schemas/BulkDeletePromosInput' }
       responses:
         '200': { description: Deleted }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Dashboard & Activity ──────────────────────────────────────────
+
+  /dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Get dashboard overview
+      responses:
+        '200': { description: Dashboard data with current champions, upcoming events, recent results, season info, quick stats }
+
+  /activity:
+    get:
+      tags: [Activity]
+      summary: Get activity feed
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: cursor
+          in: query
+          schema: { type: string }
+          description: Pagination cursor (timestamp|id)
+        - name: type
+          in: query
+          schema: { type: string, enum: [match, championship, challenge, promo, tournament, season] }
+      responses:
+        '200':
+          description: Paginated activity items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { type: object } }
+                  nextCursor: { type: string, nullable: true }
+
+  /rivalries:
+    get:
+      tags: [Rivalries]
+      summary: Get rivalry rankings
+      parameters:
+        - name: seasonId
+          in: query
+          schema: { type: string }
+      responses:
+        '200': { description: Top rivalries sorted by intensity }
+
+  # ── Season Awards ─────────────────────────────────────────────────
+
+  /seasons/{seasonId}/awards:
+    get:
+      tags: [Season Awards]
+      summary: Get season awards (auto + custom)
+      parameters:
+        - name: seasonId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Auto-generated and custom awards }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    post:
+      tags: [Season Awards]
+      summary: Create custom season award
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: seasonId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, playerId]
+              properties:
+                name: { type: string }
+                playerId: { type: string }
+                description: { type: string }
+      responses:
+        '201': { description: Award created }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /seasons/{seasonId}/awards/{awardId}:
+    delete:
+      tags: [Season Awards]
+      summary: Delete custom season award
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: seasonId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: awardId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Admin Users (additional) ──────────────────────────────────────
+
+  /admin/users/delete:
+    post:
+      tags: [Users]
+      summary: Delete user
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeleteUserInput' }
+      responses:
+        '200': { description: User deleted }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Player Statistics ─────────────────────────────────────────────
+
+  /players/{playerId}/statistics:
+    get:
+      tags: [Players]
+      summary: Get player statistics breakdown
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: seasonId
+          in: query
+          schema: { type: string }
+      responses:
+        '200': { description: Player stats with overall and per-match-type breakdown }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Player Discipline ─────────────────────────────────────────────
+
+  /players/{playerId}/discipline:
+    get:
+      tags: [Players]
+      summary: Get a player's discipline status, history and holdings (Admin or Moderator)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Full discipline detail. Cognito fields are null on a Cognito error.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlayerDisciplineDetail' }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /players/{playerId}/strikes:
+    post:
+      tags: [Players]
+      summary: Issue a strike (Admin only)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason, expectedVersion, expectedOutcome]
+              properties:
+                reason: { type: string, minLength: 3, maxLength: 500 }
+                expectedVersion: { type: integer, description: The version read from GET discipline. }
+                expectedOutcome: { $ref: '#/components/schemas/StrikeOutcome' }
+      responses:
+        '201':
+          description: Strike issued
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DisciplineActionResult' }
+        '400': { description: 'Bad reason, or a missing expectedVersion', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'ALREADY_DEACTIVATED, STAFF_PROTECTED or DISCIPLINE_CONFLICT', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
+
+  /players/{playerId}/strikes/{strikeId}/remove:
+    post:
+      tags: [Players]
+      summary: Remove an active strike (Admin only)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: strikeId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason, expectedVersion]
+              properties:
+                reason: { type: string, minLength: 3, maxLength: 500 }
+                expectedVersion: { type: integer }
+      responses:
+        '200':
+          description: Strike removed and kept in history as cleared
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DisciplineActionResult' }
+        '400': { description: 'Bad reason, or a missing expectedVersion', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'PLAYER_DEACTIVATED, STRIKE_NOT_ACTIVE or DISCIPLINE_CONFLICT', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
+
+  /players/{playerId}/reactivate:
+    post:
+      tags: [Players]
+      summary: Reactivate a deactivated player (Admin only)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason, expectedVersion]
+              properties:
+                reason: { type: string, minLength: 3, maxLength: 500 }
+                expectedVersion: { type: integer }
+                restorePriorStrikes:
+                  type: boolean
+                  description: Clear only the deactivating strike. The others keep their own dates.
+      responses:
+        '200':
+          description: Player reactivated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DisciplineActionResult' }
+        '400': { description: 'Bad reason, or a missing expectedVersion', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'NOT_DEACTIVATED or DISCIPLINE_CONFLICT', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
+
+  # ── Companies ─────────────────────────────────────────────────────
+
+  /companies:
+    get:
+      tags: [Companies]
+      summary: List companies
+      responses:
+        '200': { description: List of companies }
+    post:
+      tags: [Companies]
+      summary: Create company
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                abbreviation: { type: string }
+                imageUrl: { type: string }
+                description: { type: string }
+      responses:
+        '201': { description: Created }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /companies/{companyId}:
+    get:
+      tags: [Companies]
+      summary: Get company
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Company }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    put:
+      tags: [Companies]
+      summary: Update company
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                abbreviation: { type: string }
+                imageUrl: { type: string }
+                description: { type: string }
+      responses:
+        '200': { description: Updated }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    delete:
+      tags: [Companies]
+      summary: Delete company
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Conflict – players or shows assigned', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Shows ──────────────────────────────────────────────────────────
+
+  /shows:
+    get:
+      tags: [Shows]
+      summary: List shows
+      parameters:
+        - name: companyId
+          in: query
+          schema: { type: string }
+      responses:
+        '200': { description: List of shows }
+    post:
+      tags: [Shows]
+      summary: Create show
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, companyId]
+              properties:
+                name: { type: string }
+                companyId: { type: string }
+                description: { type: string }
+                schedule: { type: string }
+                dayOfWeek: { type: string }
+                ppvDate: { type: string }
+                imageUrl: { type: string }
+      responses:
+        '201': { description: Created }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /shows/{showId}:
+    get:
+      tags: [Shows]
+      summary: Get show
+      parameters:
+        - name: showId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Show }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    put:
+      tags: [Shows]
+      summary: Update show
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: showId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                companyId: { type: string }
+                description: { type: string }
+                schedule: { type: string }
+                dayOfWeek: { type: string }
+                ppvDate: { type: string }
+                imageUrl: { type: string }
+      responses:
+        '200': { description: Updated }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    delete:
+      tags: [Shows]
+      summary: Delete show
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: showId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Conflict – events reference this show', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Locations ──────────────────────────────────────────────────────
+
+  /locations:
+    get:
+      tags: [Locations]
+      summary: List locations
+      responses:
+        '200': { description: Locations sorted alphabetically }
+    post:
+      tags: [Locations]
+      summary: Create location
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                city: { type: string }
+                state: { type: string }
+                country: { type: string }
+                capacity: { type: integer }
+                latitude: { type: number }
+                longitude: { type: number }
+                imageUrl: { type: string }
+                notes: { type: string }
+      responses:
+        '201': { description: Created }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /locations/bulk:
+    post:
+      tags: [Locations]
+      summary: Bulk create locations
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [locations]
+              properties:
+                locations:
+                  type: array
+                  items:
+                    type: object
+                    required: [name]
+                    properties:
+                      name: { type: string }
+                      city: { type: string }
+                      state: { type: string }
+                      country: { type: string }
+                      capacity: { type: integer }
+                      latitude: { type: number }
+                      longitude: { type: number }
+                      imageUrl: { type: string }
+                      notes: { type: string }
+      responses:
+        '200': { description: Array of created locations }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /locations/{locationId}:
+    get:
+      tags: [Locations]
+      summary: Get location
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Location }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    put:
+      tags: [Locations]
+      summary: Update location
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                city: { type: string }
+                state: { type: string }
+                country: { type: string }
+                capacity: { type: integer }
+                latitude: { type: number }
+                longitude: { type: number }
+                imageUrl: { type: string }
+                notes: { type: string }
+      responses:
+        '200': { description: Updated }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    delete:
+      tags: [Locations]
+      summary: Delete location
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Wrestlers ──────────────────────────────────────────────────────
+
+  /wrestlers:
+    get:
+      tags: [Wrestlers]
+      summary: List wrestlers
+      parameters:
+        - name: promotion
+          in: query
+          schema: { type: string, enum: [AAA, AEW, NJPW, ROH, TNA, WCW, WWE, OTHER] }
+        - name: available
+          in: query
+          schema: { type: string, enum: ['true', 'false'] }
+      responses:
+        '200': { description: List of wrestlers }
+    post:
+      tags: [Wrestlers]
+      summary: Create wrestler
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [promotion, name, overallCap]
+              properties:
+                promotion: { type: string, enum: [AAA, AEW, NJPW, ROH, TNA, WCW, WWE, OTHER] }
+                name: { type: string, minLength: 1, maxLength: 128 }
+                overallCap: { type: integer, minimum: 70, maximum: 93 }
+      responses:
+        '201': { description: Created }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /wrestlers/{wrestlerId}:
+    get:
+      tags: [Wrestlers]
+      summary: Get wrestler
+      parameters:
+        - name: wrestlerId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Wrestler }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    put:
+      tags: [Wrestlers]
+      summary: Update wrestler
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: wrestlerId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                promotion: { type: string }
+                name: { type: string }
+                overallCap: { type: integer, minimum: 70, maximum: 93 }
+                isInUse: { type: boolean }
+                assignedPlayerId: { type: string, nullable: true }
+                assignedSlot: { type: string, enum: [primary, alternate], nullable: true }
+      responses:
+        '200': { description: Updated }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    delete:
+      tags: [Wrestlers]
+      summary: Delete wrestler
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: wrestlerId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Deleted }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Conflict – wrestler is in use', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /wrestlers/import:
+    post:
+      tags: [Wrestlers]
+      summary: Bulk import wrestlers
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                wrestlers:
+                  type: array
+                  items:
+                    type: object
+                    required: [promotion, name, overallCap]
+                    properties:
+                      promotion: { type: string }
+                      name: { type: string }
+                      overallCap: { type: integer }
+      responses:
+        '200': { description: Import results }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Event Check-Ins ────────────────────────────────────────────────
+
+  /events/{eventId}/check-in:
+    post:
+      tags: [Events]
+      summary: Check in to event
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [available, tentative, unavailable] }
+      responses:
+        '200': { description: Check-in recorded }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    delete:
+      tags: [Events]
+      summary: Delete my check-in
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /events/{eventId}/check-in/me:
+    get:
+      tags: [Events]
+      summary: Get my check-in for event
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: My check-in }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'No check-in found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /events/{eventId}/check-ins/summary:
+    get:
+      tags: [Events]
+      summary: Get check-in summary counts
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Check-in counts by status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventId: { type: string }
+                  available: { type: integer }
+                  tentative: { type: integer }
+                  unavailable: { type: integer }
+                  total: { type: integer }
+
+  /events/{eventId}/check-ins:
+    get:
+      tags: [Events]
+      summary: Get all check-ins grouped by status (admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Check-ins grouped by available, tentative, unavailable, noResponse }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Match Slots ────────────────────────────────────────────────────
+
+  /matches/{matchId}/slots/{slotId}/claim:
+    post:
+      tags: [Matches]
+      summary: Claim a match slot
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: slotId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                wrestlerChoice: { type: string, enum: [main, alternate] }
+      responses:
+        '200': { description: Updated match with claimed slot }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Conflict – slot taken or match not open', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    delete:
+      tags: [Matches]
+      summary: Release a match slot
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: slotId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Updated match with released slot }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /matches/{matchId}/slots/{slotId}:
+    put:
+      tags: [Matches]
+      summary: Admin update slot
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: slotId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                playerId: { type: string, nullable: true }
+                lockedByAdmin: { type: boolean }
+                teamLabel: { type: string, nullable: true }
+                wrestlerChoice: { type: string, enum: [main, alternate] }
+      responses:
+        '200': { description: Updated match }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Contender Overrides ────────────────────────────────────────────
+
+  /admin/contenders/overrides:
+    get:
+      tags: [Contenders]
+      summary: Get all active contender overrides
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: championshipId
+          in: query
+          schema: { type: string }
+      responses:
+        '200': { description: 'List of overrides with player info and currentRank, the stored position or null when the player is not on the list' }
+    post:
+      tags: [Contenders]
+      summary: Set contender override
+      description: Saves the override, recalculates the title and reports where the player ended up.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [championshipId, playerId, overrideType, reason]
+              properties:
+                championshipId: { type: string }
+                playerId: { type: string }
+                overrideType: { type: string, enum: [bump_to_top, send_to_bottom] }
+                reason: { type: string }
+                expiresAt: { type: string, format: date-time }
+      responses:
+        '201':
+          description: Override created. placement.status is onList, notOnList, noActiveSeason or recalculationFailed, and placement.rank is set for onList.
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /admin/contenders/overrides/{championshipId}/{playerId}:
+    delete:
+      tags: [Contenders]
+      summary: Remove contender override
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: championshipId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Override removed }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Stables ────────────────────────────────────────────────────────
+
+  /stables:
+    get:
+      tags: [Stables]
+      summary: List stables
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, approved, active, disbanded] }
+      responses:
+        '200': { description: List of stables }
+    post:
+      tags: [Stables]
+      summary: Create stable
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                imageUrl: { type: string }
+      responses:
+        '201': { description: Created }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Conflict – already in a stable', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /stables/standings:
+    get:
+      tags: [Stables]
+      summary: Get stable standings
+      responses:
+        '200': { description: Stables sorted by wins }
+
+  /stables/{stableId}:
+    get:
+      tags: [Stables]
+      summary: Get stable
+      parameters:
+        - name: stableId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Stable }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    put:
+      tags: [Stables]
+      summary: Update stable
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: stableId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Stable' }
+      responses:
+        '200': { description: Updated }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    delete:
+      tags: [Stables]
+      summary: Delete stable (admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: stableId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Deleted }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /stables/{stableId}/approve:
+    post:
+      tags: [Stables]
+      summary: Approve stable (admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: stableId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Approved }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /stables/{stableId}/reject:
+    post:
+      tags: [Stables]
+      summary: Reject stable (admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: stableId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Rejected }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /stables/{stableId}/disband:
+    post:
+      tags: [Stables]
+      summary: Disband stable (leader only)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: stableId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Disbanded }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /stables/{stableId}/reactivate:
+    post:
+      tags: [Stables]
+      summary: Reactivate disbanded stable (leader only)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: stableId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Reactivated }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /stables/{stableId}/remove-member:
+    post:
+      tags: [Stables]
+      summary: Remove member from stable (leader only)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: stableId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [playerId]
+              properties:
+                playerId: { type: string }
+      responses:
+        '200': { description: Member removed }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /stables/{stableId}/invitations:
+    get:
+      tags: [Stables]
+      summary: Get stable invitations (leader only)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: stableId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: List of invitations }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    post:
+      tags: [Stables]
+      summary: Invite player to stable (leader only)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: stableId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [playerId]
+              properties:
+                playerId: { type: string }
+                message: { type: string }
+      responses:
+        '201': { description: Invitation sent }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Conflict – stable full or player already in stable', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /stables/{stableId}/invitations/{invitationId}/respond:
+    post:
+      tags: [Stables]
+      summary: Respond to stable invitation
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: stableId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: invitationId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string, enum: [accept, decline] }
+      responses:
+        '200': { description: Responded }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Tag Teams ──────────────────────────────────────────────────────
+
+  /tag-teams:
+    get:
+      tags: [Tag Teams]
+      summary: List tag teams
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending_partner, pending_admin, active, dissolved] }
+      responses:
+        '200': { description: List of tag teams with player names }
+    post:
+      tags: [Tag Teams]
+      summary: Create tag team
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, partnerId]
+              properties:
+                name: { type: string }
+                partnerId: { type: string }
+                imageUrl: { type: string }
+      responses:
+        '201': { description: Created (pending partner approval) }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Conflict – already in a tag team', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /tag-teams/standings:
+    get:
+      tags: [Tag Teams]
+      summary: Get tag team standings
+      responses:
+        '200': { description: Tag teams sorted by wins }
+
+  /tag-teams/{tagTeamId}:
+    get:
+      tags: [Tag Teams]
+      summary: Get tag team
+      parameters:
+        - name: tagTeamId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Tag team }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    put:
+      tags: [Tag Teams]
+      summary: Update tag team
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: tagTeamId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TagTeam' }
+      responses:
+        '200': { description: Updated }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    delete:
+      tags: [Tag Teams]
+      summary: Delete tag team (admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: tagTeamId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Deleted }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /tag-teams/{tagTeamId}/respond:
+    post:
+      tags: [Tag Teams]
+      summary: Respond to tag team invitation (partner)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: tagTeamId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string, enum: [accept, decline] }
+      responses:
+        '200': { description: Responded }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /tag-teams/{tagTeamId}/approve:
+    post:
+      tags: [Tag Teams]
+      summary: Approve tag team (admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: tagTeamId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Approved }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /tag-teams/{tagTeamId}/reject:
+    post:
+      tags: [Tag Teams]
+      summary: Reject tag team (admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: tagTeamId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Rejected }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /tag-teams/{tagTeamId}/dissolve:
+    post:
+      tags: [Tag Teams]
+      summary: Dissolve tag team (member)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: tagTeamId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Dissolved }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Videos ─────────────────────────────────────────────────────────
+
+  /videos:
+    get:
+      tags: [Videos]
+      summary: List published videos
+      parameters:
+        - name: category
+          in: query
+          schema: { type: string, enum: [match, highlight, promo, other] }
+      responses:
+        '200': { description: List of published videos }
+
+  /videos/{videoId}:
+    get:
+      tags: [Videos]
+      summary: Get video
+      parameters:
+        - name: videoId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Video }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /admin/videos:
+    get:
+      tags: [Videos]
+      summary: List all videos (admin)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: All videos including unpublished }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    post:
+      tags: [Videos]
+      summary: Create video
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, videoUrl, category]
+              properties:
+                title: { type: string }
+                description: { type: string }
+                videoUrl: { type: string }
+                thumbnailUrl: { type: string }
+                category: { type: string, enum: [match, highlight, promo, other] }
+                tags: { type: array, items: { type: string } }
+                isPublished: { type: boolean }
+      responses:
+        '201': { description: Created }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /admin/videos/{videoId}:
+    put:
+      tags: [Videos]
+      summary: Update video (admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: videoId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: string }
+                videoUrl: { type: string }
+                thumbnailUrl: { type: string }
+                category: { type: string, enum: [match, highlight, promo, other] }
+                tags: { type: array, items: { type: string } }
+                isPublished: { type: boolean }
+      responses:
+        '200': { description: Updated }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    delete:
+      tags: [Videos]
+      summary: Delete video (admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: videoId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Announcements ──────────────────────────────────────────────────
+
+  /announcements/active:
+    get:
+      tags: [Announcements]
+      summary: Get active announcements
+      responses:
+        '200': { description: List of active announcements }
+
+  /admin/announcements:
+    get:
+      tags: [Announcements]
+      summary: List all announcements (admin)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: All announcements }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    post:
+      tags: [Announcements]
+      summary: Create announcement
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, body]
+              properties:
+                title: { type: string }
+                body: { type: string }
+                priority: { type: integer }
+                isActive: { type: boolean }
+                expiresAt: { type: string, format: date-time }
+                videoUrl: { type: string }
+      responses:
+        '201': { description: Created }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /admin/announcements/{announcementId}:
+    put:
+      tags: [Announcements]
+      summary: Update announcement
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: announcementId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                body: { type: string }
+                priority: { type: integer }
+                isActive: { type: boolean }
+                expiresAt: { type: string, format: date-time, nullable: true }
+      responses:
+        '200': { description: Updated }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    delete:
+      tags: [Announcements]
+      summary: Delete announcement
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: announcementId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Notifications ──────────────────────────────────────────────────
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Get my notifications
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Paginated notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/Notification' } }
+                  nextCursor: { type: string }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /notifications/unread-count:
+    get:
+      tags: [Notifications]
+      summary: Get unread notification count
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count: { type: integer }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /notifications/{notificationId}/read:
+    put:
+      tags: [Notifications]
+      summary: Mark notification as read
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Marked read }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /notifications/mark-all-read:
+    put:
+      tags: [Notifications]
+      summary: Mark all notifications as read
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Count of updated notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated: { type: integer }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /notifications/{notificationId}:
+    delete:
+      tags: [Notifications]
+      summary: Delete notification
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Deleted }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /notifications/delete-read:
+    delete:
+      tags: [Notifications]
+      summary: Delete all read notifications
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Count of deleted notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted: { type: integer }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Transfers ──────────────────────────────────────────────────────
+
+  /transfers:
+    post:
+      tags: [Transfers]
+      summary: Request division transfer
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [toDivisionId, reason]
+              properties:
+                toDivisionId: { type: string }
+                reason: { type: string }
+      responses:
+        '200': { description: Transfer request created }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not permitted, or the transfers feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /transfers/me:
+    get:
+      tags: [Transfers]
+      summary: Get my transfer requests
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: List of my transfer requests with division names }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /admin/transfers:
+    get:
+      tags: [Transfers]
+      summary: List all transfer requests (admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, approved, rejected] }
+      responses:
+        '200': { description: Transfer requests with player and division names }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /admin/transfers/{requestId}:
+    put:
+      tags: [Transfers]
+      summary: Review transfer request (admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [approved, rejected] }
+                reviewNote: { type: string }
+      responses:
+        '200': { description: Transfer reviewed }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Storyline Requests ─────────────────────────────────────────────
+
+  /storyline-requests:
+    post:
+      tags: [Storyline Requests]
+      summary: Submit storyline request
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestType, targetPlayerIds, description]
+              properties:
+                requestType: { type: string, enum: [storyline, backstage_attack, rivalry] }
+                targetPlayerIds: { type: array, items: { type: string } }
+                description: { type: string, maxLength: 500 }
+      responses:
+        '200': { description: Request created }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /storyline-requests/me:
+    get:
+      tags: [Storyline Requests]
+      summary: Get my storyline requests
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: List of my storyline requests with target player names }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /admin/storyline-requests:
+    get:
+      tags: [Storyline Requests]
+      summary: List all storyline requests (admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, acknowledged, declined] }
+      responses:
+        '200': { description: Storyline requests with requester and target names }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /admin/storyline-requests/{requestId}:
+    put:
+      tags: [Storyline Requests]
+      summary: Review storyline request (admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [acknowledged, declined] }
+                gmNote: { type: string }
+      responses:
+        '200': { description: Request reviewed }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Overalls ───────────────────────────────────────────────────────
+
+  /players/me/overall:
+    get:
+      tags: [Overalls]
+      summary: Get my overall rating
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: My overall submission }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'No submission found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    put:
+      tags: [Overalls]
+      summary: Submit my overall rating
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mainOverall]
+              properties:
+                mainOverall: { type: integer, minimum: 60, maximum: 99 }
+                alternateOverall: { type: integer, minimum: 60, maximum: 99 }
+      responses:
+        '200': { description: Submitted }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /admin/overalls:
+    get:
+      tags: [Overalls]
+      summary: Get all overall submissions (admin)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: All player overall submissions with names }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 `;

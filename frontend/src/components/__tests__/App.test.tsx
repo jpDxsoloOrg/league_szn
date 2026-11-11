@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 
 // --- Hoisted mocks for contexts and child components ---
 const { mockUseAuth, mockUseSiteConfig } = vi.hoisted(() => ({
@@ -24,18 +24,22 @@ vi.mock('react-i18next', () => ({
 vi.mock('../../i18n', () => ({}));
 
 // Mock heavy child components to keep tests lightweight
-vi.mock('../Sidebar', () => ({ default: () => <nav data-testid="sidebar">Sidebar</nav> }));
-vi.mock('../TopBar', () => ({ default: () => <div data-testid="topbar">TopBar</div> }));
+const { mockIsMobile } = vi.hoisted(() => ({ mockIsMobile: { value: false } }));
+vi.mock('../../hooks/useIsMobile', () => ({ useIsMobile: () => mockIsMobile.value }));
+vi.mock('../mobile/MobileHeader', () => ({ default: () => <header data-testid="mobile-header">MobileHeader</header> }));
+vi.mock('../shell/ShellHeader', () => ({ default: () => <nav data-testid="shell-header">ShellHeader</nav> }));
+vi.mock('../shell/ShellSidebar', () => ({ default: () => <aside data-testid="shell-sidebar">ShellSidebar</aside> }));
+vi.mock('../shell/LeagueTicker', () => ({ default: () => <section data-testid="league-ticker">LeagueTicker</section> }));
+vi.mock('../shell/SectionNav', () => ({ default: () => <div data-testid="section-nav">SectionNav</div> }));
 vi.mock('../Dashboard', () => ({ default: () => <div data-testid="dashboard">Dashboard</div> }));
 vi.mock('../Standings', () => ({ default: () => <div data-testid="standings">Standings</div> }));
 vi.mock('../Championships', () => ({ default: () => <div data-testid="championships">Championships</div> }));
+vi.mock('../MatchSearch', () => ({ default: () => <div data-testid="match-search">MatchSearch</div> }));
 vi.mock('../Tournaments', () => ({ default: () => <div data-testid="tournaments">Tournaments</div> }));
 vi.mock('../admin/AdminPanel', () => ({ default: () => <div data-testid="admin-panel">AdminPanel</div> }));
 vi.mock('../auth/Login', () => ({ default: () => <div data-testid="login">Login</div> }));
 vi.mock('../auth/Signup', () => ({ default: () => <div data-testid="signup">Signup</div> }));
-vi.mock('../challenges/ChallengeBoard', () => ({ default: () => <div data-testid="challenge-board">ChallengeBoard</div> }));
 vi.mock('../challenges/ChallengeDetail', () => ({ default: () => <div>ChallengeDetail</div> }));
-vi.mock('../challenges/IssueChallenge', () => ({ default: () => <div>IssueChallenge</div> }));
 vi.mock('../challenges/MyChallenges', () => ({ default: () => <div>MyChallenges</div> }));
 vi.mock('../promos/PromoFeed', () => ({ default: () => <div>PromoFeed</div> }));
 vi.mock('../promos/PromoThread', () => ({ default: () => <div>PromoThread</div> }));
@@ -55,8 +59,10 @@ vi.mock('../profile/WrestlerProfile', () => ({ default: () => <div data-testid="
 vi.mock('../ErrorBoundary', () => ({
   default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
+vi.mock('../ProfileCompletionModal', () => ({ default: () => null }));
+vi.mock('../AnnouncementModal', () => ({ default: () => null }));
 
-// Avoid loading WikiArticle (and thus react-syntax-highlighter ESM) in App tests
+// Keep the wiki's markdown stack out of App tests
 vi.mock('../Wiki', () => ({ WikiLayout: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
 vi.mock('../WikiIndex', () => ({ default: () => <div data-testid="wiki-index">WikiIndex</div> }));
 vi.mock('../WikiArticle', () => ({ default: () => <div data-testid="wiki-article">WikiArticle</div> }));
@@ -127,24 +133,45 @@ describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     testEntries = ['/'];
+    mockIsMobile.value = false;
     mockUseSiteConfig.mockReturnValue({ features: ALL_FEATURES, isLoading: false });
   });
 
-  it('renders with sidebar, topbar, and main content area', () => {
+  it('renders the shell and lazy-loads the page into main', async () => {
     mockUseAuth.mockReturnValue(authenticatedAuth());
     render(<App />);
 
-    expect(screen.getByTestId('sidebar')).toBeInTheDocument();
-    expect(screen.getByTestId('topbar')).toBeInTheDocument();
-    expect(screen.getByTestId('dashboard')).toBeInTheDocument();
+    expect(screen.getByTestId('shell-sidebar')).toBeInTheDocument();
+    expect(screen.getByTestId('shell-header')).toBeInTheDocument();
+    expect(screen.getByTestId('section-nav')).toBeInTheDocument();
+    expect(screen.getByTestId('league-ticker')).toBeInTheDocument();
+    expect(await screen.findByTestId('dashboard')).toBeInTheDocument();
+    expect(screen.getByRole('main')).toContainElement(screen.getByTestId('dashboard'));
   });
 
-  it('renders public routes without authentication', () => {
+  it('pins the section tabs on desktop but lets them scroll away on phones', async () => {
+    mockUseAuth.mockReturnValue(authenticatedAuth());
+    const { container, unmount } = render(<App />);
+    await screen.findByTestId('dashboard');
+    expect(container.querySelector('.shell-top')).toContainElement(screen.getByTestId('section-nav'));
+    unmount();
+
+    mockIsMobile.value = true;
+    const phone = render(<App />);
+    await screen.findByTestId('dashboard');
+    const pinned = phone.container.querySelector('.shell-top');
+    expect(pinned).toContainElement(screen.getByTestId('mobile-header'));
+    expect(pinned).not.toContainElement(screen.getByTestId('section-nav'));
+    expect(screen.queryByTestId('shell-sidebar')).not.toBeInTheDocument();
+    expect(screen.getByTestId('league-ticker')).toBeInTheDocument();
+  });
+
+  it('renders public routes without authentication', async () => {
     mockUseAuth.mockReturnValue(unauthenticatedAuth());
     testEntries = ['/championships'];
     render(<App />);
 
-    expect(screen.getByTestId('championships')).toBeInTheDocument();
+    expect(await screen.findByTestId('championships')).toBeInTheDocument();
   });
 
   it('redirects protected routes to login when not authenticated', async () => {
@@ -152,9 +179,7 @@ describe('App', () => {
     testEntries = ['/profile'];
     render(<App />);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/login');
-    });
+    expect(await screen.findByTestId('navigate')).toHaveAttribute('data-to', '/login');
   });
 
   it('renders /matches as MatchSearch page', async () => {
@@ -162,10 +187,7 @@ describe('App', () => {
     testEntries = ['/matches'];
     render(<App />);
 
-    // /matches should render the MatchSearch component, not redirect
-    await waitFor(() => {
-      expect(screen.queryByTestId('navigate')).not.toBeInTheDocument();
-    });
+    expect(await screen.findByTestId('match-search')).toBeInTheDocument();
   });
 
   it('renders /tournaments as Tournaments page', async () => {
@@ -173,9 +195,7 @@ describe('App', () => {
     testEntries = ['/tournaments'];
     render(<App />);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('tournaments')).toBeInTheDocument();
-    });
+    expect(await screen.findByTestId('tournaments')).toBeInTheDocument();
   });
 
   it('renders /admin/tournaments as Admin panel route', async () => {
@@ -183,9 +203,37 @@ describe('App', () => {
     testEntries = ['/admin/tournaments'];
     render(<App />);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('admin-panel')).toBeInTheDocument();
-    });
+    expect(await screen.findByTestId('admin-panel')).toBeInTheDocument();
+  });
+
+  it('themes the page by section and names it in the tab title', async () => {
+    mockUseAuth.mockReturnValue(unauthenticatedAuth());
+    testEntries = ['/matches'];
+    const { container } = render(<App />);
+    await screen.findByTestId('match-search');
+    expect(container.querySelector('.App')).toHaveAttribute('data-section', 'events');
+    expect(document.title).toBe('nav.tabs.matches | League SZN');
+  });
+
+  it.each([
+    ['/promos', 'PromoFeed'],
+    ['/promos/p1', 'PromoThread'],
+  ])('lets guests read %s, which the API serves publicly', async (path, page) => {
+    mockUseAuth.mockReturnValue(unauthenticatedAuth());
+    testEntries = [path];
+    const { container } = render(<App />);
+    expect(await screen.findByText(page)).toBeInTheDocument();
+    expect(screen.queryByTestId('navigate')).not.toBeInTheDocument();
+    expect(container.querySelector('.App')).toHaveAttribute('data-section', 'storylines');
+  });
+
+  it('shows guests on /promos/new a sign-in prompt and keeps the section', async () => {
+    mockUseAuth.mockReturnValue(unauthenticatedAuth());
+    testEntries = ['/promos/new'];
+    const { container } = render(<App />);
+    expect(await screen.findByRole('heading', { name: 'promos.guest.title' })).toBeInTheDocument();
+    expect(screen.queryByText('PromoEditor')).not.toBeInTheDocument();
+    expect(container.querySelector('.App')).toHaveAttribute('data-section', 'storylines');
   });
 
   it('redirects /guide to /guide/wiki', async () => {
@@ -193,9 +241,7 @@ describe('App', () => {
     testEntries = ['/guide'];
     render(<App />);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/guide/wiki');
-    });
+    expect(await screen.findByTestId('navigate')).toHaveAttribute('data-to', '/guide/wiki');
   });
 
   it('redirects feature-gated routes to home when feature is disabled', async () => {
@@ -207,8 +253,6 @@ describe('App', () => {
     testEntries = ['/stats'];
     render(<App />);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/');
-    });
+    expect(await screen.findByTestId('navigate')).toHaveAttribute('data-to', '/');
   });
 });

@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { isPlayerVisible } from '../../lib/needsWrestler';
 import {
   computeRecentFormAndStreak,
   type FormResult,
@@ -10,9 +11,11 @@ import {
   fetchCompletedMatches,
   buildPlayerToStableMap,
   computeStableMatchResults,
+  isWithinFactionLifetime,
   computeMatchTypeRecords,
   computeHeadToHead,
   computeWinPercentage,
+  tallyRecord,
   type MatchRecord,
   type StableRecord,
 } from './computeStableStats';
@@ -185,14 +188,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const factionResults = computeStableMatchResults(matches, factionRecord, playerToStable);
 
     // Per-faction totals — deduped via computeStableMatchResults (one result per match).
-    let totalWins = 0;
-    let totalLosses = 0;
-    let totalDraws = 0;
-    for (const r of factionResults) {
-      if (r.outcome === 'W') totalWins++;
-      else if (r.outcome === 'L') totalLosses++;
-      else totalDraws++;
-    }
+    const { wins: totalWins, losses: totalLosses, draws: totalDraws } = tallyRecord(factionResults);
     const totalsForm = computeRecentFormAndStreak(
       factionResults.map((r) => r.outcome),
       RECENT_FORM_LIMIT,
@@ -223,9 +219,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         .map((p) => [p.playerId, p]),
     );
 
-    const members: MemberStatsRow[] = factionMemberIds.map((playerId) => {
+    const listedMemberIds = factionMemberIds.filter((playerId) => {
       const player = playerById.get(playerId);
-      const { results, wins, losses, draws } = computeMemberForm(matches, playerId);
+      return !player || isPlayerVisible(player);
+    });
+
+    // Member rows cover the same matches as the faction totals above them.
+    const lifetimeMatches = matches.filter((match) => isWithinFactionLifetime(match.date, factionRecord));
+
+    const members: MemberStatsRow[] = listedMemberIds.map((playerId) => {
+      const player = playerById.get(playerId);
+      const { results, wins, losses, draws } = computeMemberForm(lifetimeMatches, playerId);
       const { recentForm, currentStreak } = computeRecentFormAndStreak(results, RECENT_FORM_LIMIT);
       return {
         playerId,

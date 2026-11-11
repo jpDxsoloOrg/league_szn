@@ -51,6 +51,8 @@ export interface ContenderRankingInput {
   previousRank?: number | null;
   peakRank?: number;
   weeksAtTop?: number;
+  /** The week last counted in weeksAtTop, in the format `YYYY-WW`. */
+  lastTopWeek?: string;
   isOverridden?: boolean;
   overrideType?: string | null;
   organicRank?: number | null;
@@ -149,13 +151,15 @@ export interface TournamentsMethods {
   list(): Promise<Tournament[]>;
   create(input: Record<string, unknown>): Promise<Tournament>;
   update(tournamentId: string, patch: Partial<Tournament>): Promise<Tournament>;
+  /** Clear a recorded winner. `update` cannot do this: it skips undefined fields. */
+  removeWinner(tournamentId: string): Promise<void>;
 }
 
 export interface ContendersMethods {
   // Rankings
   listByChampionship(championshipId: string): Promise<ContenderRanking[]>;
   listByChampionshipRanked(championshipId: string): Promise<ContenderRanking[]>;
-  deleteAllForChampionship(championshipId: string): Promise<void>;
+  deleteRanking(championshipId: string, playerId: string): Promise<void>;
   upsertRanking(input: ContenderRankingInput): Promise<ContenderRanking>;
 
   // Overrides

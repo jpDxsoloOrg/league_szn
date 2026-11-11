@@ -1,8 +1,8 @@
 // Shared utilities
-export { API_BASE_URL, getAuthToken, fetchWithAuth } from './apiClient';
+export { API_BASE_URL, AUTH_EXPIRED_EVENT, SIGNUP_BLOCKED_EVENT, ApiError, getAuthToken, fetchWithAuth, isApiError } from './apiClient';
 
 // API modules
-export { playersApi } from './players.api';
+export { playersApi, disciplineApi } from './players.api';
 export { matchesApi } from './matches.api';
 export { championshipsApi } from './championships.api';
 export { tournamentsApi } from './tournaments.api';
@@ -37,11 +37,11 @@ export { notificationsApi } from './notifications.api';
 export { overallsApi } from './overalls.api';
 export { transfersApi } from './transfers.api';
 export { storylineRequestsApi } from './storylineRequests.api';
-export { matchmakingApi } from './matchmaking.api';
 export { locationsApi } from './locations.api';
 
 // Type/interface re-exports
 export type { SiteFeatures } from './siteConfig.api';
+export type { PlayerDirectoryEntry } from './players.api';
 export type {
   StatsPlayer,
   PlayerStatsResponse,

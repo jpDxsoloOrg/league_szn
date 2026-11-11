@@ -15,6 +15,7 @@ const DEFAULT_FEATURES: SiteFeatures = {
   stables: true,
   notifications: true,
   rivalries: true,
+  transfers: false,
 };
 
 const SiteConfigContext = createContext<SiteConfigContextType | undefined>(undefined);
@@ -30,7 +31,7 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
       setFeatures({ ...DEFAULT_FEATURES, ...result.features });
     } catch {
       if (mountedCheck && !mountedCheck()) return;
-      // On error, default to all features enabled
+      // On error, fall back to the defaults
       setFeatures(DEFAULT_FEATURES);
     }
     if (mountedCheck && !mountedCheck()) return;

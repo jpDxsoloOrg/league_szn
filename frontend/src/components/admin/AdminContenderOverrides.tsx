@@ -1,124 +1,105 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SlidersHorizontal } from 'lucide-react';
 import type { Championship, Player } from '../../types';
-import type { ContenderOverride, OverrideType } from '../../types/contender';
+import type { ContenderOverride, OverridePlacement, OverrideType } from '../../types/contender';
 import { championshipsApi, contendersApi, playersApi } from '../../services/api';
-import './AdminContenderOverrides.css';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import DataTable from '../ui/DataTable';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Skeleton from '../ui/Skeleton';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
+import { pickablePlayers } from '../../utils/pickablePlayers';
+import AdminNotice from './AdminNotice';
+import useAdminConfirm from './useAdminConfirm';
+import './adminContent.css';
 
-interface PlayerOption {
-  playerId: string;
-  name: string;
-  currentWrestler: string;
-}
+/** The API's wording for an expiry already past. Other errors show as sent. */
+const EXPIRY_PAST_MESSAGE = 'expiresAt must be in the future';
 
-function ActiveOverrideCard({
-  override,
-  players,
-  onRemove,
-}: {
-  override: ContenderOverride;
-  players: PlayerOption[];
-  onRemove: (override: ContenderOverride) => void;
-}) {
-  const { t } = useTranslation();
-  const player = players.find((p) => p.playerId === override.playerId);
-  const isBump = override.overrideType === 'bump_to_top';
-
-  return (
-    <div className="override-card">
-      <div className="override-card-header">
-        <div>
-          <span className="override-player-name">{player?.name ?? override.playerId}</span>
-          {player && <span className="override-wrestler-name">({player.currentWrestler})</span>}
-        </div>
-        <span className={`override-type-badge ${isBump ? 'bump' : 'bottom'}`}>
-          {isBump
-            ? t('contenders.admin.overrides.bumpToTop')
-            : t('contenders.admin.overrides.sendToBottom')}
-        </span>
-      </div>
-      <div className="override-card-details">
-        <span>{override.reason}</span>
-        {override.expiresAt && (
-          <span>
-            {t('contenders.overrides.expires', {
-              date: new Date(override.expiresAt).toLocaleDateString(),
-            })}
-          </span>
-        )}
-      </div>
-      <div className="override-card-footer">
-        <span className="override-meta">
-          {t('contenders.overrides.overriddenBy', { admin: override.createdBy })} &middot;{' '}
-          {new Date(override.createdAt).toLocaleDateString()}
-        </span>
-        <button className="btn-remove-override" onClick={() => onRemove(override)}>
-          {t('contenders.admin.overrides.remove')}
-        </button>
-      </div>
-    </div>
-  );
-}
+const PLACEMENT_MESSAGE_KEYS: Record<Exclude<OverridePlacement['status'], 'onList'>, string> = {
+  notOnList: 'contenders.admin.overrides.placedNotOnList',
+  noActiveSeason: 'contenders.admin.overrides.placedNoSeason',
+  recalculationFailed: 'contenders.admin.overrides.placedFailed',
+};
 
 export default function AdminContenderOverrides() {
   const { t } = useTranslation();
+  const { confirm, confirmDialog } = useAdminConfirm();
   const [championships, setChampionships] = useState<Championship[]>([]);
-  const [players, setPlayers] = useState<PlayerOption[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [selectedChampionshipId, setSelectedChampionshipId] = useState('');
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
   const [overrideType, setOverrideType] = useState<OverrideType>('bump_to_top');
   const [reason, setReason] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
   const [overrides, setOverrides] = useState<ContenderOverride[]>([]);
+  const [overridesReloadKey, setOverridesReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingOverrides, setLoadingOverrides] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'warning' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
-    Promise.all([championshipsApi.getAll(), playersApi.getAll()])
-      .then(([champData, playerData]) => {
-        setChampionships(champData);
-        setPlayers(
-          playerData.map((p: Player) => ({
-            playerId: p.playerId,
-            name: p.name,
-            currentWrestler: p.currentWrestler,
-            divisionId: p.divisionId,
-          }))
-        );
-        if (champData.length > 0 && champData[0]) {
-          setSelectedChampionshipId(champData[0].championshipId);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+    const controller = new AbortController();
+    const load = async () => {
+      setLoading(true);
+      setLoadError(null);
+      try {
+        const [championshipData, playerData] = await Promise.all([
+          championshipsApi.getAll(controller.signal),
+          playersApi.getAllIncludingHidden(controller.signal),
+        ]);
+        setChampionships(championshipData);
+        setPlayers(playerData);
+        setSelectedChampionshipId(championshipData[0]?.championshipId ?? '');
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setLoadError(err instanceof Error ? err.message : String(err));
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    };
+    void load();
+    return () => controller.abort();
+  }, [reloadKey]);
 
-  const loadOverrides = useCallback(async (championshipId: string) => {
-    if (!championshipId) return;
-    try {
-      const data = await contendersApi.getOverrides(championshipId);
-      setOverrides(data.filter((o) => o.active));
-    } catch {
-      setOverrides([]);
-    }
-  }, []);
-
+  // Each championship change aborts the last load, so an older, slower response
+  // cannot replace the overrides of the championship now selected.
   useEffect(() => {
-    if (selectedChampionshipId) {
-      loadOverrides(selectedChampionshipId);
-    }
-  }, [selectedChampionshipId, loadOverrides]);
+    if (!selectedChampionshipId) return undefined;
+    const controller = new AbortController();
+    const load = async () => {
+      setLoadingOverrides(true);
+      try {
+        const data = await contendersApi.getOverrides(selectedChampionshipId);
+        if (!controller.signal.aborted) setOverrides(data.filter((override) => override.active));
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setOverrides([]);
+        setMessage({
+          type: 'error',
+          text: err instanceof Error ? err.message : String(err),
+        });
+      } finally {
+        if (!controller.signal.aborted) setLoadingOverrides(false);
+      }
+    };
+    void load();
+    return () => controller.abort();
+  }, [selectedChampionshipId, overridesReloadKey]);
 
-  const selectedChampionship = championships.find(
-    (c) => c.championshipId === selectedChampionshipId
-  );
-
+  const playersById = useMemo(() => new Map(players.map((player) => [player.playerId, player])), [players]);
+  const selectedChampionship = championships.find((championship) => championship.championshipId === selectedChampionshipId);
+  const bookablePlayers = pickablePlayers(players);
   const filteredPlayers = selectedChampionship?.divisionId
-    ? players.filter(
-        (p) => (p as PlayerOption & { divisionId?: string }).divisionId === selectedChampionship.divisionId
-      )
-    : players;
+    ? bookablePlayers.filter((player) => player.divisionId === selectedChampionship.divisionId)
+    : bookablePlayers;
 
   const clearForm = () => {
     setSelectedPlayerId('');
@@ -127,228 +108,270 @@ export default function AdminContenderOverrides() {
     setExpiresAt('');
   };
 
-  const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 5000);
-  };
-
   const handleApply = async () => {
     if (!selectedChampionshipId || !selectedPlayerId || !reason.trim()) return;
 
-    const player = players.find((p) => p.playerId === selectedPlayerId);
-    const championship = championships.find((c) => c.championshipId === selectedChampionshipId);
-    const confirmMsg = t('contenders.admin.overrides.confirmApply', {
-      player: player?.name ?? selectedPlayerId,
-      championship: championship?.name ?? selectedChampionshipId,
+    const player = playersById.get(selectedPlayerId);
+    const confirmed = await confirm({
+      title: t('contenders.admin.overrides.confirmApply', {
+        player: player?.name ?? selectedPlayerId,
+        championship: selectedChampionship?.name ?? selectedChampionshipId,
+      }),
+      confirmLabel: t('contenders.admin.overrides.apply'),
+      danger: false,
     });
+    if (!confirmed) return;
 
-    if (!confirm(confirmMsg)) return;
-
+    setSubmitting(true);
+    setMessage(null);
     try {
-      setSubmitting(true);
-      setMessage(null);
-      await contendersApi.setOverride({
+      const { placement } = await contendersApi.setOverride({
         championshipId: selectedChampionshipId,
         playerId: selectedPlayerId,
         overrideType,
         reason: reason.trim(),
         expiresAt: expiresAt || undefined,
       });
-      showMessage('success', t('contenders.admin.overrides.applySuccess', { player: player?.name }));
+      setMessage(placement.status === 'onList'
+        ? { type: 'success', text: t('contenders.admin.overrides.placedOnList', { player: player?.name, rank: placement.rank }) }
+        : { type: 'warning', text: t(PLACEMENT_MESSAGE_KEYS[placement.status], { player: player?.name }) });
       clearForm();
-      await loadOverrides(selectedChampionshipId);
+      setOverridesReloadKey((key) => key + 1);
     } catch (err) {
-      showMessage('error', err instanceof Error ? err.message : 'Failed to apply override');
+      const text = err instanceof Error && err.message === EXPIRY_PAST_MESSAGE
+        ? t('contenders.admin.overrides.errorExpiryPast')
+        : err instanceof Error ? err.message : t('adminContent.contenders.applyFailed', 'Failed to apply override');
+      setMessage({ type: 'error', text });
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleRemove = async (override: ContenderOverride) => {
-    const player = players.find((p) => p.playerId === override.playerId);
-    const confirmMsg = t('contenders.admin.overrides.confirmRemove', {
-      player: player?.name ?? override.playerId,
+    const player = playersById.get(override.playerId);
+    const confirmed = await confirm({
+      title: t('contenders.admin.overrides.confirmRemove', { player: player?.name ?? override.playerId }),
+      confirmLabel: t('contenders.admin.overrides.remove'),
     });
+    if (!confirmed) return;
 
-    if (!confirm(confirmMsg)) return;
-
+    setMessage(null);
     try {
-      setMessage(null);
       await contendersApi.removeOverride(override.championshipId, override.playerId);
-      showMessage(
-        'success',
-        t('contenders.admin.overrides.removeSuccess', { player: player?.name })
-      );
-      await loadOverrides(selectedChampionshipId);
+      setMessage({ type: 'success', text: t('contenders.admin.overrides.removeSuccess', { player: player?.name }) });
+      setOverridesReloadKey((key) => key + 1);
     } catch (err) {
-      showMessage('error', err instanceof Error ? err.message : 'Failed to remove override');
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : t('adminContent.contenders.removeFailed', 'Failed to remove override'),
+      });
     }
   };
 
+  const title = t('contenders.admin.overrides.title');
+
   if (loading) {
     return (
-      <div className="admin-contender-overrides">
-        <h3>{t('contenders.admin.overrides.title')}</h3>
-        <p>{t('common.loading', 'Loading...')}</p>
+      <div className="ac-page">
+        <PageHeader title={title} />
+        <Skeleton variant="block" count={3} />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="ac-page">
+        <PageHeader title={title} />
+        <AdminNotice
+          tone="error"
+          action={<Button variant="ghost" size="sm" onClick={() => setReloadKey((key) => key + 1)}>{t('common.retry', 'Retry')}</Button>}
+        >
+          {loadError}
+        </AdminNotice>
       </div>
     );
   }
 
   if (championships.length === 0) {
     return (
-      <div className="admin-contender-overrides">
-        <h3>{t('contenders.admin.overrides.title')}</h3>
-        <p>{t('contenders.admin.noChampionships', 'No championships found. Create championships first.')}</p>
+      <div className="ac-page">
+        <PageHeader title={title} />
+        <EmptyState
+          icon={<SlidersHorizontal aria-hidden="true" size={32} />}
+          title={t('contenders.admin.noChampionships', 'No championships found. Create championships first.')}
+        />
       </div>
     );
   }
 
-  const isFormValid = selectedChampionshipId && selectedPlayerId && reason.trim();
-
   return (
-    <div className="admin-contender-overrides">
-      <h3>{t('contenders.admin.overrides.title')}</h3>
-      <p className="overrides-subtitle">{t('contenders.admin.overrides.subtitle')}</p>
+    <div className="ac-page">
+      <PageHeader title={title} subtitle={t('contenders.admin.overrides.subtitle')} />
 
-      <div className="override-form">
-        {/* Championship Selector */}
-        <div className="override-field">
-          <label className="override-label" htmlFor="override-championship-select">
-            {t('contenders.admin.selectChampionship')}
-          </label>
-          <select
-            id="override-championship-select"
-            className="config-select"
-            value={selectedChampionshipId}
-            onChange={(e) => {
-              setSelectedChampionshipId(e.target.value);
-              setSelectedPlayerId('');
-            }}
-          >
-            {championships.map((c) => (
-              <option key={c.championshipId} value={c.championshipId}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
+      {message && <AdminNotice tone={message.type}>{message.text}</AdminNotice>}
 
-        {/* Player Selector */}
-        <div className="override-field">
-          <label className="override-label" htmlFor="override-player-select">
-            {t('contenders.admin.overrides.selectPlayer')}
-          </label>
-          <select
-            id="override-player-select"
-            className="config-select"
-            value={selectedPlayerId}
-            onChange={(e) => setSelectedPlayerId(e.target.value)}
-          >
-            <option value="">-- {t('contenders.admin.overrides.selectPlayer')} --</option>
-            {filteredPlayers.map((p) => (
-              <option key={p.playerId} value={p.playerId}>
-                {p.name} ({p.currentWrestler})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Override Type */}
-        <div className="override-field">
-          <span className="override-label">{t('contenders.admin.overrides.overrideType')}</span>
-          <div className="override-radio-group">
-            <label
-              className={`override-radio-label ${overrideType === 'bump_to_top' ? 'selected' : ''}`}
+      <Card className="ac-form">
+        <div className="ac-form__row">
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="override-championship-select">{t('contenders.admin.selectChampionship')}</label>
+            <select
+              id="override-championship-select"
+              value={selectedChampionshipId}
+              onChange={(event) => {
+                setSelectedChampionshipId(event.target.value);
+                setSelectedPlayerId('');
+              }}
             >
-              <input
-                type="radio"
-                name="overrideType"
-                value="bump_to_top"
-                checked={overrideType === 'bump_to_top'}
-                onChange={() => setOverrideType('bump_to_top')}
-              />
-              {t('contenders.admin.overrides.bumpToTop')}
-            </label>
-            <label
-              className={`override-radio-label ${overrideType === 'send_to_bottom' ? 'selected' : ''}`}
-            >
-              <input
-                type="radio"
-                name="overrideType"
-                value="send_to_bottom"
-                checked={overrideType === 'send_to_bottom'}
-                onChange={() => setOverrideType('send_to_bottom')}
-              />
-              {t('contenders.admin.overrides.sendToBottom')}
-            </label>
+              {championships.map((championship) => (
+                <option key={championship.championshipId} value={championship.championshipId}>{championship.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="override-player-select">{t('contenders.admin.overrides.selectPlayer')}</label>
+            <select id="override-player-select" value={selectedPlayerId} onChange={(event) => setSelectedPlayerId(event.target.value)}>
+              <option value="">{t('contenders.admin.overrides.selectPlayer')}</option>
+              {filteredPlayers.map((player) => (
+                <option key={player.playerId} value={player.playerId}>{player.name} ({player.currentWrestler})</option>
+              ))}
+            </select>
           </div>
         </div>
 
-        {/* Reason */}
-        <div className="override-field">
-          <label className="override-label" htmlFor="override-reason">
-            {t('contenders.admin.overrides.reason')}
-          </label>
-          <input
-            id="override-reason"
-            type="text"
-            className="config-input"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder={t('contenders.admin.overrides.reasonPlaceholder')}
-          />
-        </div>
-
-        {/* Expiry Date */}
-        <div className="override-field">
-          <label className="override-label" htmlFor="override-expires">
-            {t('contenders.admin.overrides.expiresAt')}
-          </label>
-          <input
-            id="override-expires"
-            type="date"
-            className="config-input"
-            value={expiresAt}
-            onChange={(e) => setExpiresAt(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* Apply Button */}
-      <div className="override-actions">
-        <button
-          className="btn-apply-override"
-          onClick={handleApply}
-          disabled={!isFormValid || submitting}
-        >
-          {submitting
-            ? t('common.processing', 'Processing...')
-            : t('contenders.admin.overrides.apply')}
-        </button>
-      </div>
-
-      {message && (
-        <div className={message.type === 'success' ? 'override-success-msg' : 'override-error-msg'}>
-          {message.text}
-        </div>
-      )}
-
-      {/* Active Overrides List */}
-      <div className="active-overrides-section">
-        <h4>{t('contenders.admin.overrides.activeOverrides')}</h4>
-        {overrides.length === 0 ? (
-          <p className="no-overrides-msg">{t('contenders.admin.overrides.noOverrides')}</p>
-        ) : (
-          overrides.map((override) => (
-            <ActiveOverrideCard
-              key={`${override.championshipId}-${override.playerId}`}
-              override={override}
-              players={players}
-              onRemove={handleRemove}
+        <fieldset className="ac-field ac-choice-group">
+          <legend className="ac-field__label">{t('contenders.admin.overrides.overrideType')}</legend>
+          <label className="ac-check">
+            <input
+              type="radio"
+              name="overrideType"
+              value="bump_to_top"
+              checked={overrideType === 'bump_to_top'}
+              onChange={() => setOverrideType('bump_to_top')}
             />
-          ))
-        )}
-      </div>
+            {t('contenders.admin.overrides.bumpToTop')}
+          </label>
+          <label className="ac-check">
+            <input
+              type="radio"
+              name="overrideType"
+              value="send_to_bottom"
+              checked={overrideType === 'send_to_bottom'}
+              onChange={() => setOverrideType('send_to_bottom')}
+            />
+            {t('contenders.admin.overrides.sendToBottom')}
+          </label>
+        </fieldset>
+
+        <div className="ac-form__row">
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="override-reason">{t('contenders.admin.overrides.reason')}</label>
+            <input
+              id="override-reason"
+              type="text"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder={t('contenders.admin.overrides.reasonPlaceholder')}
+            />
+          </div>
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="override-expires">{t('contenders.admin.overrides.expiresAt')}</label>
+            <input id="override-expires" type="date" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} />
+          </div>
+        </div>
+
+        <div className="ac-actions">
+          <Button onClick={handleApply} loading={submitting} disabled={!selectedPlayerId || !reason.trim()}>
+            {t('contenders.admin.overrides.apply')}
+          </Button>
+        </div>
+      </Card>
+
+      <section className="ac-section">
+        <h2 className="ac-section__title">{t('contenders.admin.overrides.activeOverrides')}</h2>
+        <DataTable
+          caption={t('contenders.admin.overrides.activeOverrides')}
+          density="dense"
+          loading={loadingOverrides}
+          rows={overrides}
+          rowKey={(override) => `${override.championshipId}-${override.playerId}`}
+          empty={(
+            <EmptyState
+              icon={<SlidersHorizontal aria-hidden="true" size={32} />}
+              title={t('contenders.admin.overrides.noOverrides')}
+            />
+          )}
+          columns={[
+            {
+              key: 'player',
+              header: t('adminContent.contenders.player', 'Player'),
+              render: (override) => {
+                const player = playersById.get(override.playerId);
+                return (
+                  <span className="ac-cell__text">
+                    <span className="ac-cell__title">{player?.name ?? override.playerId}</span>
+                    {player && !isNeedsWrestler(player.currentWrestler) && <span className="ac-cell__sub">{player.currentWrestler}</span>}
+                  </span>
+                );
+              },
+            },
+            {
+              key: 'type',
+              header: t('contenders.admin.overrides.overrideType'),
+              render: (override) => (
+                <Badge tone={override.overrideType === 'bump_to_top' ? 'win' : 'loss'}>
+                  {override.overrideType === 'bump_to_top'
+                    ? t('contenders.admin.overrides.bumpToTop')
+                    : t('contenders.admin.overrides.sendToBottom')}
+                </Badge>
+              ),
+            },
+            {
+              key: 'position',
+              header: t('contenders.admin.overrides.positionColumn'),
+              render: (override) => (
+                <span className="ac-nowrap">
+                  {override.currentRank
+                    ? t('contenders.admin.overrides.positionRank', { rank: override.currentRank })
+                    : t('contenders.admin.overrides.positionNone')}
+                </span>
+              ),
+            },
+            { key: 'reason', header: t('contenders.admin.overrides.reasonColumn', 'Reason'), render: (override) => override.reason },
+            {
+              key: 'expires',
+              header: t('contenders.admin.overrides.expiresColumn', 'Auto-expire'),
+              render: (override) => (
+                <span className="ac-nowrap">
+                  {override.expiresAt ? new Date(override.expiresAt).toLocaleDateString() : '—'}
+                </span>
+              ),
+            },
+            {
+              key: 'createdBy',
+              header: t('adminContent.contenders.setBy', 'Set by'),
+              render: (override) => (
+                <span className="ac-cell__text">
+                  <span>{override.createdBy}</span>
+                  <span className="ac-cell__sub ac-nowrap">{new Date(override.createdAt).toLocaleDateString()}</span>
+                </span>
+              ),
+            },
+            {
+              key: 'actions',
+              header: t('common.actions', 'Actions'),
+              align: 'end',
+              render: (override) => (
+                <Button variant="ghost" size="sm" onClick={() => handleRemove(override)}>
+                  {t('contenders.admin.overrides.remove')}
+                </Button>
+              ),
+            },
+          ]}
+        />
+      </section>
+
+      {confirmDialog}
     </div>
   );
 }

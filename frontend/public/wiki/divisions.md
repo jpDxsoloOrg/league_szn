@@ -1,11 +1,18 @@
 # Divisions
 
-Players may be organized into divisions based on weight class, card position, or role.
+Staff assign players to divisions. The [League Rules](league-rules) set out each division and its rating cap.
 
 ## What Are Divisions?
 
-Divisions are groups that players can be assigned to, such as "Heavyweight", "Cruiserweight", "Main Event", "Mid Card", or "Jobber". This helps organize the roster and can be used for division-specific competitions and championship eligibility when division restrictions are enabled.
+Divisions are groups such as Heavyweight, Mid-Card and Jobber. They organize the roster, and a title can be tied to a division. On a division title, only players in that division appear in the [contender rankings](contenders).
 
 ## Viewing Player Divisions
 
-In the standings, you can see which division each player belongs to. Some players may not be assigned to any division if the league administrator has not set one.
+- Use the division filter on [Standings](standings) and [Titles](championships) to see one division at a time. **No Division** lists players or titles without one.
+- A player's division shows on their profile, and in the card that appears when you hover over their name in the standings.
+
+Some players may not be assigned to any division if staff have not set one.
+
+## Changing Division
+
+Only staff can change your division. Division transfers are turned off at the moment.

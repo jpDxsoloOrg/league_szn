@@ -1,0 +1,126 @@
+.ui-tile {
+  --tile-rim: var(--color-hairline);
+  --tile-accent: var(--color-text-secondary);
+  --tile-wash: var(--tile-wash-none);
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--tile-rim);
+  border-radius: var(--radius-card);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.ui-tile--world {
+  --tile-rim: var(--rim-world);
+  --tile-accent: var(--rim-world);
+  --tile-wash: var(--tile-wash-world);
+}
+
+.ui-tile--us {
+  --tile-rim: var(--rim-us);
+  --tile-accent: var(--rim-us);
+  --tile-wash: var(--tile-wash-us);
+}
+
+.ui-tile--ic {
+  --tile-rim: var(--rim-ic);
+  --tile-accent: var(--rim-ic);
+  --tile-wash: var(--tile-wash-ic);
+}
+
+.ui-tile--tag {
+  --tile-rim: var(--rim-tag);
+  --tile-accent: var(--rim-tag);
+  --tile-wash: var(--tile-wash-tag);
+}
+
+.ui-tile__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ui-tile--fallback {
+  background: var(--tile-wash);
+}
+
+.ui-tile__fallback {
+  position: absolute;
+  top: 18%;
+  right: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-size: clamp(3.25rem, 6.5vw, 5.5rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  opacity: 0.92;
+}
+
+.ui-tile__fallback svg {
+  width: 1em;
+  height: 1em;
+}
+
+.ui-tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gradient-tile-scrim);
+  pointer-events: none;
+}
+
+.ui-tile__badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 1;
+}
+
+.ui-tile__text {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 1rem;
+}
+
+.ui-tile__eyebrow {
+  color: var(--tile-accent);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ui-tile__title {
+  font-family: var(--font-heading);
+  font-size: 1.375rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.ui-tile__meta {
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+}
+
+.ui-tile--fallback::after {
+  background: var(--gradient-tile-scrim-strong);
+}
+
+a.ui-tile:hover {
+  border-color: var(--color-cyan);
+}

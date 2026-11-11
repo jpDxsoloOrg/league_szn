@@ -3,16 +3,18 @@ import type { APIGatewayProxyEvent } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockQueryAll } = vi.hoisted(() => ({
+const { mockGet, mockQueryAll, mockScan } = vi.hoisted(() => ({
+  mockGet: vi.fn(),
   mockQueryAll: vi.fn(),
+  mockScan: vi.fn(),
 }));
 
 vi.mock('../../../lib/dynamodb', () => ({
   dynamoDb: {
-    get: vi.fn(),
+    get: mockGet,
     put: vi.fn(),
     query: vi.fn(),
-    scan: vi.fn(),
+    scan: mockScan,
     update: vi.fn(),
     delete: vi.fn(),
     queryAll: mockQueryAll,
@@ -20,6 +22,8 @@ vi.mock('../../../lib/dynamodb', () => ({
   },
   TableNames: {
     EVENT_CHECK_INS: 'EventCheckIns',
+    EVENTS: 'Events',
+    PLAYERS: 'Players',
   },
 }));
 
@@ -62,7 +66,21 @@ function withAuth(
 // ─── Tests ───────────────────────────────────────────────────────────
 
 describe('getCheckInSummary', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGet.mockResolvedValue({ Item: { eventId: 'evt-1' } });
+    mockScan.mockResolvedValue({ Items: [] });
+  });
+
+  it('returns 404 for an event that does not exist', async () => {
+    mockGet.mockResolvedValue({});
+    const event = withAuth(makeEvent({ pathParameters: { eventId: 'missing' } }), 'Wrestler');
+
+    const result = await getCheckInSummary(event);
+
+    expect(result.statusCode).toBe(404);
+    expect(mockQueryAll).not.toHaveBeenCalled();
+  });
 
   it('returns correct counts for a mix of statuses', async () => {
     mockQueryAll.mockResolvedValue([

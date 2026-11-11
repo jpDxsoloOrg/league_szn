@@ -10,6 +10,7 @@ const {
   mockDelete,
   mockScanAll,
   mockQueryAll,
+  mockTransactWrite,
 } = vi.hoisted(() => ({
   mockGet: vi.fn(),
   mockPut: vi.fn(),
@@ -19,6 +20,7 @@ const {
   mockDelete: vi.fn(),
   mockScanAll: vi.fn(),
   mockQueryAll: vi.fn(),
+  mockTransactWrite: vi.fn(),
 }));
 
 vi.mock('../../../lib/dynamodb', () => ({
@@ -31,6 +33,7 @@ vi.mock('../../../lib/dynamodb', () => ({
     delete: mockDelete,
     scanAll: mockScanAll,
     queryAll: mockQueryAll,
+    transactWrite: mockTransactWrite,
   },
   TableNames: {
     PLAYERS: 'Players',
@@ -113,7 +116,7 @@ describe('players router', () => {
   it('PUT /players/me routes to updateMyProfile', async () => {
     mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'sub-1' }] });
     mockGet.mockResolvedValue({ Item: { playerId: 'p1' } });
-    mockUpdate.mockResolvedValue({});
+    mockUpdate.mockResolvedValue({ Attributes: { playerId: 'p1' } });
     const event = makeEvent({
       httpMethod: 'PUT',
       path: '/dev/players/me',
@@ -157,7 +160,7 @@ describe('players router', () => {
     mockGet.mockResolvedValue({ Item: { playerId: 'p1' } });
     mockScan.mockResolvedValue({ Items: [] });
     mockQuery.mockResolvedValue({ Items: [] });
-    mockDelete.mockResolvedValue({});
+    mockTransactWrite.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'DELETE',
       path: '/dev/players/p1',

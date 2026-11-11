@@ -14,11 +14,11 @@ let repos: Repositories;
 const ctx = {} as Context;
 const cb: Callback = () => {};
 
-function makeEvent(groups = 'Admin'): APIGatewayProxyEvent {
+function makeEvent(groups = 'Admin', query: Record<string, string> | null = null): APIGatewayProxyEvent {
   return {
     body: null, headers: {}, multiValueHeaders: {}, httpMethod: 'GET',
     isBase64Encoded: false, path: '/', pathParameters: null,
-    queryStringParameters: null, multiValueQueryStringParameters: null,
+    queryStringParameters: query, multiValueQueryStringParameters: null,
     stageVariables: null, resource: '',
     requestContext: {
       authorizer: { groups, username: 'u', email: 'u@u', principalId: 'sub' },
@@ -41,8 +41,8 @@ async function done(participants: string[], winners: string[], date: string, ext
   });
 }
 
-async function call(groups = 'Admin') {
-  const res = await getBookingSummary(makeEvent(groups), ctx, cb);
+async function call(groups = 'Admin', query: Record<string, string> | null = null) {
+  const res = await getBookingSummary(makeEvent(groups, query), ctx, cb);
   return { status: res!.statusCode, body: JSON.parse(res!.body) };
 }
 
@@ -124,5 +124,79 @@ describe('getBookingSummary', () => {
     expect(body[p.playerId].currentStreak).toEqual({ type: 'W', count: 3 });
     expect(body[p.playerId].currentStreak).toEqual(fromStandings);
     expect(body[q.playerId].currentStreak).toEqual({ type: 'L', count: 3 });
+  });
+
+  describe('seasonRecord', () => {
+    async function season(name: string, status: 'active' | 'completed') {
+      const created = await repos.season.seasons.create({ name, startDate: '2026-01-01' });
+      if (status === 'completed') await repos.season.seasons.update(created.seasonId, { status });
+      return created;
+    }
+
+    it('defaults to the active season, matching the season standings endpoint', async () => {
+      const p = await repos.roster.players.create({ name: 'A', currentWrestler: 'A' });
+      const old = await season('Season 3', 'completed');
+      const current = await season('Season 4', 'active');
+      await repos.season.standings.increment(old.seasonId, p.playerId, { wins: 9 });
+      await repos.season.standings.increment(current.seasonId, p.playerId, { wins: 5, losses: 3, draws: 1 });
+
+      const { status, body } = await call();
+
+      expect(status).toBe(200);
+      expect(body[p.playerId].seasonRecord).toEqual({
+        seasonId: current.seasonId, seasonName: 'Season 4', wins: 5, losses: 3, draws: 1,
+      });
+    });
+
+    it('uses an explicit seasonId', async () => {
+      const p = await repos.roster.players.create({ name: 'A', currentWrestler: 'A' });
+      const old = await season('Season 3', 'completed');
+      await season('Season 4', 'active');
+      await repos.season.standings.increment(old.seasonId, p.playerId, { wins: 2, losses: 7 });
+
+      const { body } = await call('Admin', { seasonId: old.seasonId });
+
+      expect(body[p.playerId].seasonRecord).toEqual({
+        seasonId: old.seasonId, seasonName: 'Season 3', wins: 2, losses: 7, draws: 0,
+      });
+    });
+
+    it('rejects an unknown seasonId with 400', async () => {
+      await season('Season 4', 'active');
+      const { status } = await call('Admin', { seasonId: 'no-such-season' });
+      expect(status).toBe(400);
+    });
+
+    it('rejects a malformed seasonId without echoing it', async () => {
+      const { status, body } = await call('Admin', { seasonId: '<script>alert(1)</script>' });
+      expect(status).toBe(400);
+      expect(JSON.stringify(body)).not.toContain('<script>');
+    });
+
+    it('still checks the role before validating input', async () => {
+      expect((await call('Wrestler', { seasonId: 'bad id!' })).status).toBe(403);
+    });
+
+    it('omits records when there is no season at all', async () => {
+      const p = await repos.roster.players.create({ name: 'A', currentWrestler: 'A' });
+      const { body } = await call();
+      expect(body[p.playerId]).not.toHaveProperty('seasonRecord');
+    });
+
+    it('omits records when no season is active and none is requested', async () => {
+      const p = await repos.roster.players.create({ name: 'A', currentWrestler: 'A' });
+      await season('Season 3', 'completed');
+      const { body } = await call();
+      expect(body[p.playerId]).not.toHaveProperty('seasonRecord');
+    });
+
+    it('gives 0-0-0 to a player with no standing row in the season', async () => {
+      const p = await repos.roster.players.create({ name: 'A', currentWrestler: 'A' });
+      const current = await season('Season 4', 'active');
+      const { body } = await call();
+      expect(body[p.playerId].seasonRecord).toEqual({
+        seasonId: current.seasonId, seasonName: 'Season 4', wins: 0, losses: 0, draws: 0,
+      });
+    });
   });
 });

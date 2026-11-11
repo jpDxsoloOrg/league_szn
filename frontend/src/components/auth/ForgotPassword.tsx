@@ -2,7 +2,8 @@ import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cognitoAuth } from '../../services/cognito';
-import './Auth.css';
+import Button from '../ui/Button';
+import AuthLayout from './AuthLayout';
 
 type Step = 'request' | 'confirm' | 'done';
 
@@ -57,130 +58,116 @@ export default function ForgotPassword() {
 
   if (step === 'done') {
     return (
-      <div className="auth-container">
-        <div className="auth-card">
-          <h2>{t('auth.passwordResetSuccess')}</h2>
-          <p className="auth-subtitle">{t('auth.passwordResetSuccessMessage')}</p>
-          <button
-            className="btn-submit"
-            onClick={() => navigate('/login')}
-          >
-            {t('auth.signInTitle')}
-          </button>
-        </div>
-      </div>
+      <AuthLayout title={t('auth.passwordResetSuccess')} subtitle={t('auth.passwordResetSuccessMessage')}>
+        <Button fullWidth onClick={() => navigate('/login')}>
+          {t('auth.signInTitle')}
+        </Button>
+      </AuthLayout>
     );
   }
 
   if (step === 'confirm') {
     return (
-      <div className="auth-container">
-        <div className="auth-card">
-          <h2>{t('auth.resetPasswordTitle')}</h2>
-          <p className="auth-subtitle">
-            {t('auth.resetCodeSentTo')} <strong>{email}</strong>
-          </p>
-
-          <form onSubmit={handleResetPassword} aria-describedby={error ? 'reset-error' : undefined}>
-            <div className="form-group">
-              <label htmlFor="code">{t('auth.verificationCode')}</label>
-              <input
-                type="text"
-                id="code"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder={t('auth.codePlaceholder')}
-                required
-                autoFocus
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="newPassword">{t('auth.newPassword')}</label>
-              <input
-                type="password"
-                id="newPassword"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder={t('auth.passwordPlaceholder')}
-                required
-                minLength={8}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="confirmPassword">{t('auth.confirmPassword')}</label>
-              <input
-                type="password"
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder={t('auth.enterConfirmPassword')}
-                required
-                minLength={8}
-              />
-            </div>
-
-            {error && (
-              <div id="reset-error" className="error-message" role="alert" aria-live="polite">
-                {error}
-              </div>
-            )}
-
-            <button type="submit" className="btn-submit" disabled={loading} aria-busy={loading}>
-              {loading ? t('auth.resettingPassword') : t('auth.resetPassword')}
-            </button>
-          </form>
-
-          <div className="auth-footer">
-            <p>
-              <button className="link-button" onClick={() => setStep('request')}>
-                {t('auth.resendCode')}
-              </button>
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h2>{t('auth.forgotPasswordTitle')}</h2>
-        <p className="auth-subtitle">{t('auth.forgotPasswordSubtitle')}</p>
-
-        <form onSubmit={handleRequestCode} aria-describedby={error ? 'forgot-error' : undefined}>
-          <div className="form-group">
-            <label htmlFor="email">{t('auth.email')}</label>
+      <AuthLayout
+        title={t('auth.resetPasswordTitle')}
+        subtitle={<>{t('auth.resetCodeSentTo')} <strong>{email}</strong></>}
+      >
+        <form onSubmit={handleResetPassword} aria-describedby={error ? 'reset-error' : undefined}>
+          <div className="me-field">
+            <label htmlFor="code">{t('auth.verificationCode')}</label>
             <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t('auth.enterEmail')}
+              type="text"
+              id="code"
+              autoComplete="one-time-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder={t('auth.codePlaceholder')}
               required
               autoFocus
             />
           </div>
 
+          <div className="me-field">
+            <label htmlFor="newPassword">{t('auth.newPassword')}</label>
+            <input
+              type="password"
+              id="newPassword"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder={t('auth.passwordPlaceholder')}
+              required
+              minLength={8}
+            />
+          </div>
+
+          <div className="me-field">
+            <label htmlFor="confirmPassword">{t('auth.confirmPassword')}</label>
+            <input
+              type="password"
+              id="confirmPassword"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder={t('auth.enterConfirmPassword')}
+              required
+              minLength={8}
+            />
+          </div>
+
           {error && (
-            <div id="forgot-error" className="error-message" role="alert" aria-live="polite">
+            <div id="reset-error" className="me-alert me-alert--error" role="alert" aria-live="polite">
               {error}
             </div>
           )}
 
-          <button type="submit" className="btn-submit" disabled={loading} aria-busy={loading}>
-            {loading ? t('auth.sendingCode') : t('auth.sendResetCode')}
-          </button>
+          <Button type="submit" fullWidth loading={loading}>
+            {loading ? t('auth.resettingPassword') : t('auth.resetPassword')}
+          </Button>
         </form>
 
         <div className="auth-footer">
-          <p>
-            <Link to="/login">{t('auth.backToSignIn')}</Link>
-          </p>
+          <button type="button" className="auth-link" onClick={() => setStep('request')}>
+            {t('auth.resendCode')}
+          </button>
         </div>
+      </AuthLayout>
+    );
+  }
+
+  return (
+    <AuthLayout title={t('auth.forgotPasswordTitle')} subtitle={t('auth.forgotPasswordSubtitle')}>
+      <form onSubmit={handleRequestCode} aria-describedby={error ? 'forgot-error' : undefined}>
+        <div className="me-field">
+          <label htmlFor="email">{t('auth.email')}</label>
+          <input
+            type="email"
+            id="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t('auth.enterEmail')}
+            required
+            autoFocus
+          />
+        </div>
+
+        {error && (
+          <div id="forgot-error" className="me-alert me-alert--error" role="alert" aria-live="polite">
+            {error}
+          </div>
+        )}
+
+        <Button type="submit" fullWidth loading={loading}>
+          {loading ? t('auth.sendingCode') : t('auth.sendResetCode')}
+        </Button>
+      </form>
+
+      <div className="auth-footer">
+        <p>
+          <Link to="/login">{t('auth.backToSignIn')}</Link>
+        </p>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

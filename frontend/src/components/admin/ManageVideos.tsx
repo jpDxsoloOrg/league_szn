@@ -1,9 +1,19 @@
-import { useState, useEffect, useCallback, useRef, FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Play, Plus, Video as VideoIcon } from 'lucide-react';
 import { videosApi, imagesApi } from '../../services/api';
 import type { Video, VideoCategory } from '../../types';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import DataTable from '../ui/DataTable';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
-import './ManageVideos.css';
+import AdminFormModal from './AdminFormModal';
+import AdminNotice from './AdminNotice';
+import useAdminConfirm from './useAdminConfirm';
+import './adminContent.css';
 
 const CATEGORY_OPTIONS: VideoCategory[] = ['match', 'highlight', 'promo', 'other'];
 
@@ -19,9 +29,11 @@ const DEFAULT_FORM = {
 
 export default function ManageVideos() {
   const { t } = useTranslation();
+  const { confirm, confirmDialog } = useAdminConfirm();
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Video | null>(null);
@@ -34,16 +46,14 @@ export default function ManageVideos() {
 
   const loadVideos = useCallback(async (signal?: AbortSignal) => {
     try {
-      setLoading(true);
-      const data = await videosApi.getAll(signal);
-      setVideos(data);
+      setVideos(await videosApi.getAll(signal));
     } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') return;
-      setError(err instanceof Error ? err.message : t('videos.loadError'));
+      if (signal?.aborted) return;
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -78,10 +88,11 @@ export default function ManageVideos() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    setFormError(null);
     setSuccessMsg(null);
 
     if (!formData.title.trim()) {
-      setError(t('videos.titleRequired'));
+      setFormError(t('videos.titleRequired'));
       return;
     }
 
@@ -97,7 +108,7 @@ export default function ManageVideos() {
       }
 
       if (!videoUrl.trim()) {
-        setError(t('videos.videoRequired'));
+        setFormError(t('videos.videoRequired'));
         setUploading(false);
         return;
       }
@@ -131,14 +142,10 @@ export default function ManageVideos() {
         setSuccessMsg(t('videos.createSuccess'));
       }
 
-      setFormData(DEFAULT_FORM);
-      setShowForm(false);
-      setEditing(null);
-      if (videoInputRef.current) videoInputRef.current.value = '';
-      if (thumbInputRef.current) thumbInputRef.current.value = '';
+      handleCancel();
       await loadVideos();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('videos.saveError'));
+      setFormError(err instanceof Error ? err.message : t('videos.saveError'));
     } finally {
       setUploading(false);
       setUploadProgress('');
@@ -160,7 +167,8 @@ export default function ManageVideos() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(t('videos.confirmDelete'))) return;
+    const confirmed = await confirm({ title: t('videos.confirmDelete'), confirmLabel: t('common.delete') });
+    if (!confirmed) return;
 
     setDeleting(id);
     setError(null);
@@ -181,185 +189,172 @@ export default function ManageVideos() {
     setFormData(DEFAULT_FORM);
     setShowForm(false);
     setEditing(null);
-    if (videoInputRef.current) videoInputRef.current.value = '';
-    if (thumbInputRef.current) thumbInputRef.current.value = '';
+    setFormError(null);
   };
 
+  const title = t('videos.title');
+
   if (loading) {
-    return <Skeleton variant="block" count={4} />;
+    return (
+      <div className="ac-page">
+        <PageHeader title={title} />
+        <Skeleton variant="table" />
+      </div>
+    );
   }
 
   return (
-    <div className="manage-videos">
-      <div className="videos-header">
-        <h2>{t('videos.title')}</h2>
-        {!showForm && (
-          <button onClick={() => setShowForm(true)}>
+    <div className="ac-page">
+      <PageHeader
+        title={title}
+        actions={(
+          <Button icon={<Plus aria-hidden="true" size={18} />} onClick={() => setShowForm(true)}>
             {t('videos.upload')}
-          </button>
+          </Button>
         )}
-      </div>
+      />
 
-      {error && <div className="error-message">{error}</div>}
-      {successMsg && <div className="success-message">{successMsg}</div>}
+      {error && <AdminNotice tone="error">{error}</AdminNotice>}
+      {successMsg && <AdminNotice tone="success">{successMsg}</AdminNotice>}
 
-      {showForm && (
-        <div className="video-form-container">
-          <h3>{editing ? t('videos.edit') : t('videos.upload')}</h3>
-          <form onSubmit={handleSubmit} className="video-form">
-            <div className="form-group">
-              <label htmlFor="video-title">{t('videos.fields.title')}</label>
-              <input
-                type="text"
-                id="video-title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="video-description">{t('videos.fields.description')}</label>
-              <textarea
-                id="video-description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="video-file">{t('videos.fields.videoFile')}</label>
-              <input
-                type="file"
-                id="video-file"
-                ref={videoInputRef}
-                accept="video/mp4,video/webm,video/quicktime"
-              />
-              {formData.videoUrl && (
-                <p className="current-url">{t('videos.currentUrl')}: {formData.videoUrl}</p>
-              )}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="video-thumbnail">{t('videos.fields.thumbnail')}</label>
-              <input
-                type="file"
-                id="video-thumbnail"
-                ref={thumbInputRef}
-                accept="image/jpeg,image/png,image/webp"
-              />
-              {formData.thumbnailUrl && (
-                <p className="current-url">{t('videos.currentThumbnail')}: {formData.thumbnailUrl}</p>
-              )}
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="video-category">{t('videos.fields.category')}</label>
-                <select
-                  id="video-category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value as VideoCategory })}
-                >
-                  {CATEGORY_OPTIONS.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {t(`videos.categories.${cat}`)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="video-tags">{t('videos.fields.tags')}</label>
-                <input
-                  type="text"
-                  id="video-tags"
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  placeholder={t('videos.tagsPlaceholder')}
-                />
-              </div>
-            </div>
-
-            <div className="form-group form-checkbox">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={formData.isPublished}
-                  onChange={(e) => setFormData({ ...formData, isPublished: e.target.checked })}
-                />
-                {t('videos.fields.published')}
-              </label>
-            </div>
-
-            {uploadProgress && <div className="upload-progress">{uploadProgress}</div>}
-
-            <div className="form-actions">
-              <button type="submit" disabled={uploading}>
-                {uploading ? t('common.saving') : (editing ? t('videos.edit') : t('videos.upload'))}
-              </button>
-              <button type="button" onClick={handleCancel} className="cancel-btn">
-                {t('common.cancel')}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      <div className="videos-list">
-        <h3>{t('videos.allVideos')} ({videos.length})</h3>
-        {videos.length === 0 ? (
-          <div className="empty-state">
-            <p>{t('videos.noVideos')}</p>
-          </div>
-        ) : (
-          <div className="videos-grid">
-            {videos.map((video) => (
-              <div key={video.videoId} className="video-card">
-                <div className="video-card-preview">
+      <section className="ac-section">
+        <h2 className="ac-section__title">{t('videos.allVideos')} ({videos.length})</h2>
+        <DataTable
+          caption={t('videos.allVideos')}
+          density="dense"
+          rows={videos}
+          rowKey={(video) => video.videoId}
+          empty={<EmptyState icon={<VideoIcon aria-hidden="true" size={32} />} title={t('videos.noVideos')} />}
+          columns={[
+            {
+              key: 'title',
+              header: t('videos.fields.title'),
+              render: (video) => (
+                <span className="ac-cell">
                   {video.thumbnailUrl ? (
-                    <img src={video.thumbnailUrl} alt={video.title} className="video-thumbnail" />
+                    <img src={video.thumbnailUrl} alt="" className="ac-thumb" />
                   ) : (
-                    <div className="video-placeholder">
-                      <span>&#9654;</span>
-                    </div>
+                    <span className="ac-thumb ac-thumb--placeholder"><Play aria-hidden="true" size={18} /></span>
                   )}
+                  <span className="ac-cell__text">
+                    <span className="ac-cell__title">{video.title}</span>
+                    {video.description && <span className="ac-cell__sub">{video.description}</span>}
+                  </span>
+                </span>
+              ),
+              sortValue: (video) => video.title,
+            },
+            {
+              key: 'category',
+              header: t('videos.fields.category'),
+              render: (video) => <Badge tone="violet">{t(`videos.categories.${video.category}`)}</Badge>,
+            },
+            {
+              key: 'status',
+              header: t('adminContent.status', 'Status'),
+              render: (video) => (
+                <Badge tone={video.isPublished ? 'win' : 'neutral'}>
+                  {video.isPublished ? t('videos.published') : t('videos.draft')}
+                </Badge>
+              ),
+            },
+            {
+              key: 'date',
+              header: t('adminContent.created', 'Created'),
+              render: (video) => new Date(video.createdAt).toLocaleDateString(),
+              sortValue: (video) => video.createdAt,
+            },
+            {
+              key: 'actions',
+              header: t('common.actions'),
+              align: 'end',
+              render: (video) => (
+                <div className="ac-actions ac-actions--end">
+                  <Button variant="ghost" size="sm" onClick={() => handleEdit(video)}>{t('common.edit')}</Button>
+                  <Button variant="ghost" size="sm" loading={deleting === video.videoId} onClick={() => handleDelete(video.videoId)}>
+                    {t('common.delete')}
+                  </Button>
                 </div>
-                <div className="video-card-info">
-                  <h4>{video.title}</h4>
-                  <div className="video-meta">
-                    <span className={`category-badge category-${video.category}`}>
-                      {t(`videos.categories.${video.category}`)}
-                    </span>
-                    <span className={`status-badge ${video.isPublished ? 'active' : 'inactive'}`}>
-                      {video.isPublished ? t('videos.published') : t('videos.draft')}
-                    </span>
-                    <span className="video-date">
-                      {new Date(video.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  {video.description && (
-                    <p className="video-description">{video.description}</p>
-                  )}
-                  <div className="video-actions">
-                    <button onClick={() => handleEdit(video)} className="video-edit-btn">
-                      {t('common.edit')}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(video.videoId)}
-                      className="video-delete-btn"
-                      disabled={deleting === video.videoId}
-                    >
-                      {deleting === video.videoId ? t('common.saving') : t('common.delete')}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+              ),
+            },
+          ]}
+        />
+      </section>
+
+      <AdminFormModal
+        open={showForm}
+        onClose={handleCancel}
+        title={editing ? t('videos.edit') : t('videos.upload')}
+        submitLabel={editing ? t('videos.update', 'Update Video') : t('videos.upload')}
+        onSubmit={handleSubmit}
+        busy={uploading}
+        error={formError}
+      >
+        <div className="ac-field">
+          <label className="ac-field__label" htmlFor="video-title">{t('videos.fields.title')}</label>
+          <input
+            type="text"
+            id="video-title"
+            value={formData.title}
+            onChange={(event) => setFormData({ ...formData, title: event.target.value })}
+            required
+          />
+        </div>
+        <div className="ac-field">
+          <label className="ac-field__label" htmlFor="video-description">{t('videos.fields.description')}</label>
+          <textarea
+            id="video-description"
+            value={formData.description}
+            onChange={(event) => setFormData({ ...formData, description: event.target.value })}
+            rows={3}
+          />
+        </div>
+        <div className="ac-field">
+          <label className="ac-field__label" htmlFor="video-file">{t('videos.fields.videoFile')}</label>
+          <input type="file" id="video-file" ref={videoInputRef} accept="video/mp4,video/webm,video/quicktime" />
+          {formData.videoUrl && <p className="ac-field__hint">{t('videos.currentVideoHint')}</p>}
+        </div>
+        <div className="ac-field">
+          <label className="ac-field__label" htmlFor="video-thumbnail">{t('videos.fields.thumbnail')}</label>
+          <input type="file" id="video-thumbnail" ref={thumbInputRef} accept="image/jpeg,image/png,image/webp" />
+          {formData.thumbnailUrl && <p className="ac-field__hint">{t('videos.currentThumbnailHint')}</p>}
+        </div>
+        <div className="ac-form__row">
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="video-category">{t('videos.fields.category')}</label>
+            <select
+              id="video-category"
+              value={formData.category}
+              onChange={(event) => setFormData({ ...formData, category: event.target.value as VideoCategory })}
+            >
+              {CATEGORY_OPTIONS.map((category) => (
+                <option key={category} value={category}>{t(`videos.categories.${category}`)}</option>
+              ))}
+            </select>
           </div>
-        )}
-      </div>
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="video-tags">{t('videos.fields.tags')}</label>
+            <input
+              type="text"
+              id="video-tags"
+              value={formData.tags}
+              onChange={(event) => setFormData({ ...formData, tags: event.target.value })}
+              placeholder={t('videos.tagsPlaceholder')}
+            />
+          </div>
+        </div>
+        <label className="ac-check">
+          <input
+            type="checkbox"
+            checked={formData.isPublished}
+            onChange={(event) => setFormData({ ...formData, isPublished: event.target.checked })}
+          />
+          {t('videos.fields.published')}
+        </label>
+        {uploadProgress && <p className="ac-field__hint" role="status">{uploadProgress}</p>}
+      </AdminFormModal>
+
+      {confirmDialog}
     </div>
   );
 }

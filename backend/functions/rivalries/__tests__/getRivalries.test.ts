@@ -6,11 +6,16 @@ const mockRivalries = {
   listByStatus: vi.fn(),
 };
 const mockMatches = { list: vi.fn() };
+const mockPlayers = {
+  findById: vi.fn(async (playerId: string) => ({ playerId, currentWrestler: 'Edge' })),
+  findByUserId: vi.fn(),
+};
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
     rivalries: mockRivalries,
     competition: { matches: mockMatches },
+    roster: { players: mockPlayers },
   }),
 }));
 
@@ -73,6 +78,18 @@ describe('getRivalries (list)', () => {
     const res = await getRivalriesList(makeEvent({ httpMethod: 'GET' }), ctx, cb);
     const body = JSON.parse(res!.body);
     expect(body.rivalries[0].moderationNote).toBeUndefined();
+  });
+
+  it('strips moderatedBy and an id-valued bookerName from the response', async () => {
+    const accountId = '11111111-2222-3333-4444-555555555555';
+    mockRivalries.listByStatus.mockResolvedValue({
+      items: [makeRivalry({ moderatedBy: accountId, bookerName: accountId })],
+      nextCursor: undefined,
+    });
+
+    const res = await getRivalriesList(makeEvent({ httpMethod: 'GET' }), ctx, cb);
+
+    expect(res!.body).not.toContain(accountId);
   });
 
   it('filters by seasonId via participant-pair match-history join', async () => {

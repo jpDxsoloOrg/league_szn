@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import { noContent, badRequest, notFound, serverError } from '../../lib/response';
+import { noContent, badRequest, conflict, notFound, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -15,14 +15,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return notFound('Season not found');
     }
 
-    // Delete the season
-    await seasons.delete(seasonId);
+    if (existing.status === 'active') {
+      return conflict('Cannot delete an active season. End the season first.');
+    }
 
-    // Also delete season standings
+    // Children go first: if a step fails the season still exists, so the
+    // delete can be retried and no orphaned rows are left behind.
     await seasonStandings.deleteAllForSeason(seasonId);
-
-    // Delete season awards via repository
     await seasonAwards.deleteAllForSeason(seasonId);
+
+    await seasons.delete(seasonId);
 
     return noContent();
   } catch (err) {

@@ -1,12 +1,13 @@
 import { v4 as uuidv4 } from 'uuid';
 import { dynamoDb, TableNames } from '../../dynamodb';
-import { NotFoundError } from '../errors';
+import { ConcurrencyError, NotFoundError } from '../errors';
 import { buildUpdateExpression } from './util';
 import { DynamoCrudRepository } from './DynamoCrudRepository';
 import type {
   RosterRepository,
   PlayerCreateInput,
   PlayerPatch,
+  PlayerDisciplinePatch,
   TagTeamCreateInput,
   TagTeamPatch,
   StableCreateInput,
@@ -47,6 +48,7 @@ export class DynamoRosterRepository implements RosterRepository {
     tableName: TableNames.PLAYERS,
     idField: 'playerId',
     entityName: 'Player',
+    updateCondition: 'attribute_not_exists(deletedAt)',
     buildItem: (input: PlayerCreateInput, id: string, now: string): Player => ({
       playerId: id,
       name: input.name,
@@ -68,8 +70,13 @@ export class DynamoRosterRepository implements RosterRepository {
   });
 
   players: RosterRepository['players'] = {
-    findById: (id: string) => this._playersCrud.findById(id),
-    list: () => this._playersCrud.list(),
+    findById: async (id: string) => {
+      const player = await this._playersCrud.findById(id);
+      return player?.deletedAt ? null : player;
+    },
+    list: async () => (await this._playersCrud.list()).filter((player) => !player.deletedAt),
+    findByIdWithDeleted: (id: string) => this._playersCrud.findById(id),
+    listWithDeleted: () => this._playersCrud.list(),
     create: (input: PlayerCreateInput) => this._playersCrud.create(input),
     update: (id: string, patch: PlayerPatch) => this._playersCrud.update(id, patch),
     delete: (id: string) => this._playersCrud.delete(id),
@@ -83,10 +90,57 @@ export class DynamoRosterRepository implements RosterRepository {
           ':userId': userId,
         },
       });
-      if (!result.Items || result.Items.length === 0) {
-        return null;
+      const items = (result.Items ?? []) as Player[];
+      return items.find((player) => !player.deletedAt) ?? null;
+    },
+
+    updateDiscipline: async (
+      playerId: string,
+      patch: PlayerDisciplinePatch,
+      expectedVersion: number,
+    ): Promise<Player> => {
+      const setClauses = [
+        'strikes = :strikes',
+        'deactivations = :deactivations',
+        'disciplineVersion = :nextVersion',
+        'updatedAt = :updatedAt',
+      ];
+      const values: Record<string, unknown> = {
+        ':strikes': patch.strikes,
+        ':deactivations': patch.deactivations,
+        ':nextVersion': expectedVersion + 1,
+        ':updatedAt': new Date().toISOString(),
+        ':expected': expectedVersion,
+      };
+      if (patch.deactivatedAt !== null) {
+        setClauses.push('deactivatedAt = :deactivatedAt');
+        values[':deactivatedAt'] = patch.deactivatedAt;
       }
-      return result.Items[0] as Player;
+      if (patch.signupGuardKey !== undefined) {
+        setClauses.push('signupGuardKey = :signupGuardKey');
+        values[':signupGuardKey'] = patch.signupGuardKey;
+      }
+      // Only version 0 may match a row with no version: a caller that read a
+      // real version must not pass against a row that lost it.
+      const versionCondition = expectedVersion === 0
+        ? '(attribute_not_exists(disciplineVersion) OR disciplineVersion = :expected)'
+        : 'disciplineVersion = :expected';
+      try {
+        const result = await dynamoDb.update({
+          TableName: TableNames.PLAYERS,
+          Key: { playerId },
+          UpdateExpression: `SET ${setClauses.join(', ')}${patch.deactivatedAt === null ? ' REMOVE deactivatedAt' : ''}`,
+          ConditionExpression: `attribute_exists(playerId) AND attribute_not_exists(deletedAt) AND ${versionCondition}`,
+          ExpressionAttributeValues: values,
+          ReturnValues: 'ALL_NEW',
+        });
+        return result.Attributes as Player;
+      } catch (err) {
+        if (err instanceof Error && err.name === 'ConditionalCheckFailedException') {
+          throw new ConcurrencyError('Player', playerId);
+        }
+        throw err;
+      }
     },
   };
 

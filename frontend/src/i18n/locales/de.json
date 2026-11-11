@@ -36,7 +36,19 @@
     "accessDenied": "Zugriff verweigert",
     "back": "Zurück",
     "backToHome": "Zurück zur Startseite",
-    "actions": "Aktionen"
+    "actions": "Aktionen",
+    "accept": "Annehmen",
+    "decline": "Ablehnen",
+    "processing": "Wird verarbeitet...",
+    "sending": "Wird gesendet…",
+    "sortBy": "Sortieren nach",
+    "sortDefault": "Standardreihenfolge",
+    "sortAscending": "{{column}}, aufsteigend",
+    "sortDescending": "{{column}}, absteigend",
+    "showMore": "Mehr anzeigen",
+    "showingCount": "{{shown}} von {{total}} angezeigt",
+    "formerMember": "Ehemaliges Mitglied",
+    "unnamedPlayer": "Unbenannter Spieler"
   },
   "notFound": {
     "title": "Seite nicht gefunden",
@@ -63,12 +75,14 @@
     "confirmPassword": "Passwort bestätigen",
     "enterConfirmPassword": "Passwort bestätigen",
     "passwordPlaceholder": "Min. 8 Zeichen, Groß-/Kleinbuchstaben, Zahl",
+    "createPasswordPlaceholder": "Passwort erstellen",
+    "passwordHint": "Mindestens 8 Zeichen, mit Groß- und Kleinbuchstaben und einer Zahl.",
     "wrestlerAssignedLater": "Hier wählst du keinen Wrestler aus — neue Mitglieder starten als „Needs Wrestler“ und ein Admin weist dir einen zu.",
     "playerName": "Spielername",
     "playerNamePlaceholder": "Deinen Discord-Namen eingeben",
     "playerNameHint": "Dein Discord-Benutzername, damit andere Spieler dich finden können.",
     "psnId": "PSN ID",
-    "psnIdPlaceholder": "Deine PlayStation Network ID eingeben",
+    "psnIdPlaceholder": "Deine PSN ID",
     "createAccountBtn": "Konto erstellen",
     "creatingAccount": "Konto wird erstellt...",
     "alreadyHaveAccount": "Bereits ein Konto?",
@@ -132,7 +146,9 @@
     "welcomeSignInCta": "Zur Anmeldung",
     "needsWrestlerBannerTitle": "Wähle deinen Wrestler, um die Einrichtung abzuschließen",
     "needsWrestlerBannerBody": "Dein Profil hat noch keinen Wrestler aus dem Roster. Ein Admin weist dir einen zu — oder du bearbeitest dein Profil und wählst selbst einen verfügbaren Wrestler.",
-    "needsWrestlerBadge": "Wrestler fehlt"
+    "needsWrestlerBadge": "Wrestler fehlt",
+    "accountDisabled": "Dein Konto wurde deaktiviert oder gesperrt. Bitte wende dich an einen Administrator.",
+    "signupRefused": "Dieses Konto kann nicht registriert werden. Bitte wende dich an einen Administrator."
   },
   "profileModal": {
     "title": "Profil vervollständigen",
@@ -181,7 +197,7 @@
     },
     "moves": {
       "sectionTitle": "Moveset",
-      "signatures": "Signature Moves",
+      "signatures": "Signature-Moves",
       "finishers": "Finisher",
       "gameName": "Name im Spiel",
       "customName": "Dein Name dafür",
@@ -219,7 +235,14 @@
     "psnId": "PSN-ID",
     "active": "Aktiv",
     "bio": "Bio",
-    "moveset": "Moveset"
+    "moveset": "Moveset",
+    "recentMatches": "Letzte Kämpfe",
+    "rivalries": "Rivalitäten",
+    "titleMatch": "Titelkampf",
+    "titlesHeld": "Gehaltene Titel",
+    "overall": "Overall",
+    "playedBy": "Gespielt von {{name}}",
+    "streakValue": "Serie {{count}}{{type}}"
   },
   "emptyState": {
     "checkBackSoon": "Schau bald wieder vorbei",
@@ -233,6 +256,7 @@
     "dashboard": "Dashboard",
     "standings": "Tabelle",
     "activity": "Aktivität",
+    "news": "News",
     "championships": "Meisterschaften",
     "tournaments": "Turniere",
     "events": "Veranstaltungen",
@@ -246,7 +270,6 @@
     "admin": "Admin",
     "contenders": "Herausforderer",
     "matchSearch": "Kampf-Suche",
-    "findMatch": "Match suchen",
     "seasonAwards": "Saison-Auszeichnungen",
     "factions": "Faktionen",
     "tagTeams": "Tag Teams",
@@ -270,7 +293,28 @@
     "advancedMenu": "Erweitertes Menü",
     "basicMenuShort": "Einfach",
     "advancedMenuShort": "Erweitert",
-    "menuModeToggleLabel": "Menümodus"
+    "menuModeToggleLabel": "Menümodus",
+    "skipToContent": "Zum Inhalt springen",
+    "sections": {
+      "home": "Start",
+      "events": "Events",
+      "rankings": "Ranglisten",
+      "storylines": "Storylines",
+      "me": "Ich"
+    },
+    "tabs": {
+      "calendar": "Kalender",
+      "matches": "Matches",
+      "titles": "Titel",
+      "awards": "Auszeichnungen",
+      "feudHistory": "Fehden-Historie",
+      "callOuts": "Call-outs"
+    },
+    "pages": {
+      "forgotPassword": "Passwort zurücksetzen",
+      "welcome": "Willkommen",
+      "playerProfile": "Spielerprofil"
+    }
   },
   "mobileNav": {
     "ariaLabel": "Hauptnavigation",
@@ -309,6 +353,7 @@
     },
     "vs": "gegen",
     "def": "bes.",
+    "draw": "Unentschieden",
     "whatsHappening": "Was passiert",
     "daysReign": "Tage Regentschaft",
     "defenses": "Titelverteidigungen",
@@ -317,7 +362,13 @@
     "viewChallenges": "Herausforderungen anzeigen",
     "championBadge": "Champion",
     "winTag": "Sieg",
-    "lossTag": "Niederlage"
+    "lossTag": "Niederlage",
+    "emptyActions": {
+      "viewEvents": "Events ansehen",
+      "browseMatches": "Matches durchsuchen",
+      "seeGuide": "Erste Schritte ansehen",
+      "viewChampionships": "Titel ansehen"
+    }
   },
   "activity": {
     "title": "Aktivität",
@@ -347,7 +398,6 @@
   "wiki": {
     "title": "Wiki",
     "indexTitle": "Wiki-Artikel",
-    "backToGuide": "Zurück zur Anleitung",
     "previousArticle": "Zurück: {{title}}",
     "nextArticle": "Weiter: {{title}}",
     "articleNavLabel": "Vorheriger und nächster Artikel",
@@ -397,14 +447,42 @@
       "adminTournaments": "Admin: Turniere",
       "adminChallenges": "Admin: Herausforderungen",
       "adminPromos": "Admin: Promos",
-      "adminContenderConfig": "Admin: Herausforderer-Konfig",
+      "adminContenderConfig": "Admin: Herausforderer-Ranglisten",
       "adminDataManagement": "Admin: Datenverwaltung",
       "adminWorkflow": "Admin: Typischer Wochenablauf",
       "rivalries": "Rivalitäten",
       "adminRivalries": "Admin: Rivalitäten",
       "rateMatches": "Kämpfe bewerten",
-      "rivalryHeatExplained": "Wie Rivalitäts-Hitze funktioniert"
-    }
+      "rivalryHeatExplained": "Wie Rivalitäts-Hitze funktioniert",
+      "strikesAndSuspensions": "Strikes und Sperren",
+      "adminStrikes": "Admin: Strikes",
+      "installApp": "App installieren",
+      "news": "News und der Liga-Ticker"
+    },
+    "navLabels": {
+      "adminQuickstart": "Schnellstart",
+      "adminMatchConfig": "Match-Konfiguration",
+      "adminSeasonAwards": "Saison-Auszeichnungen",
+      "adminUserManagement": "Benutzerverwaltung",
+      "adminDivisions": "Divisionen",
+      "adminManagePlayers": "Spieler verwalten",
+      "adminSeasons": "Saisons",
+      "adminChampionships": "Meisterschaften",
+      "adminEvents": "Events",
+      "adminScheduleMatch": "Match planen",
+      "adminRecordResults": "Ergebnisse eintragen",
+      "adminTournaments": "Turniere",
+      "adminChallenges": "Herausforderungen",
+      "adminPromos": "Promos",
+      "adminContenderConfig": "Herausforderer-Ranglisten",
+      "adminDataManagement": "Datenverwaltung",
+      "adminWorkflow": "Typischer Wochenablauf",
+      "adminRivalries": "Rivalitäten",
+      "adminStrikes": "Strikes"
+    },
+    "articleNotFound": "Artikel nicht gefunden",
+    "articleNotFoundHint": "Dieser Hilfeartikel wurde vielleicht verschoben. Sieh dir stattdessen die ganze Liste an.",
+    "browseArticles": "Alle Artikel ansehen"
   },
   "languageSwitcher": {
     "label": "Sprache",
@@ -440,7 +518,22 @@
     "winStreak": "Siegesserie",
     "lossStreak": "Niederlagenserie",
     "drawStreak": "Unentschiedenserie",
-    "lastResult": "Letztes Ergebnis"
+    "lastResult": "Letztes Ergebnis",
+    "record": "Bilanz",
+    "emptyTitle": "Noch keine Tabelle",
+    "loadFailed": "Die Tabelle konnte nicht geladen werden.",
+    "noMatchesTitle": "Keine Wrestler passen zu diesen Filtern",
+    "noMatchesHint": "Versuche eine andere Division oder Ausrichtung.",
+    "topThree": "Top drei",
+    "restOfTable": "Die Verfolger",
+    "ranksRange": "Plätze {{from}} - {{to}}",
+    "alignment": {
+      "label": "Ausrichtung",
+      "all": "Alle Ausrichtungen",
+      "face": "Face",
+      "neutral": "Neutral",
+      "heel": "Heel"
+    }
   },
   "championships": {
     "title": "Meisterschaften",
@@ -461,10 +554,18 @@
       "daysHeld": "Tage gehalten",
       "defenses": "Titelverteidigungen"
     },
-    "filterByDivision": "Nach Division filtern"
+    "filterByDivision": "Nach Division filtern",
+    "emptyTitle": "Noch keine Titel",
+    "loadFailed": "Die Titel konnten nicht geladen werden.",
+    "historyLoadFailed": "Die Historie dieses Titels konnte nicht geladen werden.",
+    "noneInDivisionTitle": "Keine Titel hier",
+    "noneInDivision": "Dieser Division sind keine Titel zugeordnet."
   },
   "scheduleMatch": {
     "removeParticipant": "{{name}} entfernen",
+    "challengeNeedsChampion": "Ein Titelkampf aus einer Herausforderung muss den aktuellen Champion enthalten. Füge ihn hinzu oder plane den Kampf ohne Titel.",
+    "alreadyBooked": "Für diese Ansage oder Herausforderung ist bereits ein Kampf geplant",
+    "linkedTitleGone": "Den Titel aus dieser Herausforderung gibt es nicht mehr, daher ist dies als Kampf ohne Titel eingestellt.",
     "title": "Kampf planen",
     "dateTime": "Datum & Uhrzeit",
     "matchType": "Kampftyp",
@@ -490,14 +591,23 @@
       "addTeam": "Team hinzufügen",
       "noMembers": "Keine Mitglieder ausgewählt",
       "members": "Mitglieder",
-      "minTeamsError": "Bitte erstellen Sie mindestens 2 Teams mit je 2+ Mitgliedern"
+      "minTeamsError": "Bitte erstellen Sie mindestens 2 Teams mit je 2+ Mitgliedern",
+      "selectTagTeam": "Tag Team auswählen...",
+      "useIndividuals": "Einzelne auswählen",
+      "useTagTeams": "Tag Teams verwenden"
     },
-    "addMatchToEvent": "Match zu {{event}} hinzufügen"
+    "addMatchToEvent": "Match zu {{event}} hinzufügen",
+    "designation": "Position auf der Card",
+    "event": "Event",
+    "matchFormat": "Matchformat",
+    "noEvent": "Kein Event (einzelnes Match)",
+    "noStipulation": "Standardmatch (keine Stipulation)",
+    "selectMatchFormat": "Matchformat auswählen"
   },
   "match": {
     "starRating": "Sternebewertung",
-    "matchOfTheNight": "Match of the Night",
-    "matchOfTheNightBadge": "Match of the Night",
+    "matchOfTheNight": "Kampf des Abends",
+    "matchOfTheNightBadge": "Kampf des Abends",
     "motn": {
       "markAs": "☆ Match of the Night",
       "unmark": "★ Match of the Night"
@@ -533,7 +643,8 @@
         "done": "Fertig",
         "alreadyBooked": "Auf der Card",
         "showAll": "{{count}} anzeigen, die sich nicht als verfügbar gemeldet haben",
-        "showBookableOnly": "Nur verfügbar & vielleicht anzeigen"
+        "showBookableOnly": "Nur verfügbar & vielleicht anzeigen",
+        "allPlayers": "Alle Spieler"
       },
       "openCountBadge": "{{open}} von {{total}} Plätzen frei",
       "adminEdit": "Bearbeiten",
@@ -554,7 +665,10 @@
       "useMain": "Hauptwrestler verwenden: {{name}}",
       "useAlternate": "Alternativen verwenden: {{name}}",
       "confirmChoice": "Bestätigen",
-      "editWrestlerLabel": "Wrestler"
+      "editWrestlerLabel": "Wrestler",
+      "clearError": "Slot konnte nicht geleert werden",
+      "positionLabel": "Position {{position}}",
+      "saveError": "Slot konnte nicht gespeichert werden"
     }
   },
   "matchSearch": {
@@ -578,6 +692,20 @@
     "noMatches": "Es wurden noch keine Kämpfe aufgezeichnet.",
     "card": {
       "titleMatch": "Titelkampf"
+    },
+    "detailDate": "Datum",
+    "details": "Details",
+    "detailsFor": "Details: {{names}}",
+    "detailsTitle": "Matchdetails",
+    "noParticipants": "Noch keine Teilnehmer",
+    "spotsOpen_one": "{{count}} Platz frei",
+    "spotsOpen_other": "{{count}} Plätze frei",
+    "filtersButton": "Filter",
+    "filtersHelp": "Filter werden miteinander kombiniert. Mit „Filter löschen“ setzt du sie schnell zurück und erweiterst die Ergebnisse.",
+    "learnMore": "Mehr erfahren",
+    "status": {
+      "open-signups": "Offene Anmeldung",
+      "cancelled": "Abgesagt"
     }
   },
   "recordResult": {
@@ -596,7 +724,8 @@
     "success": "Kampfergebnis erfolgreich eingetragen!",
     "error": "Ergebnis konnte nicht eingetragen werden",
     "selectMatch": "Wählen Sie einen Kampf aus, um das Ergebnis einzutragen",
-    "noScheduledMatches": "Keine geplanten Kämpfe zum Eintragen vorhanden."
+    "noScheduledMatches": "Keine geplanten Kämpfe zum Eintragen vorhanden.",
+    "championNotInMatch": "Der aktuelle Champion ist nicht mehr Teil dieses Titelkampfs. Bearbeite den Kampf oder mache daraus einen Kampf ohne Titel und trage dann das Ergebnis ein."
   },
   "tournaments": {
     "title": "Turniere",
@@ -615,7 +744,7 @@
     "standings": "Tabelle",
     "bracket": "Turnierbaum",
     "round": "Runde",
-    "summaryLeader": "Fuehrend",
+    "summaryLeader": "Führend",
     "summaryPoints": "Punkte",
     "summaryGap": "Abstand",
     "summaryGapValue": "{{count}} Pkt",
@@ -638,7 +767,8 @@
       "resetError": "Zurücksetzen der Wrestler-Zuweisungen fehlgeschlagen",
       "pagePrev": "Zurück",
       "pageNext": "Weiter",
-      "pageStatus": "Seite {{page}} von {{total}}"
+      "pageStatus": "Seite {{page}} von {{total}}",
+      "resetTypeToken": "Gib zur Bestätigung {{token}} ein."
     },
     "heatConfig": {
       "title": "Rivalitäts-Heat-Einstellungen",
@@ -692,7 +822,6 @@
         "challenges": "Herausforderungen",
         "promos": "Promos",
         "seasonAwards": "Saison-Auszeichnungen",
-        "contenderConfig": "Herausforderer Konfig",
         "contenderOverrides": "Herausforderer Anpassungen",
         "companies": "Unternehmen",
         "locations": "Veranstaltungsorte",
@@ -720,7 +849,10 @@
         "content": "Inhalte",
         "factions": "Fraktionen",
         "contentSocial": "Inhalte & Soziales",
-        "system": "System"
+        "system": "System",
+        "roster": "Kader",
+        "competition": "Wettbewerb",
+        "storylinesContent": "Storylines & Inhalte"
       }
     },
     "players": {
@@ -764,7 +896,8 @@
         "hideSkipped": "Übersprungene Namen ausblenden",
         "noRows": "Keine Zeilen zum Importieren",
         "importFailed": "Massenimport fehlgeschlagen"
-      }
+      },
+      "update": "Ort aktualisieren"
     }
   },
   "announcements": {
@@ -806,7 +939,8 @@
       "expired": "Abgelaufen"
     },
     "dontShowAgain": "Nicht mehr anzeigen",
-    "counter": "{{current}} von {{total}}"
+    "counter": "{{current}} von {{total}}",
+    "update": "Ankündigung aktualisieren"
   },
   "videos": {
     "title": "Videos verwalten",
@@ -825,8 +959,6 @@
     "deleteError": "Video konnte nicht gelöscht werden.",
     "uploadingVideo": "Video wird hochgeladen...",
     "uploadingThumbnail": "Vorschaubild wird hochgeladen...",
-    "currentUrl": "Aktuelle Video-URL",
-    "currentThumbnail": "Aktuelles Vorschaubild",
     "published": "Veröffentlicht",
     "draft": "Entwurf",
     "tagsPlaceholder": "Tag1, Tag2, Tag3",
@@ -844,10 +976,13 @@
       "highlight": "Highlight",
       "promo": "Promo",
       "other": "Sonstiges"
-    }
+    },
+    "update": "Video aktualisieren",
+    "currentVideoHint": "Es ist bereits ein Video hinterlegt. Wähle nur dann eine Datei aus, wenn du es ersetzen möchtest.",
+    "currentThumbnailHint": "Es ist bereits ein Vorschaubild hinterlegt. Wähle nur dann eine Datei aus, wenn du es ersetzen möchtest."
   },
   "highlights": {
-    "title": "Highlights & Videos",
+    "title": "Highlights und Videos",
     "subtitle": "Match-Highlights, Promos und mehr ansehen",
     "noVideos": "Noch keine Videos verfügbar. Schauen Sie bald wieder vorbei!",
     "loadError": "Videos konnten nicht geladen werden.",
@@ -875,7 +1010,11 @@
       "createSuccess": "Auszeichnung erfolgreich erstellt!",
       "deleteSuccess": "Auszeichnung erfolgreich gelöscht!",
       "confirmDelete": "Möchten Sie die Auszeichnung \"{{name}}\" wirklich löschen?"
-    }
+    },
+    "loadFailed": "Die Auszeichnungen konnten nicht geladen werden.",
+    "seasonsLoadFailed": "Die Saisons konnten nicht geladen werden.",
+    "noSeasons": "Es wurden noch keine Saisons angelegt.",
+    "emptyTitle": "Noch keine Auszeichnungen"
   },
   "challenges": {
     "board": {
@@ -894,7 +1033,8 @@
       "noChallenges": "Keine Herausforderungen gefunden.",
       "titleMatch": "Titelkampf",
       "tagTeamMatch": "Tag Team Match",
-      "remaining": "verbleibend"
+      "remaining": "verbleibend",
+      "loadError": "Herausforderungen konnten nicht geladen werden"
     },
     "detail": {
       "title": "Herausforderungsdetails",
@@ -936,7 +1076,9 @@
       "matchType": "Kampftyp",
       "selectMatchType": "Kampftyp wählen...",
       "stipulation": "Stipulation",
-      "championshipMatch": "Meisterschaftskampf",
+      "titleOnTheLine": "Titel im Einsatz",
+      "noTitle": "Kein Titel",
+      "titleHint": "Zur Wahl stehen Titel, die eine der beiden Seiten hält, und vakante Titel.",
       "message": "Nachricht",
       "messagePlaceholder": "Schreibe eine Nachricht an deinen Gegner...",
       "charLimit": "Zeichen verbleibend",
@@ -955,7 +1097,9 @@
       "noReceived": "Du hast noch keine Herausforderungen empfangen.",
       "actionFeedback": "{{action}} für Herausforderung gegen {{opponent}}",
       "response": "Antwort",
-      "viewDetails": "Details anzeigen"
+      "viewDetails": "Details anzeigen",
+      "noPlayerTitle": "Kein Spielerprofil für dieses Konto",
+      "noPlayerBody": "Dein Konto ist mit keinem Spieler verknüpft, daher gibt es hier keine eigenen Herausforderungen."
     },
     "admin": {
       "title": "Herausforderungen verwalten",
@@ -986,14 +1130,15 @@
   },
   "statistics": {
     "nav": {
-      "playerStats": "Spieler-Statistiken",
+      "playerStats": "Spieler",
       "headToHead": "Direktvergleich",
       "leaderboards": "Ranglisten",
       "records": "Rekordbuch",
       "rivalries": "Rivalitäten",
       "taleOfTape": "Tale of the Tape",
       "achievements": "Erfolge",
-      "matchTypeLeaderboards": "Nach Kampftyp"
+      "matchTypeLeaderboards": "Nach Kampftyp",
+      "bestMatches": "Beste Matches"
     },
     "labels": {
       "wins": "Siege",
@@ -1016,7 +1161,12 @@
       "active": "Aktiv",
       "present": "Gegenwart",
       "totalMatches": "Kämpfe gesamt",
-      "championshipMatches": "Titelkämpfe"
+      "championshipMatches": "Titelkämpfe",
+      "record": "Bilanz",
+      "stipulation": "Stipulation",
+      "reignCount_one": "{{count}} Regentschaft",
+      "reignCount_other": "{{count}} Regentschaften",
+      "currentWinStreak": "Aktuelle Siegesserie"
     },
     "matchTypes": {
       "singles": "Einzel",
@@ -1053,7 +1203,10 @@
       "player1Win": "S1 Sieg",
       "player2Win": "S2 Sieg",
       "statisticalEdge": "Statistischer Vorteil",
-      "advantages": "Vorteile"
+      "advantages": "Vorteile",
+      "compareView": "Vergleich",
+      "viewLabel": "Head-to-Head-Ansicht",
+      "needTwoPlayers": "Für einen Vergleich werden mindestens zwei Spieler benötigt."
     },
     "leaderboards": {
       "title": "Ranglisten",
@@ -1065,7 +1218,8 @@
         "streaks": "Serien",
         "championships": "Meisterschaften",
         "longestReign": "Längste Regentschaft"
-      }
+      },
+      "noData": "Noch keine Daten verfügbar."
     },
     "matchTypeLeaderboards": {
       "title": "Ranglisten nach Kampftyp",
@@ -1083,7 +1237,9 @@
       "activeThreats": "Aktive Bedrohungen",
       "activeThreatsDesc": "Diese Rekorde werden derzeit herausgefordert. Behalten Sie diese Spieler im Auge!",
       "currentHolder": "Aktueller Halter",
-      "challenger": "Herausforderer"
+      "challenger": "Herausforderer",
+      "noRecords": "Noch keine Rekorde verfügbar.",
+      "unclaimed": "Für diesen Rekord qualifiziert sich noch niemand."
     },
     "taleOfTape": {
       "title": "Tale of the Tape",
@@ -1104,12 +1260,14 @@
         "milestones": "Meilensteine",
         "records": "Rekorde",
         "special": "Spezial"
-      }
+      },
+      "noPlayers": "Noch keine Spieler, für die Erfolge angezeigt werden können."
     },
     "bestMatches": {
       "title": "Beste Kämpfe",
       "noData": "Noch keine bewerteten Kämpfe. Bewerten Sie Kämpfe beim Eintragen der Ergebnisse."
-    }
+    },
+    "loadFailed": "Diese Statistiken konnten nicht geladen werden"
   },
   "rivalries": {
     "title": "Rivalitäten",
@@ -1149,7 +1307,17 @@
       "activityLoading": "Aktivität lädt…",
       "activityEmpty": "Keine neue Aktivität.",
       "loadMore": "Mehr laden",
-      "viewRivalry": "Ansehen"
+      "viewRivalry": "Ansehen",
+      "loadError": "Rivalitäten konnten nicht geladen werden",
+      "heatFilter": "Nach Heat filtern",
+      "activityBeat": "{{winner}} besiegte {{loser}}",
+      "activityDraw": "{{names}} trennten sich unentschieden",
+      "activityMatch": "{{names}} angesetzt",
+      "activityPromoTitled": "{{name}}: „{{title}}“",
+      "activityPromo": "{{name}} hielt eine Promo",
+      "activityNote": "Notiz: {{text}}",
+      "activityMessage": "{{name}} schickte eine Nachricht",
+      "noneYet": "Hier gibt es noch keine Rivalitäten."
     },
     "card": {
       "matchCount_one": "{{count}} Kampf",
@@ -1196,7 +1364,10 @@
       "heatMeterLabel": "Rivalitäts-Hitze",
       "heatScaleCold": "Kalt",
       "heatScaleExtreme": "Extrem",
-      "heatScoreOutOf": "Hitze: {{score}}/100"
+      "heatScoreOutOf": "Hitze: {{score}}/100",
+      "notFound": "Rivalität nicht gefunden",
+      "insidersOnly": "Diesen Tab können nur die Rivalen und die GMs öffnen.",
+      "headToHeadRecord": "{{wins}}S – {{losses}}N – {{draws}}U"
     },
     "messages": {
       "heading": "Nachrichten",
@@ -1222,7 +1393,8 @@
       "empty": "Noch keine Notizen.",
       "linkedMatch": "Verknüpfter Kampf",
       "linkedEvent": "Verknüpftes Event",
-      "scheduledFor": "Geplant für"
+      "scheduledFor": "Geplant für",
+      "deleteConfirm": "Diese Notiz löschen?"
     },
     "request": {
       "heading": "Rivalität anfragen",
@@ -1232,10 +1404,18 @@
       "titleField": "Titel",
       "descriptionField": "Storyline-Pitch",
       "heatField": "Anfangshitze",
+      "myWrestler": "Welchen Wrestler benutzt du?",
+      "opponentWrestler": "Welchen Wrestler benutzt dein Gegner?",
       "submit": "Zur Freigabe einreichen",
       "cancel": "Abbrechen",
       "success": "Eingereicht! Ein GM prüft sie.",
-      "errorTitle": "Übermittlung fehlgeschlagen"
+      "errorTitle": "Übermittlung fehlgeschlagen",
+      "next": "Weiter",
+      "primary": "Haupt-Wrestler",
+      "alternate": "Alternativ-Wrestler",
+      "titlePlaceholder": "Gib dieser Rivalität einen Namen",
+      "removePlan": "Plan entfernen",
+      "planFailures": "Einige Pläne konnten nicht gespeichert werden. Du kannst sie auf der Rivalitätsseite ergänzen."
     },
     "admin": {
       "heading": "Rivalitäten (Admin)",
@@ -1354,7 +1534,22 @@
         "fri": "Fr",
         "sat": "Sa"
       },
-      "createEvent": "Event erstellen"
+      "createEvent": "Event erstellen",
+      "nextMonth": "Nächster Monat",
+      "previousMonth": "Vorheriger Monat",
+      "noResults": "Noch keine abgeschlossenen Events.",
+      "recentResults": "Neueste Ergebnisse",
+      "showMore": "Mehr anzeigen",
+      "typeFilter": "Event-Typ",
+      "viewCard": "Zur Match Card",
+      "plannedShow": "Geplante Show, Card folgt",
+      "plannedLegend": "Geplant",
+      "calendarTab": "Kalender",
+      "plannedShowCreate": "Geplante Show. Event erstellen",
+      "dayHasEvent": "Event gebucht",
+      "dayHasPlanned": "geplante Show",
+      "nothingOnDay": "An diesem Tag ist nichts gebucht.",
+      "createOnDay": "Event an diesem Tag erstellen"
     },
     "designations": {
       "preShow": "Vorshow",
@@ -1379,13 +1574,40 @@
       "winner": "S",
       "addMatch": "Match hinzufügen",
       "scheduleFirstMatch": "Erstes Match planen",
-      "backToEvent": "← Zurück zu {{name}}",
+      "backToEvent": "Zurück zu {{name}}",
       "recordResult": "Ergebnis eintragen",
       "editMatch": "Bearbeiten",
       "deleteMatch": "Löschen",
       "matchTBA": "Match noch offen",
       "matchNotFound": "Match-Daten sind nicht verfügbar. Bitte Seite neu laden.",
-      "openCommentary": "Kommentator-Ansicht"
+      "moveMatchDown": "{{match}} nach unten verschieben",
+      "cardChanged": "Die Matchcard wurde geändert. Die aktuelle Reihenfolge wurde neu geladen, bitte erneut versuchen.",
+      "removeCardError": "Das Match konnte nicht von der Matchcard entfernt werden.",
+      "removeFromCard": "Von der Matchcard entfernen",
+      "moveMatchError": "Die neue Match-Reihenfolge konnte nicht gespeichert werden.",
+      "moveMatchUp": "{{match}} nach oben verschieben",
+      "openCommentary": "Kommentator-Ansicht",
+      "confirmDeleteTitle": "Löschen bestätigen",
+      "deleteMatchConfirm": {
+        "championship": "Dieses abgeschlossene Titelmatch löschen? Spielerstatistiken und die Titelhistorie werden zurückgesetzt. Das kann nicht rückgängig gemacht werden.",
+        "completed": "Dieses abgeschlossene {{format}}-Match löschen? Spielerstatistiken (Siege/Niederlagen/Unentschieden) werden zurückgesetzt. Das kann nicht rückgängig gemacht werden.",
+        "scheduled": "Dieses {{format}}-Match löschen? Das kann nicht rückgängig gemacht werden.",
+        "tournament": "Dieses abgeschlossene Turniermatch löschen? Spielerstatistiken und der Turnierfortschritt werden zurückgesetzt. Das kann nicht rückgängig gemacht werden."
+      },
+      "deleteMatchError": "Match konnte nicht gelöscht werden.",
+      "detailsError": "Event-Details konnten nicht aktualisiert werden.",
+      "editDetails": "Datum und Ort bearbeiten",
+      "editMatchTitle": "Match bearbeiten",
+      "manage": "Event verwalten",
+      "statusError": "Status konnte nicht aktualisiert werden.",
+      "statusLabel": "Event-Status",
+      "closeSignups": {
+        "action": "Anmeldungen schließen",
+        "title": "Anmeldungen für dieses Match schließen?",
+        "message": "Die offenen Plätze werden entfernt und das Match wird mit den Wrestlern gebucht, die sich angemeldet haben. Niemand sonst kann sich noch einen Platz sichern.",
+        "confirm": "Anmeldungen schließen",
+        "error": "Anmeldungen für dieses Match konnten nicht geschlossen werden."
+      }
     },
     "commentary": {
       "title": "Kommentator-Ansicht",
@@ -1431,7 +1653,8 @@
       "matchResults": "Kampfergebnisse",
       "winnersLabel": "Sieger",
       "defeatedLabel": "Besiegt",
-      "titleChange": "Meisterschaftskampf"
+      "titleChange": "Meisterschaftskampf",
+      "draw": "Unentschieden"
     },
     "admin": {
       "createEvent": "Veranstaltung erstellen",
@@ -1471,22 +1694,25 @@
       "season": "Saison",
       "noSeason": "Keine Saison",
       "saveEvent": "Veranstaltung speichern",
-      "saveSuccess": "Veranstaltung erfolgreich gespeichert!",
-      "matchCardBuilder": "Kampfkarten-Ersteller",
-      "noMatchesOnCard": "Noch keine Kämpfe auf dieser Karte. Fügen Sie unten Kämpfe hinzu.",
-      "championshipMatch": "Titelkampf",
-      "moveUp": "Nach oben",
-      "moveDown": "Nach unten",
-      "removeMatch": "Kampf entfernen",
-      "selectMatch": "Kampf zum Hinzufügen auswählen...",
-      "addMatch": "Kampf hinzufügen"
+      "saveSuccess": "Veranstaltung erfolgreich gespeichert!"
     },
     "booking": {
       "neverBooked": "Noch nie gebucht",
       "bookedUpcoming": "Gebucht {{when}}",
       "lastBooked": "Zuletzt gebucht {{when}}",
       "streakTitle": "{{count}} Matches in Serie: {{type}}",
-      "streakType": { "W": "Siege", "L": "Niederlagen", "D": "Unentschieden" }
+      "seasonRecordTitle": "{{season}}: {{wins}}, {{losses}}, {{draws}}",
+      "recordWins_one": "{{count}} Sieg",
+      "recordWins_other": "{{count}} Siege",
+      "recordLosses_one": "{{count}} Niederlage",
+      "recordLosses_other": "{{count}} Niederlagen",
+      "recordDraws_one": "{{count}} Unentschieden",
+      "recordDraws_other": "{{count}} Unentschieden",
+      "streakType": {
+        "W": "Siege",
+        "L": "Niederlagen",
+        "D": "Unentschieden"
+      }
     },
     "checkIn": {
       "title": "Bist du dabei?",
@@ -1515,6 +1741,33 @@
         "loading": "Liste wird geladen…",
         "error": "Liste konnte nicht geladen werden."
       }
+    },
+    "emptyTitle": "Noch keine Events",
+    "create": {
+      "company": "Promotion",
+      "error": "Event konnte nicht erstellt werden.",
+      "nameRequired": "Gib einen Event-Namen ein.",
+      "noCompany": "Keine Promotion",
+      "noShow": "Keine Show",
+      "show": "Show",
+      "venueHint": "Leer lassen, um zufällig einen gespeicherten Ort zu wählen."
+    },
+    "forms": {
+      "allDivisions": "Alle Divisionen",
+      "championship": "Titel",
+      "championshipMatch": "Titelmatch",
+      "draw": "Unentschieden",
+      "drawHint": "Alle Teilnehmer erhalten ein Unentschieden.",
+      "filterDivision": "Nach Division filtern",
+      "loadError": "Matchdaten konnten nicht geladen werden",
+      "matchNotFound": "Match nicht gefunden",
+      "noDivision": "Keine Division",
+      "noSeason": "Keine Saison (Showmatch)",
+      "onlyScheduled": "Nur geplante Matches können bearbeitet werden. Abgeschlossene Matches lassen sich nicht ändern.",
+      "saveChanges": "Änderungen speichern",
+      "selectChampionship": "Titel auswählen",
+      "tournament": "Turnier (optional)",
+      "updateError": "Match konnte nicht aktualisiert werden"
     }
   },
   "promos": {
@@ -1534,7 +1787,10 @@
       "groupToday": "Heute",
       "groupYesterday": "Gestern",
       "groupThisWeek": "Diese Woche",
-      "groupOlder": "Älter"
+      "groupOlder": "Älter",
+      "loadError": "Promos konnten nicht geladen werden",
+      "noFilterMatch": "Keine Promos passen zu diesem Filter.",
+      "showArchived": "Archivierte anzeigen"
     },
     "card": {
       "by": "von",
@@ -1553,7 +1809,9 @@
       "viewChallenge": "Herausforderung ansehen",
       "challengeNotFound": "Herausforderung nicht gefunden",
       "readMore": "Weiterlesen",
-      "showLess": "Weniger anzeigen"
+      "showLess": "Weniger anzeigen",
+      "acceptFailed": "Die Herausforderung konnte nicht angenommen werden. Bitte versuche es erneut.",
+      "archived": "Archiviert"
     },
     "thread": {
       "title": "Promo-Thread",
@@ -1561,7 +1819,8 @@
       "responses": "Antworten",
       "writeResponse": "Antwort schreiben",
       "backToFeed": "Zurück zu Promos",
-      "notFound": "Promo nicht gefunden."
+      "notFound": "Promo nicht gefunden.",
+      "loadError": "Diese Promo konnte nicht geladen werden"
     },
     "editor": {
       "title": "Promo schneiden",
@@ -1612,12 +1871,13 @@
       "rivalry": "Rivalität",
       "selectRivalry": "-- Rivalität auswählen --",
       "noRivalries": "Du bist noch in keiner Rivalität. Lass einen GM eine starten oder wähle einen anderen Promo-Typ.",
-      "rivalryVs": "vs {{opponents}}"
+      "rivalryVs": "vs {{opponents}}",
+      "challengeNeeds": "Wähle einen Gegner und einen Matchtyp, um die Herausforderung auszusprechen."
     },
     "reactions": {
       "fire": "Feuer",
       "mic": "Mikro",
-      "trash": "Muell",
+      "trash": "Müll",
       "mind-blown": "Wahnsinn",
       "clap": "Applaus"
     },
@@ -1651,6 +1911,10 @@
       "confirmDelete": "Bist du sicher, dass du diese Promo löschen möchtest?",
       "filterByType": "Nach Typ filtern",
       "all": "Alle"
+    },
+    "guest": {
+      "title": "Promos schreiben ist Liga-Mitgliedern vorbehalten",
+      "description": "Melde dich an, um eine eigene Promo zu schreiben. Den Promo-Feed können alle lesen."
     }
   },
   "shows": {
@@ -1682,7 +1946,8 @@
     "thursday": "Donnerstag",
     "friday": "Freitag",
     "saturday": "Samstag",
-    "sunday": "Sonntag"
+    "sunday": "Sonntag",
+    "update": "Show aktualisieren"
   },
   "companies": {
     "title": "Unternehmen",
@@ -1696,7 +1961,8 @@
     "createFirst": "Erstelle dein erstes Unternehmen, um loszulegen",
     "confirmDelete": "Bist du sicher, dass du dieses Unternehmen löschen möchtest?",
     "rosterCount": "Kader",
-    "deleteBlocked": "Unternehmen mit zugewiesenen Spielern oder Shows kann nicht gelöscht werden"
+    "deleteBlocked": "Unternehmen mit zugewiesenen Spielern oder Shows kann nicht gelöscht werden",
+    "update": "Unternehmen aktualisieren"
   },
   "factions": {
     "title": "Faktionen",
@@ -1731,7 +1997,8 @@
         "disbanded": "Aufgelöst"
       },
       "activityTitle": "Neueste Faktionsaktivität",
-      "activityEmpty": "Noch keine Aktivität."
+      "activityEmpty": "Noch keine Aktivität.",
+      "leaderMissing": "Anführer nicht mehr gelistet"
     },
     "heroAlt": "{{name}}-Faktionsbanner",
     "statusLabel": "Faktionsstatus: {{status}}",
@@ -1786,7 +2053,8 @@
       "milestoneLongestStreak": "Längste Siegesserie",
       "milestoneMostWinsSeason": "Meiste Siege in einer Saison",
       "milestoneTitleReigns": "Titelregentschaften",
-      "milestoneBestMonth": "Bester Monat"
+      "milestoneBestMonth": "Bester Monat",
+      "formerMember": "Ehemaliges Mitglied"
     },
     "manage": {
       "notAllowed": "Nur Leader und Admins können auf den Verwalten-Tab zugreifen.",
@@ -1844,7 +2112,8 @@
       "attachComingSoon": "Anhänge folgen in Kürze",
       "attachAria": "Anhängen (folgt)",
       "emojiComingSoon": "Emoji-Auswahl folgt in Kürze",
-      "emojiAria": "Emoji (folgt)"
+      "emojiAria": "Emoji (folgt)",
+      "membersOnly": "Nur Mitglieder dieser Faction können ihre Nachrichten lesen."
     },
     "schedule": {
       "error": "Spielplan konnte nicht geladen werden.",
@@ -1938,10 +2207,14 @@
       "scheduleEmpty": "Keine Matches in den nächsten 60 Tagen.",
       "scheduleError": "Spielplan konnte nicht geladen werden.",
       "activityTitle": "Faktionsaktivität",
-      "activityEmpty": "Keine aktuellen Ereignisse."
+      "activityEmpty": "Keine aktuellen Ereignisse.",
+      "rosterMissing_one": "{{count}} Mitglied ist nicht mehr im Kader gelistet.",
+      "rosterMissing_other": "{{count}} Mitglieder sind nicht mehr im Kader gelistet.",
+      "resultFallback": "Kampf",
+      "versus": "gegen {{names}}",
+      "formCaption_one": "Letztes Ergebnis",
+      "formCaption_other": "Letzte {{count}} Ergebnisse, die neuesten rechts"
     },
-    "members": "Mitglieder",
-    "stats": "Statistiken",
     "headToHead": "Kopf an Kopf",
     "matchTypes": "Match-Typ-Aufschlüsselung",
     "recentMatches": "Letzte Matches",
@@ -1969,7 +2242,62 @@
       "uploadingImage": "Wird hochgeladen…",
       "uploadFailed": "Upload fehlgeschlagen. Bitte erneut versuchen.",
       "uploadAcceptedTypes": "PNG, JPEG, GIF oder WebP",
-      "replaceImage": "Bild ersetzen"
+      "replaceImage": "Bild ersetzen",
+      "createStable": "Faktion erstellen",
+      "disbanding": "Wird aufgelöst…",
+      "invitationAccepted": "Einladung angenommen! Du bist der Faktion beigetreten.",
+      "invitationDeclined": "Einladung abgelehnt.",
+      "invitedBy": "Eingeladen von {{name}}",
+      "loginRequired": "Bitte melde dich an, um deine Faktion zu verwalten.",
+      "noStable": "Du bist in keiner Faktion",
+      "noStableDesc": "Erstelle deine eigene Faktion oder warte auf die Einladung eines Faktionsanführers.",
+      "pendingInvitations": "Offene Einladungen",
+      "title": "Meine Faktion",
+      "noPlayerTitle": "Kein Spielerprofil für dieses Konto",
+      "noPlayerBody": "Dein Konto ist mit keinem Spieler verknüpft, daher kannst du keiner Faktion beitreten und keine gründen.",
+      "requestPendingTitle": "Deine Faktionsanfrage wird geprüft",
+      "requestPendingBody": "{{name}} wartet auf die Freigabe durch einen Admin."
+    },
+    "backToList": "Zurück zu den Faktionen",
+    "create": {
+      "imagePlaceholder": "https://...",
+      "imageUrlFallbackLabel": "Oder eine URL einfügen",
+      "nameLabel": "Faktionsname",
+      "namePlaceholder": "z. B. The Shield, New Day",
+      "nameRequired": "Ein Faktionsname ist erforderlich",
+      "submit": "Faktion beantragen",
+      "success": "Faktionsantrag eingereicht! Wartet auf die Freigabe durch einen Admin.",
+      "title": "Faktion erstellen"
+    },
+    "invite": {
+      "loadPlayersFailed": "Spieler konnten nicht geladen werden",
+      "messageLabel": "Nachricht (optional)",
+      "messagePlaceholder": "Persönliche Nachricht hinzufügen...",
+      "noAvailablePlayers": "Keine Spieler zum Einladen verfügbar",
+      "playerLabel": "Spieler auswählen",
+      "selectPlaceholder": "-- Spieler auswählen --",
+      "selectPlayer": "Bitte wähle einen Spieler zum Einladen aus",
+      "submit": "Einladung senden",
+      "success": "Einladung erfolgreich gesendet!",
+      "title": "Spieler in die Faktion einladen"
+    },
+    "name": "Name",
+    "noStandings": "Noch keine Daten zur Faktionsrangliste.",
+    "notFound": "Faktion nicht gefunden.",
+    "redesign": {
+      "activityDisbanded": "{{name}} wurde aufgelöst",
+      "activityFormed": "{{name}} wurde gegründet",
+      "bestCurrentStreak": "Beste aktuelle Siegesserie",
+      "conversations": "Unterhaltungen",
+      "formerMember": "Ehemaliges Mitglied",
+      "matchesLabel": "Matches",
+      "newDm": "Neue Direktnachricht",
+      "noMatchesTitle": "Keine Matches angesetzt",
+      "recordAria": "{{label}}: {{wins}} Siege, {{losses}} Niederlagen, {{draws}} Unentschieden",
+      "recordColumn": "S-N-U",
+      "sortByName": "Nach Name",
+      "unknownPlayer": "Unbekannter Spieler",
+      "unread": "Ungelesen"
     }
   },
   "tagTeams": {
@@ -1997,8 +2325,74 @@
       "yourWrestler": "Dein Wrestler in diesem Team",
       "partnerWrestler": "Wrestler deines Partners in diesem Team",
       "saveIdentity": "Speichern",
-      "identitySaved": "Tag-Team-Identität gespeichert."
-    }
+      "identitySaved": "Tag-Team-Identität gespeichert.",
+      "accepted": "Tag-Team-Anfrage angenommen! Wartet auf die Freigabe durch einen Admin.",
+      "awaitingAdmin": "Wartet auf Admin-Freigabe",
+      "createTeam": "Tag Team erstellen",
+      "declined": "Tag-Team-Anfrage abgelehnt.",
+      "dissolve": "Tag Team auflösen",
+      "dissolveConfirm": "Möchtest du dieses Tag Team wirklich auflösen? Das kann nicht rückgängig gemacht werden.",
+      "dissolved": "Das Tag Team wurde aufgelöst.",
+      "loginRequired": "Bitte melde dich an, um dein Tag Team zu verwalten.",
+      "noTeam": "Du bist in keinem Tag Team",
+      "noTeamDesc": "Erstelle ein Tag Team, indem du einen Partner auswählst, oder warte auf eine Anfrage.",
+      "partner": "Dein Partner",
+      "partnerRequest": "Du wurdest eingeladen, dieses Tag Team zu bilden.",
+      "pendingRequests": "Offene Tag-Team-Anfragen",
+      "recentForm": "Form",
+      "record": "Bilanz",
+      "requestFrom": "Anfrage von einem anderen Spieler",
+      "streak": "Serie",
+      "title": "Mein Tag Team",
+      "waitingForPartner": "Wartet auf den Partner",
+      "winPct": "Siegquote"
+    },
+    "create": {
+      "imageLabel": "Bild-URL (optional)",
+      "imagePlaceholder": "https://...",
+      "loadPlayersFailed": "Spieler konnten nicht geladen werden",
+      "nameLabel": "Tag-Team-Name",
+      "namePlaceholder": "z. B. The Hardy Boyz, DX",
+      "nameRequired": "Ein Tag-Team-Name ist erforderlich",
+      "noAvailablePlayers": "Keine Spieler verfügbar",
+      "partnerLabel": "Partner auswählen",
+      "partnerRequired": "Bitte wähle einen Partner aus",
+      "selectPartner": "-- Partner auswählen --",
+      "submit": "Anfrage senden",
+      "success": "Tag-Team-Anfrage an den Partner gesendet!",
+      "title": "Tag Team erstellen"
+    },
+    "detailPage": {
+      "backToList": "Zurück zu den Tag Teams",
+      "error": "Tag-Team-Details konnten nicht geladen werden",
+      "matchFormat": "Match-Format",
+      "noHistory": "Dieses Team hat noch kein Match bestritten.",
+      "notFound": "Tag Team nicht gefunden",
+      "notFoundDesc": "Das gesuchte Tag Team existiert nicht.",
+      "opponent": "Gegner",
+      "record": "Bilanz",
+      "totalMatches": "Matches gesamt",
+      "unknownOpponent": "Unbekannt",
+      "vs": "gegen"
+    },
+    "error": "Tag Teams konnten nicht geladen werden",
+    "noTeams": "Keine aktiven Tag Teams gefunden.",
+    "standingsTable": {
+      "empty": "Noch keine Tag-Team-Rangliste verfügbar.",
+      "error": "Rangliste konnte nicht geladen werden",
+      "name": "Name",
+      "players": "Spieler",
+      "record": "S-N-U"
+    },
+    "statusLabel": {
+      "active": "Aktiv",
+      "dissolved": "Aufgelöst",
+      "pending_admin": "Wartet auf Admin",
+      "pending_partner": "Wartet auf Partner"
+    },
+    "unknownPlayer": "Unbekannt",
+    "viewList": "Liste",
+    "viewStandings": "Rangliste"
   },
   "contenders": {
     "title": "Herausforderer-Rangliste",
@@ -2031,7 +2425,10 @@
       "matchesNeeded": "Benötigte Kämpfe zur Qualifikation",
       "eligibleChampionships": "Qualifizierte Meisterschaften",
       "topContenderPositions": "#1 Herausforderer-Positionen",
-      "topThreePositions": "Top-3-Positionen"
+      "topThreePositions": "Top-3-Positionen",
+      "comingSoon": "Dein persönlicher Herausforderer-Status ist noch nicht verfügbar.",
+      "requiresAuth": "Bis dahin zeigt die Gesamtrangliste, wo alle stehen.",
+      "viewRankings": "Gesamtrangliste ansehen"
     },
     "overrides": {
       "badge": "Manuelle Anpassung",
@@ -2043,22 +2440,7 @@
       "expires": "Läuft ab: {{date}}"
     },
     "admin": {
-      "title": "Herausforderer-Konfiguration",
-      "subtitle": "Herausforderer-Ranglisteneinstellungen pro Meisterschaft konfigurieren",
       "selectChampionship": "Meisterschaft auswählen",
-      "currentSeasonNote": "Die Rangliste wird aus abgeschlossenen Kämpfen der aktuellen Saison berechnet.",
-      "minimumMatches": "Mindestanzahl Kämpfe",
-      "minimumMatchesHint": "Mindestanzahl an Kämpfen, um in der Rangliste zu erscheinen",
-      "maxContenders": "Maximale Herausforderer",
-      "maxContendersHint": "Maximale Anzahl eingestufter Herausforderer pro Meisterschaft",
-      "includeDraws": "Unentschieden in Rangliste einbeziehen",
-      "includeDrawsHint": "Wenn aktiviert, werden Unentschieden teilweise zur Ranglistenpunktzahl gezählt",
-      "divisionRestricted": "Auf Division beschränkt",
-      "divisionRestrictedHint": "Wenn aktiviert, können nur Spieler derselben Division antreten",
-      "save": "Konfiguration speichern",
-      "recalculate": "Rangliste neu berechnen",
-      "saveSuccess": "Konfiguration für {{championship}} gespeichert",
-      "recalculateSuccess": "Rangliste für {{championship}} neu berechnet",
       "overrides": {
         "title": "Manuelle Anpassungen",
         "subtitle": "Herausforderer-Positionen für Storyline oder disziplinarische Gründe anpassen",
@@ -2075,13 +2457,30 @@
         "confirmRemove": "Anpassung für {{player}} entfernen? Der Rang wird bei der nächsten Berechnung auf die algorithmische Position zurückgesetzt.",
         "activeOverrides": "Aktive Anpassungen",
         "noOverrides": "Keine aktiven Anpassungen",
-        "applySuccess": "Anpassung für {{player}} angewendet",
         "removeSuccess": "Anpassung für {{player}} entfernt",
-        "errorNotEligible": "Dieser Spieler ist nicht in den aktuellen Rankings. Mindestanzahl an Kämpfen muss erfüllt sein.",
+        "placedOnList": "Anpassung angewendet. {{player}} steht jetzt auf Platz #{{rank}} der Liste",
+        "placedNotOnList": "Anpassung für {{player}} gespeichert, aber der Spieler steht nicht auf der Liste, also hat sich nichts bewegt. Sie greift, sobald er die Liste erreicht.",
+        "placedNoSeason": "Anpassung für {{player}} gespeichert, aber es ist keine Saison aktiv, also gibt es noch keine Liste. Sie greift, sobald eine Saison beginnt.",
+        "placedFailed": "Anpassung für {{player}} gespeichert, aber die Ranglisten konnten nicht neu berechnet werden. Sie greift bei der nächsten Neuberechnung, spätestens in 6 Stunden.",
+        "errorExpiryPast": "Das Ablaufdatum muss nach dem heutigen Tag liegen",
         "errorIsChampion": "Das Ranking des aktuellen Champions kann nicht angepasst werden",
-        "errorWrongDivision": "Dieser Spieler ist nicht in der richtigen Division für diese Meisterschaft"
+        "errorWrongDivision": "Dieser Spieler ist nicht in der richtigen Division für diese Meisterschaft",
+        "reasonColumn": "Grund",
+        "expiresColumn": "Automatischer Ablauf",
+        "positionColumn": "Position",
+        "positionRank": "#{{rank}}",
+        "positionNone": "Nicht auf der Liste"
       }
-    }
+    },
+    "emptyTitle": "Noch keine Rangliste",
+    "selectChampionship": "Titel",
+    "openDivision": "Offen",
+    "unknownDivision": "Unbekannte Division",
+    "loadFailed": "Die Titel konnten nicht geladen werden.",
+    "rankingsLoadFailed": "Die Rangliste für diesen Titel konnte nicht geladen werden.",
+    "movedUp": "{{places}} nach oben",
+    "movedDown": "{{places}} nach unten",
+    "noMovement": "Keine Veränderung"
   },
   "notifications": {
     "title": "Benachrichtigungen",
@@ -2100,79 +2499,10 @@
     "deleteAllRead": "Gelesene löschen",
     "typeStable": "Stable",
     "typeTagTeam": "Tag Team",
-    "typeTransfer": "Transfer"
-  },
-  "findMatch": {
-    "title": "Match finden",
-    "subtitle": "Werde in Echtzeit mit einem anderen Wrestler gematcht",
-    "appearOnline": {
-      "title": "Online erscheinen",
-      "description": "Andere Wrestler können dich sehen und zu Matches einladen.",
-      "on": "Online",
-      "off": "Offline",
-      "appearFirstHint": "Werde online, um das Matchmaking zu nutzen."
-    },
-    "queue": {
-      "title": "Auf der Suche nach einem Match",
-      "join": "Match finden",
-      "leave": "Suche stoppen",
-      "searching": "Suche nach einem Gegner…",
-      "queued": "Du bist in der Warteschlange.",
-      "you": "Du",
-      "matched": "Du wurdest gematcht!",
-      "joinError": "Beitritt zur Warteschlange fehlgeschlagen. Versuche es erneut.",
-      "championshipNotice": "Titelmatches werden hier nicht unterstützt. Nutze die Challenges- oder Admin-Planung."
-    },
-    "preferences": {
-      "matchFormat": "Match-Format",
-      "stipulation": "Stipulation",
-      "any": "Beliebig"
-    },
-    "online": {
-      "title": "Online-Spieler",
-      "empty": "Aktuell sind keine anderen Wrestler online.",
-      "invite": "Zu Match einladen",
-      "alreadyInvited": "Einladung ausstehend",
-      "inQueue": "Sucht ein Match"
-    },
-    "invitations": {
-      "title": "Offene Einladungen",
-      "incoming": "Eingehend",
-      "outgoing": "Ausgehend",
-      "accept": "Annehmen",
-      "decline": "Ablehnen",
-      "expiresIn": "Läuft in {{seconds}}s ab",
-      "expired": "Abgelaufen",
-      "noneIncoming": "Keine eingehenden Einladungen.",
-      "noneOutgoing": "Keine ausgehenden Einladungen."
-    },
-    "widget": {
-      "title": "Match finden",
-      "open": "Match finden öffnen",
-      "pendingCount": "{{count}} offene Einladung",
-      "pendingCount_plural": "{{count}} offene Einladungen",
-      "incomingHeader": "Eingehende Herausforderungen",
-      "lookingHeader": "Sucht nach einem Match",
-      "lookingCount": "{{count}} suchen",
-      "challenge": "Herausfordern",
-      "challenging": "Sende…",
-      "challenged": "Eingeladen",
-      "joinedAgo": "beigetreten {{ago}}",
-      "joinQueue": "Warteschlange beitreten",
-      "joinQueueSubtitle": "Werde mit dem nächsten verfügbaren Wrestler gematcht",
-      "leaveQueue": "Warteschlange verlassen",
-      "inQueueLabel": "Du bist in der Warteschlange",
-      "empty": "Aktuell sind keine Wrestler in der Warteschlange",
-      "emptyHint": "Sei der Erste — tritt der Warteschlange bei",
-      "you": "Du",
-      "loadFailed": "Warteschlange konnte nicht geladen werden. Erneuter Versuch…",
-      "ago": {
-        "justNow": "gerade eben",
-        "minutes": "vor {{count}} Min.",
-        "hours": "vor {{count}} Std."
-      }
-    },
-    "needsWrestler": "Du brauchst ein Wrestler-Profil, um das Matchmaking zu nutzen."
+    "typeTransfer": "Transfer",
+    "typeRivalry": "Rivalität",
+    "typeStoryline": "Storyline",
+    "typeDiscipline": "Strikes"
   },
   "overalls": {
     "admin": {
@@ -2194,6 +2524,1067 @@
       "saving": "Speichern...",
       "saveSuccess": "Overalls erfolgreich gespeichert!",
       "validation": "Overall muss zwischen 60 und 99 liegen"
+    }
+  },
+  "search": {
+    "title": "League SZN durchsuchen",
+    "open": "Suche öffnen",
+    "launcher": "Liga durchsuchen",
+    "placeholder": "Wrestler, Events, Faktionen, Seiten suchen",
+    "results": "Suchergebnisse",
+    "noResults": "Keine Treffer gefunden",
+    "loadFailed": "Suchdaten konnten nicht geladen werden. Aktuell sind nur Seiten durchsuchbar.",
+    "kinds": {
+      "wrestler": "Wrestler",
+      "event": "Event",
+      "championship": "Titel",
+      "page": "Seite",
+      "faction": "Faktion",
+      "tagTeam": "Tag Team",
+      "tournament": "Turnier",
+      "rivalry": "Rivalität"
+    }
+  },
+  "ui": {
+    "formDots": {
+      "label": "Letzte Form",
+      "win": "Sieg",
+      "loss": "Niederlage",
+      "draw": "Unentschieden"
+    }
+  },
+  "home": {
+    "nextUp": "Als Nächstes",
+    "startsIn": "Beginnt in {{time}}",
+    "seeTheCard": "Zur Match Card",
+    "allEvents": "Alle Events",
+    "alsoComingUp": "Außerdem geplant",
+    "allTitles": "Alle Titel",
+    "reignDays_one": "{{count}} Tag",
+    "reignDays_other": "{{count}} Tage",
+    "defenses_one": "{{count}} Titelverteidigung",
+    "defenses_other": "{{count}} Titelverteidigungen",
+    "allMatches": "Alle Matches",
+    "allMyRivalries": "Alle meine Rivalitäten",
+    "topOfTable": "Tabellenspitze",
+    "fullStandings": "Zur Tabelle",
+    "noStandings": "Die Tabelle füllt sich, sobald gelistete Wrestler Ergebnisse haben.",
+    "standingsError": "Die Tabelle konnte nicht geladen werden.",
+    "loadError": "Die Startseite konnte nicht geladen werden.",
+    "stats": {
+      "players": "Spieler",
+      "titles": "Aktive Titel",
+      "seasonMatches": "Kämpfe in dieser Saison",
+      "allTimeMatches": "Kämpfe insgesamt"
+    }
+  },
+  "me": {
+    "access": {
+      "noPermission": "Du hast keine Berechtigung, diese Seite anzusehen."
+    },
+    "setup": {
+      "title": "Gib deinen Wrestler-Namen ein",
+      "hiddenTitle": "Du bist auf der Seite nicht sichtbar",
+      "hiddenNotice": "Du bist angemeldet, aber andere Spieler sehen dich weder im Roster noch in der Tabelle, bis du einen Wrestler-Namen eingibst.",
+      "wrestlerLabel": "Dein Wrestler-Name",
+      "wrestlerHint": "Gib einen beliebigen Namen ein. Er muss nicht aus einer Liste stammen, und du erscheinst auf der Seite, sobald du speicherst.",
+      "wrestlerHintRoster": "Wähle einen Wrestler aus. Du erscheinst auf der Seite, sobald du speicherst.",
+      "enterName": "Wrestler-Namen eingeben",
+      "placeholderRejected": "„Needs Wrestler“ ist nur ein Platzhalter. Gib den Namen ein, den du verwenden möchtest.",
+      "nowVisible": "Du bist jetzt auf der Seite. Andere Spieler können dich sehen.",
+      "cannotCallOutTitle": "Du kannst noch niemanden herausfordern",
+      "cannotCallOutBody": "Du bist auf der Seite nicht sichtbar, bis du einen Wrestler-Namen hast. Trage ihn in deinem Profil ein und komm dann zurück, um Call-Outs auszusprechen.",
+      "cannotCutPromoTitle": "Du kannst noch keine Promo schreiben",
+      "cannotCutPromoBody": "Du bist auf der Seite nicht sichtbar, also würde niemand deine Promo sehen. Trage einen Wrestler-Namen in deinem Profil ein und komm dann zurück, um sie zu veröffentlichen.",
+      "wrestlerRequired": "Gib deinen Wrestler-Namen ein, um fortzufahren.",
+      "wrestlerRequiredRoster": "Wähle deinen Wrestler aus, um fortzufahren."
+    },
+    "auth": {
+      "wrestlerAfterSignup": "Deinen Wrestler-Namen gibst du nach der Anmeldung ein. Bis dahin kannst du dein Konto nutzen, erscheinst aber nicht auf der Seite.",
+      "welcomeNextTitle": "Ein Schritt fehlt noch: Gib deinen Wrestler-Namen ein",
+      "welcomeNextBody": "Du wirst bei der Anmeldung danach gefragt. Bis du einen eingegeben hast, bleibst du auf der Seite unsichtbar.",
+      "welcomeContinue": "Weiter"
+    },
+    "profile": {
+      "edit": "Profil bearbeiten",
+      "save": "Profil speichern",
+      "uploading": "Wird hochgeladen...",
+      "updated": "Profil aktualisiert.",
+      "updateFailed": "Profil konnte nicht aktualisiert werden.",
+      "loadFailed": "Profil konnte nicht geladen werden.",
+      "noPlayerRecord": "Für dieses Konto wurde kein Spielerprofil gefunden.",
+      "noProfileTitle": "Kein Profil gefunden",
+      "noProfileBody": "Dein Spielerprofil wurde noch nicht angelegt. Wende dich an einen Admin.",
+      "nameRequired": "Der Spielername darf nicht leer sein.",
+      "tabsLabel": "Profilbereiche",
+      "tabOverview": "Übersicht",
+      "tabRequests": "Anfragen",
+      "tabStats": "Statistiken",
+      "identity": "Deine Angaben",
+      "overallsAndImage": "Overalls und Bild",
+      "playerName": "Spielername",
+      "currentWrestler": "Aktueller Wrestler",
+      "optional": "Optional",
+      "rosterEmpty": "Das Wrestler-Roster ist leer. Du kannst den Rest deines Profils trotzdem speichern, und ein Admin kann Wrestler hinzufügen.",
+      "noWrestlerPicked": "Kein Wrestler ausgewählt",
+      "alignmentUnset": "Nicht festgelegt",
+      "alignmentHint": "Hilft den GMs beim Booking und anderen Spielern bei Promos. Auf die Paarungen hat es keinen Einfluss.",
+      "image": "Wrestler-Bild",
+      "imageRemove": "Bild entfernen",
+      "imageHint": "{{types}}, maximal {{size}} MB",
+      "invalidFileType": "Ungültiger Dateityp. Erlaubt sind nur {{types}}-Bilder.",
+      "fileTooLarge": "Die Datei ist zu groß. Die maximale Größe beträgt {{size}} MB.",
+      "sessionExpired": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an, um Bilder hochzuladen.",
+      "uploadPrepareFailed": "Der Bild-Upload konnte nicht vorbereitet werden. Bitte prüfe deine Verbindung und versuche es erneut.",
+      "uploadNetworkFailed": "Netzwerkfehler beim Hochladen. Bitte prüfe deine Verbindung und versuche es erneut.",
+      "uploadFailed": "Das Bild konnte nicht hochgeladen werden. Bitte versuche es erneut oder verwende ein anderes Bild."
+    },
+    "requests": {
+      "transferTitle": "Divisionswechsel",
+      "transferChoose": "Wechsel der Division beantragen",
+      "transferReason": "Begründung",
+      "transferReasonPlaceholder": "Warum möchtest du die Division wechseln?",
+      "transferSubmit": "Wechselantrag absenden",
+      "transferSubmitted": "Wechselantrag abgeschickt.",
+      "transferFailed": "Der Wechselantrag konnte nicht abgeschickt werden.",
+      "transferPending": "Dein Antrag auf einen Wechsel zu {{division}} wird geprüft. Eingereicht am {{date}}.",
+      "transferHistory": "Bisherige Wechselanträge",
+      "rejectedReason": "Begründung: {{note}}",
+      "storylineTitle": "Storyline anfragen",
+      "storylineHint": "Schlage den GMs eine Storyline, einen Backstage-Angriff oder eine Rivalität vor.",
+      "requestType": "Art der Anfrage",
+      "typeStoryline": "Storyline",
+      "typeBackstageAttack": "Backstage-Angriff",
+      "typeRivalry": "Rivalität",
+      "targets": "Beteiligte Spieler",
+      "noTargets": "Es gibt noch keine anderen Spieler zur Auswahl.",
+      "description": "Beschreibung",
+      "descriptionPlaceholder": "Beschreibe deine Idee...",
+      "storylineSubmit": "Anfrage absenden",
+      "storylineSubmitted": "Storyline-Anfrage abgeschickt.",
+      "storylineFailed": "Die Storyline-Anfrage konnte nicht abgeschickt werden.",
+      "myRequests": "Meine Anfragen",
+      "versus": "gegen {{names}}",
+      "gmNote": "Notiz vom GM: {{note}}",
+      "status": {
+        "pending": "Offen",
+        "approved": "Genehmigt",
+        "rejected": "Abgelehnt",
+        "acknowledged": "Angenommen",
+        "declined": "Abgelehnt"
+      }
+    },
+    "videos": {
+      "title": "Meine Videos",
+      "submissions": "Meine Einreichungen ({{count}})",
+      "submitted": "Video eingereicht. Ein Admin prüft es vor der Veröffentlichung.",
+      "notPermittedTitle": "Video-Uploads sind nicht freigeschaltet",
+      "notPermitted": "Bitte einen Admin, Video-Uploads für dein Wrestler-Profil freizuschalten.",
+      "emptyTitle": "Noch keine Videos",
+      "emptyBody": "Videos, die du einreichst, erscheinen hier."
+    }
+  },
+  "adminRoster": {
+    "dismiss": "Ausblenden",
+    "learnMore": "Mehr erfahren",
+    "of": "von",
+    "hidden": {
+      "badge": "Ausgeblendet",
+      "hint": "Kein Wrestler zugewiesen, daher ist dieser Spieler auf öffentlichen Seiten ausgeblendet"
+    },
+    "searchableSelect": {
+      "clear": "Auswahl löschen",
+      "noMatches": "Keine Treffer"
+    },
+    "schedule": {
+      "loadError": "Daten konnten nicht geladen werden",
+      "filterByDivision": "Nach Division filtern",
+      "allDivisions": "Alle Divisionen",
+      "guide": "Planungsanleitung öffnen",
+      "sectionMatch": "Kampf",
+      "championshipMatch": "Titelkampf",
+      "championship": "Titel",
+      "selectChampionship": "Titel auswählen",
+      "sectionPlacement": "Einordnung",
+      "season": "Saison",
+      "noSeason": "Keine Saison (Showkampf)",
+      "seasonHint": "Ergebnisse zählen für die Tabelle der gewählten Saison",
+      "tournament": "Turnier (optional)",
+      "sectionCompetitors": "Teilnehmer",
+      "scheduling": "Wird geplant...",
+      "checkIn": {
+        "available": "Verfügbar",
+        "tentative": "Unter Vorbehalt",
+        "noResponse": "Keine Antwort",
+        "unavailable": "Nicht verfügbar"
+      },
+      "seasonsRequired": "Das Ansetzen ist pausiert, bis die Saisons geladen sind, damit das Match nicht aus der aktiven Saison fällt."
+    },
+    "standalone": {
+      "loadError": "Kämpfe konnten nicht geladen werden",
+      "deleteChampionship": "Diesen {{format}}-TITELKAMPF löschen? Dies kann nicht rückgängig gemacht werden.",
+      "deleteTournament": "Diesen {{format}}-TURNIERKAMPF löschen? Dies kann nicht rückgängig gemacht werden.",
+      "deleteMatch": "Diesen {{format}}-Kampf löschen? Dies kann nicht rückgängig gemacht werden.",
+      "deleteError": "Kampf konnte nicht gelöscht werden",
+      "championship": "Titelkampf",
+      "tournament": "Turnier",
+      "deleteTitle": "Kampf löschen",
+      "openMatch": "Offen für Anmeldungen"
+    },
+    "users": {
+      "loadError": "Daten konnten nicht geladen werden",
+      "divisionError": "Division konnte nicht aktualisiert werden",
+      "wrestlerError": "Wrestler konnte nicht zugewiesen werden",
+      "syncResult": "{{total}} Spieler synchronisiert: {{granted}} sichtbar, {{revoked}} ausgeblendet, {{unchanged}} unverändert",
+      "syncSkipped": "{{count}} übersprungen",
+      "syncError": "Wrestler-Rollen konnten nicht synchronisiert werden",
+      "roleError": "Rolle konnte nicht aktualisiert werden",
+      "statusError": "Benutzerstatus konnte nicht aktualisiert werden",
+      "deleteError": "Benutzer konnte nicht gelöscht werden",
+      "assignedWrestlerFor": "Zugewiesener Wrestler für",
+      "noWrestler": "Kein Wrestler",
+      "divisionFor": "Division für",
+      "user": "Benutzer",
+      "roles": "Rollen",
+      "noRoles": "Keine Rollen",
+      "assignedWrestler": "Zugewiesener Wrestler",
+      "division": "Division",
+      "status": "Status",
+      "disabled": "Deaktiviert",
+      "approveWrestler": "Wrestler bestätigen",
+      "manage": "Verwalten",
+      "title": "Benutzerverwaltung",
+      "syncHint": "Sichtbarkeit aller Spieler anhand ihrer Cognito-Wrestler-Rolle aktualisieren",
+      "syncing": "Wird synchronisiert...",
+      "sync": "Wrestler-Rollen synchronisieren",
+      "refresh": "Aktualisieren",
+      "filterLabel": "Benutzer filtern",
+      "tabAll": "Alle Benutzer",
+      "tabRequests": "Wrestler-Anfragen",
+      "tabWrestlers": "Wrestler",
+      "tabAdmins": "Admins",
+      "tabDisabled": "Deaktiviert",
+      "empty": "Keine Benutzer für diesen Filter gefunden.",
+      "manageHint": "Rollen und Zugriff dieses Kontos ändern.",
+      "makeWrestler": "Zum Wrestler machen",
+      "removeWrestler": "Wrestler-Rolle entfernen",
+      "makeModerator": "Zum Moderator machen",
+      "removeModerator": "Moderator-Rolle entfernen",
+      "makeAdmin": "Zum Admin machen",
+      "removeAdmin": "Admin-Rolle entfernen",
+      "account": "Konto",
+      "disable": "Deaktivieren",
+      "enable": "Aktivieren",
+      "deleteTitle": "Benutzer löschen",
+      "deleteConfirm": "Benutzer „{{username}}“ endgültig löschen? Dies kann nicht rückgängig gemacht werden.",
+      "requestsPending_one": "{{count}} Wrestler-Anfrage wartet auf Bestätigung",
+      "requestsPending_other": "{{count}} Wrestler-Anfragen warten auf Bestätigung"
+    },
+    "players": {
+      "loadError": "Daten konnten nicht geladen werden",
+      "nameRequired": "Der Spielername darf nicht leer sein",
+      "updated": "Spieler erfolgreich aktualisiert!",
+      "created": "Spieler erfolgreich erstellt!",
+      "saveError": "Spieler konnte nicht gespeichert werden",
+      "deleted": "Spieler erfolgreich gelöscht!",
+      "deleteError": "Spieler konnte nicht gelöscht werden",
+      "alignmentFace": "Face",
+      "alignmentHeel": "Heel",
+      "alignmentNeutral": "Neutral",
+      "uploading": "Wird hochgeladen...",
+      "update": "Spieler aktualisieren",
+      "add": "Spieler hinzufügen",
+      "player": "Spieler",
+      "wrestler": "Wrestler",
+      "alternateShort": "Alt",
+      "division": "Division",
+      "record": "Bilanz",
+      "status": "Status",
+      "linkedHint": "Dieser Spieler ist mit einem Benutzerkonto verknüpft",
+      "linked": "Verknüpft",
+      "manualHint": "Dieser Spieler wurde manuell angelegt und ist mit keinem Benutzerkonto verknüpft",
+      "manual": "Manuell",
+      "title": "Spieler verwalten",
+      "subtitle": "Spieler bearbeiten, Divisionen zuweisen und Wrestler aktuell halten.",
+      "all": "Alle Spieler",
+      "showHidden": "Ausgeblendete anzeigen ({{count}})",
+      "search": "Spieler suchen",
+      "filterLabel": "Spieler filtern",
+      "emptyTitle": "Noch keine Spieler",
+      "noMatches": "Keine Spieler für diese Filter gefunden",
+      "editTitle": "Spieler bearbeiten",
+      "addTitle": "Neuen Spieler hinzufügen",
+      "rosterEmpty": "Noch keine Wrestler im Roster. Füge sie hinzu unter",
+      "nameLabel": "Spielername",
+      "psnLabel": "PSN-ID",
+      "psnPlaceholder": "PlayStation-Network-ID",
+      "needsWrestler": "Wrestler fehlt – später zuweisen",
+      "alternateLabel": "Alternativer Wrestler",
+      "alignment": "Gesinnung",
+      "alignmentUnset": "Nicht festgelegt",
+      "allowVideos": "Video-Uploads erlauben (Wrestler kann Entwürfe über /my-videos einreichen)",
+      "imageLabel": "Wrestler-Bild",
+      "imagePreview": "Vorschau",
+      "removeImage": "Bild entfernen",
+      "uploadImage": "Klicken, um ein Bild hochzuladen",
+      "deleteTitle": "Spieler löschen",
+      "deleteConfirm": "{{name}} wirklich löschen? Dies kann nicht rückgängig gemacht werden.",
+      "noDivision": "Keine Division",
+      "keptWrestler": "{{name}} (eigener Name)",
+      "clearWarning": "Beim Speichern wird dieser Wrestler entfernt und der Spieler auf öffentlichen Seiten ausgeblendet."
+    },
+    "wrestlers": {
+      "loadError": "Wrestler konnten nicht geladen werden",
+      "nameRequired": "Name ist erforderlich",
+      "capRange": "Das Overall-Limit muss eine ganze Zahl zwischen {{min}} und {{max}} sein",
+      "updated": "Wrestler erfolgreich aktualisiert!",
+      "created": "Wrestler erfolgreich erstellt!",
+      "saveError": "Wrestler konnte nicht gespeichert werden",
+      "deleted": "Wrestler erfolgreich gelöscht!",
+      "released": "Wrestler erfolgreich freigegeben!",
+      "deleteError": "Wrestler konnte nicht gelöscht werden",
+      "releaseError": "Wrestler konnte nicht freigegeben werden",
+      "importError": "Wrestler konnten nicht importiert werden",
+      "name": "Name",
+      "promotion": "Promotion",
+      "overallCap": "Overall-Limit",
+      "status": "Status",
+      "inUse": "Vergeben",
+      "available": "Verfügbar",
+      "assignedTo": "Zugewiesen an",
+      "releaseHint": "Als verfügbar markieren und von jedem Spieler entfernen. Ein Spieler ohne Wrestler bleibt ausgeblendet, bis er einen neuen erhält.",
+      "release": "Freigeben",
+      "deleteBlocked": "Ein vergebener Wrestler kann nicht gelöscht werden. Zuerst freigeben.",
+      "deleteHint": "Wrestler löschen",
+      "importRow": "Zeile {{row}}",
+      "create": "Wrestler erstellen",
+      "importOpen": "Aus Datei importieren",
+      "all": "Alle Wrestler",
+      "filterPromotion": "Nach Promotion filtern",
+      "allPromotions": "Alle Promotions",
+      "onlyAvailable": "Nur verfügbare anzeigen",
+      "noMatches": "Keine Wrestler für die aktuellen Filter gefunden.",
+      "editTitle": "Wrestler bearbeiten",
+      "createTitle": "Neuen Wrestler erstellen",
+      "update": "Wrestler aktualisieren",
+      "namePlaceholder": "z. B. Cody Rhodes",
+      "importTitle": "Wrestler importieren",
+      "importHelp": "Lade eine .json- oder .csv-Datei hoch. CSV braucht eine Kopfzeile mit promotion, name, overallCap. JSON kann ein Array oder ein Objekt mit einem wrestlers-Array sein.",
+      "importFile": "Datei",
+      "parseErrors": "Fehler beim Einlesen",
+      "importResult": "Importergebnis",
+      "importCreated": "Erstellt",
+      "importSkipped": "Übersprungen",
+      "releaseTitle": "Wrestler freigeben",
+      "deleteTitle": "Wrestler löschen",
+      "releaseConfirm": "„{{name}}“ freigeben? Der Wrestler wird als verfügbar markiert und von jedem Spieler entfernt. Ein Spieler ohne Wrestler bleibt ausgeblendet, bis er einen neuen erhält.",
+      "deleteConfirm": "Diesen Wrestler wirklich löschen?",
+      "title": "Wrestler verwalten",
+      "importSubmit_one": "{{count}} Wrestler importieren",
+      "importSubmit_other": "{{count}} Wrestler importieren",
+      "importPreview_one": "Vorschau ({{count}} gültige Zeile)",
+      "importPreview_other": "Vorschau ({{count}} gültige Zeilen)",
+      "importMoreRows_one": "… und {{count}} weitere Zeile.",
+      "importMoreRows_other": "… und {{count}} weitere Zeilen.",
+      "importMoreErrors_one": "… und {{count}} weiterer Fehler",
+      "importMoreErrors_other": "… und {{count}} weitere Fehler"
+    },
+    "overalls": {
+      "loadError": "Overalls konnten nicht geladen werden"
+    },
+    "divisions": {
+      "loadError": "Divisionen konnten nicht geladen werden",
+      "updated": "Division erfolgreich aktualisiert!",
+      "created": "Division erfolgreich erstellt!",
+      "saveError": "Division konnte nicht gespeichert werden",
+      "deleted": "Division erfolgreich gelöscht!",
+      "deleteError": "Division konnte nicht gelöscht werden",
+      "nameColumn": "Name",
+      "descriptionColumn": "Beschreibung",
+      "title": "Divisionen verwalten",
+      "create": "Division erstellen",
+      "all": "Alle Divisionen",
+      "emptyTitle": "Noch keine Divisionen",
+      "emptyBody": "Erstelle deine erste Division, um Spieler zu gruppieren.",
+      "editTitle": "Division bearbeiten",
+      "createTitle": "Neue Division erstellen",
+      "update": "Division aktualisieren",
+      "nameLabel": "Divisionsname",
+      "namePlaceholder": "z. B. Heavyweight, Cruiserweight, Main Event",
+      "descriptionLabel": "Beschreibung (optional)",
+      "descriptionPlaceholder": "Kurze Beschreibung dieser Division",
+      "deleteTitle": "Division löschen",
+      "deleteConfirm": "Diese Division wirklich löschen?"
+    },
+    "transfers": {
+      "loadError": "Wechselanfragen konnten nicht geladen werden",
+      "reviewError": "Anfrage konnte nicht bearbeitet werden",
+      "to": "nach",
+      "player": "Spieler",
+      "move": "Wechsel",
+      "status": "Status",
+      "reviewedBy": "Geprüft von",
+      "note": "Notiz",
+      "date": "Datum",
+      "noPending": "Keine offenen Wechselanfragen.",
+      "noteFor": "Prüfnotiz für {{name}}",
+      "notePlaceholder": "Optionale Notiz...",
+      "approve": "Genehmigen",
+      "reject": "Ablehnen",
+      "title": "Divisionswechsel-Anfragen",
+      "pending": "Offen",
+      "history": "Verlauf",
+      "noHistory": "Noch keine bearbeiteten Wechselanfragen.",
+      "statuses": {
+        "pending": "Offen",
+        "approved": "Genehmigt",
+        "rejected": "Abgelehnt"
+      },
+      "deletedDivision": "Gelöschte Division",
+      "staffReviewer": "Liga-Team"
+    },
+    "tagTeams": {
+      "loadError": "Tag Teams konnten nicht geladen werden",
+      "deleted": "Gelöscht",
+      "deleteError": "Tag Team konnte nicht gelöscht werden",
+      "name": "Name",
+      "player1": "Spieler 1",
+      "player2": "Spieler 2",
+      "statusColumn": "Status",
+      "record": "S/N/U",
+      "created": "Erstellt",
+      "approved": "Genehmigt",
+      "approveError": "Tag Team konnte nicht genehmigt werden",
+      "approve": "Genehmigen",
+      "rejected": "Abgelehnt",
+      "rejectError": "Tag Team konnte nicht abgelehnt werden",
+      "reject": "Ablehnen",
+      "dissolved": "Aufgelöst",
+      "dissolveError": "Tag Team konnte nicht aufgelöst werden",
+      "dissolve": "Auflösen",
+      "title": "Tag Teams verwalten",
+      "filterByStatus": "Nach Status filtern",
+      "empty": "Keine Tag Teams gefunden",
+      "deleteTitle": "Tag Team löschen",
+      "deleteConfirm": "„{{name}}“ löschen? Dies kann nicht rückgängig gemacht werden.",
+      "status": {
+        "pending_partner": "Wartet auf Partner",
+        "pending_admin": "Wartet auf Admin",
+        "active": "Aktiv",
+        "dissolved": "Aufgelöst"
+      },
+      "count_one": "{{count}} Tag Team",
+      "count_other": "{{count}} Tag Teams",
+      "playerMissing": "Ehemaliges Mitglied",
+      "dissolveTitle": "Tag Team auflösen",
+      "dissolveConfirm": "„{{name}}“ auflösen? Dies kann nicht rückgängig gemacht werden."
+    },
+    "factions": {
+      "loadError": "Fraktionen konnten nicht geladen werden",
+      "approved": "Genehmigt",
+      "approveError": "Fraktion konnte nicht genehmigt werden",
+      "rejected": "Abgelehnt",
+      "rejectError": "Fraktion konnte nicht abgelehnt werden",
+      "disbanded": "Aufgelöst",
+      "disbandError": "Fraktion konnte nicht aufgelöst werden",
+      "deleted": "Gelöscht",
+      "deleteError": "Fraktion konnte nicht gelöscht werden",
+      "reactivated": "Reaktiviert: {{name}} ({{restored}} wiederhergestellt, {{skipped}} übersprungen)",
+      "reactivateError": "Fraktion konnte nicht reaktiviert werden",
+      "name": "Name",
+      "members": "Mitglieder",
+      "statusColumn": "Status",
+      "record": "S/N/U",
+      "created": "Erstellt",
+      "approve": "Genehmigen",
+      "reject": "Ablehnen",
+      "disband": "Auflösen",
+      "reactivate": "Reaktivieren",
+      "title": "Fraktionen verwalten",
+      "filterByStatus": "Nach Status filtern",
+      "empty": "Keine Fraktionen gefunden",
+      "reactivateTitle": "Fraktion reaktivieren",
+      "deleteTitle": "Fraktion löschen",
+      "deleteConfirm": "„{{name}}“ löschen? Dies kann nicht rückgängig gemacht werden.",
+      "status": {
+        "pending": "Offen",
+        "approved": "Genehmigt",
+        "active": "Aktiv",
+        "disbanded": "Aufgelöst"
+      },
+      "count_one": "{{count}} Fraktion",
+      "count_other": "{{count}} Fraktionen",
+      "disbandTitle": "Fraktion auflösen",
+      "disbandConfirm": "„{{name}}“ auflösen? Bei einer späteren Reaktivierung werden Mitglieder übersprungen, die einer anderen Fraktion beigetreten sind.",
+      "reactivateConfirm": "„{{name}}“ reaktivieren? Mitglieder, die inzwischen einer anderen Fraktion beigetreten sind, werden übersprungen."
+    },
+    "tournament": {
+      "loadError": "Spieler konnten nicht geladen werden",
+      "minParticipants": "Bitte wählen Sie mindestens 2 Teilnehmer aus",
+      "minFour": "K.-o.-Turniere brauchen mindestens 4 Teilnehmer",
+      "powerOfTwo": "K.-o.-Turniere brauchen eine Teilnehmerzahl als Zweierpotenz (4, 8, 16, ...)",
+      "nameRequired": "Der Turniername darf nicht leer sein",
+      "created": "Turnier erfolgreich erstellt!",
+      "createError": "Turnier konnte nicht erstellt werden",
+      "title": "Turnier erstellen",
+      "name": "Turniername",
+      "namePlaceholder": "King of the Ring 2024",
+      "type": "Turnierart",
+      "singleElimination": "K.-o.-System",
+      "roundRobin": "Jeder gegen jeden (G1-Climax-Stil)",
+      "singleEliminationHint": "Turnier mit Turnierbaum. Mindestens 4 Teilnehmer erforderlich.",
+      "roundRobinHint": "Alle treten gegeneinander an. 2 Punkte für einen Sieg, 1 für ein Unentschieden.",
+      "participants": "Teilnehmer",
+      "selected": "Ausgewählt",
+      "seedTitle": "Setzliste / Paarungsreihenfolge",
+      "seedHint": "Diese Reihenfolge bestimmt die Paarungen der ersten Runde (1 gegen 2, 3 gegen 4 usw.).",
+      "seed": "Setzplatz",
+      "moveUp": "{{name}} nach oben",
+      "moveDown": "{{name}} nach unten",
+      "creating": "Wird erstellt..."
+    },
+    "sources": {
+      "failed": "Konnte nicht geladen werden: {{sources}}.",
+      "championships": "Titel",
+      "companies": "Unternehmen",
+      "divisions": "Divisionen",
+      "events": "Events",
+      "matches": "Matches",
+      "matchTypes": "Match-Formate",
+      "players": "Spieler",
+      "seasons": "Saisons",
+      "stipulations": "Stipulations",
+      "tagTeams": "Tag Teams",
+      "tournaments": "Turniere",
+      "users": "Benutzer",
+      "wrestlers": "Wrestler"
+    }
+  },
+  "adminContent": {
+    "announcements": {
+      "gmWizard": "GM-Assistent"
+    },
+    "awards": {
+      "createFailed": "Auszeichnung konnte nicht erstellt werden",
+      "deleteFailed": "Auszeichnung konnte nicht gelöscht werden",
+      "noSeasonText": "Auszeichnungen gehören zu einer Saison. Erstelle zuerst eine Saison und komm dann hierher zurück.",
+      "noSeasonTitle": "Keine Saison ausgewählt"
+    },
+    "callOuts": {
+      "cancelFailed": "Herausforderung konnte nicht abgebrochen werden",
+      "cancelled": "Abgebrochen: {{matchup}}",
+      "clearFailed": "Erledigte Herausforderungen konnten nicht gelöscht werden",
+      "deleteFailed": "Herausforderung konnte nicht gelöscht werden",
+      "emptyText": "Herausforderungen zwischen Wrestlern erscheinen hier.",
+      "emptyTitle": "Keine Call-outs vorhanden",
+      "expireTitle": "{{matchup}} ablaufen lassen?",
+      "expireConfirm": "Dies kann nicht rückgängig gemacht werden."
+    },
+    "championships": {
+      "activate": "Aktivieren",
+      "all": "Alle Titel",
+      "assign": "Champion zuweisen",
+      "assignFailed": "Champion konnte nicht zugewiesen werden",
+      "assignHint": "Kröne einen Champion direkt ohne Match. Die aktuelle Regentschaft (falls vorhanden) wird beendet und die neue in der Titelhistorie erfasst.",
+      "assigned": "Champion erfolgreich zugewiesen!",
+      "champion": "Champion",
+      "champion1": "Champion 1",
+      "champion2": "Champion 2",
+      "championship": "Titel",
+      "create": "Titel erstellen",
+      "createNew": "Neuen Titel erstellen",
+      "created": "Titel erfolgreich erstellt!",
+      "deactivate": "Deaktivieren",
+      "deactivateText": "Der Titel steht dann nicht mehr für neue Matches oder Herausforderungen zur Verfügung, seine Historie bleibt aber sichtbar.",
+      "deactivateTitle": "{{name}} deaktivieren?",
+      "deactivated": "Titel deaktiviert.",
+      "deleteFailed": "Titel konnte nicht gelöscht werden",
+      "deleteText": "Dabei wird auch die gesamte Titelhistorie gelöscht. Das kann nicht rückgängig gemacht werden.",
+      "deleted": "Titel erfolgreich gelöscht!",
+      "differentPlayers": "Die Tag-Team-Champions müssen zwei verschiedene Spieler sein",
+      "division": "Division",
+      "divisionField": "Division (beschränkt Herausforderer auf diese Division)",
+      "edit": "Titel bearbeiten",
+      "emptyText": "Erstelle deinen ersten Titel.",
+      "emptyTitle": "Noch keine Titel",
+      "image": "Bild des Titelgürtels",
+      "name": "Titelname",
+      "namePlaceholder": "World Heavyweight Championship",
+      "nameRequired": "Der Titelname darf nicht leer sein",
+      "newChampion": "Neuer Champion",
+      "noDivision": "Keine Division (für alle offen)",
+      "reactivated": "Titel reaktiviert.",
+      "saveFailed": "Titel konnte nicht gespeichert werden",
+      "selectBoth": "Wähle beide Tag-Team-Champions aus",
+      "selectOne": "Wähle einen Champion aus",
+      "statusFailed": "Titelstatus konnte nicht aktualisiert werden",
+      "title": "Titel verwalten",
+      "type": "Typ",
+      "update": "Titel aktualisieren",
+      "updated": "Titel erfolgreich aktualisiert!",
+      "vacate": "Vakant setzen",
+      "vacateFailed": "Titel konnte nicht vakant gesetzt werden",
+      "vacateText": "Dem aktuellen Champion wird der Titel aberkannt.",
+      "vacateTitle": "{{name}} vakant setzen?",
+      "vacated": "Titel erfolgreich vakant gesetzt!"
+    },
+    "companies": {
+      "abbreviationPlaceholder": "z. B. WWE, AEW",
+      "created": "Unternehmen erstellt",
+      "deleted": "Unternehmen gelöscht",
+      "descriptionPlaceholder": "Kurze Beschreibung dieses Unternehmens",
+      "namePlaceholder": "z. B. WWE, AEW, NJPW",
+      "saveFailed": "Unternehmen konnte nicht gespeichert werden",
+      "updated": "Unternehmen aktualisiert"
+    },
+    "contenders": {
+      "applyFailed": "Überschreibung konnte nicht angewendet werden",
+      "player": "Spieler",
+      "removeFailed": "Überschreibung konnte nicht entfernt werden",
+      "setBy": "Gesetzt von"
+    },
+    "created": "Erstellt",
+    "danger": {
+      "clearAll": "Alle Daten löschen",
+      "clearFailed": "Daten konnten nicht gelöscht werden",
+      "clearIntro": "Diese Aktion löscht dauerhaft alle Daten aus dem System:",
+      "clearTitle": "Gefahrenzone - Alle Daten löschen",
+      "clearWarning": "Diese Aktion kann NICHT rückgängig gemacht werden. Exportiere vorher alle Daten, die du behalten möchtest.",
+      "cleared": "Alle Daten wurden erfolgreich gelöscht!",
+      "counts": {
+        "championshipHistory": "Titelhistorie",
+        "championships": "Titel",
+        "divisions": "Divisionen",
+        "matchRatings": "Match-Bewertungen",
+        "matches": "Matches",
+        "players": "Spieler",
+        "rivalries": "Rivalitäten",
+        "rivalryMessages": "Rivalitäts-Nachrichten",
+        "rivalryNotes": "Rivalitäts-Notizen",
+        "seasonStandings": "Saisontabellen",
+        "seasons": "Saisons",
+        "tournaments": "Turniere"
+      },
+      "createdItems": "Erstellte Einträge:",
+      "deleted": {
+        "championships": "Alle Titel und ihre Historie",
+        "divisions": "Alle Divisionen",
+        "matches": "Alle Matches und Ergebnisse",
+        "players": "Alle Spieler (Wrestler) und ihre Bilanzen",
+        "ratings": "Alle von Nutzern abgegebenen Match-Bewertungen",
+        "rivalries": "Alle Rivalitäten (einschließlich Promos, Nachrichten, Notizen und Heat)",
+        "seasons": "Alle Saisons und Tabellen",
+        "tournaments": "Alle Turniere"
+      },
+      "deletedItems": "Gelöschte Einträge:",
+      "details": {
+        "championships": {
+          "text": "World, Intercontinental, Tag Team und US",
+          "title": "4 Titel"
+        },
+        "divisions": {
+          "text": "z. B. Heavyweight, Cruiserweight, Mid-Card",
+          "title": "3 Divisionen"
+        },
+        "matches": {
+          "text": "Mischung aus abgeschlossenen und angesetzten Matches",
+          "title": "12 Matches"
+        },
+        "players": {
+          "text": "Mit zufälligen Siegen und Niederlagen und zugewiesenen Wrestlern",
+          "title": "12 Spieler"
+        },
+        "ratings": {
+          "text": "Sternebewertungen abgeschlossener Matches, aus denen die Rivalitäts-Heat-Werte neu berechnet werden",
+          "title": "Match-Bewertungen"
+        },
+        "rivalries": {
+          "text": "Beispiel-Storylines über alle Heat-Stufen, mit verknüpften Promos, Nachrichten und Notizen",
+          "title": "3 Rivalitäten"
+        },
+        "season": {
+          "text": "Mit Tabellenständen für alle Spieler",
+          "title": "1 aktive Saison"
+        },
+        "tournaments": {
+          "text": "K.-o.-System und Jeder gegen Jeden",
+          "title": "2 Turniere"
+        }
+      },
+      "errorsHint": "Die Ursache steht in den Backend-Logs. Häufige Gründe: eine fehlende Tabelle in dieser Umgebung, ein abweichendes Schema oder fehlende IAM-Berechtigungen.",
+      "errorsTitle": "Fehler (einige Zeilen konnten nicht verarbeitet werden):",
+      "finalWarning": "Letzte Warnung",
+      "finalWarningText": "Dadurch werden alle Ligadaten dauerhaft gelöscht, darunter Spieler, Matches, Titel, Turniere, Saisons, Divisionen und Tabellen. Das kann nicht rückgängig gemacht werden.",
+      "modules": {
+        "championships": "Titel",
+        "config": "Konfiguration (Website, Stipulationen, Match-Typen)",
+        "contenders": "Herausforderer",
+        "core": "Basis (Divisionen, Spieler, Saisons)",
+        "events": "Events",
+        "matchRatings": "Match-Bewertungen (mit Rivalitäts-Heat-Werten)",
+        "matches": "Matches",
+        "rivalries": "Rivalitäten (mit Beispiel-Promos, Nachrichten, Notizen)",
+        "standings": "Tabellen",
+        "tournaments": "Turniere"
+      },
+      "seedConfirm": "Dadurch werden Beispieldaten erzeugt, darunter Spieler, Divisionen, Saisons, Titel, Matches und Turniere. Vorhandene Daten bleiben erhalten.",
+      "seedConfirmLabel": "Erzeugen",
+      "seedDetails": "Was erzeugt wird (vollständiger Seed)",
+      "seedFailed": "Beispieldaten konnten nicht erzeugt werden",
+      "seedOptions": "Seed-Optionen (optional)",
+      "seedOptionsHint": "Keine Auswahl = alles erzeugen. Abhängigkeiten werden bei Bedarf automatisch ergänzt.",
+      "seedText": "Fülle die Liga schnell mit Beispieldaten für Tests oder Vorführungen.",
+      "seedTitle": "Beispieldaten erzeugen",
+      "seeded": "Beispieldaten wurden erfolgreich erzeugt!",
+      "selectAll": "Alle auswählen",
+      "selectNone": "Keine auswählen",
+      "title": "Gefahrenzone",
+      "typeToConfirm": "Gib {{phrase}} ein, um die Schaltfläche zum Löschen freizugeben:"
+    },
+    "deletePrompt": "{{name}} löschen?",
+    "description": "Beschreibung",
+    "descriptionOptional": "Beschreibung (optional)",
+    "dismiss": "Schließen",
+    "features": {
+      "challenges": {
+        "description": "Herausforderungsbrett für Wrestler: Herausforderungen aussprechen und verwalten",
+        "name": "Herausforderungen"
+      },
+      "contenders": {
+        "description": "Ranglisten der Titelherausforderer und Statusverfolgung",
+        "name": "Herausforderer-Rangliste"
+      },
+      "disable": "{{name}} deaktivieren",
+      "disabled": "Deaktiviert",
+      "enable": "{{name}} aktivieren",
+      "enabled": "Aktiviert",
+      "notifications": {
+        "description": "Ankündigungsbanner und Benachrichtigungsglocke in der App",
+        "name": "Benachrichtigungen"
+      },
+      "promos": {
+        "description": "Promo-Feed, Promo-Threads und Promo-Editor",
+        "name": "Promos"
+      },
+      "rivalries": {
+        "description": "Rivalitäten-Hub, Nachrichten-Threads und Admin-Moderation",
+        "name": "Rivalitäten"
+      },
+      "stables": {
+        "description": "Fraktionen, Tag-Teams, Gruppenwertungen und Einladungssystem",
+        "name": "Fraktionen & Tag-Teams"
+      },
+      "statistics": {
+        "description": "Spielerstatistiken, Direktvergleich, Bestenlisten, Rekorde und Erfolge",
+        "name": "Statistiken"
+      },
+      "subtitle": "Schalte Website-Features ein oder aus. Deaktivierte Features werden aus der Navigation entfernt und sind für Nutzer nicht erreichbar. Daten werden weiterhin erfasst, solange ein Feature deaktiviert ist.",
+      "title": "Feature-Verwaltung",
+      "transfers": {
+        "description": "Anfragen für Divisionstransfers in Spielerprofilen und die Admin-Seite für Transfers",
+        "name": "Divisionstransfers"
+      },
+      "updateFailed": "Feature konnte nicht aktualisiert werden"
+    },
+    "heat": {
+      "loadFailed": "Die gespeicherten Werte konnten nicht geladen werden. Unten werden die Standardwerte angezeigt.",
+      "saveFailed": "Heat-Parameter konnten nicht gespeichert werden"
+    },
+    "imageTooLarge": "Datei zu groß. Die maximale Größe beträgt {{size}} MB.",
+    "invalidImageType": "Ungültiger Dateityp. Nur {{types}}-Bilder sind erlaubt.",
+    "matchConfig": {
+      "createMatchType": "Match-Typ erstellen",
+      "createStipulation": "Stipulation erstellen",
+      "editMatchType": "Match-Typ bearbeiten",
+      "editStipulation": "Stipulation bearbeiten",
+      "matchTypeCreated": "Match-Typ erfolgreich erstellt!",
+      "matchTypeDeleteFailed": "Match-Typ konnte nicht gelöscht werden",
+      "matchTypeDeleted": "Match-Typ erfolgreich gelöscht!",
+      "matchTypeDescription": "Kurze Beschreibung dieses Match-Typs",
+      "matchTypeName": "Name des Match-Typs",
+      "matchTypePlaceholder": "z. B. Singles, Tag Team, Triple Threat, Fatal 4-Way",
+      "matchTypeSaveFailed": "Match-Typ konnte nicht gespeichert werden",
+      "matchTypeUpdated": "Match-Typ erfolgreich aktualisiert!",
+      "matchTypes": "Match-Typen",
+      "matchTypesLoadFailed": "Match-Typen konnten nicht geladen werden",
+      "noMatchTypes": "Noch keine Match-Typen",
+      "noMatchTypesText": "Erstelle deinen ersten Match-Typ.",
+      "noStipulations": "Noch keine Stipulationen",
+      "noStipulationsText": "Erstelle deine erste Stipulation.",
+      "stipulationCreated": "Stipulation erfolgreich erstellt!",
+      "stipulationDeleteFailed": "Stipulation konnte nicht gelöscht werden",
+      "stipulationDeleted": "Stipulation erfolgreich gelöscht!",
+      "stipulationDescription": "Kurze Beschreibung dieser Stipulation",
+      "stipulationName": "Name der Stipulation",
+      "stipulationPlaceholder": "z. B. Ladder Match, Steel Cage, Hell in a Cell",
+      "stipulationSaveFailed": "Stipulation konnte nicht gespeichert werden",
+      "stipulationUpdated": "Stipulation erfolgreich aktualisiert!",
+      "stipulations": "Stipulationen",
+      "stipulationsLoadFailed": "Stipulationen konnten nicht geladen werden",
+      "title": "Match-Konfiguration",
+      "updateMatchType": "Match-Typ aktualisieren",
+      "updateStipulation": "Stipulation aktualisieren"
+    },
+    "panel": {
+      "accessRequired": "Admin-Zugriff erforderlich",
+      "accessRequiredText": "Du brauchst Admin-Rechte, um auf diesen Bereich zuzugreifen.",
+      "fullAccessRequired": "Voller Admin-Zugriff erforderlich",
+      "featureOff": "Diese Funktion ist ausgeschaltet",
+      "featureOffText": "Ein Admin kann sie in der Feature-Verwaltung wieder einschalten.",
+      "fullAccessRequiredText": "Für diese Aktion sind volle Admin-Rechte erforderlich.",
+      "helpPrefix": "Neu in der Administration?",
+      "quickstart": "Admin-Schnellstart",
+      "weeklyWorkflow": "Typischer Wochenablauf"
+    },
+    "promos": {
+      "allTypes": "Alle Typen",
+      "anyStatus": "Beliebiger Status",
+      "clearFailed": "Ausgeblendete Promos konnten nicht gelöscht werden",
+      "deleteFailed": "Promo konnte nicht gelöscht werden",
+      "emptyText": "Promos, die zu diesen Filtern passen, erscheinen hier.",
+      "emptyTitle": "Keine Promos vorhanden",
+      "filterByStatus": "Nach Status filtern",
+      "hidden": "Promo von {{name}} ausgeblendet",
+      "pinned": "Promo von {{name}} angeheftet",
+      "statusArchived": "Archiviert",
+      "statusHidden": "Ausgeblendet",
+      "statusPinned": "Angeheftet",
+      "unhidden": "Promo von {{name}} eingeblendet",
+      "unpinned": "Promo von {{name}} gelöst",
+      "updateFailed": "Promo konnte nicht aktualisiert werden"
+    },
+    "removeImage": "Bild entfernen",
+    "seasons": {
+      "activeSeason": "Aktive Saison",
+      "all": "Alle Saisons",
+      "create": "Saison erstellen",
+      "createFailed": "Saison konnte nicht erstellt werden",
+      "createNew": "Neue Saison erstellen",
+      "created": "Saison erfolgreich erstellt!",
+      "deleteFailed": "Saison konnte nicht gelöscht werden",
+      "deleteText": "Dabei werden auch alle Tabellenstände dieser Saison gelöscht. Das kann nicht rückgängig gemacht werden.",
+      "deleteTitle": "{{name}} löschen?",
+      "deleted": "Saison erfolgreich gelöscht!",
+      "emptyText": "Erstelle eine Saison, um Saisontabellen zu führen.",
+      "emptyTitle": "Noch keine Saisons",
+      "end": "Saison beenden",
+      "endDate": "Enddatum",
+      "endDateOptional": "Enddatum (optional)",
+      "endFailed": "Saison konnte nicht beendet werden",
+      "endText": "Die Saison wird damit als abgeschlossen markiert.",
+      "endTitle": "{{name}} beenden?",
+      "ended": "Saison erfolgreich beendet!",
+      "name": "Saisonname",
+      "namePlaceholder": "z. B. Saison 1, Frühjahr 2024",
+      "required": "Saisonname und Startdatum sind erforderlich",
+      "startDate": "Startdatum",
+      "started": "Gestartet am {{date}}",
+      "title": "Saisons verwalten"
+    },
+    "selectPlayer": "Spieler auswählen",
+    "sessionExpired": "Sitzung abgelaufen. Bitte melde dich erneut an, um Bilder hochzuladen.",
+    "shows": {
+      "created": "Show erstellt",
+      "deleteFailed": "Show konnte nicht gelöscht werden",
+      "deleted": "Show gelöscht",
+      "descriptionPlaceholder": "Kurze Beschreibung dieser Show",
+      "namePlaceholder": "z. B. Monday Night Raw, Dynamite",
+      "saveFailed": "Show konnte nicht gespeichert werden",
+      "updated": "Show aktualisiert"
+    },
+    "status": "Status",
+    "storylines": {
+      "acknowledge": "Bestätigen",
+      "acknowledged": "Bestätigt",
+      "decline": "Ablehnen",
+      "declined": "Abgelehnt",
+      "gmNote": "GM-Notiz",
+      "history": "Verlauf",
+      "noHistory": "Noch keine bearbeiteten Storyline-Anfragen.",
+      "noPending": "Keine offenen Storyline-Anfragen.",
+      "notePlaceholder": "GM-Notiz (zum Ablehnen erforderlich)...",
+      "noteRequired": "Beim Ablehnen einer Storyline-Anfrage ist eine Notiz erforderlich.",
+      "pending": "Offen",
+      "requester": "Anfragender",
+      "review": "Prüfung",
+      "reviewFailed": "Anfrage konnte nicht bearbeitet werden",
+      "targets": "Ziele",
+      "title": "Storyline-Anfragen",
+      "typeBackstageAttack": "Backstage-Angriff",
+      "typeRivalry": "Rivalität",
+      "typeStoryline": "Storyline",
+      "staffReviewer": "Liga-Team"
+    },
+    "uploadFailed": "Das Bild konnte nicht hochgeladen werden. Bitte versuche es erneut.",
+    "uploadNetworkError": "Netzwerkfehler beim Hochladen. Bitte prüfe deine Internetverbindung und versuche es erneut.",
+    "uploadPrepareFailed": "Der Bild-Upload konnte nicht vorbereitet werden. Bitte prüfe deine Verbindung und versuche es erneut.",
+    "uploadStorageFailed": "Das Bild konnte nicht gespeichert werden. Bitte versuche es erneut oder verwende ein anderes Bild."
+  },
+  "matchFormats": {
+    "singles": "Einzel",
+    "tagTeam": "Tag Team",
+    "tripleThreat": "Triple Threat",
+    "fatalFourWay": "Fatal Four Way",
+    "sixPack": "6-Pack Challenge",
+    "battleRoyal": "Battle Royal",
+    "royalRumble": "Royal Rumble"
+  },
+  "discipline": {
+    "status": {
+      "clear": "Keine aktiven Strikes",
+      "warned": "Verwarnung",
+      "signupBlocked": "Für Anmeldungen gesperrt",
+      "cooldown": "In Abklingzeit",
+      "deactivated": "Deaktiviert"
+    },
+    "errors": {
+      "SIGNUP_BLOCKED": "Du kannst dich erst wieder ab {{date}} anmelden.",
+      "SIGNUP_BLOCKED_NO_DATE": "Wegen eines Strikes auf deinem Konto kannst du dich gerade nicht anmelden.",
+      "PLAYER_DEACTIVATED": "Dieses Konto ist deaktiviert, daher ist das nicht möglich. Ein Admin kann es unter „Spieler verwalten“ reaktivieren.",
+      "PLAYER_UNAVAILABLE": "Dieser Spieler ist gerade nicht verfügbar.",
+      "ALREADY_DEACTIVATED": "Dieser Spieler ist bereits deaktiviert.",
+      "NOT_DEACTIVATED": "Dieser Spieler ist nicht deaktiviert.",
+      "STAFF_PROTECTED": "Admins und Moderatoren können keine Strikes erhalten. Entferne zuerst die Rolle.",
+      "DISCIPLINE_CONFLICT": "Der Datensatz dieses Spielers hat sich geändert, während er geöffnet war. Prüfe den aktuellen Stand unten und versuche es erneut.",
+      "STRIKE_NOT_ACTIVE": "Dieser Strike ist nicht mehr aktiv, es gibt also nichts zu entfernen.",
+      "DISCIPLINE_ACTIVE": "Dieser Spieler hat aktive Strikes und kann erst gelöscht werden, wenn diese abgelaufen sind.",
+      "PSN_ID_UNAVAILABLE": "Diese PSN ID kann nicht verwendet werden. Prüfe sie und versuche eine andere.",
+      "PSN_ID_LOCKED": "Du kannst deine PSN ID nicht ändern, solange du für Anmeldungen gesperrt bist."
+    },
+    "countdown": {
+      "days_one": "{{count}} Tag",
+      "days_other": "{{count}} Tagen",
+      "hours_one": "{{count}} Stunde",
+      "hours_other": "{{count}} Stunden",
+      "minutes_one": "{{count}} Minute",
+      "minutes_other": "{{count}} Minuten",
+      "seconds_one": "{{count}} Sekunde",
+      "seconds_other": "{{count}} Sekunden"
+    },
+    "notice": {
+      "title": "Strikes",
+      "suspendedTitle": "Für Anmeldungen gesperrt.",
+      "liftsIn": "Endet in {{time}}.",
+      "signupBlockedUntil": "Wieder möglich ab {{date}}.",
+      "cooldownTitle": "Strike-Abklingzeit",
+      "fallsOffIn_one": "Läuft ab in {{time}}",
+      "fallsOffIn_other": "Laufen ab in {{time}}",
+      "cooldownEnds": "Am {{date}}",
+      "strikeNumber": "Strike {{number}}",
+      "strikeReason": "Grund: {{reason}}",
+      "deactivated": "Dein Konto wurde deaktiviert. Bitte wende dich an einen Administrator.",
+      "learnMore": "So funktionieren Strikes"
+    },
+    "admin": {
+      "open": "Disziplin",
+      "title": "Disziplin: {{name}}",
+      "statusHeading": "Aktueller Status",
+      "until": "Bis {{date}}",
+      "signupBlockedUntil": "Für Anmeldungen gesperrt bis",
+      "cooldownEnds": "Strikes laufen ab",
+      "deactivatedOn": "Deaktiviert am",
+      "activeStrikes": "Aktive Strikes",
+      "history": "Verlauf",
+      "noHistory": "Dieser Spieler hatte noch nie einen Strike.",
+      "issueHeading": "Strike vergeben",
+      "outcome": {
+        "warned": "Das ist der erste Strike: eine Verwarnung für 7 Tage. Der Spieler kann sich weiter anmelden.",
+        "signup-blocked": "Das sperrt Anmeldungen für 7 Tage und setzt die Abklingzeit auf 14 Tage ab jetzt.",
+        "deactivated": "Dieser Strike deaktiviert das Konto. Der Spieler kann sich nicht einloggen, nicht anmelden und erscheint nicht in der Tabelle, bis ein Admin ihn reaktiviert."
+      },
+      "issueWarning": "Verwarnung vergeben",
+      "issueSecond": "Zweiten Strike vergeben",
+      "deactivateAccount": "Konto deaktivieren",
+      "remove": "Entfernen",
+      "confirmRemove": "Strike entfernen",
+      "removeReason": "Warum wird dieser Strike entfernt?",
+      "reactivate": "Reaktivieren",
+      "reactivateReason": "Warum wird dieser Spieler reaktiviert?",
+      "restorePriorStrikes": "Frühere Strikes wiederherstellen (der letzte Strike war ein Fehler)",
+      "reason": "Grund (der Spieler sieht ihn)",
+      "reasonHint": "{{min}} bis {{max}} Zeichen.",
+      "staffProtected": "Dieses Konto ist Admin oder Moderator und kann keine Strikes erhalten. Entferne zuerst die Rolle.",
+      "readOnly": "Du kannst diesen Datensatz lesen. Nur ein Admin kann ihn ändern.",
+      "manageUsers": "Benutzerverwaltung öffnen",
+      "accountSyncFailed": "Der Datensatz des Spielers wurde aktualisiert, sein Login aber nicht. Korrigiere das in der Benutzerverwaltung.",
+      "accountMismatch": "Der Login dieses Spielers passt nicht zu seinem Datensatz. Der Datensatz entscheidet über den Zugang, korrigiere also den Login in der Benutzerverwaltung.",
+      "loginAlreadyDisabled": "Der Login war schon vor der Deaktivierung gesperrt und bleibt deshalb gesperrt. Aktiviere ihn bei Bedarf in der Benutzerverwaltung.",
+      "softHoldsFailed": "Das Aufräumen der Herausforderungen wurde nicht abgeschlossen. Der Spieler bleibt gesperrt und aus den Listen ausgeblendet, manches muss aber eventuell von Hand entfernt werden.",
+      "notLinked": "Dieser Spieler hat keinen verknüpften Login, es gibt also kein Konto zum Sperren oder Aktivieren.",
+      "holdingsTitle": "Noch bei diesem Spieler",
+      "holdingsNotChanged": "Nichts davon wird automatisch geändert. Bearbeite jeden Punkt mit den hier verlinkten Werkzeugen.",
+      "holdingsNone": "Dieser Spieler hat keine Titel, Buchungen, angenommenen Herausforderungen oder offenen Turniere.",
+      "holdingTitle": "Titel: {{name}}",
+      "holdingMatch": "{{format}} am {{date}}",
+      "holdingMatchVs": "{{format}} gegen {{opponents}} am {{date}}",
+      "holdingMatchFallback": "Match",
+      "holdingChallenge": "Angenommene Herausforderung mit {{name}}",
+      "holdingTournament": "Turnier: {{name}}",
+      "bookingWarning": "Für Anmeldungen gesperrt: {{names}}. Das Team kann sie trotzdem buchen.",
+      "tournamentForfeitWarning": "Deaktivierter Turnierteilnehmer: {{names}}. Das Match kann gebucht und als Aufgabe gewertet werden, damit das Turnier enden kann.",
+      "confirmDeactivateTitle": "Konto deaktivieren",
+      "confirmDeactivate": "{{name}} deaktivieren? Der Zugang endet sofort. Ein Admin kann das rückgängig machen.",
+      "loadFailed": "Der Disziplin-Datensatz dieses Spielers konnte nicht geladen werden.",
+      "staleDetail": "Dieser Datensatz konnte nicht neu geladen werden und ist eventuell veraltet.",
+      "actionFailed": "Das hat nicht geklappt. Prüfe den Datensatz unten, bevor du es erneut versuchst.",
+      "strikeActive": "Aktiv",
+      "strikeLapsed": "Abgelaufen",
+      "strikeCleared": "Entfernt",
+      "issuedBy": "{{date}}, vergeben von {{name}}",
+      "removedBy": "Entfernt am {{date}} von {{name}}",
+      "clearedByReactivation": "Durch Reaktivierung am {{date}} entfernt von {{name}}",
+      "deactivatedBy": "Deaktiviert am {{date}} von {{name}}",
+      "reactivatedBy": "Reaktiviert am {{date}} von {{name}}",
+      "done": {
+        "strike": "Strike vergeben.",
+        "strikeDeactivated": "Strike vergeben und Konto deaktiviert.",
+        "remove": "Strike entfernt.",
+        "reactivate": "Spieler reaktiviert."
+      }
+    }
+  },
+  "pwa": {
+    "install": {
+      "action": "App installieren",
+      "description": "Öffne League SZN vom Startbildschirm aus, im Vollbild wie eine App.",
+      "iosHint": "Tippe auf Teilen (oder auf ••• und dann Teilen) und dann auf „Zum Home-Bildschirm“."
+    }
+  },
+  "ticker": {
+    "label": "Liga-Ticker",
+    "ariaLabel": "Nachrichtenticker der Liga",
+    "pause": "Ticker anhalten",
+    "resume": "Ticker fortsetzen",
+    "tags": {
+      "live": "Live",
+      "upcoming": "Demnächst",
+      "news": "News"
+    }
+  },
+  "shell": {
+    "status": {
+      "season": "Saison",
+      "nextShow": "Nächste Show",
+      "live": "Live"
+    }
+  },
+  "news": {
+    "eyebrow": "Ligabüro",
+    "title": "News",
+    "subtitle": "Artikel und Ankündigungen aus dem Ligabüro.",
+    "topStory": "Topmeldung",
+    "breaking": "Eilmeldung",
+    "readStory": "Ganze Meldung lesen",
+    "moreStories": "Weitere Meldungen",
+    "backToNews": "Alle News",
+    "loadFailed": "Die News konnten nicht geladen werden. Versuche es gleich noch einmal.",
+    "empty": {
+      "title": "Noch keine News",
+      "description": "Artikel und Ankündigungen erscheinen hier, sobald das Ligabüro sie veröffentlicht."
+    },
+    "notFound": {
+      "title": "Meldung nicht gefunden",
+      "description": "Diese Meldung wurde entfernt oder ist abgelaufen."
     }
   }
 }

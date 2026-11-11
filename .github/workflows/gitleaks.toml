@@ -1,0 +1,12 @@
+# gitleaks configuration, used by ci-checks.yml. Extends the default rules.
+title = "league_szn"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Values that match a rule but are not secrets"
+regexes = [
+  # sessionStorage key name in PresenceContext.tsx
+  '''wwe2k\.presenceEnabled''',
+]

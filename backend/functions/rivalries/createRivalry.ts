@@ -3,6 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, conflict, forbidden, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
+import { firstBookingRefusal } from '../../lib/disciplineGates';
 import type { RivalryHeat, RivalryParticipantRole, WrestlerVariant } from '../../lib/repositories';
 
 interface CreateRivalryBody {
@@ -90,6 +91,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (missing) {
       return badRequest(`Participant not found: ${missing.playerId}`);
     }
+    const bookingBlocked = firstBookingRefusal(playerLookups);
+    if (bookingBlocked) return bookingBlocked;
 
     // Duplicate-active check — keyed off the first participant so the
     // GM gets a 409 if either of these two wrestlers is already in
@@ -112,13 +115,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Pick the recorded requester: the GM's linked player if they have
-    // one, otherwise the first participant. The bookerName field will
-    // hold the GM's display identity separately.
+    // one, otherwise the first participant. bookerName is printed on the
+    // public page, so it is the linked player's name or nothing: never the
+    // Cognito username or email.
     const callerPlayer = auth.sub
       ? await players.findByUserId(auth.sub).catch(() => null)
       : null;
     const requestedBy = callerPlayer?.playerId ?? normalizedParticipants[0].playerId;
-    const bookerName = auth.username || auth.email?.split('@')[0] || '';
+    const bookerName = callerPlayer?.name;
 
     const rivalry = await rivalries.create({
       title: title.trim(),
@@ -140,8 +144,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const activated = await rivalries.update(rivalry.rivalryId, {
           status: 'active',
           startedAt: new Date().toISOString(),
-          moderatedBy: bookerName || 'admin',
-          bookerName: bookerName || undefined,
+          moderatedBy: auth.username || auth.sub || 'admin',
+          bookerName,
         });
         return created(activated);
       } catch {

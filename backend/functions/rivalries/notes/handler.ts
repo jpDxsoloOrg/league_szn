@@ -7,24 +7,24 @@ import { createRouter, type RouteConfig } from '../../../lib/router';
  * Single Lambda for rivalry notes (RIV-05). All routes are authed;
  * role + visibility filtering happens inside the handlers.
  */
-const routes: ReadonlyArray<RouteConfig> = [
+export const routes: ReadonlyArray<RouteConfig> = [
   {
     resource: '/rivalries/{rivalryId}/notes',
     method: 'GET',
     handler: listNotesHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/rivalries/{rivalryId}/notes',
     method: 'POST',
     handler: upsertNoteHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/rivalries/{rivalryId}/notes/{noteId}',
     method: 'DELETE',
     handler: deleteNoteHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
 ];
 

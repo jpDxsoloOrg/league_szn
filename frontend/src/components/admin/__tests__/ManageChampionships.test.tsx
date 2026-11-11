@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
@@ -37,16 +37,13 @@ vi.mock('../../../services/api', () => ({
     getAll: mockGetAllDivisions,
   },
   playersApi: {
-    getAll: mockGetAllPlayers,
+    getAllIncludingHidden: mockGetAllPlayers,
   },
   imagesApi: {
     generateUploadUrl: mockGenerateUploadUrl,
     uploadToS3: mockUploadToS3,
   },
 }));
-
-// Suppress CSS import
-vi.mock('../ManageChampionships.css', () => ({}));
 
 import ManageChampionships from '../ManageChampionships';
 
@@ -100,8 +97,6 @@ function setupDefaultMocks() {
 describe('ManageChampionships', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Default confirm to approve
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   it('renders championship list with champion names and division info', async () => {
@@ -109,9 +104,7 @@ describe('ManageChampionships', () => {
 
     renderManageChampionships();
 
-    await waitFor(() => {
-      expect(screen.getByText('Manage Championships')).toBeInTheDocument();
-    });
+    await screen.findByText('World Heavyweight Championship');
 
     // Championship names
     expect(screen.getByText('World Heavyweight Championship')).toBeInTheDocument();
@@ -121,13 +114,13 @@ describe('ManageChampionships', () => {
     expect(screen.getByText('All Championships (2)')).toBeInTheDocument();
 
     // Champion resolved to player name
-    expect(screen.getByText('Champion: John Cena')).toBeInTheDocument();
+    expect(await screen.findByText('John Cena')).toBeInTheDocument();
     // Vacant for title with no champion
-    expect(screen.getByText('Champion: Vacant')).toBeInTheDocument();
+    expect(screen.getByText('Vacant')).toBeInTheDocument();
 
     // Division resolved
-    expect(screen.getByText('Division: Raw')).toBeInTheDocument();
-    expect(screen.getByText('Division: None')).toBeInTheDocument();
+    expect(screen.getByText('Raw')).toBeInTheDocument();
+    expect(screen.getByText('None')).toBeInTheDocument();
 
     // Types
     expect(screen.getByText('Singles')).toBeInTheDocument();
@@ -156,9 +149,7 @@ describe('ManageChampionships', () => {
 
     renderManageChampionships();
 
-    await waitFor(() => {
-      expect(screen.getByText('Manage Championships')).toBeInTheDocument();
-    });
+    await screen.findByText('World Heavyweight Championship');
 
     // Click "Create Championship" button
     fireEvent.click(screen.getByText('Create Championship'));
@@ -200,16 +191,14 @@ describe('ManageChampionships', () => {
 
     renderManageChampionships();
 
-    await waitFor(() => {
-      expect(screen.getByText('Manage Championships')).toBeInTheDocument();
-    });
+    await screen.findByText('World Heavyweight Championship');
 
     // Click the first Edit button (World Heavyweight Championship)
     const editButtons = screen.getAllByText('Edit');
     fireEvent.click(editButtons[0]);
 
     // Form should appear with edit heading
-    expect(screen.getByText('Edit Championship')).toBeInTheDocument();
+    expect(await screen.findByText('Edit Championship')).toBeInTheDocument();
 
     // Fields pre-populated
     const nameInput = screen.getByLabelText('Championship Name') as HTMLInputElement;
@@ -218,8 +207,8 @@ describe('ManageChampionships', () => {
     const typeSelect = screen.getByLabelText('Type') as HTMLSelectElement;
     expect(typeSelect.value).toBe('singles');
 
-    const divisionSelect = screen.getByLabelText(/Division/) as HTMLSelectElement;
-    expect(divisionSelect.value).toBe('d1');
+    const divisionSelect = await screen.findByLabelText(/Division/) as HTMLSelectElement;
+    await waitFor(() => expect(divisionSelect.value).toBe('d1'));
 
     // Submit button shows "Update Championship"
     expect(screen.getByText('Update Championship')).toBeInTheDocument();
@@ -231,18 +220,16 @@ describe('ManageChampionships', () => {
 
     renderManageChampionships();
 
-    await waitFor(() => {
-      expect(screen.getByText('Manage Championships')).toBeInTheDocument();
-    });
+    await screen.findByText('World Heavyweight Championship');
 
     // Click the first Delete button
     const deleteButtons = screen.getAllByText('Delete');
     fireEvent.click(deleteButtons[0]);
 
-    // Confirm dialog should have been called
-    expect(window.confirm).toHaveBeenCalledWith(
-      expect.stringContaining('World Heavyweight Championship')
-    );
+    // Confirm in the dialog
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('deletes all championship history');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
     await waitFor(() => {
       expect(mockDeleteChampionship).toHaveBeenCalledWith('c1');
@@ -258,15 +245,12 @@ describe('ManageChampionships', () => {
 
     renderManageChampionships();
 
-    await waitFor(() => {
-      expect(screen.getByText('Manage Championships')).toBeInTheDocument();
-    });
+    await screen.findByText('World Heavyweight Championship');
 
     fireEvent.click(screen.getByText('Create Championship'));
 
     // Image upload label and file input
     expect(screen.getByText('Championship Belt Image')).toBeInTheDocument();
-    expect(screen.getByText('Click to upload image')).toBeInTheDocument();
     expect(screen.getByText(/JPEG, PNG, GIF, or WebP/)).toBeInTheDocument();
 
     // File input element
@@ -284,19 +268,14 @@ describe('ManageChampionships', () => {
 
     renderManageChampionships();
 
-    await waitFor(() => {
-      expect(screen.getByText('Manage Championships')).toBeInTheDocument();
-    });
+    await screen.findByText('World Heavyweight Championship');
 
     // Click Vacate button (only appears for championship with a champion)
     fireEvent.click(screen.getByText('Vacate'));
 
-    expect(window.confirm).toHaveBeenCalledWith(
-      expect.stringContaining('World Heavyweight Championship')
-    );
-    expect(window.confirm).toHaveBeenCalledWith(
-      expect.stringContaining('vacate')
-    );
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('stripped of the title');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Vacate' }));
 
     await waitFor(() => {
       expect(mockVacateChampionship).toHaveBeenCalledWith('c1');
@@ -307,22 +286,40 @@ describe('ManageChampionships', () => {
     });
   });
 
+  it('leaves hidden players out of Assign Champion, except the current champion', async () => {
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([
+      ...mockPlayers,
+      { playerId: 'p3', name: 'Reigning Ghost', currentWrestler: 'Needs Wrestler', wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+      { playerId: 'p4', name: 'Other Ghost', currentWrestler: '', wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+    ]);
+    mockGetAllChampionships.mockResolvedValue([{ ...mockChampionships[0], currentChampion: 'p3' }]);
+
+    renderManageChampionships();
+
+    expect(await screen.findByText('Reigning Ghost')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Assign Champion' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('option', { name: 'Reigning Ghost' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('option', { name: 'The Rock' })).toBeInTheDocument();
+    expect(within(dialog).queryByRole('option', { name: 'Other Ghost' })).not.toBeInTheDocument();
+  });
+
   it('shows current champion and division assignment on each card', async () => {
     setupDefaultMocks();
 
     renderManageChampionships();
 
-    await waitFor(() => {
-      expect(screen.getByText('Manage Championships')).toBeInTheDocument();
-    });
+    await screen.findByText('World Heavyweight Championship');
 
-    // First card: champion + division
-    expect(screen.getByText('Champion: John Cena')).toBeInTheDocument();
-    expect(screen.getByText('Division: Raw')).toBeInTheDocument();
+    // First row: champion + division
+    expect(await screen.findByText('John Cena')).toBeInTheDocument();
+    expect(screen.getByText('Raw')).toBeInTheDocument();
 
-    // Second card: vacant + no division
-    expect(screen.getByText('Champion: Vacant')).toBeInTheDocument();
-    expect(screen.getByText('Division: None')).toBeInTheDocument();
+    // Second row: vacant + no division
+    expect(screen.getByText('Vacant')).toBeInTheDocument();
+    expect(screen.getByText('None')).toBeInTheDocument();
 
     // Active status badges
     const activeBadges = screen.getAllByText('Active');

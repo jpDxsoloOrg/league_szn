@@ -1,0 +1,57 @@
+/* Page dressing for the shared Podium on the standings pages. */
+.rank-podium .ui-podium__slot--first .ui-podium__card {
+  /* Ringside Booker: number one is the chosen winner, framed in title gold. */
+  border-color: var(--rim-world);
+  background-image: var(--hatch), var(--gradient-podium-first);
+  box-shadow: none;
+}
+
+.rank-podium .ui-podium__slot--first .ui-podium__subtitle,
+.rank-podium .ui-podium__slot--first .ui-podium__stat dt {
+  color: var(--color-text);
+}
+
+.rank-podium .ui-podium__rank,
+.rank-podium .ui-podium__stat dt {
+  font-size: 0.9375rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Names wrap rather than cut off. */
+.rank-podium .ui-podium__name {
+  overflow: visible;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.rank-podium .ui-podium__subtitle {
+  overflow-wrap: anywhere;
+}
+
+/* Phones: number one across the top, two and three side by side. */
+@media (max-width: 768px) {
+  .rank-podium {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem 0.75rem;
+  }
+
+  .rank-podium .ui-podium__slot--first {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .rank-podium .ui-podium__slot--second {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .rank-podium .ui-podium__slot--third {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .rank-podium .ui-podium__subtitle {
+    display: block;
+  }
+}

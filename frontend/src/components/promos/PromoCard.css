@@ -1,354 +1,136 @@
 .promo-card {
-  position: relative;
-  background: #2d2d2d;
-  border: 1px solid #444;
-  border-radius: 12px;
-  padding: 20px;
-  transition: border-color 0.2s ease;
   display: flex;
   flex-direction: column;
-}
-
-.promo-card.unread {
-  border-left: 3px solid #d4af37;
-}
-
-.promo-card.unread::before {
-  content: '';
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 8px;
-  height: 8px;
-  background: #d4af37;
-  border-radius: 50%;
-}
-
-.promo-card.unread .promo-title {
-  font-weight: 800;
-}
-
-.promo-card:hover {
-  border-color: #555;
-}
-
-.promo-card.pinned {
-  border-color: #d4af37;
-  background: linear-gradient(135deg, #2d2d2d 0%, rgba(212, 175, 55, 0.05) 100%);
-}
-
-.promo-card.compact {
-  padding: 14px;
-}
-
-.promo-pinned-indicator {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #d4af37;
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-bottom: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.pin-icon {
-  font-size: 0.9rem;
-}
-
-.promo-card-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.promo-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.promo-avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-.promo-avatar-initial {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #666;
-  color: white;
-  font-weight: 700;
-  font-size: 1.1rem;
-  border-radius: 50%;
-}
-
-.promo-author-info {
-  flex: 1;
+  gap: 0.75rem;
   min-width: 0;
 }
 
-.promo-author-line {
+.promo-card--unread {
+  border-left: 3px solid var(--color-cyan);
+}
+
+.promo-card--pinned {
+  border-color: var(--color-cyan);
+}
+
+.promo-card__header {
   display: flex;
-  align-items: center;
-  gap: 8px;
   flex-wrap: wrap;
-}
-
-.promo-wrestler-name {
-  font-weight: 700;
-  color: white;
-  font-size: 1rem;
-}
-
-.promo-player-name {
-  color: #888;
-  font-size: 0.85rem;
-}
-
-.promo-type-badge {
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.promo-timestamp {
-  color: #666;
-  font-size: 0.8rem;
-  margin-top: 2px;
-  display: block;
-}
-
-.promo-player-subtitle {
-  color: white;
-  font-size: 0.95rem;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.promo-responding-to {
-  background: rgba(59, 130, 246, 0.1);
-  border-left: 3px solid #3b82f6;
-  padding: 8px 12px;
-  margin-bottom: 12px;
-  border-radius: 0 8px 8px 0;
-  font-size: 0.85rem;
-}
-
-.responding-label {
-  color: #888;
-  margin-right: 4px;
-}
-
-.responding-link {
-  color: #3b82f6;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.responding-link:hover {
-  text-decoration: underline;
-}
-
-.promo-target {
-  background: rgba(239, 68, 68, 0.1);
-  border-left: 3px solid #ef4444;
-  padding: 8px 12px;
-  margin-bottom: 12px;
-  border-radius: 0 8px 8px 0;
-  font-size: 0.85rem;
-}
-
-.target-label {
-  color: #888;
-  margin-right: 6px;
-}
-
-.target-name {
-  color: #ef4444;
-  font-weight: 600;
-}
-
-.promo-target--tag-team {
-  display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.75rem;
 }
 
-.promo-target--tag-team .target-name {
-  color: #d4af37;
-}
-
-.promo-target--tag-team .target-label {
-  margin-right: 0;
-}
-
-.promo-match-context,
-.promo-championship-context {
+/* The basis sends the badges to their own line before they can squeeze a name mid-word. */
+.promo-card__author {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #bbb;
-  font-size: 0.85rem;
-  margin-bottom: 10px;
-  padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-}
-
-.promo-title {
-  color: white;
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin: 0 0 4px 0;
-}
-
-.promo-content {
-  color: #ccc;
-  font-size: 0.95rem;
-  line-height: 1.6;
-  margin-bottom: 14px;
-  flex: 1;
-}
-
-.promo-content p {
-  margin: 0;
-}
-
-.promo-read-more {
-  display: inline-block;
-  margin-top: 6px;
-  background: none;
-  border: none;
-  padding: 0;
-  color: #d4af37;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: underline;
-  font-family: inherit;
-}
-
-.promo-read-more:hover {
-  color: #e5c54a;
-}
-
-.promo-mention {
-  color: #d4af37;
-  font-weight: 600;
-}
-
-.promo-card-footer {
-  display: flex;
+  flex: 1 1 9rem;
   flex-direction: column;
-  gap: 10px;
-  margin-top: auto;
+  min-width: 0;
 }
 
-.promo-footer-actions {
+.promo-card__wrestler {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.promo-card__player {
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.promo-card__badges {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.375rem;
+  margin-left: auto;
 }
 
-.promo-thread-link {
-  color: #d4af37;
-  text-decoration: none;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.promo-thread-link:hover {
-  color: #e5c54a;
-  text-decoration: underline;
-}
-
-.promo-challenge-actions {
+.promo-card__context {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding: 8px 12px;
-  background: rgba(239, 68, 68, 0.08);
-  border-radius: 8px;
+  gap: 0.25rem 0.375rem;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
 }
 
-.promo-accept-challenge-btn {
-  background: #ef4444;
-  color: white;
+.promo-card__context strong {
+  color: var(--color-text);
+}
+
+.promo-card__context a,
+.promo-card__link,
+.promo-card__more {
+  color: var(--color-cyan);
+  font-weight: 600;
+}
+
+.promo-card__title {
+  font-size: 1.125rem;
+  overflow-wrap: anywhere;
+}
+
+.promo-card__content {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.promo-card__mention {
+  color: var(--color-cyan);
+  font-weight: 600;
+}
+
+.promo-card__more {
+  min-height: var(--touch-target);
+  padding: 0;
   border: none;
-  padding: 6px 16px;
-  border-radius: 6px;
-  font-size: 0.85rem;
+  background: none;
+  font: inherit;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease;
 }
 
-.promo-accept-challenge-btn:hover:not(:disabled) {
-  background: #dc2626;
+.promo-card__challenge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.promo-accept-challenge-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.promo-card__error {
+  color: var(--color-loss);
+  font-size: 0.9375rem;
 }
 
-.promo-view-challenge-link {
-  color: #ef4444;
-  text-decoration: none;
-  font-size: 0.85rem;
-  font-weight: 500;
+.promo-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin-top: auto;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-hairline);
 }
 
-.promo-view-challenge-link:hover {
-  text-decoration: underline;
+.promo-card__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  font-size: 0.9375rem;
 }
 
-.promo-challenge-accepted {
-  color: #10b981;
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.promo-challenge-error {
-  color: #f87171;
-  font-size: 0.8rem;
-}
-
-@media (max-width: 600px) {
-  .promo-card {
-    padding: 14px;
+@media (max-width: 768px) {
+  .promo-card__header {
+    flex-wrap: wrap;
   }
 
-  .promo-avatar {
-    width: 36px;
-    height: 36px;
-  }
-
-  .promo-avatar-initial {
-    font-size: 0.9rem;
-  }
-
-  .promo-author-line {
-    gap: 6px;
-  }
-
-  .promo-wrestler-name {
-    font-size: 0.9rem;
+  .promo-card__badges {
+    justify-content: flex-start;
+    width: 100%;
   }
 }

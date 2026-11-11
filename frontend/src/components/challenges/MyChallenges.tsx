@@ -1,300 +1,249 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Megaphone } from 'lucide-react';
 import { challengesApi, profileApi } from '../../services/api';
+import { isApiError } from '../../services/api/apiClient';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import { useIsHiddenPlayer } from '../../hooks/useIsHiddenPlayer';
+import type { Player } from '../../types';
 import type { ChallengeWithPlayers } from '../../types/challenge';
-import { getInitial } from './challengeUtils';
+import { useSignupBlock } from '../../hooks/useSignupBlock';
+import SuspensionNotice from '../discipline/SuspensionNotice';
+import Avatar from '../ui/Avatar';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Skeleton from '../ui/Skeleton';
+import Tabs from '../ui/Tabs';
+import { useToast } from '../ui/toastContext';
+import HiddenPlayerNotice from '../profile/HiddenPlayerNotice';
+import ChallengeStatusBadge from './ChallengeStatusBadge';
+import { getChallengeSides, getDisplayStatus, isChallengedSide, isChallengerSide } from './challengeUtils';
 import './MyChallenges.css';
 
 type MyTab = 'sent' | 'received';
+type ChallengeAction = 'accept' | 'decline' | 'cancel';
+
+const CALL_OUT_PATH = '/promos/new?promoType=call-out';
+
+/** Null for an account with no player, such as staff who do not wrestle. */
+async function loadOwnProfile(signal: AbortSignal): Promise<Player | null> {
+  try {
+    return await profileApi.getMyProfile(signal);
+  } catch (err) {
+    if (isApiError(err, 404)) return null;
+    throw err;
+  }
+}
 
 export default function MyChallenges() {
   const { t } = useTranslation();
+  const signupBlock = useSignupBlock();
   const navigate = useNavigate();
+  const isHiddenPlayer = useIsHiddenPlayer();
   const { features } = useSiteConfig();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<MyTab>('received');
-  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [challenges, setChallenges] = useState<ChallengeWithPlayers[]>([]);
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
+  const [noPlayerProfile, setNoPlayerProfile] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [busyChallengeId, setBusyChallengeId] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    // Use profileApi to reliably identify current player via backend auth
-    Promise.all([
-      profileApi.getMyProfile(controller.signal),
-      challengesApi.getAll(undefined, controller.signal),
-    ])
-      .then(([myProfile, allChallenges]) => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        // profileApi identifies the current player through backend auth.
+        const [myProfile, allChallenges] = await Promise.all([
+          loadOwnProfile(controller.signal),
+          challengesApi.getAll(undefined, controller.signal),
+        ]);
+        if (controller.signal.aborted) return;
         setChallenges(allChallenges);
-        setCurrentPlayerId(myProfile.playerId);
-      })
-      .catch((err) => {
-        if (err.name !== 'AbortError') {
-          console.error('Failed to load challenges:', err);
-        }
-      })
-      .finally(() => setLoading(false));
-
+        setCurrentPlayerId(myProfile?.playerId ?? null);
+        setNoPlayerProfile(myProfile === null);
+        setError(null);
+      } catch (err) {
+        if (!controller.signal.aborted) setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    };
+    void load();
     return () => controller.abort();
-  }, []);
+  }, [reloadKey]);
 
   const sentChallenges = useMemo(
-    () => challenges.filter((c) =>
-      c.challengerId === currentPlayerId ||
-      (c.challengeMode === 'tag_team' && c.challengerTagTeam &&
-       (c.challengerTagTeam.player1?.playerId === currentPlayerId ||
-        c.challengerTagTeam.player2?.playerId === currentPlayerId))
-    ),
-    [challenges, currentPlayerId]
+    () => challenges.filter((challenge) => isChallengerSide(challenge, currentPlayerId)),
+    [challenges, currentPlayerId],
   );
-
   const receivedChallenges = useMemo(
-    () => challenges.filter((c) =>
-      c.challengedId === currentPlayerId ||
-      (c.challengeMode === 'tag_team' && c.challengedTagTeam &&
-       (c.challengedTagTeam.player1?.playerId === currentPlayerId ||
-        c.challengedTagTeam.player2?.playerId === currentPlayerId))
-    ),
-    [challenges, currentPlayerId]
+    () => challenges.filter((challenge) => isChallengedSide(challenge, currentPlayerId)),
+    [challenges, currentPlayerId],
   );
-
   const currentList = activeTab === 'sent' ? sentChallenges : receivedChallenges;
 
-  const isSentByMe = useCallback((challenge: ChallengeWithPlayers): boolean => {
-    if (challenge.challengerId === currentPlayerId) return true;
-    if (challenge.challengeMode === 'tag_team' && challenge.challengerTagTeam) {
-      return challenge.challengerTagTeam.player1?.playerId === currentPlayerId ||
-        challenge.challengerTagTeam.player2?.playerId === currentPlayerId;
-    }
-    return false;
-  }, [currentPlayerId]);
-
-  const handleAction = useCallback(async (action: string, challenge: ChallengeWithPlayers) => {
+  const handleAction = useCallback(async (action: ChallengeAction, challenge: ChallengeWithPlayers) => {
+    setBusyChallengeId(challenge.challengeId);
     try {
-      if (action === 'accept' || action === 'decline') {
-        await challengesApi.respond(challenge.challengeId, action as 'accept' | 'decline');
-      } else if (action === 'cancel') {
+      if (action === 'cancel') {
         await challengesApi.cancel(challenge.challengeId);
-      }
-      let opponent: string;
-      if (challenge.challengeMode === 'tag_team') {
-        opponent = isSentByMe(challenge)
-          ? (challenge.challengedTagTeam?.tagTeamName ?? challenge.challenged.wrestlerName)
-          : (challenge.challengerTagTeam?.tagTeamName ?? challenge.challenger.wrestlerName);
       } else {
-        opponent = isSentByMe(challenge)
-          ? challenge.challenged.wrestlerName
-          : challenge.challenger.wrestlerName;
+        await challengesApi.respond(challenge.challengeId, action);
       }
-      setActionFeedback(
-        t('challenges.my.actionFeedback', { action, opponent })
-      );
-      // Refresh challenges
-      const updated = await challengesApi.getAll();
-      setChallenges(updated);
+      const [challenger, challenged] = getChallengeSides(challenge);
+      const opponent = isChallengerSide(challenge, currentPlayerId) ? challenged : challenger;
+      showToast(t('challenges.my.actionFeedback', { action, opponent: opponent.name }), 'success');
+      setChallenges(await challengesApi.getAll());
 
-      // After accepting, navigate to promo editor for a response promo
+      // After accepting, go straight to a response promo.
       if (action === 'accept' && features.promos) {
         navigate('/promos/new', {
           state: { promoType: 'response', targetPlayerId: challenge.challengerId },
         });
       }
     } catch (err) {
-      setActionFeedback(`Error: ${err instanceof Error ? err.message : 'Failed'}`);
+      showToast(err instanceof Error ? err.message : String(err), 'error');
+    } finally {
+      setBusyChallengeId(null);
     }
-    setTimeout(() => setActionFeedback(null), 3000);
-  }, [isSentByMe, t, features, navigate]);
-
-  const getOpponent = (challenge: ChallengeWithPlayers) => {
-    if (challenge.challengerId === currentPlayerId) {
-      return challenge.challenged;
-    }
-    return challenge.challenger;
-  };
+  }, [currentPlayerId, features.promos, navigate, showToast, t]);
 
   const renderChallengeItem = (challenge: ChallengeWithPlayers) => {
-    const opponent = getOpponent(challenge);
-    const isSent = isSentByMe(challenge);
-    const isTagTeam = challenge.challengeMode === 'tag_team';
-    const opponentTagTeam = isTagTeam
-      ? (isSent ? challenge.challengedTagTeam : challenge.challengerTagTeam)
-      : undefined;
-    const date = new Date(challenge.createdAt).toLocaleDateString();
+    const isSent = isChallengerSide(challenge, currentPlayerId);
+    const [challenger, challenged] = getChallengeSides(challenge);
+    const opponent = isSent ? challenged : challenger;
+    const isOpen = getDisplayStatus(challenge) === 'pending';
+    const busy = busyChallengeId === challenge.challengeId;
+    const matchLine = [challenge.matchType, challenge.stipulation].filter(Boolean).join(' · ');
 
     return (
-      <div key={challenge.challengeId} className="my-challenge-item">
-        <div className="my-challenge-item-top">
-          <div className="my-challenge-opponent">
-            {isTagTeam && opponentTagTeam ? (
-              <>
-                <div className="my-challenge-opponent-avatar">
-                  {getInitial(opponentTagTeam.tagTeamName)}
-                </div>
-                <div className="my-challenge-opponent-info">
-                  <span className="my-challenge-opponent-wrestler">
-                    {opponentTagTeam.tagTeamName}
-                  </span>
-                  <span className="my-challenge-opponent-name">
-                    {opponentTagTeam.player1.wrestlerName} &amp; {opponentTagTeam.player2.wrestlerName}
-                  </span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="my-challenge-opponent-avatar">
-                  {getInitial(opponent.wrestlerName)}
-                </div>
-                <div className="my-challenge-opponent-info">
-                  <span className="my-challenge-opponent-wrestler">
-                    {opponent.wrestlerName}
-                  </span>
-                  <span className="my-challenge-opponent-name">
-                    {opponent.playerName}
-                  </span>
-                </div>
-              </>
-            )}
+      <Card key={challenge.challengeId} className="my-challenge">
+        <div className="my-challenge__top">
+          <Avatar src={opponent.imageUrl} name={opponent.name} />
+          <div className="my-challenge__who">
+            <span className="my-challenge__name">{opponent.name}</span>
+            <span className="my-challenge__detail">{opponent.detail}</span>
           </div>
-          <div className="my-challenge-meta">
-            {isTagTeam && (
-              <span className="my-challenge-type-tag my-challenge-tag-team-badge">
-                {t('challenges.board.tagTeamMatch')}
-              </span>
-            )}
-            <span className="my-challenge-type-tag">{challenge.matchType}</span>
-            {challenge.stipulation && (
-              <span className="my-challenge-type-tag">{challenge.stipulation}</span>
-            )}
-            <span className={`challenge-status-badge ${challenge.status}`}>
-              {t(`challenges.status.${challenge.status}`)}
-            </span>
-          </div>
+          <ChallengeStatusBadge challenge={challenge} />
         </div>
 
-        {challenge.message && (
-          <div className="my-challenge-message">
-            &ldquo;{challenge.message}&rdquo;
-          </div>
-        )}
+        <p className="my-challenge__match">
+          {matchLine}
+          {challenge.challengeMode === 'tag_team' && <Badge>{t('challenges.board.tagTeamMatch')}</Badge>}
+          {challenge.championshipName && <Badge tone="warning">{challenge.championshipName}</Badge>}
+        </p>
 
+        {challenge.message && <p className="my-challenge__message">&ldquo;{challenge.message}&rdquo;</p>}
         {challenge.responseMessage && (
-          <div className="my-challenge-message">
-            <strong className="my-challenge-response-label">
-              {t('challenges.my.response')}:
-            </strong>{' '}
-            &ldquo;{challenge.responseMessage}&rdquo;
-          </div>
+          <p className="my-challenge__message">
+            <strong>{t('challenges.my.response')}:</strong> &ldquo;{challenge.responseMessage}&rdquo;
+          </p>
         )}
 
-        <div className="my-challenge-footer">
-          <span className="my-challenge-date">{date}</span>
-          <div className="my-challenge-actions">
-            {!isSent && challenge.status === 'pending' && (
+        <div className="my-challenge__footer">
+          <span className="my-challenge__date">{new Date(challenge.createdAt).toLocaleDateString()}</span>
+          <div className="my-challenge__actions">
+            {!isSent && isOpen && (
               <>
-                <button
-                  className="btn-sm-accept"
-                  onClick={() => handleAction('accept', challenge)}
-                >
+                <Button size="sm" disabled={busy || signupBlock.blocked} onClick={() => handleAction('accept', challenge)}>
                   {t('challenges.detail.accept')}
-                </button>
-                <button
-                  className="btn-sm-decline"
-                  onClick={() => handleAction('decline', challenge)}
-                >
+                </Button>
+                <Button size="sm" variant="secondary" disabled={busy} onClick={() => handleAction('decline', challenge)}>
                   {t('challenges.detail.decline')}
-                </button>
-                <button
-                  className="btn-sm-counter"
-                  onClick={() => navigate(`/challenges/${challenge.challengeId}`)}
-                >
+                </Button>
+                <Button size="sm" variant="secondary" disabled={busy || signupBlock.blocked} onClick={() => navigate(`/challenges/${challenge.challengeId}`)}>
                   {t('challenges.detail.counter')}
-                </button>
+                </Button>
               </>
             )}
-            {isSent && challenge.status === 'pending' && (
-              <button
-                className="btn-sm-cancel"
-                onClick={() => handleAction('cancel', challenge)}
-              >
+            {isSent && isOpen && (
+              <Button size="sm" variant="danger" disabled={busy} onClick={() => handleAction('cancel', challenge)}>
                 {t('common.cancel')}
-              </button>
+              </Button>
             )}
-            <button
-              className="btn-sm-view"
-              onClick={() => navigate(`/challenges/${challenge.challengeId}`)}
-            >
+            <Button size="sm" variant="ghost" onClick={() => navigate(`/challenges/${challenge.challengeId}`)}>
               {t('challenges.my.viewDetails')}
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
+      </Card>
     );
   };
 
-  if (loading) {
+  const renderList = () => {
+    if (loading) return <Skeleton variant="block" count={3} />;
+    if (error) {
+      return (
+        <EmptyState
+          title={t('challenges.board.loadError', 'Could not load challenges')}
+          description={error}
+          actionLabel={t('common.retry')}
+          onAction={() => setReloadKey((key) => key + 1)}
+        />
+      );
+    }
+    if (currentList.length === 0) {
+      const canCallOut = activeTab === 'sent' && !isHiddenPlayer;
+      return (
+        <EmptyState
+          icon={<Megaphone aria-hidden="true" />}
+          title={activeTab === 'sent' ? t('challenges.my.noSent') : t('challenges.my.noReceived')}
+          actionLabel={canCallOut ? t('promos.editor.cutCallOut', 'Cut a Call-Out Promo') : undefined}
+          onAction={canCallOut ? () => navigate(CALL_OUT_PATH) : undefined}
+        />
+      );
+    }
+    return <div className="my-challenges__list">{currentList.map(renderChallengeItem)}</div>;
+  };
+
+  const tabLabel = (label: string, count: number) => (
+    <>
+      {label}
+      <span className="my-challenges__count">{count}</span>
+    </>
+  );
+
+  if (noPlayerProfile) {
     return (
       <div className="my-challenges">
-        <div className="my-challenges-loading">{t('common.loading')}</div>
+        <PageHeader title={t('challenges.my.title')} />
+        <EmptyState
+          icon={<Megaphone aria-hidden="true" />}
+          title={t('challenges.my.noPlayerTitle')}
+          description={t('challenges.my.noPlayerBody')}
+        />
       </div>
     );
   }
 
   return (
     <div className="my-challenges">
-      <div className="my-challenges-header">
-        <h2>{t('challenges.my.title')}</h2>
-        <Link
-          to="/promos/new?promoType=call-out"
-          className="my-challenges-issue-link"
-        >
-          + {t('promos.editor.cutCallOut', 'Cut a Call-Out Promo')}
-        </Link>
-      </div>
-
-      <div className="my-challenges-tabs">
-        <button
-          className={activeTab === 'received' ? 'active' : ''}
-          onClick={() => setActiveTab('received')}
-        >
-          {t('challenges.my.received')}
-          <span className="my-challenges-tab-count">{receivedChallenges.length}</span>
-        </button>
-        <button
-          className={activeTab === 'sent' ? 'active' : ''}
-          onClick={() => setActiveTab('sent')}
-        >
-          {t('challenges.my.sent')}
-          <span className="my-challenges-tab-count">{sentChallenges.length}</span>
-        </button>
-      </div>
-
-      {actionFeedback && (
-        <div className="my-challenge-action-feedback">{actionFeedback}</div>
+      <PageHeader
+        title={t('challenges.my.title')}
+        actions={isHiddenPlayer ? undefined : <Button to={CALL_OUT_PATH}>{t('promos.editor.cutCallOut', 'Cut a Call-Out Promo')}</Button>}
+      />
+      {isHiddenPlayer && (
+        <HiddenPlayerNotice title={t('me.setup.cannotCallOutTitle')} body={t('me.setup.cannotCallOutBody')} />
       )}
-
-      {currentList.length === 0 ? (
-        <div className="my-challenges-empty">
-          <p>
-            {activeTab === 'sent'
-              ? t('challenges.my.noSent')
-              : t('challenges.my.noReceived')}
-          </p>
-          {activeTab === 'sent' && (
-            <Link
-              to="/promos/new?promoType=call-out"
-              className="my-challenges-empty-issue-link"
-            >
-              {t('promos.editor.cutCallOut', 'Cut a Call-Out Promo')}
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="my-challenges-list">
-          {currentList.map(renderChallengeItem)}
-        </div>
-      )}
+      {signupBlock.until && <SuspensionNotice until={signupBlock.until} />}
+      <Tabs
+        label={t('challenges.my.title')}
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as MyTab)}
+        items={[
+          { value: 'received', label: tabLabel(t('challenges.my.received'), receivedChallenges.length) },
+          { value: 'sent', label: tabLabel(t('challenges.my.sent'), sentChallenges.length) },
+        ]}
+      />
+      <div className="my-challenges__body">{renderList()}</div>
     </div>
   );
 }

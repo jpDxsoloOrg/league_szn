@@ -3,8 +3,12 @@ import { getRepositories } from '../../lib/repositories';
 import type { Player, Championship, ChampionshipHistoryEntry } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { hasWrestlerRole } from '../../lib/wrestlerRole';
+import { FORMER_MEMBER, isNeedsWrestler, isPlayerVisible } from '../../lib/needsWrestler';
 import { authenticate } from '../../lib/authenticate';
 import { getAuthContext } from '../../lib/auth';
+import { matchWinners } from '../../lib/matchResult';
+
+const RECENT_RESULTS_LIMIT = 5;
 
 interface DashboardChampion {
   championshipId: string;
@@ -41,6 +45,9 @@ interface DashboardMatch {
   winnerImageUrl?: string;
   loserName: string;
   loserImageUrl?: string;
+  isDraw: boolean;
+  /** Everyone in a drawn match, as "A vs B". Only set when `isDraw` is true. */
+  participantsName?: string;
   eventId?: string;
   /** True iff the calling user has rated this match. False for guests (RIV-24). */
   userHasRated: boolean;
@@ -74,6 +81,12 @@ interface DashboardResponse {
   activeChallengesCount: number;
 }
 
+/** A player without a real wrestler name is shown by their own name. */
+function resultDisplayName(player: Player | undefined): string {
+  if (!player) return FORMER_MEMBER;
+  return isNeedsWrestler(player.currentWrestler) ? player.name : player.currentWrestler;
+}
+
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const { competition: { championships, matches, stipulations }, roster: { players }, season: { seasons, standings: seasonStandings }, leagueOps: { events }, user: { challenges }, matchRatings } = getRepositories();
@@ -84,7 +97,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // logged for the next pass to triage.
     const results = await Promise.allSettled([
       championships.list(),
-      players.list(),
+      players.listWithDeleted(),
       seasons.list(),
       matches.list(),
       stipulations.list(),
@@ -103,7 +116,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return fallback;
     };
     const championshipList = unwrap<Championship[]>(0, []);
-    const playerList = unwrap<Player[]>(1, []);
+    const allPlayerRows = unwrap<Player[]>(1, []);
+    const playerList = allPlayerRows.filter((p) => !p.deletedAt);
     const seasonList = unwrap<Awaited<ReturnType<typeof seasons.list>>>(2, []);
     const matchList = unwrap<Awaited<ReturnType<typeof matches.list>>>(3, []);
     const stipulationList = unwrap<Awaited<ReturnType<typeof stipulations.list>>>(4, []);
@@ -114,15 +128,20 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Only include players who have a wrestler assigned (exclude Fantasy-only users)
     const wrestlerPlayers = playerList.filter((p) => p.currentWrestler);
 
-    // Roster-facing subset: players whose Cognito user still holds the
-    // Wrestler role. Used for counts and leaderboards. `playerMap` below
-    // deliberately keeps every wrestler so historical recent-results rows
-    // still resolve their participants' names.
-    const rosterPlayers = wrestlerPlayers.filter(hasWrestlerRole);
+    // Roster-facing subset: players with a real wrestler name whose Cognito
+    // user still holds the Wrestler role. Used for counts and leaderboards.
+    // `resultPlayerMap` below deliberately keeps every player, deleted ones
+    // included, so historical recent-results rows still resolve their names.
+    const rosterPlayers = wrestlerPlayers.filter(hasWrestlerRole).filter(isPlayerVisible);
 
     const playerMap = new Map<string, Player>();
     for (const p of wrestlerPlayers) {
       if (p.playerId) playerMap.set(p.playerId, p);
+    }
+
+    const resultPlayerMap = new Map<string, Player>();
+    for (const p of allPlayerRows) {
+      if (p.playerId) resultPlayerMap.set(p.playerId, p);
     }
 
     const championshipMap = new Map<string, Championship>();
@@ -155,9 +174,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const names: string[] = [];
       let imageUrl: string | undefined;
       for (const pid of playerIds) {
-        const player = playerMap.get(pid);
+        // A hidden champion still holds the title, so it stays on the page
+        // under their own name, as it does on the Championships page.
+        const player = resultPlayerMap.get(pid);
         if (player) {
-          names.push(player.currentWrestler || player.name);
+          names.push(resultDisplayName(player));
           if (player.imageUrl) imageUrl = player.imageUrl;
         }
       }
@@ -218,26 +239,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         matchCount: e.matchCards?.length,
       }));
 
-    // Recent results: only matches with updatedAt (recorded after we added it), sort by updatedAt desc, limit 20 for date grouping
+    // Recent results: the latest completed matches by match date, however old.
+    // Older rows have no updatedAt, so it only breaks ties within a date.
     const completedMatches = matchList.filter(
       (m) =>
         m.status === 'completed' &&
         m.winners &&
         m.losers &&
-        m.updatedAt
+        m.date
     );
     completedMatches.sort(
       (a, b) =>
-        new Date(b.updatedAt!).getTime() -
-        new Date(a.updatedAt!).getTime()
+        new Date(b.date).getTime() - new Date(a.date).getTime() ||
+        (b.updatedAt ?? '').localeCompare(a.updatedAt ?? '')
     );
-    // Limit recent results to matches updated within the last 3 days
-    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-    const recentCompletedMatches = completedMatches.filter(
-      (m) => (m.updatedAt || m.date) >= threeDaysAgo
-    );
-    // Safety cap to avoid unbounded responses
-    const recentResultMatches = recentCompletedMatches.slice(0, 50);
+    const recentResultMatches = completedMatches.slice(0, RECENT_RESULTS_LIMIT);
 
     // RIV-24: batch-lookup the caller's ratings for the matches we're about
     // to project, so the FE rating widget renders in the right state without
@@ -259,21 +275,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const recentResults: DashboardMatch[] = recentResultMatches.map((m) => {
-      const winnerIds = m.winners!;
+      const winnerIds = matchWinners(m);
+      const isDraw = Boolean(m.isDraw);
       const loserIds = m.losers!;
       const winnerName = (winnerIds || [])
-        .map((id) => {
-          const p = playerMap.get(id);
-          return p ? p.currentWrestler || p.name : '';
-        })
+        .map((id) => resultDisplayName(resultPlayerMap.get(id)))
         .filter(Boolean)
         .join(' & ');
       // Use " vs " for losers so triple threat / fatal four way read as "A vs B vs C" not "A vs B & C"
       const loserName = (loserIds || [])
-        .map((id) => {
-          const p = playerMap.get(id);
-          return p ? p.currentWrestler || p.name : '';
-        })
+        .map((id) => resultDisplayName(resultPlayerMap.get(id)))
+        .filter(Boolean)
+        .join(' vs ');
+      const drawnSides = isDraw ? m.teams ?? m.participants.map((id) => [id]) : [];
+      const participantsName = drawnSides
+        .map((side) => side.map((id) => resultDisplayName(resultPlayerMap.get(id))).filter(Boolean).join(' & '))
         .filter(Boolean)
         .join(' vs ');
       const firstWinner = winnerIds?.[0];
@@ -299,12 +315,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         matchOfTheNight: Boolean(m.matchOfTheNight),
         winnerName: winnerName || '\u2014',
         winnerImageUrl: firstWinner
-          ? playerMap.get(firstWinner)?.imageUrl
+          ? resultPlayerMap.get(firstWinner)?.imageUrl
           : undefined,
         loserName: loserName || '\u2014',
         loserImageUrl: firstLoser
-          ? playerMap.get(firstLoser)?.imageUrl
+          ? resultPlayerMap.get(firstLoser)?.imageUrl
           : undefined,
+        isDraw,
+        participantsName: participantsName || undefined,
         eventId: m.eventId,
         userHasRated: userRatingForMatch !== undefined,
         userRating: userRatingForMatch ?? null,
@@ -344,7 +362,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           // Resolve before raising the bar: a hidden player must not claim
           // the slot *or* block a lower-scoring wrestler from taking it.
           const p = playerMap.get(s.playerId);
-          if (!p || !hasWrestlerRole(p)) continue;
+          if (!p || !hasWrestlerRole(p) || !isPlayerVisible(p)) continue;
           maxWins = w;
           mostWinsPlayer = {
             name: p.currentWrestler || p.name || '\u2014',
@@ -390,6 +408,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
     const stack = err instanceof Error ? err.stack : undefined;
     console.error('Dashboard error:', detail, stack);
-    return serverError(`Failed to load dashboard data: ${detail}`);
+    return serverError('Failed to load dashboard data');
   }
 };

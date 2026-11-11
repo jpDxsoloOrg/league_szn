@@ -1,0 +1,173 @@
+/* Layout shared by every page under /stats. */
+.stats-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.stats-page .page-header {
+  margin-bottom: 0;
+}
+
+.stats-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.stats-section__title {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.stats-section__note {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+/* One surface holding hairline-separated rows. */
+.stats-rows {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+}
+
+.stats-rows > li {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  min-height: 3.5rem;
+  padding: 0.75rem 1.25rem;
+}
+
+.stats-rows > li + li {
+  border-top: 1px solid var(--color-hairline);
+}
+
+.stats-row__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.stats-row__title {
+  color: var(--color-text);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.stats-row__detail {
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+}
+
+/* Filled bars use <progress> so widths need no inline style. */
+.stats-bar {
+  display: block;
+  width: 100%;
+  height: 0.5rem;
+  overflow: hidden;
+  appearance: none;
+  border: none;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-overlay-soft);
+}
+
+.stats-bar::-webkit-progress-bar {
+  border-radius: var(--radius-pill);
+  background-color: var(--color-overlay-soft);
+}
+
+.stats-bar::-webkit-progress-value {
+  border-radius: var(--radius-pill);
+  background-color: var(--color-cyan);
+}
+
+.stats-bar::-moz-progress-bar {
+  border-radius: var(--radius-pill);
+  background-color: var(--color-cyan);
+}
+
+@media (max-width: 768px) {
+  .stats-page {
+    gap: 1.25rem;
+  }
+
+  /* Filters share the full width instead of wrapping ragged. */
+  .stats-page .page-header__actions {
+    width: 100%;
+  }
+
+  .stats-page .page-header__actions .ui-select__trigger {
+    flex: 1 1 9rem;
+    min-width: 0;
+  }
+
+  .stats-page .page-header__actions .ui-select__trigger > span:first-child {
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .stats-rows > li {
+    padding: 0.75rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Two across hides the wrestler that tells two similar player names apart. */
+  .stats-page .page-header:not(.stats-header--filters) .page-header__actions .ui-select__trigger {
+    flex-basis: 100%;
+  }
+
+  /* Plain filters have short labels, so they sit two across where they fit. */
+  .stats-header--filters .page-header__actions {
+    gap: 0.5rem;
+  }
+
+  .stats-header--filters .page-header__actions .ui-select__trigger {
+    gap: 0.25rem;
+    padding-inline: 0.625rem;
+    font-size: 0.9375rem;
+  }
+
+  .stats-page .stats-header--filters .page-header__actions .ui-select__trigger > span:first-child {
+    white-space: normal;
+  }
+
+  /* The tab rows above already name the page, so the header gives its height to the data. */
+  .stats-page .page-header {
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+  }
+
+  /* A header with controls keeps its h1 for screen readers only. */
+  .stats-page .page-header:has(.page-header__actions) .page-header__text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .stats-page .page-header__eyebrow {
+    display: none;
+  }
+
+  .stats-page .page-header__title {
+    font-size: 1.5rem;
+  }
+}

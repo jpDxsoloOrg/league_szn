@@ -1,8 +1,10 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import { success, badRequest, forbidden, serverError } from '../../lib/response';
+import { success, badRequest, forbidden, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import type { EventCheckInStatus } from '../../lib/repositories/types';
+import { isNeedsWrestler } from '../../lib/needsWrestler';
+import { isDeactivated } from '../../lib/discipline';
 
 type RosterBucket = EventCheckInStatus | 'noResponse';
 
@@ -35,6 +37,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const { leagueOps: { events }, roster: { players } } = getRepositories();
 
+    const eventItem = await events.findById(eventId);
+    if (!eventItem) {
+      return notFound('Event not found');
+    }
+
     // Fetch all check-in rows for this event.
     const checkInItems = await events.listCheckIns(eventId);
 
@@ -57,8 +64,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     for (const player of playerItems) {
       if (!player.playerId) continue;
-      // Only include players who have a wrestler assigned (exclude Fantasy-only users)
-      if (!player.currentWrestler) continue;
+      // Staff book from this list. The row is kept, so it returns on reactivation.
+      if (isDeactivated(player)) continue;
+      // List players with a wrestler assigned (not Fantasy-only users), plus
+      // anyone who answered: a hidden player's real check-in still counts.
+      const status = statusByPlayerId.get(player.playerId);
+      if (!status && isNeedsWrestler(player.currentWrestler)) continue;
 
       const summary: PlayerSummary = {
         playerId: player.playerId,
@@ -72,7 +83,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         summary.divisionId = player.divisionId;
       }
 
-      const status = statusByPlayerId.get(player.playerId);
       const bucket: RosterBucket = status ?? 'noResponse';
       response[bucket].push(summary);
     }

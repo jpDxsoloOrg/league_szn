@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { NotFoundError } from '../errors';
+import { compareActiveAnnouncements } from '../ContentRepository';
 import type {
   ContentRepository,
   AnnouncementCreateInput,
@@ -46,7 +47,7 @@ class AnnouncementsImpl implements AnnouncementsMethods {
     const now = new Date().toISOString();
     return Array.from(this.store.values())
       .filter((a) => a.isActive === 'true' && (!a.expiresAt || a.expiresAt > now))
-      .sort((a, b) => (b.priority ?? 1) - (a.priority ?? 1));
+      .sort(compareActiveAnnouncements);
   }
 
   async create(input: AnnouncementCreateInput): Promise<Announcement> {

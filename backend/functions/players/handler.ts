@@ -4,69 +4,100 @@ import { handler as updatePlayerHandler } from './updatePlayer';
 import { handler as deletePlayerHandler } from './deletePlayer';
 import { handler as getMyProfileHandler } from './getMyProfile';
 import { handler as updateMyProfileHandler } from './updateMyProfile';
-import { createRouter, type RouteConfig } from '../../lib/router';
+import { ADMIN_ONLY, createRouter, type RouteConfig, STAFF } from '../../lib/router';
 import { handler as getPlayerHandler } from './getPlayer';
 import { handler as getBookingSummaryHandler } from './getBookingSummary';
 import { handler as getPlayerStatisticsHandler } from './getPlayerStatistics';
+import { handler as getPlayerDisciplineHandler } from './getPlayerDiscipline';
+import { handler as issueStrikeHandler } from './issueStrike';
+import { handler as removeStrikeHandler } from './removeStrike';
+import { handler as reactivatePlayerHandler } from './reactivatePlayer';
 
 
 /**
  * Single Lambda for players: routes by HTTP method and path.
- * Fronted by a /{proxy+} API Gateway route; requireAuth routes run JWT
- * verification in the router before dispatching to the handler.
+ * Fronted by a /{proxy+} API Gateway route; the router verifies the JWT and
+ * enforces each route's access declaration before dispatching to the handler.
  */
 
-const routes: ReadonlyArray<RouteConfig> = [
+export const routes: ReadonlyArray<RouteConfig> = [
   {
     resource: '/players',
     method: 'GET',
     handler: getPlayersHandler,
+    access: 'public',
   },
   {
     resource: '/players/me',
     method: 'GET',
     handler: getMyProfileHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/players/booking-summary',
     method: 'GET',
     handler: getBookingSummaryHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/players/me',
     method: 'PUT',
     handler: updateMyProfileHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/players',
     method: 'POST',
     handler: createPlayerHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/players/{playerId}',
     method: 'GET',
     handler: getPlayerHandler,
+    access: 'public',
   },
   {
     resource: '/players/{playerId}/statistics',
     method: 'GET',
     handler: getPlayerStatisticsHandler,
+    access: 'public',
   },
   {
     resource: '/players/{playerId}',
     method: 'PUT',
     handler: updatePlayerHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/players/{playerId}',
     method: 'DELETE',
     handler: deletePlayerHandler,
-    requireAuth: true,
+    access: STAFF,
+  },
+  {
+    resource: '/players/{playerId}/discipline',
+    method: 'GET',
+    handler: getPlayerDisciplineHandler,
+    access: STAFF,
+  },
+  {
+    resource: '/players/{playerId}/strikes',
+    method: 'POST',
+    handler: issueStrikeHandler,
+    access: ADMIN_ONLY,
+  },
+  {
+    resource: '/players/{playerId}/strikes/{strikeId}/remove',
+    method: 'POST',
+    handler: removeStrikeHandler,
+    access: ADMIN_ONLY,
+  },
+  {
+    resource: '/players/{playerId}/reactivate',
+    method: 'POST',
+    handler: reactivatePlayerHandler,
+    access: ADMIN_ONLY,
   },
 ];
 export const handler = createRouter(routes);

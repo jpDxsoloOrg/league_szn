@@ -1,4 +1,5 @@
-import type { UnitOfWork, RecordDelta } from '../unitOfWork';
+import type { UnitOfWork, RecordDelta, MatchWriteCondition, PlayerWriteCondition } from '../unitOfWork';
+import type { ChallengeStatus } from '../types';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
 import type {
   Rivalry,
@@ -8,12 +9,17 @@ import type {
   RivalryPatch,
 } from '../rivalries';
 import { RatingAlreadyExistsError } from '../matchRatings';
+import { ConcurrencyError } from '../errors';
 import type { MatchRating } from '../types';
 
 type StagedOp = () => void;
 
 export class InMemoryUnitOfWork implements UnitOfWork {
   private staged: StagedOp[] = [];
+  // Run before any staged op, against pre-commit state, so a failed guard
+  // leaves the stores untouched. Same semantics as DynamoDB condition checks.
+  private preconditions: StagedOp[] = [];
+  private releasedWrestlerIds = new Set<string>();
   private committed = false;
 
   constructor(
@@ -37,7 +43,15 @@ export class InMemoryUnitOfWork implements UnitOfWork {
 
   // Each method pushes a closure that mutates the in-memory stores
 
-  updatePlayer(playerId: string, patch: Record<string, unknown>): void {
+  updatePlayer(playerId: string, patch: Record<string, unknown>, condition?: PlayerWriteCondition): void {
+    if (condition) {
+      this.preconditions.push(() => {
+        const player = this.stores.players.get(playerId);
+        if (!player || (player.disciplineVersion ?? 0) !== condition.disciplineVersion) {
+          throw new ConcurrencyError('Player', playerId);
+        }
+      });
+    }
     this.staged.push(() => {
       const existing = this.stores.players.get(playerId);
       if (!existing) return;
@@ -56,6 +70,10 @@ export class InMemoryUnitOfWork implements UnitOfWork {
   }
 
   incrementPlayerRecord(playerId: string, delta: RecordDelta): void {
+    this.preconditions.push(() => {
+      const player = this.stores.players.get(playerId);
+      if (!player || player.deletedAt) throw new ConcurrencyError('Player', playerId);
+    });
     this.staged.push(() => {
       const existing = this.stores.players.get(playerId);
       if (existing) {
@@ -146,7 +164,14 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     });
   }
 
-  updateChallenge(challengeId: string, patch: Record<string, unknown>): void {
+  updateChallenge(challengeId: string, patch: Record<string, unknown>, expectedStatus?: ChallengeStatus): void {
+    if (expectedStatus) {
+      this.preconditions.push(() => {
+        if (this.stores.challenges.get(challengeId)?.status !== expectedStatus) {
+          throw new ConcurrencyError('Challenge', challengeId);
+        }
+      });
+    }
     this.staged.push(() => {
       const existing = this.stores.challenges.get(challengeId);
       if (existing) {
@@ -177,7 +202,21 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     });
   }
 
-  updateMatch(matchId: string, _date: string, patch: Record<string, unknown>): void {
+  updateMatch(
+    matchId: string,
+    _date: string,
+    patch: Record<string, unknown>,
+    condition?: MatchWriteCondition,
+  ): void {
+    if (condition) {
+      this.preconditions.push(() => {
+        const existing = this.stores.matches.get(matchId);
+        const passes = existing !== undefined && (condition.kind === 'notCompleted'
+          ? existing.status !== 'completed'
+          : existing.updatedAt === condition.updatedAt);
+        if (!passes) throw new ConcurrencyError('Match', matchId);
+      });
+    }
     this.staged.push(() => {
       const existing = this.stores.matches.get(matchId);
       if (existing) {
@@ -191,6 +230,14 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     playerId: string;
     slot: 'primary' | 'alternate';
   }): void {
+    this.preconditions.push(() => {
+      // A release staged in this same unit of work frees the wrestler first.
+      if (this.releasedWrestlerIds.has(params.wrestlerId)) return;
+      const existing = this.stores.wrestlers.get(params.wrestlerId);
+      const isFree = existing !== undefined &&
+        (!existing.isInUse || existing.assignedPlayerId === params.playerId);
+      if (!isFree) throw new ConcurrencyError('Wrestler', params.wrestlerId);
+    });
     this.staged.push(() => {
       const existing = this.stores.wrestlers.get(params.wrestlerId);
       if (existing) {
@@ -202,7 +249,14 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     });
   }
 
-  releaseWrestlerFromPlayer(params: { wrestlerId: string }): void {
+  releaseWrestlerFromPlayer(params: { wrestlerId: string; expectedPlayerId?: string }): void {
+    this.releasedWrestlerIds.add(params.wrestlerId);
+    this.preconditions.push(() => {
+      const existing = this.stores.wrestlers.get(params.wrestlerId);
+      const ownerMatches = params.expectedPlayerId === undefined ||
+        existing?.assignedPlayerId === params.expectedPlayerId;
+      if (!existing || !ownerMatches) throw new ConcurrencyError('Wrestler', params.wrestlerId);
+    });
     this.staged.push(() => {
       const existing = this.stores.wrestlers.get(params.wrestlerId);
       if (existing) {
@@ -343,6 +397,9 @@ export class InMemoryUnitOfWork implements UnitOfWork {
   async commit(): Promise<void> {
     if (this.committed) throw new Error('UnitOfWork already committed');
     this.committed = true;
+    for (const check of this.preconditions) {
+      check();
+    }
     for (const op of this.staged) {
       op();
     }
@@ -350,6 +407,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
 
   async rollback(): Promise<void> {
     this.staged = [];
+    this.preconditions = [];
     this.committed = true;
   }
 }

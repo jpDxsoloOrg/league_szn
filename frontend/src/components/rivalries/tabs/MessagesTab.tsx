@@ -2,15 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { rivalriesApi } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
-import {
-  DEFAULT_WRESTLER_IMAGE,
-  applyImageFallback,
-  resolveImageSrc,
-} from '../../../constants/imageFallbacks';
 import type { Player } from '../../../types';
 import type { HydratedRivalry, RivalryMessage } from '../../../types/rivalry';
+import Avatar from '../../ui/Avatar';
+import Button from '../../ui/Button';
 import { resolveWrestlerName } from '../rivalryUtils';
 import './MessagesTab.css';
+import { usePollWhileVisible } from '../../../hooks/usePollWhileVisible';
 
 interface TabProps {
   hydrated: HydratedRivalry;
@@ -29,7 +27,6 @@ interface DisplayMessage {
 }
 
 const POLL_INTERVAL_MS = 10_000;
-const COMPOSER_MAX_LINES = 6;
 const COMPOSER_MAX_CHARS = 1000;
 const FIXED_AUDIENCE = 'participants' as const;
 
@@ -144,11 +141,9 @@ export default function MessagesTab({ hydrated, players }: TabProps) {
     }
   }, [rivalryId]);
 
-  useEffect(() => {
-    if (!visible) return;
-    const id = window.setInterval(pollOnce, POLL_INTERVAL_MS);
-    return () => window.clearInterval(id);
-  }, [visible, pollOnce]);
+  usePollWhileVisible(() => {
+    void pollOnce();
+  }, POLL_INTERVAL_MS, visible);
 
   // ─── Display order (oldest → newest) ─────────────────────────────
   const activeFeed = useMemo(
@@ -283,12 +278,7 @@ export default function MessagesTab({ hydrated, players }: TabProps) {
           }`}
         >
           {!isSelf && (
-            <img
-              src={resolveImageSrc(author?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-              onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
-              alt=""
-              className="rivalry-msgs__bubble-avatar"
-            />
+            <Avatar src={author?.imageUrl} name={resolveWrestlerName(participant, author)} size="sm" />
           )}
           <div className="rivalry-msgs__bubble-body">
             {!isSelf && (
@@ -329,17 +319,12 @@ export default function MessagesTab({ hydrated, players }: TabProps) {
         </span>
       </header>
 
-      <ul className="rivalry-msgs__participants" aria-label="participants">
+      <ul className="rivalry-msgs__participants" aria-label={headerContext}>
         {hydrated.rivalry.participants.map((p) => {
           const player = memberById.get(p.playerId);
           return (
             <li key={p.playerId} className="rivalry-msgs__participant-chip">
-              <img
-                src={resolveImageSrc(player?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-                onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
-                alt=""
-                className="rivalry-msgs__participant-avatar"
-              />
+              <Avatar src={player?.imageUrl} name={resolveWrestlerName(p, player)} size="sm" />
               <span>{resolveWrestlerName(p, player)}</span>
             </li>
           );
@@ -354,7 +339,7 @@ export default function MessagesTab({ hydrated, players }: TabProps) {
 
       <div className="rivalry-msgs__feed" ref={feedRef} onScroll={handleFeedScroll}>
         {activeFeed.length === 0 ? (
-          <p className="rivalry-msgs__empty">{t('rivalries.messages.empty')}</p>
+          !feedError && <p className="rivalry-msgs__empty">{t('rivalries.messages.empty')}</p>
         ) : (
           renderFeed()
         )}
@@ -367,26 +352,6 @@ export default function MessagesTab({ hydrated, players }: TabProps) {
       </p>
 
       <div className="rivalry-msgs__composer">
-        <button
-          type="button"
-          className="rivalry-msgs__composer-icon"
-          disabled
-          title={t('rivalries.messages.attachComingSoon', {
-            defaultValue: 'Attachments coming soon',
-          })}
-          aria-label="attach"
-        >
-          📎
-        </button>
-        <button
-          type="button"
-          className="rivalry-msgs__composer-icon"
-          disabled
-          title={t('rivalries.messages.emojiComingSoon', { defaultValue: 'Emoji coming soon' })}
-          aria-label="emoji"
-        >
-          🙂
-        </button>
         <textarea
           ref={composerRef}
           className="rivalry-msgs__composer-input"
@@ -396,7 +361,6 @@ export default function MessagesTab({ hydrated, players }: TabProps) {
           onKeyDown={handleComposerKeyDown}
           rows={1}
           maxLength={COMPOSER_MAX_CHARS}
-          style={{ maxHeight: `${COMPOSER_MAX_LINES * 1.6}em` }}
           aria-label={t('rivalries.messages.placeholder')}
         />
         <span
@@ -409,14 +373,9 @@ export default function MessagesTab({ hydrated, players }: TabProps) {
         >
           {composer.length} / {COMPOSER_MAX_CHARS}
         </span>
-        <button
-          type="button"
-          className="rivalry-msgs__send"
-          disabled={posting || composer.trim().length === 0}
-          onClick={() => handleSend()}
-        >
+        <Button disabled={posting || composer.trim().length === 0} onClick={() => handleSend()}>
           {t('rivalries.messages.send')}
-        </button>
+        </Button>
       </div>
     </section>
   );

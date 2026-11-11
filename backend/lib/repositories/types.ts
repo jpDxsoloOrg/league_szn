@@ -119,6 +119,38 @@ export interface SeasonAward {
 
 // ─── Wave 4 types ──────────────────────────────────────────────────
 
+/** One strike on a player. Kept for good: clearing stamps it, nothing deletes it. */
+export interface PlayerStrike {
+  strikeId: string;
+  /** ISO, server time. */
+  issuedAt: string;
+  /** Cognito sub. */
+  issuedBy: string;
+  /** Admin's player name, else username, else 'League Staff'. Older rows can hold a Cognito id. */
+  issuedByName: string;
+  reason: string;
+  /** Set means it no longer counts. */
+  clearedAt?: string;
+  clearedBy?: string;
+  clearedByName?: string;
+  clearedReason?: string;
+  clearedKind?: 'removed' | 'reactivated';
+}
+
+/** One deactivation on a player, open until the reactivated fields are set. */
+export interface PlayerDeactivation {
+  deactivatedAt: string;
+  deactivatedBy: string;
+  deactivatedByName: string;
+  strikeId: string;
+  /** The login was already disabled at strike 3, so reactivating must not enable it. */
+  cognitoAlreadyDisabled?: boolean;
+  reactivatedAt?: string;
+  reactivatedBy?: string;
+  reactivatedByName?: string;
+  reactivationReason?: string;
+}
+
 export interface Player {
   playerId: string;
   userId?: string;
@@ -136,6 +168,12 @@ export interface Player {
    *               cannot blank the roster before the backfill has run.
    */
   hasWrestlerRole?: boolean;
+  /**
+   * Set when the player is deleted. The row stays so history keeps the name,
+   * but it reads as missing through every repository method except the
+   * `...WithDeleted` name lookups.
+   */
+  deletedAt?: string;
   name: string;
   currentWrestler: string;
   alternateWrestler?: string;
@@ -163,6 +201,18 @@ export interface Player {
   signatures?: WrestlerMove[];
   /** Up to MAX_MOVES finishers; see lib/movesets.ts for the limits. */
   finishers?: WrestlerMove[];
+  /**
+   * Discipline fields. These are not on `PlayerPatch`: write them only through
+   * `players.updateDiscipline`, and read them only through `lib/discipline.ts`.
+   */
+  strikes?: PlayerStrike[];
+  deactivations?: PlayerDeactivation[];
+  /** Present only while deactivated. Copy of the open PlayerDeactivation record. */
+  deactivatedAt?: string;
+  /** Optimistic lock for discipline writes. Absent reads as 0. */
+  disciplineVersion?: number;
+  /** toSignupGuardKey(email), stored at any strike that blocks or deactivates. Only used while isSignupBlocked. */
+  signupGuardKey?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -191,6 +241,8 @@ export interface Challenge {
   responseMessage?: string;
   counteredChallengeId?: string;
   matchId?: string;
+  /** The call-out promo this challenge came from. */
+  promoId?: string;
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamId?: string;
   challengedTagTeamId?: string;
@@ -406,6 +458,8 @@ export interface Promo {
   targetPromoId?: string;
   matchId?: string;
   championshipId?: string;
+  /** The challenge this call-out produced. Older call-outs don't have one. */
+  challengeId?: string;
   imageUrl?: string;
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamName?: string;
@@ -436,6 +490,7 @@ export interface ContenderRanking {
   previousRank?: number | null;
   peakRank?: number;
   weeksAtTop?: number;
+  lastTopWeek?: string;
   isOverridden?: boolean;
   overrideType?: string | null;
   organicRank?: number | null;
@@ -566,11 +621,15 @@ export interface Match {
   losers?: string[];
   isDraw?: boolean;
   isChampionship?: boolean;
+  /** Set when a championship result is recorded: true when the champion retained. */
+  isTitleDefense?: boolean;
   championshipId?: string;
   tournamentId?: string;
   seasonId?: string;
   eventId?: string;
   /** Optional pointer to the rivalry this match advances (RIV-06). */
+  /** The challenge this match was booked from. */
+  challengeId?: string;
   rivalryId?: string;
   status: MatchStatus;
   slots?: MatchSlot[];
@@ -603,6 +662,7 @@ export interface Championship {
   name: string;
   type: 'singles' | 'tag';
   currentChampion?: string | string[];
+  divisionId?: string;
   imageUrl?: string;
   isActive?: boolean;
   defenses?: number;

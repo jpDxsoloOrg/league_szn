@@ -57,7 +57,7 @@ describe('createPromo', () => {
 
   it('creates a promo with required fields and returns 201', async () => {
     mockQuery.mockResolvedValue({
-      Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }],
+      Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }],
     });
     mockPut.mockResolvedValue({});
 
@@ -84,9 +84,9 @@ describe('createPromo', () => {
   });
 
   it('includes optional fields when provided', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }] });
     // mockGet is called for players.findById(targetPlayerId) during notification check
-    mockGet.mockResolvedValue({ Item: { playerId: 'player-2', name: 'Target Player', userId: 'user-sub-2' } });
+    mockGet.mockResolvedValue({ Item: { playerId: 'player-2', name: 'Target Player', currentWrestler: 'Target Wrestler', userId: 'user-sub-2' } });
     mockPut.mockResolvedValue({});
 
     const event = withAuth(
@@ -109,6 +109,31 @@ describe('createPromo', () => {
     expect(data.targetPromoId).toBe('promo-99');
     expect(data.matchId).toBe('match-5');
     expect(data.championshipId).toBe('champ-3');
+  });
+
+  it('refuses a title that does not exist, such as the old championship-match id', async () => {
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }] });
+    mockGet.mockResolvedValue({ Item: undefined });
+
+    const result = await createPromo(withAuth(makeEvent({
+      body: JSON.stringify({ promoType: 'championship', content: VALID_CONTENT, championshipId: 'championship-match' }),
+    }), 'Wrestler'), ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(body(result).message).toBe('Championship not found');
+    expect(mockPut).not.toHaveBeenCalled();
+  });
+
+  it('accepts a title that exists', async () => {
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }] });
+    mockGet.mockResolvedValue({ Item: { championshipId: 'c1', name: 'World Title' } });
+    mockPut.mockResolvedValue({});
+
+    const result = await createPromo(withAuth(makeEvent({
+      body: JSON.stringify({ promoType: 'championship', content: VALID_CONTENT, championshipId: 'c1' }),
+    }), 'Wrestler'), ctx, cb);
+
+    expect(result!.statusCode).toBe(201);
   });
 
   it('returns 400 when caller is not a Wrestler', async () => {
@@ -198,7 +223,7 @@ describe('createPromo', () => {
 
   it('accepts a response promo when targetPromoId is provided', async () => {
     mockQuery.mockResolvedValue({
-      Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }],
+      Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }],
     });
     mockPut.mockResolvedValue({});
 
@@ -232,7 +257,7 @@ describe('createPromo', () => {
     const validTypes = ['open-mic', 'call-out', 'response', 'pre-match', 'post-match', 'championship', 'return'];
     for (const promoType of validTypes) {
       vi.clearAllMocks();
-      mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+      mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' }] });
       mockPut.mockResolvedValue({});
       const payload: Record<string, string> = { promoType, content: VALID_CONTENT };
       // Response promos require a target promo reference.
@@ -246,7 +271,7 @@ describe('createPromo', () => {
   });
 
   it('returns 500 when dynamodb put throws an error', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' }] });
     mockPut.mockRejectedValue(new Error('DynamoDB failure'));
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ promoType: 'open-mic', content: VALID_CONTENT }) }),
@@ -262,7 +287,7 @@ describe('createPromo', () => {
     // then no rivalry rows on the second call (rivalry META lookup).
     mockQuery
       .mockResolvedValueOnce({
-        Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }],
+        Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }],
       })
       .mockResolvedValueOnce({ Items: [] });
 
@@ -288,7 +313,7 @@ describe('createPromo', () => {
     // First query: find player. Second query: rivalry rows with a different participant.
     mockQuery
       .mockResolvedValueOnce({
-        Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }],
+        Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }],
       })
       .mockResolvedValueOnce({
         Items: [
@@ -333,7 +358,7 @@ describe('createPromo', () => {
 
   it('returns 400 when a rivalry-type promo is submitted without rivalryId', async () => {
     mockQuery.mockResolvedValue({
-      Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }],
+      Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }],
     });
 
     const event = withAuth(

@@ -1,5 +1,6 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
+import { isCallerDeactivated } from './accountStatus';
 
 let verifier: ReturnType<typeof CognitoJwtVerifier.create> | null = null;
 
@@ -23,6 +24,9 @@ export type AuthenticateResult = { ok: true } | { ok: false };
  *
  * In offline mode the JWT check is skipped and a synthetic Admin context is
  * installed, matching the behaviour of functions/auth/authorizer.ts.
+ *
+ * A deactivated player's token fails here even while it is still valid, and the
+ * context is left empty so optional-auth reads fall back to the public view.
  */
 export async function authenticate(event: APIGatewayProxyEvent): Promise<AuthenticateResult> {
   if (process.env.IS_OFFLINE === 'true') {
@@ -44,6 +48,9 @@ export async function authenticate(event: APIGatewayProxyEvent): Promise<Authent
 
   try {
     const payload = await getVerifier().verify(token);
+    if (await isCallerDeactivated(event, payload.sub)) {
+      return { ok: false };
+    }
     const groups = (payload['cognito:groups'] as string[] | undefined) || [];
     const username = typeof payload.username === 'string' ? payload.username : payload.sub;
     const email = typeof payload.email === 'string' ? payload.email : '';

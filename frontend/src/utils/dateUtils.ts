@@ -46,6 +46,40 @@ export function formatCalendarDate(
 }
 
 /**
+ * Format a match date for display. Matches booked on an event copy the event's
+ * calendar day and must not shift with the viewer's timezone; matches with a
+ * real timestamp keep the viewer's local day.
+ */
+export function formatMatchDate(
+  value: string,
+  locale?: string,
+  options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' },
+): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return formatCalendarDate(value, locale, options);
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(locale, options);
+}
+
+/**
+ * Format an exact moment, such as when a strike falls off, as date and time in
+ * the viewer's timezone with the zone shown. Discipline windows end at any
+ * hour, so these must never go through `formatCalendarDate`, which cuts the
+ * value to its UTC day and can show a day late.
+ */
+export function formatInstant(iso: string, locale?: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString(locale, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  });
+}
+
+/**
  * Formats a date string to a localized short date format.
  * Example: "Jan 15, 2024"
  *

@@ -4,7 +4,7 @@ import {
   AdminAddUserToGroupCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { getRepositories } from '../../lib/repositories';
-import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
+import { NEEDS_WRESTLER, newPlayerName } from '../../lib/needsWrestler';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 
@@ -68,7 +68,7 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
         }
 
         const newPlayer = await players.create({
-          name: playerName,
+          name: newPlayerName(playerName, wrestlerName, sub),
           currentWrestler: wrestlerName || NEEDS_WRESTLER,
           psnId: psnId || undefined,
           divisionId,

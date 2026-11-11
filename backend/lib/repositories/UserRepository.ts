@@ -28,6 +28,7 @@ export interface ChallengeCreateInput {
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamId?: string;
   challengedTagTeamId?: string;
+  promoId?: string;
   expiresAt: string;
 }
 
@@ -100,6 +101,14 @@ export interface UserRepository {
     listByChallenger(playerId: string): Promise<Challenge[]>;
     listByChallenged(playerId: string): Promise<Challenge[]>;
     listByPlayer(playerId: string): Promise<Challenge[]>;
+    /**
+     * Mark a challenge expired only if it is still pending, so a racing
+     * accept is never overwritten. Resolves false when it was no longer
+     * pending. Leaves `updatedAt` alone: expiring is not new activity.
+     */
+    expireIfPending(challengeId: string): Promise<boolean>;
+    /** Writes only if the status still matches. Resolves false when it has moved on. */
+    updateIfStatus(challengeId: string, patch: Partial<Challenge>, expectedStatus: ChallengeStatus): Promise<boolean>;
   };
   fantasy: FantasyMethods;
   siteConfig: SiteConfigMethods;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { EventStatus, EventCheckInStatus, EventCheckInSummary } from '../../types/event';
+import SuspensionNotice from '../discipline/SuspensionNotice';
 import './EventCheckIn.css';
 
 interface EventCheckInProps {
@@ -10,11 +11,20 @@ interface EventCheckInProps {
   onChange: (status: EventCheckInStatus | null) => Promise<void>;
   /** Admin-controlled lock; independent of `eventStatus`. */
   signupsLocked?: boolean;
+  /** When the player's sign-up block lifts. Only "unavailable" stays on until then. */
+  signupBlockedUntil?: string | null;
 }
 
 const RSVP_OPTIONS: EventCheckInStatus[] = ['available', 'tentative', 'unavailable'];
 
-function EventCheckIn({ eventStatus, currentStatus, summary, onChange, signupsLocked = false }: EventCheckInProps) {
+function EventCheckIn({
+  eventStatus,
+  currentStatus,
+  summary,
+  onChange,
+  signupsLocked = false,
+  signupBlockedUntil = null,
+}: EventCheckInProps) {
   const { t } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
 
@@ -34,6 +44,7 @@ function EventCheckIn({ eventStatus, currentStatus, summary, onChange, signupsLo
 
   return (
     <div className={`event-checkin${locked ? ' disabled' : ''}`}>
+      {signupBlockedUntil && <SuspensionNotice until={signupBlockedUntil} />}
       <div className="event-checkin-buttons">
         {RSVP_OPTIONS.map((status) => {
           const isSelected = currentStatus === status;
@@ -42,7 +53,8 @@ function EventCheckIn({ eventStatus, currentStatus, summary, onChange, signupsLo
               key={status}
               type="button"
               className={`event-checkin-btn event-checkin-btn-${status}${isSelected ? ' selected' : ''}`}
-              disabled={disabled}
+              aria-pressed={isSelected}
+              disabled={disabled || (Boolean(signupBlockedUntil) && status !== 'unavailable')}
               onClick={() => handleChange(status)}
             >
               {t(`events.checkIn.${status}`)}

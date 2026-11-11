@@ -4,6 +4,7 @@ import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { createNotification } from '../../lib/notifications';
+import { teamMemberRefusal } from '../../lib/disciplineGates';
 
 interface CreateTagTeamBody {
   name: string;
@@ -49,6 +50,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (!partnerPlayer) {
       return badRequest('Partner player not found');
     }
+
+    const partnerBlocked = teamMemberRefusal(partnerPlayer);
+    if (partnerBlocked) return partnerBlocked;
 
     // Verify partner doesn't already have a tag team
     if (partnerPlayer.tagTeamId) {

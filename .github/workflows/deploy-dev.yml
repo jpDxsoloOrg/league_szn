@@ -43,9 +43,16 @@ jobs:
         working-directory: frontend
         run: npm test
 
+  checks:
+    name: Backend Checks & Secret Scan
+    uses: ./.github/workflows/ci-checks.yml
+
   deploy-dev:
     name: Deploy to Dev Environment
-    needs: test
+    needs: [test, checks]
+    concurrency:
+      group: deploy-dev
+      cancel-in-progress: false
     runs-on: ubuntu-latest
 
     steps:
@@ -72,7 +79,19 @@ jobs:
         working-directory: backend
         run: npm ci
 
+      - name: Check generated stacks for dependency cycles
+        working-directory: backend
+        run: |
+          npx serverless package --stage devtest
+          node scripts/check-stack-cycles.js
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          DEV_ACM_CERTIFICATE_ARN: ${{ secrets.DEV_ACM_CERTIFICATE_ARN }}
+          ADMIN_SETUP_KEY: ${{ secrets.ADMIN_SETUP_KEY }}
+
       - name: Deploy backend to dev
+        id: deploy_backend
         working-directory: backend
         run: npx serverless deploy --stage devtest
         env:
@@ -83,6 +102,8 @@ jobs:
 
       - name: Extract Cognito IDs from CloudFormation
         id: cognito
+        # Runs after a failed deploy too: a rollback does not restore the triggers.
+        if: ${{ !cancelled() && steps.deploy_backend.conclusion != 'skipped' }}
         run: |
           USER_POOL_ID=$(aws cloudformation describe-stacks \
             --stack-name wwe-2k-league-api-devtest \
@@ -98,6 +119,7 @@ jobs:
           echo "Cognito Client ID: $CLIENT_ID"
 
       - name: Wire Cognito post-confirmation trigger
+        if: ${{ !cancelled() && steps.deploy_backend.conclusion != 'skipped' }}
         # Idempotent — attaches the PostConfirmation Lambda to the User Pool so
         # new signups auto-receive the Wrestler role + Player record + default
         # division. CloudFormation can't wire this itself due to a circular
@@ -118,13 +140,46 @@ jobs:
           VITE_COGNITO_CLIENT_ID: ${{ steps.cognito.outputs.client_id }}
           VITE_AWS_REGION: us-east-1
 
-      - name: Deploy frontend to S3
+      # Upload order matters. Hashed assets go first, so a new index.html never
+      # points at a file that is missing. assets/ is never pruned, because tabs
+      # still running the previous build load their chunks from it. index.html
+      # goes last, as no-cache, so browsers always pick up the current build.
+      - name: Upload hashed assets
         working-directory: frontend
-        run: aws s3 sync dist s3://dev.leagueszn.jpdxsolo.com --delete --exclude "*.map"
+        run: |
+          aws s3 sync dist/assets s3://dev.leagueszn.jpdxsolo.com/assets \
+            --exclude "*.map" \
+            --cache-control "public, max-age=31536000, immutable"
 
-      # The sync above uploads index.html with no Cache-Control, so browsers
-      # cache it heuristically and keep pointing at an old JS bundle. Re-upload
-      # it as no-cache; the hashed assets/* files stay long-lived.
+      - name: Upload remaining static files
+        working-directory: frontend
+        run: |
+          aws s3 sync dist s3://dev.leagueszn.jpdxsolo.com --delete \
+            --exclude "assets/*" \
+            --exclude "index.html" \
+            --exclude "sw.js" \
+            --exclude "sw-kill.js" \
+            --exclude "manifest.webmanifest" \
+            --exclude "*.map" \
+            --cache-control "public, max-age=300"
+
+      # The service worker and manifest must never sit in a cache: browsers look
+      # for a new sw.js on every navigation. Without the right content type the
+      # browser refuses the worker, and CloudFront answers a missing /sw.js with
+      # index.html, so these are uploaded explicitly.
+      - name: Upload service worker and manifest as no-cache
+        working-directory: frontend
+        run: |
+          aws s3 cp dist/sw.js s3://dev.leagueszn.jpdxsolo.com/sw.js \
+            --cache-control "no-cache" \
+            --content-type "application/javascript"
+          aws s3 cp dist/sw-kill.js s3://dev.leagueszn.jpdxsolo.com/sw-kill.js \
+            --cache-control "no-cache" \
+            --content-type "application/javascript"
+          aws s3 cp dist/manifest.webmanifest s3://dev.leagueszn.jpdxsolo.com/manifest.webmanifest \
+            --cache-control "no-cache" \
+            --content-type "application/manifest+json"
+
       - name: Upload index.html as no-cache
         working-directory: frontend
         run: |
@@ -147,11 +202,6 @@ jobs:
             --distribution-id ${{ steps.cloudfront.outputs.distribution_id }} \
             --paths "/*"
 
-      - name: Wait for CloudFront invalidation
-        run: |
-          echo "Waiting for CloudFront cache to propagate..."
-          sleep 30
-
       # E2E tests and screenshots temporarily disabled
       # - name: Install E2E test dependencies
       #   working-directory: e2e
@@ -166,6 +216,8 @@ jobs:
       #   run: npx playwright test --project=chromium
       #   env:
       #     TEST_ENV: dev
+      #     E2E_ADMIN_USERNAME: ${{ secrets.E2E_ADMIN_USERNAME }}
+      #     E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
       #
       # - name: Upload E2E test results
       #   uses: actions/upload-artifact@v4
@@ -192,7 +244,7 @@ jobs:
       - name: Deployment summary
         if: always()
         run: |
-          echo "## Dev Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## Dev Deployment: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Frontend**: https://dev.leagueszn.jpdxsolo.com" >> $GITHUB_STEP_SUMMARY
           echo "- **CloudFront Distribution**: ${{ steps.cloudfront.outputs.distribution_id }}" >> $GITHUB_STEP_SUMMARY

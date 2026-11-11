@@ -1,53 +1,42 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useMemo, useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { playersApi, standingsApi, divisionsApi, factionsApi, tagTeamsApi } from '../../services/api';
+import { UserRoundX } from 'lucide-react';
+import {
+  championshipsApi,
+  divisionsApi,
+  factionsApi,
+  isApiError,
+  matchesApi,
+  playersApi,
+  rivalriesApi,
+  standingsApi,
+  tagTeamsApi,
+} from '../../services/api';
+import type { PlayerDirectoryEntry } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
-import {
-  DEFAULT_WRESTLER_IMAGE,
-  applyImageFallback,
-  resolveImageSrc,
-} from '../../constants/imageFallbacks';
-import { isNeedsWrestler } from '../../utils/needsWrestler';
-import MoveList from './MoveList';
-import type { Player, Division } from '../../types';
+import Button from '../ui/Button';
+import EmptyState from '../ui/EmptyState';
+import Skeleton from '../ui/Skeleton';
+import type { Championship, Match, Player, Division } from '../../types';
+import type { Rivalry } from '../../types/rivalry';
 import type { Stable } from '../../types/stable';
 import type { TagTeam } from '../../types/tagTeam';
-import './PublicProfile.css';
-
-interface SeasonRecord {
-  seasonId: string;
-  seasonName: string;
-  seasonStatus: string;
-  wins: number;
-  losses: number;
-  draws: number;
-}
+import { computePlayerForm } from '../../utils/matchDisplay';
+import { getTitleAccent } from '../titleAccent';
+import MovesetSection from './MovesetSection';
+import ProfileHero from './ProfileHero';
+import ProfileRivalries from './ProfileRivalries';
+import RecentMatches from './RecentMatches';
+import RecordSummary from './RecordSummary';
+import SeasonRecords from './SeasonRecords';
+import type { SeasonRecord } from './profileRecord';
+import '../MeForms.css';
+import './Profile.css';
 
 interface PlayerProfile extends Player {
   seasonRecords?: SeasonRecord[];
-}
-
-interface StandingsEntry {
-  playerId: string;
-  recentForm?: ('W' | 'L' | 'D')[];
-  currentStreak?: { type: 'W' | 'L' | 'D'; count: number };
-}
-
-function getWinPercentage(wins: number, losses: number, draws: number): string {
-  const total = wins + losses + draws;
-  if (total === 0) return '0';
-  return ((wins / total) * 100).toFixed(1);
-}
-
-function getWinPercentageClass(wins: number, losses: number, draws: number): string {
-  const total = wins + losses + draws;
-  if (total === 0) return '';
-  const pct = (wins / total) * 100;
-  if (pct >= 60) return 'win-high';
-  if (pct >= 40) return 'win-medium';
-  return 'win-low';
 }
 
 export default function PublicProfile() {
@@ -57,7 +46,11 @@ export default function PublicProfile() {
   const { features } = useSiteConfig();
 
   const [player, setPlayer] = useState<PlayerProfile | null>(null);
-  const [standingsEntry, setStandingsEntry] = useState<StandingsEntry | null>(null);
+  const [overall, setOverall] = useState<number | undefined>();
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [championships, setChampionships] = useState<Championship[]>([]);
+  const [rivalries, setRivalries] = useState<Rivalry[]>([]);
+  const [directory, setDirectory] = useState<PlayerDirectoryEntry[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [stables, setStables] = useState<Stable[]>([]);
   const [tagTeams, setTagTeams] = useState<TagTeam[]>([]);
@@ -75,12 +68,29 @@ export default function PublicProfile() {
         setLoading(true);
         setError(null);
 
-        const [playerData, standingsData, divisionsData, stablesData, tagTeamsData] = await Promise.all([
+        // Only the player is essential; each of the rest adds one part of the card.
+        const [
+          playerData,
+          standingsData,
+          divisionsData,
+          stablesData,
+          tagTeamsData,
+          matchesData,
+          championshipsData,
+          rivalriesData,
+          directoryData,
+        ] = await Promise.all([
           playersApi.getById(playerId, signal),
-          standingsApi.get(undefined, signal),
-          divisionsApi.getAll(signal),
+          standingsApi.get(undefined, signal).catch(() => null),
+          divisionsApi.getAll(signal).catch(() => [] as Division[]),
           factionsApi.getAll(undefined, signal).catch(() => [] as Stable[]),
           tagTeamsApi.getAll(undefined, signal).catch(() => [] as TagTeam[]),
+          matchesApi.getAll({ playerId }, signal).catch(() => [] as Match[]),
+          championshipsApi.getAll(signal).catch(() => [] as Championship[]),
+          rivalriesApi.list({ participantId: playerId, status: 'active' }, signal)
+            .then((response) => response.rivalries)
+            .catch(() => [] as Rivalry[]),
+          playersApi.getDirectory(signal).catch(() => [] as PlayerDirectoryEntry[]),
         ]);
 
         if (signal.aborted) return;
@@ -89,19 +99,15 @@ export default function PublicProfile() {
         setDivisions(divisionsData);
         setStables(stablesData);
         setTagTeams(tagTeamsData);
-
-        // Find this player's entry in standings for form/streak data
-        const entry = standingsData.players.find((p) => p.playerId === playerId);
-        if (entry) {
-          setStandingsEntry({
-            playerId: entry.playerId,
-            recentForm: entry.recentForm,
-            currentStreak: entry.currentStreak,
-          });
-        }
+        setMatches(matchesData);
+        setChampionships(championshipsData);
+        setRivalries(rivalriesData);
+        setDirectory(directoryData);
+        // Standings leave some players out, so they only supply the overall.
+        setOverall(standingsData?.players.find((entry) => entry.playerId === playerId)?.mainOverall);
       } catch (err) {
         if (signal.aborted) return;
-        if (err instanceof Error && err.message.includes('404')) {
+        if (isApiError(err, 404)) {
           setError(t('publicProfile.notFound'));
         } else {
           setError(err instanceof Error ? err.message : t('publicProfile.loadError'));
@@ -113,205 +119,110 @@ export default function PublicProfile() {
       }
     };
 
-    fetchData();
+    void fetchData();
 
     return () => {
       controller.abort();
     };
   }, [playerId, t]);
 
-  // Resolve division name
-  const divisionName = player?.divisionId
-    ? divisions.find((d) => d.divisionId === player.divisionId)?.name
-    : null;
-
-  // Resolve stable name
-  const stableName = player?.stableId
-    ? stables.find((s) => s.stableId === player.stableId)?.name
-    : null;
-
-  // Resolve tag team name
-  const tagTeamName = player?.tagTeamId
-    ? tagTeams.find((tt) => tt.tagTeamId === player.tagTeamId)?.name
-    : null;
+  const names = useMemo(
+    () => new Map(directory.map((entry) => [entry.playerId, entry.currentWrestler || entry.name])),
+    [directory],
+  );
 
   if (loading) {
     return (
-      <div className="public-profile">
-        <div className="loading-state">
-          <div className="loading-spinner" role="status" aria-label={t('publicProfile.loading')}></div>
-          <p className="loading-text">{t('publicProfile.loading')}</p>
-        </div>
+      <div className="profile-page">
+        <Skeleton variant="block" count={4} />
       </div>
     );
   }
 
   if (error || !player) {
     return (
-      <div className="public-profile">
-        {error && <div className="error-message">{error}</div>}
-        <div className="empty-state">
-          <h3>{t('publicProfile.notFoundTitle')}</h3>
-          <p>{t('publicProfile.notFoundMessage')}</p>
-        </div>
+      <div className="profile-page">
+        {error && <p className="me-alert me-alert--error" role="alert">{error}</p>}
+        <EmptyState
+          icon={<UserRoundX aria-hidden="true" size={32} />}
+          title={t('publicProfile.notFoundTitle')}
+          description={t('publicProfile.notFoundMessage')}
+        />
       </div>
     );
   }
 
-  const seasonRecords = (player as PlayerProfile).seasonRecords;
+  const details = [
+    {
+      label: t('publicProfile.division'),
+      value: divisions.find((division) => division.divisionId === player.divisionId)?.name,
+    },
+    {
+      label: t('publicProfile.stable'),
+      value: stables.find((stable) => stable.stableId === player.stableId)?.name,
+    },
+    {
+      label: t('publicProfile.tagTeam'),
+      value: tagTeams.find((tagTeam) => tagTeam.tagTeamId === player.tagTeamId)?.name,
+    },
+  ].flatMap(({ label, value }) => (value ? [{ label, value }] : []));
+
+  const form = computePlayerForm(player.playerId, matches);
+  const titles = championships
+    .filter((championship) => {
+      const holder = championship.currentChampion;
+      return championship.isActive !== false && (Array.isArray(holder) ? holder.includes(player.playerId) : holder === player.playerId);
+    })
+    .map((championship) => ({
+      id: championship.championshipId,
+      name: championship.name,
+      accent: getTitleAccent(championship),
+    }));
+
+  const hasMoveset =
+    Boolean(player.bio) || (player.signatures?.length ?? 0) > 0 || (player.finishers?.length ?? 0) > 0;
+  const canChallenge =
+    features.challenges && isAuthenticated && isWrestler && currentPlayerId && currentPlayerId !== playerId;
+  const headToHeadPath = `/stats/head-to-head?${currentPlayerId ? `player1=${currentPlayerId}&` : ''}player2=${playerId}`;
 
   return (
-    <div className="public-profile">
-      {/* Profile Header */}
-      <div className="profile-header">
-        <div className="profile-image-wrapper">
-          <img
-            src={resolveImageSrc(player.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-            onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-            alt={player.name}
-            className="profile-image"
-          />
-        </div>
-        <div className="profile-header-info">
-          <h1 className="profile-name">{player.name}</h1>
-          {!isNeedsWrestler(player.currentWrestler) && (
-            <p className="profile-wrestler-name">
-              {t('publicProfile.playingAs')} {player.currentWrestler}
-            </p>
-          )}
-          {player.alternateWrestler && (
-            <p className="profile-alternate-wrestler">
-              {t('publicProfile.alternateWrestler')}: {player.alternateWrestler}
-            </p>
-          )}
-          {player.psnId && (
-            <p className="profile-psn-id">
-              {t('publicProfile.psnId')}: {player.psnId}
-            </p>
-          )}
-          {divisionName && (
-            <p className="profile-division">
-              {t('publicProfile.division')}: {divisionName}
-            </p>
-          )}
-          {stableName && (
-            <p className="profile-stable">
-              {t('publicProfile.stable')}: {stableName}
-            </p>
-          )}
-          {tagTeamName && (
-            <p className="profile-tag-team">
-              {t('publicProfile.tagTeam')}: {tagTeamName}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="profile-actions">
-        <Link to={`/stats/head-to-head?${currentPlayerId ? `player1=${currentPlayerId}&` : ''}player2=${playerId}`} className="action-btn h2h-btn">
-          {t('publicProfile.viewHeadToHead')}
-        </Link>
-        {features.statistics && (
-          <Link to={`/stats/player/${playerId}`} className="action-btn stats-btn">
-            {t('publicProfile.fullStats')}
-          </Link>
-        )}
-        {features.challenges && isAuthenticated && isWrestler && currentPlayerId && currentPlayerId !== playerId && (
-          <Link to={`/promos/new?promoType=call-out&targetPlayerId=${playerId}`} className="action-btn challenge-btn">
-            {t('publicProfile.challenge')}
-          </Link>
-        )}
-      </div>
-
-      {/* Bio + moveset — only when the player has entered something */}
-      {(player.bio || (player.signatures?.length ?? 0) > 0 || (player.finishers?.length ?? 0) > 0) && (
-        <div className="stats-section profile-moveset-section">
-          <h3 className="stats-section-title">{t('publicProfile.moveset')}</h3>
-          {player.bio && <p className="profile-bio">{player.bio}</p>}
-          <div className="moveset-columns">
-            <MoveList title={t('profile.moves.signatures')} moves={player.signatures} />
-            <MoveList title={t('profile.moves.finishers')} moves={player.finishers} />
-          </div>
-        </div>
-      )}
-
-      {/* All-Time Record */}
-      <div className="stats-section">
-        <h3 className="stats-section-title">{t('publicProfile.allTimeRecord')}</h3>
-        <div className="profile-stats">
-          <div className="stat-card">
-            <span className="stat-label">{t('publicProfile.record')}</span>
-            <span className="stat-value record">
-              {player.wins}-{player.losses}-{player.draws}
-            </span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-label">{t('publicProfile.winPercent')}</span>
-            <span className={`stat-value percentage ${getWinPercentageClass(player.wins, player.losses, player.draws)}`}>
-              {getWinPercentage(player.wins, player.losses, player.draws)}%
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Form & Streak */}
-      {standingsEntry && (
-        <div className="stats-section">
-          <div className="profile-stats">
-            {standingsEntry.recentForm && standingsEntry.recentForm.length > 0 && (
-              <div className="stat-card">
-                <span className="stat-label">{t('publicProfile.form')}</span>
-                <div className="form-dots">
-                  {standingsEntry.recentForm.map((result, i) => (
-                    <span
-                      key={i}
-                      className={`form-dot ${result === 'W' ? 'win' : result === 'L' ? 'loss' : 'draw'}`}
-                    >
-                      {result}
-                    </span>
-                  ))}
-                </div>
-              </div>
+    <div className="profile-page">
+      <ProfileHero
+        player={player}
+        details={details}
+        card={{
+          overall: player.mainOverall ?? overall,
+          titles,
+          // The form is newest first; FormDots reads oldest to newest.
+          form: [...form.recentForm].reverse(),
+          streak: form.currentStreak,
+        }}
+        actions={
+          <>
+            {canChallenge && (
+              <Button to={`/promos/new?promoType=call-out&targetPlayerId=${playerId}`}>
+                {t('publicProfile.challenge')}
+              </Button>
             )}
-            {standingsEntry.currentStreak && (
-              <div className="stat-card">
-                <span className="stat-label">{t('publicProfile.streak')}</span>
-                <span className="stat-value streak">
-                  {standingsEntry.currentStreak.count}{standingsEntry.currentStreak.type}
-                </span>
-              </div>
+            <Button variant="secondary" to={headToHeadPath}>{t('publicProfile.viewHeadToHead')}</Button>
+            {features.statistics && (
+              <Button variant="secondary" to={`/stats/player/${playerId}`}>{t('publicProfile.fullStats')}</Button>
             )}
-          </div>
-        </div>
-      )}
+          </>
+        }
+      />
 
-      {/* Season Records */}
-      {seasonRecords && seasonRecords.length > 0 && (
-        <div className="stats-section">
-          <h3 className="stats-section-title">{t('publicProfile.seasonRecords')}</h3>
-          <div className="season-records">
-            {seasonRecords.map((season) => (
-              <div key={season.seasonId} className="season-record-card">
-                <div className="season-record-header">
-                  <span className="season-record-name">{season.seasonName}</span>
-                  {season.seasonStatus === 'active' && (
-                    <span className="season-active-badge">{t('publicProfile.active')}</span>
-                  )}
-                </div>
-                <div className="season-record-stats">
-                  <span className="season-record-value">
-                    {season.wins}-{season.losses}-{season.draws}
-                  </span>
-                  <span className={`season-record-pct ${getWinPercentageClass(season.wins, season.losses, season.draws)}`}>
-                    {getWinPercentage(season.wins, season.losses, season.draws)}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+      <RecordSummary record={player} titlesHeld={titles.length} />
+
+      <div className="profile-columns">
+        <RecentMatches playerId={player.playerId} matches={matches} names={names} />
+        <div className="profile-columns__side">
+          <ProfileRivalries playerId={player.playerId} rivalries={rivalries} names={names} />
+          <SeasonRecords seasons={player.seasonRecords ?? []} />
         </div>
-      )}
+      </div>
+
+      {hasMoveset && <MovesetSection player={player} />}
     </div>
   );
 }

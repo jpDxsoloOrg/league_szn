@@ -1,8 +1,13 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
+import { maskSystemMessageIds } from '../../lib/reviewerName';
 import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { authenticate } from '../../lib/authenticate';
 import { getAuthContext, hasRole } from '../../lib/auth';
+import { findHiddenPlayerIds } from '../../lib/needsWrestler';
+import { isPromoArchived } from '../../lib/promoArchive';
+import { rejectOverlongQuery } from '../../lib/router';
+import { filterListedRivalries } from './rivalryVisibility';
 import type {
   Rivalry,
   RivalryActivityItem,
@@ -51,7 +56,7 @@ function parseLimit(raw: string | undefined): number {
  * persists `rivalryId` directly on those records this can switch to a
  * cheaper direct lookup without changing the response shape.
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = rejectOverlongQuery(async (event) => {
   try {
     const qp = event.queryStringParameters || {};
     const eventId = qp.eventId || undefined;
@@ -75,20 +80,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       roster: { players },
     } = getRepositories();
 
-    // Default participantId to the caller's own playerId so authed users
-    // see their own feed without having to pass an explicit filter.
-    let participantId = qp.participantId || undefined;
+    // The caller only widens what they may read. Their own feed is an explicit
+    // participantId, so the shared feed stays the same for members and guests.
+    const participantId = qp.participantId || undefined;
     let callerPlayerId: string | undefined;
     if (auth.sub) {
       const callerPlayer = await players.findByUserId(auth.sub).catch(() => null);
       callerPlayerId = callerPlayer?.playerId;
-      if (!participantId) participantId = callerPlayerId;
     }
 
-    // Role-scoped memoization: different audiences see different items,
-    // so the cache key must factor in the caller's visibility tier.
-    const roleKey = isAdmin ? 'admin' : callerPlayerId ? 'participant' : 'public';
-    const key = [roleKey, participantId ?? '', eventId ?? '', cursor ?? '', String(limit)].join('|');
+    // Audience-scoped memoization: what a signed-in player sees depends on
+    // which rivalries they are in, so each player gets their own entry.
+    const audienceKey = isAdmin ? 'admin' : callerPlayerId ? `player:${callerPlayerId}` : 'public';
+    const key = [audienceKey, participantId ?? '', eventId ?? '', cursor ?? '', String(limit)].join('|');
     const now = Date.now();
     const cached = memo.get(key);
     if (cached && cached.expiresAt > now) {
@@ -99,7 +103,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const visibleResult = participantId
       ? await rivalries.listByParticipant(participantId, { limit: limit * 2 })
       : await rivalries.listByStatus('active', { limit: limit * 2 });
-    let visible: Rivalry[] = visibleResult.items;
+    let visible: Rivalry[] = await filterListedRivalries(
+      visibleResult.items,
+      (playerId) => players.findById(playerId),
+      { canSeeAll: isAdmin, callerPlayerId },
+    );
 
     // Event filter: join via matches to find rivalry participant pairs
     // that have a match on the requested event.
@@ -148,10 +156,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       matches.list(),
       Promise.all(
         visible.map(async (r) => {
-          const perPlayer = await Promise.all(
-            r.participants.map((p) => promos.listByPlayer(p.playerId)),
-          );
-          return { rivalry: r, items: perPlayer.flat().slice(0, perSourceCap) };
+          const participantIds = r.participants.map((p) => p.playerId);
+          const [perPlayer, hiddenAuthorIds] = await Promise.all([
+            Promise.all(participantIds.map((playerId) => promos.listByPlayer(playerId))),
+            findHiddenPlayerIds(participantIds, (playerId) => players.findById(playerId)),
+          ]);
+          const listed = perPlayer
+            .flat()
+            .filter((p) => !p.isHidden && !isPromoArchived(p, now) && !hiddenAuthorIds.has(p.playerId));
+          return { rivalry: r, items: listed.slice(0, perSourceCap) };
         }),
       ),
     ]);
@@ -168,7 +181,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           rivalryId: m.rivalryId,
           messageId: m.messageId,
           authorPlayerId: m.authorPlayerId,
-          body: m.body,
+          body: maskSystemMessageIds(m).body,
           audience: m.audience,
           occurredAt: m.createdAt,
         });
@@ -257,7 +270,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     console.error('Error building rivalry activity feed:', err);
     return serverError('Failed to load rivalry activity');
   }
-};
+});
 
 function isCallerParticipant(
   rivalry: Rivalry,

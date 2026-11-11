@@ -2,17 +2,22 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { hasWrestlerRole } from '../../lib/wrestlerRole';
+import { isPlayerVisible } from '../../lib/needsWrestler';
 import { computeRecentFormAndStreak } from '../../lib/recentForm';
+import { getVerifiedCaller } from '../../lib/optionalCaller';
+import { toPublicPlayer } from '../../lib/publicPlayer';
+import { rejectOverlongQuery } from '../../lib/router';
 
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = rejectOverlongQuery(async (event) => {
   try {
     const { competition: { matches }, roster: { players, overalls }, season: { standings: seasonStandings } } = getRepositories();
     const seasonId = event.queryStringParameters?.seasonId;
 
     // Fetch overalls and matches in parallel
-    const [overallItems, rawMatches] = await Promise.all([
+    const [overallItems, rawMatches, caller] = await Promise.all([
       overalls.listAll(),
       matches.listCompleted(),
+      getVerifiedCaller(event),
     ]);
 
     const overallsByPlayerId = new Map<string, number>(
@@ -21,7 +26,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         .map(o => [o.playerId, o.mainOverall])
     );
 
-    // Last 5 and streak: only matches with updatedAt (same as dashboard recent results), sort by updatedAt desc
+    // Last 5 and streak: only matches with updatedAt, newest match date first
     const completedMatches = rawMatches.filter((m) => m.updatedAt);
 
     if (seasonId) {
@@ -31,10 +36,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       // Get all player details with pagination support
       const allPlayers = await players.list();
 
-      // Only include players who have a wrestler assigned and whose Cognito
+      // Only include players who have a real wrestler name and whose Cognito
       // user still holds the Wrestler role.
       const filteredPlayers = allPlayers
-        .filter((p) => p.currentWrestler)
+        .filter(isPlayerVisible)
         .filter(hasWrestlerRole);
 
       // Build a map of season standings by playerId
@@ -42,16 +47,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         seasonStandingsList.map((s) => [s.playerId, s])
       );
 
+      // Form and streak cover the same season as the record beside them.
+      const seasonMatches = completedMatches.filter((m) => m.seasonId === seasonId);
+
       // Show ALL players - those with standings get season W-L-D, others get 0-0-0
       const standings = filteredPlayers.map((player) => {
         const standing = standingsMap.get(player.playerId);
         const { recentForm, currentStreak } = computeRecentFormAndStreak(
           player.playerId,
-          completedMatches
+          seasonMatches
         );
         const mainOverall = overallsByPlayerId.get(player.playerId);
         return {
-          ...player,
+          ...toPublicPlayer(player, caller),
           wins: standing ? (standing.wins || 0) : 0,
           losses: standing ? (standing.losses || 0) : 0,
           draws: standing ? (standing.draws || 0) : 0,
@@ -79,10 +87,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Default: get all-time standings from Players table with pagination support
     const allPlayers = await players.list();
 
-    // Only include players who have a wrestler assigned and whose Cognito
+    // Only include players who have a real wrestler name and whose Cognito
     // user still holds the Wrestler role.
     const wrestlers = allPlayers
-      .filter((p) => p.currentWrestler)
+      .filter(isPlayerVisible)
       .filter(hasWrestlerRole);
 
     // Sort players by wins descending, then by losses ascending
@@ -104,7 +112,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         completedMatches
       );
       const mainOverall = overallsByPlayerId.get(player.playerId);
-      return { ...player, recentForm, currentStreak, ...(mainOverall !== undefined ? { mainOverall } : {}) };
+      return { ...toPublicPlayer(player, caller), recentForm, currentStreak, ...(mainOverall !== undefined ? { mainOverall } : {}) };
     });
 
     return success({
@@ -115,4 +123,4 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     console.error('Error fetching standings:', err);
     return serverError('Failed to fetch standings');
   }
-};
+});

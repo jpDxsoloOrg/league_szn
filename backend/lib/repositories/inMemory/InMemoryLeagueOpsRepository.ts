@@ -1,10 +1,12 @@
 import { v4 as uuidv4 } from 'uuid';
-import { NotFoundError } from '../errors';
+import { isDeepStrictEqual } from 'node:util';
+import { ConflictError, NotFoundError } from '../errors';
 import { InMemoryCrudRepository } from './InMemoryCrudRepository';
 import type {
   LeagueOpsRepository,
   EventCreateInput,
   EventPatch,
+  EventUpdateOptions,
   ShowCreateInput,
   ShowPatch,
   CompanyCreateInput,
@@ -15,10 +17,6 @@ import type {
   LocationPatch,
   LocationBulkImportResult,
   LocationsMethods,
-  MatchmakingMethods,
-  PresenceRecord,
-  QueueRecord,
-  InvitationRecord,
 } from '../LeagueOpsRepository';
 import type {
   LeagueEvent,
@@ -34,7 +32,8 @@ import type { CrudRepository } from '../CrudRepository';
 
 // ─── Events (CRUD + queries + check-ins) ───────────────────────────
 
-type EventsCrud = CrudRepository<LeagueEvent, EventCreateInput, EventPatch> & {
+type EventsCrud = Omit<CrudRepository<LeagueEvent, EventCreateInput, EventPatch>, 'update'> & {
+  update(eventId: string, patch: EventPatch, options?: EventUpdateOptions): Promise<LeagueEvent>;
   listByStatus(status: EventStatus): Promise<LeagueEvent[]>;
   listBySeason(seasonId: string): Promise<LeagueEvent[]>;
   listByEventType(eventType: string): Promise<LeagueEvent[]>;
@@ -108,9 +107,12 @@ function createEventsSubRepo(): EventsCrud {
       return item;
     },
 
-    async update(eventId: string, patch: EventPatch): Promise<LeagueEvent> {
+    async update(eventId: string, patch: EventPatch, options?: EventUpdateOptions): Promise<LeagueEvent> {
       const existing = events.get(eventId);
       if (!existing) throw new NotFoundError('Event', eventId);
+      if (options?.expectedMatchCards && !isDeepStrictEqual(existing.matchCards, options.expectedMatchCards)) {
+        throw new ConflictError('The match card has changed');
+      }
       const updated: LeagueEvent = {
         ...existing,
         ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)),
@@ -246,75 +248,6 @@ class LocationsSubRepo
   }
 }
 
-// ─── Matchmaking ───────────────────────────────────────────────────
-
-function createMatchmakingSubRepo(): MatchmakingMethods {
-  const presenceStore = new Map<string, PresenceRecord>();
-  const queueStore = new Map<string, QueueRecord>();
-  const invitationStore = new Map<string, InvitationRecord>();
-
-  return {
-    // Presence
-    async putPresence(record: PresenceRecord): Promise<void> {
-      presenceStore.set(record.playerId, record);
-    },
-    async getPresence(playerId: string): Promise<PresenceRecord | null> {
-      return presenceStore.get(playerId) ?? null;
-    },
-    async listPresence(): Promise<PresenceRecord[]> {
-      return Array.from(presenceStore.values());
-    },
-    async deletePresence(playerId: string): Promise<void> {
-      presenceStore.delete(playerId);
-    },
-
-    // Queue
-    async putQueue(record: QueueRecord): Promise<void> {
-      queueStore.set(record.playerId, record);
-    },
-    async listQueue(): Promise<QueueRecord[]> {
-      return Array.from(queueStore.values());
-    },
-    async deleteQueue(playerId: string): Promise<void> {
-      queueStore.delete(playerId);
-    },
-
-    // Invitations
-    async putInvitation(record: InvitationRecord): Promise<void> {
-      invitationStore.set(record.invitationId, record);
-    },
-    async getInvitation(invitationId: string): Promise<InvitationRecord | null> {
-      return invitationStore.get(invitationId) ?? null;
-    },
-    async listInvitationsByToPlayer(toPlayerId: string): Promise<InvitationRecord[]> {
-      return Array.from(invitationStore.values()).filter(
-        (inv) => inv.toPlayerId === toPlayerId,
-      );
-    },
-    async listInvitationsByFromPlayer(fromPlayerId: string): Promise<InvitationRecord[]> {
-      return Array.from(invitationStore.values()).filter(
-        (inv) => inv.fromPlayerId === fromPlayerId,
-      );
-    },
-    async updateInvitation(
-      invitationId: string,
-      patch: Record<string, unknown>,
-      conditionStatus?: string,
-    ): Promise<InvitationRecord> {
-      const existing = invitationStore.get(invitationId);
-      if (!existing) throw new Error('Invitation not found');
-      if (conditionStatus && existing.status !== conditionStatus) {
-        const err = new Error('Condition not met');
-        (err as unknown as Record<string, string>).name = 'ConditionalCheckFailedException';
-        throw err;
-      }
-      const updated: InvitationRecord = { ...existing, ...patch } as InvitationRecord;
-      invitationStore.set(invitationId, updated);
-      return updated;
-    },
-  };
-}
-
 // ─── Aggregate ─────────────────────────────────────────────────────
 
 export class InMemoryLeagueOpsRepository implements LeagueOpsRepository {
@@ -323,7 +256,6 @@ export class InMemoryLeagueOpsRepository implements LeagueOpsRepository {
   readonly companies: InMemoryCrudRepository<Company, CompanyCreateInput, CompanyPatch>;
   readonly divisions: InMemoryCrudRepository<Division, DivisionCreateInput, DivisionPatch>;
   readonly locations: LocationsMethods;
-  readonly matchmaking: MatchmakingMethods;
 
   constructor() {
     this.events = createEventsSubRepo();
@@ -357,7 +289,5 @@ export class InMemoryLeagueOpsRepository implements LeagueOpsRepository {
     });
 
     this.locations = new LocationsSubRepo();
-
-    this.matchmaking = createMatchmakingSubRepo();
   }
 }

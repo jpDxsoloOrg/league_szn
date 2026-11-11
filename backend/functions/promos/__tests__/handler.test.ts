@@ -83,7 +83,7 @@ describe('promos router', () => {
 
   it('GET /promos routes to getPromos and returns 200', async () => {
     mockScanAll.mockResolvedValue([{ promoId: 'pr1', playerId: 'p1', content: 'Hello world', promoType: 'open-mic' }]);
-    mockGet.mockResolvedValue({ Item: { playerId: 'p1', name: 'John' } });
+    mockGet.mockResolvedValue({ Item: { playerId: 'p1', name: 'John', currentWrestler: 'The Rock' } });
     const event = makeEvent({ httpMethod: 'GET', resource: '/promos', pathParameters: null });
     const result = await handler(event, ctx, cb);
     expect(result!.statusCode).toBe(200);
@@ -108,7 +108,7 @@ describe('promos router', () => {
   });
 
   it('POST /promos routes to createPromo and returns 201', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' }] });
     mockPut.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'POST',

@@ -1,417 +1,321 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Plus, SlidersHorizontal } from 'lucide-react';
 import { matchTypesApi, stipulationsApi } from '../../services/api';
 import type { MatchType, Stipulation } from '../../types';
-import './ManageMatchConfig.css';
+import Button from '../ui/Button';
+import DataTable from '../ui/DataTable';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Tabs from '../ui/Tabs';
+import AdminFormModal from './AdminFormModal';
+import AdminNotice from './AdminNotice';
+import useAdminConfirm from './useAdminConfirm';
+import './adminContent.css';
 
-type ConfigTab = 'matchTypes' | 'stipulations';
+interface ConfigInput {
+  name: string;
+  description?: string;
+}
 
-export default function ManageMatchConfig() {
+interface ConfigItem extends ConfigInput {
+  id: string;
+}
+
+interface ConfigLabels {
+  section: string;
+  create: string;
+  edit: string;
+  update: string;
+  name: string;
+  namePlaceholder: string;
+  descriptionPlaceholder: string;
+  emptyTitle: string;
+  emptyText: string;
+  created: string;
+  updated: string;
+  deleted: string;
+  deletePrompt: (name: string) => string;
+  loadFailed: string;
+  saveFailed: string;
+  deleteFailed: string;
+}
+
+interface ConfigListProps {
+  idPrefix: string;
+  labels: ConfigLabels;
+  load: () => Promise<ConfigItem[]>;
+  create: (input: ConfigInput) => Promise<unknown>;
+  update: (id: string, input: ConfigInput) => Promise<unknown>;
+  remove: (id: string) => Promise<unknown>;
+}
+
+const EMPTY_FORM = { name: '', description: '' };
+
+/** One editable list. Match types and stipulations have the same shape. */
+function ConfigList({ idPrefix, labels, load, create, update, remove }: ConfigListProps) {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<ConfigTab>('matchTypes');
+  const { confirm, confirmDialog } = useAdminConfirm();
+  const [items, setItems] = useState<ConfigItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<ConfigItem | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [formData, setFormData] = useState(EMPTY_FORM);
 
-  // Match Types state
-  const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
-  const [matchTypesLoading, setMatchTypesLoading] = useState(true);
-  const [matchTypesError, setMatchTypesError] = useState<string | null>(null);
-  const [matchTypesSuccess, setMatchTypesSuccess] = useState<string | null>(null);
-  const [showMatchTypeForm, setShowMatchTypeForm] = useState(false);
-  const [editingMatchType, setEditingMatchType] = useState<MatchType | null>(null);
-  const [deletingMatchType, setDeletingMatchType] = useState<string | null>(null);
-  const [matchTypeFormData, setMatchTypeFormData] = useState({
-    name: '',
-    description: '',
-  });
-
-  // Stipulations state
-  const [stipulations, setStipulations] = useState<Stipulation[]>([]);
-  const [stipulationsLoading, setStipulationsLoading] = useState(true);
-  const [stipulationsError, setStipulationsError] = useState<string | null>(null);
-  const [stipulationsSuccess, setStipulationsSuccess] = useState<string | null>(null);
-  const [showStipulationForm, setShowStipulationForm] = useState(false);
-  const [editingStipulation, setEditingStipulation] = useState<Stipulation | null>(null);
-  const [deletingStipulation, setDeletingStipulation] = useState<string | null>(null);
-  const [stipulationFormData, setStipulationFormData] = useState({
-    name: '',
-    description: '',
-  });
+  const refresh = useCallback(async () => {
+    try {
+      setItems(await load());
+    } catch {
+      setError(labels.loadFailed);
+    } finally {
+      setLoading(false);
+    }
+  }, [load, labels.loadFailed]);
 
   useEffect(() => {
-    loadMatchTypes();
-    loadStipulations();
-  }, []);
+    void refresh();
+  }, [refresh]);
 
-  // ─── Match Types handlers ───
-
-  const loadMatchTypes = async () => {
-    try {
-      setMatchTypesLoading(true);
-      const data = await matchTypesApi.getAll();
-      setMatchTypes(data);
-    } catch (_err) {
-      setMatchTypesError('Failed to load match types');
-    } finally {
-      setMatchTypesLoading(false);
-    }
+  const closeForm = () => {
+    setShowForm(false);
+    setEditing(null);
+    setFormData(EMPTY_FORM);
+    setFormError(null);
   };
 
-  const handleMatchTypeSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setMatchTypesError(null);
-    setMatchTypesSuccess(null);
+  const openEdit = (item: ConfigItem) => {
+    setEditing(item);
+    setFormData({ name: item.name, description: item.description ?? '' });
+    setShowForm(true);
+  };
 
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    setSuccess(null);
+    setFormError(null);
+    setSaving(true);
+    const input = { name: formData.name, description: formData.description || undefined };
     try {
-      if (editingMatchType) {
-        await matchTypesApi.update(editingMatchType.matchTypeId, {
-          name: matchTypeFormData.name,
-          description: matchTypeFormData.description || undefined,
-        });
-        setMatchTypesSuccess('Match type updated successfully!');
+      if (editing) {
+        await update(editing.id, input);
+        setSuccess(labels.updated);
       } else {
-        await matchTypesApi.create({
-          name: matchTypeFormData.name,
-          description: matchTypeFormData.description || undefined,
-        });
-        setMatchTypesSuccess('Match type created successfully!');
+        await create(input);
+        setSuccess(labels.created);
       }
-
-      setMatchTypeFormData({ name: '', description: '' });
-      setShowMatchTypeForm(false);
-      setEditingMatchType(null);
-      await loadMatchTypes();
+      closeForm();
+      await refresh();
     } catch (err) {
-      setMatchTypesError(err instanceof Error ? err.message : 'Failed to save match type');
-    }
-  };
-
-  const handleMatchTypeEdit = (matchType: MatchType) => {
-    setEditingMatchType(matchType);
-    setMatchTypeFormData({
-      name: matchType.name,
-      description: matchType.description || '',
-    });
-    setShowMatchTypeForm(true);
-  };
-
-  const handleMatchTypeDelete = async (matchTypeId: string) => {
-    if (!confirm('Are you sure you want to delete this match type?')) {
-      return;
-    }
-
-    setDeletingMatchType(matchTypeId);
-    setMatchTypesError(null);
-    setMatchTypesSuccess(null);
-
-    try {
-      await matchTypesApi.delete(matchTypeId);
-      setMatchTypesSuccess('Match type deleted successfully!');
-      await loadMatchTypes();
-    } catch (err) {
-      setMatchTypesError(err instanceof Error ? err.message : 'Failed to delete match type');
+      setFormError(err instanceof Error ? err.message : labels.saveFailed);
     } finally {
-      setDeletingMatchType(null);
+      setSaving(false);
     }
   };
 
-  const handleMatchTypeCancel = () => {
-    setMatchTypeFormData({ name: '', description: '' });
-    setShowMatchTypeForm(false);
-    setEditingMatchType(null);
-  };
+  const handleDelete = async (item: ConfigItem) => {
+    const confirmed = await confirm({ title: labels.deletePrompt(item.name), confirmLabel: t('common.delete', 'Delete') });
+    if (!confirmed) return;
 
-  // ─── Stipulations handlers ───
-
-  const loadStipulations = async () => {
+    setDeleting(item.id);
+    setError(null);
+    setSuccess(null);
     try {
-      setStipulationsLoading(true);
-      const data = await stipulationsApi.getAll();
-      setStipulations(data);
-    } catch (_err) {
-      setStipulationsError('Failed to load stipulations');
-    } finally {
-      setStipulationsLoading(false);
-    }
-  };
-
-  const handleStipulationSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setStipulationsError(null);
-    setStipulationsSuccess(null);
-
-    try {
-      if (editingStipulation) {
-        await stipulationsApi.update(editingStipulation.stipulationId, {
-          name: stipulationFormData.name,
-          description: stipulationFormData.description || undefined,
-        });
-        setStipulationsSuccess('Stipulation updated successfully!');
-      } else {
-        await stipulationsApi.create({
-          name: stipulationFormData.name,
-          description: stipulationFormData.description || undefined,
-        });
-        setStipulationsSuccess('Stipulation created successfully!');
-      }
-
-      setStipulationFormData({ name: '', description: '' });
-      setShowStipulationForm(false);
-      setEditingStipulation(null);
-      await loadStipulations();
+      await remove(item.id);
+      setSuccess(labels.deleted);
+      await refresh();
     } catch (err) {
-      setStipulationsError(err instanceof Error ? err.message : 'Failed to save stipulation');
-    }
-  };
-
-  const handleStipulationEdit = (stipulation: Stipulation) => {
-    setEditingStipulation(stipulation);
-    setStipulationFormData({
-      name: stipulation.name,
-      description: stipulation.description || '',
-    });
-    setShowStipulationForm(true);
-  };
-
-  const handleStipulationDelete = async (stipulationId: string) => {
-    if (!confirm('Are you sure you want to delete this stipulation?')) {
-      return;
-    }
-
-    setDeletingStipulation(stipulationId);
-    setStipulationsError(null);
-    setStipulationsSuccess(null);
-
-    try {
-      await stipulationsApi.delete(stipulationId);
-      setStipulationsSuccess('Stipulation deleted successfully!');
-      await loadStipulations();
-    } catch (err) {
-      setStipulationsError(err instanceof Error ? err.message : 'Failed to delete stipulation');
+      setError(err instanceof Error ? err.message : labels.deleteFailed);
     } finally {
-      setDeletingStipulation(null);
+      setDeleting(null);
     }
-  };
-
-  const handleStipulationCancel = () => {
-    setStipulationFormData({ name: '', description: '' });
-    setShowStipulationForm(false);
-    setEditingStipulation(null);
-  };
-
-  // ─── Tab switch handler ───
-
-  const handleTabChange = (tab: ConfigTab) => {
-    setActiveTab(tab);
-  };
-
-  // ─── Render helpers ───
-
-  const renderMatchTypesTab = () => {
-    if (matchTypesLoading) {
-      return <div className="loading">Loading match types...</div>;
-    }
-
-    return (
-      <>
-        <div className="match-config-header">
-          <h2>Match Types</h2>
-          {!showMatchTypeForm && (
-            <button onClick={() => setShowMatchTypeForm(true)}>
-              Create Match Type
-            </button>
-          )}
-        </div>
-
-        {matchTypesError && <div className="error-message">{matchTypesError}</div>}
-        {matchTypesSuccess && <div className="success-message">{matchTypesSuccess}</div>}
-
-        {showMatchTypeForm && (
-          <div className="match-config-form-container">
-            <h3>{editingMatchType ? 'Edit Match Type' : 'Create New Match Type'}</h3>
-            <form onSubmit={handleMatchTypeSubmit} className="match-config-form">
-              <div className="form-group">
-                <label htmlFor="matchTypeName">Match Type Name</label>
-                <input
-                  type="text"
-                  id="matchTypeName"
-                  value={matchTypeFormData.name}
-                  onChange={(e) => setMatchTypeFormData({ ...matchTypeFormData, name: e.target.value })}
-                  required
-                  placeholder="e.g., Singles, Tag Team, Triple Threat, Fatal 4-Way"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="matchTypeDescription">{t('common.description', 'Description')} ({t('common.optional', 'Optional')})</label>
-                <textarea
-                  id="matchTypeDescription"
-                  value={matchTypeFormData.description}
-                  onChange={(e) => setMatchTypeFormData({ ...matchTypeFormData, description: e.target.value })}
-                  placeholder="Brief description of this match type"
-                  rows={3}
-                />
-              </div>
-
-              <div className="form-actions">
-                <button type="submit">
-                  {editingMatchType ? 'Update Match Type' : 'Create Match Type'}
-                </button>
-                <button type="button" onClick={handleMatchTypeCancel} className="cancel-btn">
-                  {t('common.cancel', 'Cancel')}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        <div className="match-config-list">
-          <h3>All Match Types ({matchTypes.length})</h3>
-          {matchTypes.length === 0 ? (
-            <p>No match types yet. Create your first match type!</p>
-          ) : (
-            <div className="match-config-grid">
-              {matchTypes.map(matchType => (
-                <div key={matchType.matchTypeId} className="match-config-card">
-                  <h4>{matchType.name}</h4>
-                  {matchType.description && (
-                    <p className="match-config-description">{matchType.description}</p>
-                  )}
-                  <div className="match-config-actions">
-                    <button
-                      onClick={() => handleMatchTypeEdit(matchType)}
-                      className="match-config-edit-btn"
-                    >
-                      {t('common.edit', 'Edit')}
-                    </button>
-                    <button
-                      onClick={() => handleMatchTypeDelete(matchType.matchTypeId)}
-                      className="match-config-delete-btn"
-                      disabled={deletingMatchType === matchType.matchTypeId}
-                    >
-                      {deletingMatchType === matchType.matchTypeId ? t('common.deleting', 'Deleting...') : t('common.delete', 'Delete')}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </>
-    );
-  };
-
-  const renderStipulationsTab = () => {
-    if (stipulationsLoading) {
-      return <div className="loading">Loading stipulations...</div>;
-    }
-
-    return (
-      <>
-        <div className="match-config-header">
-          <h2>{t('admin.stipulations', 'Stipulations')}</h2>
-          {!showStipulationForm && (
-            <button onClick={() => setShowStipulationForm(true)}>
-              {t('admin.createStipulation', 'Create Stipulation')}
-            </button>
-          )}
-        </div>
-
-        {stipulationsError && <div className="error-message">{stipulationsError}</div>}
-        {stipulationsSuccess && <div className="success-message">{stipulationsSuccess}</div>}
-
-        {showStipulationForm && (
-          <div className="match-config-form-container">
-            <h3>{editingStipulation ? t('admin.editStipulation', 'Edit Stipulation') : t('admin.createNewStipulation', 'Create New Stipulation')}</h3>
-            <form onSubmit={handleStipulationSubmit} className="match-config-form">
-              <div className="form-group">
-                <label htmlFor="stipulationName">{t('admin.stipulationName', 'Stipulation Name')}</label>
-                <input
-                  type="text"
-                  id="stipulationName"
-                  value={stipulationFormData.name}
-                  onChange={(e) => setStipulationFormData({ ...stipulationFormData, name: e.target.value })}
-                  required
-                  placeholder="e.g., Ladder Match, Steel Cage, Hell in a Cell"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="stipulationDescription">{t('common.description', 'Description')} ({t('common.optional', 'Optional')})</label>
-                <textarea
-                  id="stipulationDescription"
-                  value={stipulationFormData.description}
-                  onChange={(e) => setStipulationFormData({ ...stipulationFormData, description: e.target.value })}
-                  placeholder="Brief description of this stipulation"
-                  rows={3}
-                />
-              </div>
-
-              <div className="form-actions">
-                <button type="submit">
-                  {editingStipulation ? t('admin.updateStipulation', 'Update Stipulation') : t('admin.createStipulation', 'Create Stipulation')}
-                </button>
-                <button type="button" onClick={handleStipulationCancel} className="cancel-btn">
-                  {t('common.cancel', 'Cancel')}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        <div className="match-config-list">
-          <h3>{t('admin.allStipulations', 'All Stipulations')} ({stipulations.length})</h3>
-          {stipulations.length === 0 ? (
-            <p>{t('admin.noStipulations', 'No stipulations yet. Create your first stipulation!')}</p>
-          ) : (
-            <div className="match-config-grid">
-              {stipulations.map(stipulation => (
-                <div key={stipulation.stipulationId} className="match-config-card">
-                  <h4>{stipulation.name}</h4>
-                  {stipulation.description && (
-                    <p className="match-config-description">{stipulation.description}</p>
-                  )}
-                  <div className="match-config-actions">
-                    <button
-                      onClick={() => handleStipulationEdit(stipulation)}
-                      className="match-config-edit-btn"
-                    >
-                      {t('common.edit', 'Edit')}
-                    </button>
-                    <button
-                      onClick={() => handleStipulationDelete(stipulation.stipulationId)}
-                      className="match-config-delete-btn"
-                      disabled={deletingStipulation === stipulation.stipulationId}
-                    >
-                      {deletingStipulation === stipulation.stipulationId ? t('common.deleting', 'Deleting...') : t('common.delete', 'Delete')}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </>
-    );
   };
 
   return (
-    <div className="manage-match-config">
-      <div className="match-config-tabs">
-        <button
-          className={`match-config-tab-btn ${activeTab === 'matchTypes' ? 'active' : ''}`}
-          onClick={() => handleTabChange('matchTypes')}
-        >
-          Match Types
-        </button>
-        <button
-          className={`match-config-tab-btn ${activeTab === 'stipulations' ? 'active' : ''}`}
-          onClick={() => handleTabChange('stipulations')}
-        >
-          {t('admin.stipulations', 'Stipulations')}
-        </button>
+    <section className="ac-section">
+      <div className="ac-toolbar">
+        <span className="ac-toolbar__count">{items.length} {labels.section}</span>
+        <span className="ac-toolbar__spacer" />
+        <Button icon={<Plus aria-hidden="true" size={18} />} onClick={() => setShowForm(true)}>
+          {labels.create}
+        </Button>
       </div>
 
-      {activeTab === 'matchTypes' && renderMatchTypesTab()}
-      {activeTab === 'stipulations' && renderStipulationsTab()}
+      {error && <AdminNotice tone="error">{error}</AdminNotice>}
+      {success && <AdminNotice tone="success">{success}</AdminNotice>}
+
+      <DataTable
+        caption={labels.section}
+        density="dense"
+        loading={loading}
+        rows={items}
+        rowKey={(item) => item.id}
+        empty={(
+          <EmptyState
+            icon={<SlidersHorizontal aria-hidden="true" size={32} />}
+            title={labels.emptyTitle}
+            description={labels.emptyText}
+          />
+        )}
+        columns={[
+          {
+            key: 'name',
+            header: labels.name,
+            render: (item) => <span className="ac-cell__title">{item.name}</span>,
+            sortValue: (item) => item.name,
+          },
+          {
+            key: 'description',
+            header: t('adminContent.description', 'Description'),
+            render: (item) => item.description || '—',
+          },
+          {
+            key: 'actions',
+            header: t('common.actions', 'Actions'),
+            align: 'end',
+            render: (item) => (
+              <div className="ac-actions ac-actions--end">
+                <Button variant="ghost" size="sm" onClick={() => openEdit(item)}>{t('common.edit', 'Edit')}</Button>
+                <Button variant="ghost" size="sm" loading={deleting === item.id} onClick={() => handleDelete(item)}>
+                  {t('common.delete', 'Delete')}
+                </Button>
+              </div>
+            ),
+          },
+        ]}
+      />
+
+      <AdminFormModal
+        open={showForm}
+        onClose={closeForm}
+        title={editing ? labels.edit : labels.create}
+        submitLabel={editing ? labels.update : labels.create}
+        onSubmit={handleSubmit}
+        busy={saving}
+        error={formError}
+      >
+        <div className="ac-field">
+          <label className="ac-field__label" htmlFor={`${idPrefix}-name`}>{labels.name}</label>
+          <input
+            type="text"
+            id={`${idPrefix}-name`}
+            value={formData.name}
+            onChange={(event) => setFormData({ ...formData, name: event.target.value })}
+            placeholder={labels.namePlaceholder}
+            required
+          />
+        </div>
+        <div className="ac-field">
+          <label className="ac-field__label" htmlFor={`${idPrefix}-description`}>
+            {t('adminContent.descriptionOptional', 'Description (Optional)')}
+          </label>
+          <textarea
+            id={`${idPrefix}-description`}
+            value={formData.description}
+            onChange={(event) => setFormData({ ...formData, description: event.target.value })}
+            placeholder={labels.descriptionPlaceholder}
+            rows={3}
+          />
+        </div>
+      </AdminFormModal>
+
+      {confirmDialog}
+    </section>
+  );
+}
+
+async function loadMatchTypes(): Promise<ConfigItem[]> {
+  const matchTypes: MatchType[] = await matchTypesApi.getAll();
+  return matchTypes.map((matchType) => ({ ...matchType, id: matchType.matchTypeId }));
+}
+
+async function loadStipulations(): Promise<ConfigItem[]> {
+  const stipulations: Stipulation[] = await stipulationsApi.getAll();
+  return stipulations.map((stipulation) => ({ ...stipulation, id: stipulation.stipulationId }));
+}
+
+export default function ManageMatchConfig() {
+  const { t } = useTranslation();
+
+  const matchTypeLabels: ConfigLabels = {
+    section: t('adminContent.matchConfig.matchTypes', 'Match Types'),
+    create: t('adminContent.matchConfig.createMatchType', 'Create Match Type'),
+    edit: t('adminContent.matchConfig.editMatchType', 'Edit Match Type'),
+    update: t('adminContent.matchConfig.updateMatchType', 'Update Match Type'),
+    name: t('adminContent.matchConfig.matchTypeName', 'Match Type Name'),
+    namePlaceholder: t('adminContent.matchConfig.matchTypePlaceholder', 'e.g., Singles, Tag Team, Triple Threat, Fatal 4-Way'),
+    descriptionPlaceholder: t('adminContent.matchConfig.matchTypeDescription', 'Brief description of this match type'),
+    emptyTitle: t('adminContent.matchConfig.noMatchTypes', 'No match types yet'),
+    emptyText: t('adminContent.matchConfig.noMatchTypesText', 'Create your first match type.'),
+    created: t('adminContent.matchConfig.matchTypeCreated', 'Match type created successfully!'),
+    updated: t('adminContent.matchConfig.matchTypeUpdated', 'Match type updated successfully!'),
+    deleted: t('adminContent.matchConfig.matchTypeDeleted', 'Match type deleted successfully!'),
+    deletePrompt: (name) => t('adminContent.deletePrompt', 'Delete {{name}}?', { name }),
+    loadFailed: t('adminContent.matchConfig.matchTypesLoadFailed', 'Failed to load match types'),
+    saveFailed: t('adminContent.matchConfig.matchTypeSaveFailed', 'Failed to save match type'),
+    deleteFailed: t('adminContent.matchConfig.matchTypeDeleteFailed', 'Failed to delete match type'),
+  };
+
+  const stipulationLabels: ConfigLabels = {
+    section: t('adminContent.matchConfig.stipulations', 'Stipulations'),
+    create: t('adminContent.matchConfig.createStipulation', 'Create Stipulation'),
+    edit: t('adminContent.matchConfig.editStipulation', 'Edit Stipulation'),
+    update: t('adminContent.matchConfig.updateStipulation', 'Update Stipulation'),
+    name: t('adminContent.matchConfig.stipulationName', 'Stipulation Name'),
+    namePlaceholder: t('adminContent.matchConfig.stipulationPlaceholder', 'e.g., Ladder Match, Steel Cage, Hell in a Cell'),
+    descriptionPlaceholder: t('adminContent.matchConfig.stipulationDescription', 'Brief description of this stipulation'),
+    emptyTitle: t('adminContent.matchConfig.noStipulations', 'No stipulations yet'),
+    emptyText: t('adminContent.matchConfig.noStipulationsText', 'Create your first stipulation.'),
+    created: t('adminContent.matchConfig.stipulationCreated', 'Stipulation created successfully!'),
+    updated: t('adminContent.matchConfig.stipulationUpdated', 'Stipulation updated successfully!'),
+    deleted: t('adminContent.matchConfig.stipulationDeleted', 'Stipulation deleted successfully!'),
+    deletePrompt: (name) => t('adminContent.deletePrompt', 'Delete {{name}}?', { name }),
+    loadFailed: t('adminContent.matchConfig.stipulationsLoadFailed', 'Failed to load stipulations'),
+    saveFailed: t('adminContent.matchConfig.stipulationSaveFailed', 'Failed to save stipulation'),
+    deleteFailed: t('adminContent.matchConfig.stipulationDeleteFailed', 'Failed to delete stipulation'),
+  };
+
+  const tabs: { value: string; label: string; content: ReactNode }[] = [
+    {
+      value: 'matchTypes',
+      label: matchTypeLabels.section,
+      content: (
+        <ConfigList
+          idPrefix="match-type"
+          labels={matchTypeLabels}
+          load={loadMatchTypes}
+          create={matchTypesApi.create}
+          update={matchTypesApi.update}
+          remove={matchTypesApi.delete}
+        />
+      ),
+    },
+    {
+      value: 'stipulations',
+      label: stipulationLabels.section,
+      content: (
+        <ConfigList
+          idPrefix="stipulation"
+          labels={stipulationLabels}
+          load={loadStipulations}
+          create={stipulationsApi.create}
+          update={stipulationsApi.update}
+          remove={stipulationsApi.delete}
+        />
+      ),
+    },
+  ];
+
+  return (
+    <div className="ac-page">
+      <PageHeader title={t('adminContent.matchConfig.title', 'Match Config')} />
+      <Tabs label={t('adminContent.matchConfig.title', 'Match Config')} items={tabs} />
     </div>
   );
 }

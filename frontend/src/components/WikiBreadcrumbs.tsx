@@ -22,15 +22,17 @@ export default function WikiBreadcrumbs() {
       setArticleTitle(null);
       return;
     }
-    fetch('/wiki/index.json')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: WikiArticleEntry[]) => {
-        const entry = Array.isArray(data)
-          ? data.find((e) => e.slug === slug)
-          : undefined;
-        setArticleTitle(entry ? t(entry.titleKey) : slug);
-      })
-      .catch(() => setArticleTitle(slug));
+    const loadTitle = async () => {
+      try {
+        const res = await fetch('/wiki/index.json');
+        const data: WikiArticleEntry[] = res.ok ? await res.json() : [];
+        const entry = Array.isArray(data) ? data.find((e) => e.slug === slug) : undefined;
+        setArticleTitle(t(entry?.titleKey ?? 'wiki.articleNotFound'));
+      } catch {
+        setArticleTitle(slug);
+      }
+    };
+    void loadTitle();
   }, [slug, t]);
 
   return (
@@ -39,16 +41,14 @@ export default function WikiBreadcrumbs() {
       aria-label={t('wiki.breadcrumbNav')}
     >
       <ol className="wiki-breadcrumbs-list">
-        <li>
-          <Link to="/guide">{t('wiki.breadcrumb.help')}</Link>
-        </li>
+        {/* Help and the wiki index are one page, so the trail starts there. */}
         <li>
           {isIndex ? (
             <span className="wiki-breadcrumbs-current" aria-current="page">
-              {t('wiki.breadcrumb.wiki')}
+              {t('wiki.breadcrumb.help')}
             </span>
           ) : (
-            <Link to="/guide/wiki">{t('wiki.breadcrumb.wiki')}</Link>
+            <Link to="/guide/wiki">{t('wiki.breadcrumb.help')}</Link>
           )}
         </li>
         {isArticle && (
