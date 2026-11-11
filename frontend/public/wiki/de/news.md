@@ -21,7 +21,7 @@ Der Liga-Ticker läuft am unteren Rand jeder Seite außer im Admin-Bereich. Am H
 
 1. **Kommende Shows** — Die nächsten Shows mit Datum. Eine Show, die gerade läuft, ist mit **Live** markiert.
 2. **News** — Die neuesten Schlagzeilen von der News-Seite.
-3. **Ergebnisse** — Alle Match-Ergebnisse der beiden letzten Shows, eine Show nach der anderen in der Reihenfolge der Card. Jedes Ergebnis trägt Namen und Datum der Show. Titelmatches sind golden markiert und nennen den Titel.
+3. **Ergebnisse** — Die Match-Ergebnisse der letzten Show, danach die der Shows davor im Wechsel Montag, Mittwoch, Freitag, die neueste zuerst. Name und Datum jeder Show stehen einmal vorne, markiert mit **Ergebnisse**, gefolgt von den Matches dieser Show in der Reihenfolge der Card. Titelmatches tragen den Namen des Titels als goldene Markierung.
 
 Wähle eine Schlagzeile, um die Show, die Meldung oder die Ergebnisse der Show zu öffnen.
 

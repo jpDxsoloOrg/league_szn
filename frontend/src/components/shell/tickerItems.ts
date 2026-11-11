@@ -1,7 +1,7 @@
 import type { TFunction } from 'i18next';
 import type { TickerItem } from '../ui/Ticker';
 import type { LeaguePulse } from '../../hooks/useLeaguePulse';
-import type { EnrichedMatchData } from '../../types/event';
+import type { EnrichedMatchData, EventWithMatches } from '../../types/event';
 import { formatCalendarDate } from '../../utils/dateUtils';
 
 const NEWS_SHOWN = 3;
@@ -19,16 +19,49 @@ export function describeResult(match: EnrichedMatchData, t: TFunction): string |
   const losers = namesOf(match, match.losers);
   if (winners.length === 0) return null;
   // A draw is stored with every participant as a winner and no losers.
-  const outcome = losers.length === 0
+  return losers.length === 0
     ? `${winners.join(' vs ')} (${t('dashboard.draw')})`
     : `${winners.join(' & ')} ${t('dashboard.def')} ${losers.join(' & ')}`;
-  return match.isChampionship && match.championshipName ? `${outcome} · ${match.championshipName}` : outcome;
+}
+
+/**
+ * One finished show as a run of headlines: the show's name once, then each
+ * result in card order. A title match carries the title as a gold tag. A show
+ * with no results to report adds nothing.
+ */
+function showResultItems(show: EventWithMatches, t: TFunction, locale?: string): TickerItem[] {
+  const to = `/events/${show.eventId}/results`;
+  const card = [...show.enrichedMatches].sort((first, second) => first.position - second.position);
+  const results: TickerItem[] = [];
+  for (const entry of card) {
+    const match = entry.matchData;
+    const text = match ? describeResult(match, t) : null;
+    if (!match || !text) continue;
+    const title = match.isChampionship ? match.championshipName : undefined;
+    results.push({
+      id: `result-${show.eventId}-${entry.matchId}`,
+      ...(title ? { tag: title, tagTone: 'prestige' as const } : {}),
+      text,
+      to,
+    });
+  }
+  if (results.length === 0) return [];
+  return [
+    {
+      id: `results-${show.eventId}`,
+      tag: t('ticker.tags.results'),
+      tagTone: 'data',
+      text: `${show.name} · ${formatCalendarDate(show.date, locale, SHORT_DATE)}`,
+      to,
+    },
+    ...results,
+  ];
 }
 
 /**
  * Headlines for the crawl, built only from what the API returned: shows still
- * to come, news, then the latest shows' results, one show after another in
- * card order with the show's name on every result.
+ * to come, news, then the latest shows' results. Results run newest show
+ * first, each show named once and followed by its matches in card order.
  */
 export function buildTickerItems(pulse: LeaguePulse, t: TFunction, locale?: string): TickerItem[] {
   const items: TickerItem[] = [];
@@ -48,20 +81,9 @@ export function buildTickerItems(pulse: LeaguePulse, t: TFunction, locale?: stri
     items.push({ id: `news-${article.announcementId}`, tag: t('ticker.tags.news'), tagTone: 'data', text: article.title, to: `/news/${article.announcementId}` });
   }
 
+  // recentShows arrives newest first.
   for (const show of pulse.recentShows) {
-    const showTag = `${show.name} · ${formatCalendarDate(show.date, locale, SHORT_DATE)}`;
-    const card = [...show.enrichedMatches].sort((first, second) => first.position - second.position);
-    for (const entry of card) {
-      const text = entry.matchData ? describeResult(entry.matchData, t) : null;
-      if (!text || !entry.matchData) continue;
-      items.push({
-        id: `result-${show.eventId}-${entry.matchId}`,
-        tag: showTag,
-        tagTone: entry.matchData.isChampionship ? 'prestige' : 'data',
-        text,
-        to: `/events/${show.eventId}/results`,
-      });
-    }
+    items.push(...showResultItems(show, t, locale));
   }
 
   return items;

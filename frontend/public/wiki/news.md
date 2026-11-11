@@ -21,7 +21,7 @@ The League Wire runs along the bottom of every page except Admin. On a phone it 
 
 1. **Upcoming shows** — The next shows with their dates. A show that is running now is tagged **Live**.
 2. **News** — The latest headlines from the News page.
-3. **Results** — Every match result from the two most recent shows, one show after the other in card order. Each result is tagged with the show's name and date. Title matches are tagged in gold and name the title.
+3. **Results** — Match results from the most recent show, then from the shows before it in the Monday, Wednesday, Friday rotation, newest first. Each show's name and date appear once, tagged **Results**, followed by that show's matches in card order. Title matches are tagged in gold with the title's name.
 
 Choose a headline to open the show, the story or the show's results.
 

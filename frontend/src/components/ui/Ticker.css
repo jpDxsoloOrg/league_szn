@@ -226,6 +226,102 @@ a.ui-ticker__headline:focus-visible {
   --ticker-items: 24;
 }
 
+.ui-ticker__track[data-items='25'] {
+  --ticker-items: 25;
+}
+
+.ui-ticker__track[data-items='26'] {
+  --ticker-items: 26;
+}
+
+.ui-ticker__track[data-items='27'] {
+  --ticker-items: 27;
+}
+
+.ui-ticker__track[data-items='28'] {
+  --ticker-items: 28;
+}
+
+.ui-ticker__track[data-items='29'] {
+  --ticker-items: 29;
+}
+
+.ui-ticker__track[data-items='30'] {
+  --ticker-items: 30;
+}
+
+.ui-ticker__track[data-items='31'] {
+  --ticker-items: 31;
+}
+
+.ui-ticker__track[data-items='32'] {
+  --ticker-items: 32;
+}
+
+.ui-ticker__track[data-items='33'] {
+  --ticker-items: 33;
+}
+
+.ui-ticker__track[data-items='34'] {
+  --ticker-items: 34;
+}
+
+.ui-ticker__track[data-items='35'] {
+  --ticker-items: 35;
+}
+
+.ui-ticker__track[data-items='36'] {
+  --ticker-items: 36;
+}
+
+.ui-ticker__track[data-items='37'] {
+  --ticker-items: 37;
+}
+
+.ui-ticker__track[data-items='38'] {
+  --ticker-items: 38;
+}
+
+.ui-ticker__track[data-items='39'] {
+  --ticker-items: 39;
+}
+
+.ui-ticker__track[data-items='40'] {
+  --ticker-items: 40;
+}
+
+.ui-ticker__track[data-items='41'] {
+  --ticker-items: 41;
+}
+
+.ui-ticker__track[data-items='42'] {
+  --ticker-items: 42;
+}
+
+.ui-ticker__track[data-items='43'] {
+  --ticker-items: 43;
+}
+
+.ui-ticker__track[data-items='44'] {
+  --ticker-items: 44;
+}
+
+.ui-ticker__track[data-items='45'] {
+  --ticker-items: 45;
+}
+
+.ui-ticker__track[data-items='46'] {
+  --ticker-items: 46;
+}
+
+.ui-ticker__track[data-items='47'] {
+  --ticker-items: 47;
+}
+
+.ui-ticker__track[data-items='48'] {
+  --ticker-items: 48;
+}
+
 .ui-ticker--crawling .ui-ticker__track {
   animation: ui-ticker-crawl calc(var(--ticker-seconds-per-item) * var(--ticker-items, 1)) linear infinite;
 }
