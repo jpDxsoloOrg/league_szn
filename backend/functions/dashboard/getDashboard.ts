@@ -15,6 +15,8 @@ interface DashboardChampion {
   championshipName: string;
   championName: string;
   championImageUrl?: string;
+  /** The title's own picture, usually the belt. */
+  championshipImageUrl?: string;
   playerId: string;
   wonDate?: string;
   defenses?: number;
@@ -201,6 +203,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           championshipName: cand.championship.name,
           championName: cand.names.join(' & '),
           championImageUrl: cand.imageUrl,
+          championshipImageUrl: cand.championship.imageUrl,
           playerId: cand.playerIds[0] ?? '',
           wonDate: reign?.wonDate ?? undefined,
           defenses: reign?.defenses ?? cand.championship.defenses,

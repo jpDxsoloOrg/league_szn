@@ -94,6 +94,15 @@
   outline-offset: -2px;
 }
 
+/* A belt or similar, sized to the line of text. */
+.ui-ticker__icon {
+  flex: none;
+  width: auto;
+  height: 1.25rem;
+  max-width: 2.5rem;
+  object-fit: contain;
+}
+
 .ui-ticker__tag {
   flex: none;
   padding: 0 0.5rem;

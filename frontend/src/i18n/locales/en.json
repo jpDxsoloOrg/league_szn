@@ -3563,7 +3563,8 @@
       "live": "Live",
       "upcoming": "Upcoming",
       "news": "News",
-      "results": "Results"
+      "results": "Results",
+      "champion": "Champion"
     }
   },
   "shell": {

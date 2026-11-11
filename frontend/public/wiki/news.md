@@ -20,10 +20,11 @@ Some stories also appear as a pop-up when signed-in members open the site. The l
 The League Wire runs along the bottom of every page except Admin. On a phone it sits just above the bottom bar. It shows, in this order:
 
 1. **Upcoming shows** — The next shows with their dates. A show that is running now is tagged **Live**.
-2. **News** — The latest headlines from the News page.
-3. **Results** — Match results from the most recent show, then from the shows before it in the Monday, Wednesday, Friday rotation, newest first. Each show's name and date appear once, tagged **Results**, followed by that show's matches in card order. Title matches are tagged in gold with the title's name.
+2. **News** — The latest headlines from the News page, tagged in gold.
+3. **Champions** — Each current champion with the title they hold and a small picture of the belt. Choose one to open the Championships page.
+4. **Results** — Match results from the most recent show, then from the shows before it in the Monday, Wednesday, Friday rotation, newest first. Each show's name and date appear once, tagged **Results**, followed by that show's matches in card order. Title matches are tagged in gold with the title's name.
 
-Choose a headline to open the show, the story or the show's results.
+Choose a headline to open the show, the story, the championships or the show's results.
 
 ### Pausing it
 
