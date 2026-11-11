@@ -29,7 +29,7 @@ export interface TickerProps {
 }
 
 /** The most headlines one crawl carries; the stylesheet has a crawl length for each count up to this. */
-const TICKER_MAX_ITEM_COUNT = 24;
+const TICKER_MAX_ITEM_COUNT = 48;
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 

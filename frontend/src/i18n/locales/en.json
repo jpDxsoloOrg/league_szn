@@ -3558,7 +3558,8 @@
     "tags": {
       "live": "Live",
       "upcoming": "Upcoming",
-      "news": "News"
+      "news": "News",
+      "results": "Results"
     }
   },
   "shell": {

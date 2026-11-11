@@ -26,7 +26,9 @@ beforeEach(() => {
   mockDashboard.mockReset().mockResolvedValue({ seasonInfo: null });
   mockNews.mockReset().mockResolvedValue([{ announcementId: 'a1' }]);
   mockEvents.mockReset().mockResolvedValue([
+    show('oldest', '2026-09-01', 'completed'),
     show('old', '2026-10-01', 'completed'),
+    show('older', '2026-10-30', 'completed'),
     show('newest', '2026-11-04', 'completed'),
     show('newer', '2026-11-02T04:00:00.000Z', 'completed'),
     show('off', '2026-11-05', 'cancelled'),
@@ -37,21 +39,21 @@ beforeEach(() => {
 });
 
 describe('useLeaguePulse', () => {
-  it('lists upcoming shows soonest first and loads the two latest finished shows', async () => {
+  it('lists upcoming shows soonest first and loads the four latest finished shows, newest first', async () => {
     const { result } = renderHook(() => useLeaguePulse());
-    await waitFor(() => expect(result.current.recentShows).toHaveLength(2));
+    await waitFor(() => expect(result.current.recentShows).toHaveLength(4));
 
     expect(result.current.upcomingShows.map((event) => event.eventId)).toEqual(['next', 'later']);
-    expect(result.current.recentShows.map((event) => event.eventId)).toEqual(['newest', 'newer']);
+    expect(result.current.recentShows.map((event) => event.eventId)).toEqual(['newest', 'newer', 'older', 'old']);
     expect(result.current.news).toHaveLength(1);
-    expect(mockEvent).toHaveBeenCalledTimes(2);
+    expect(mockEvent).toHaveBeenCalledTimes(4);
   });
 
   it('shares one answer between callers', async () => {
     const first = renderHook(() => useLeaguePulse());
     const second = renderHook(() => useLeaguePulse());
-    await waitFor(() => expect(first.result.current.recentShows).toHaveLength(2));
-    await waitFor(() => expect(second.result.current.recentShows).toHaveLength(2));
+    await waitFor(() => expect(first.result.current.recentShows).toHaveLength(4));
+    await waitFor(() => expect(second.result.current.recentShows).toHaveLength(4));
     expect(mockEvents).toHaveBeenCalledTimes(1);
   });
 
@@ -60,7 +62,7 @@ describe('useLeaguePulse', () => {
     mockEvent.mockImplementation((eventId: string) =>
       eventId === 'newest' ? Promise.reject(new Error('down')) : Promise.resolve({ ...show(eventId, '', 'completed'), enrichedMatches: [] }));
     const { result } = renderHook(() => useLeaguePulse());
-    await waitFor(() => expect(result.current.recentShows).toHaveLength(1));
+    await waitFor(() => expect(result.current.recentShows).toHaveLength(3));
 
     expect(result.current.dashboard).toBeNull();
     expect(result.current.recentShows[0]?.eventId).toBe('newer');

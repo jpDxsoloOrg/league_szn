@@ -53,16 +53,37 @@ const STORY: Announcement = {
 
 const EMPTY: LeaguePulse = { dashboard: null, news: [], upcomingShows: [], recentShows: [] };
 
+const OLDER_SHOW = {
+  eventId: 'e-1',
+  name: 'Mayhem Monday',
+  date: '2026-11-02',
+  status: 'completed',
+  enrichedMatches: [{ position: 1, matchId: 'm9', designation: 'opener', matchData: { ...WON, matchId: 'm9' } }],
+} as unknown as EventWithMatches;
+
+const EMPTY_SHOW = { ...OLDER_SHOW, eventId: 'e-2', name: 'Fallout Friday', enrichedMatches: [] } as unknown as EventWithMatches;
+
 describe('buildTickerItems', () => {
-  it('runs upcoming shows, then news, then each show\'s results in card order', () => {
+  it('runs upcoming shows, then news, then each show named once and followed by its results in card order', () => {
     const items = buildTickerItems({ ...EMPTY, news: [STORY], upcomingShows: [LIVE, UPCOMING], recentShows: [SHOW] }, t, 'en');
-    expect(items.map((item) => item.id)).toEqual(['show-e1', 'show-e2', 'news-a1', 'result-e0-m1', 'result-e0-m2', 'result-e0-m3']);
+    expect(items.map((item) => item.id)).toEqual(['show-e1', 'show-e2', 'news-a1', 'results-e0', 'result-e0-m1', 'result-e0-m2', 'result-e0-m3']);
     expect(items[0]).toMatchObject({ tag: 'ticker.tags.live', text: 'Fallout Friday', to: '/events/e1' });
     expect(items[1]).toMatchObject({ tag: 'ticker.tags.upcoming', text: 'Mayhem Monday · Nov 9', to: '/events/e2' });
     expect(items[2]).toMatchObject({ tag: 'ticker.tags.news', text: 'Strike system', to: '/news/a1' });
-    expect(items[3]).toMatchObject({ tag: 'Warzone Wednesday · Nov 4', text: 'RoySzn dashboard.def Devlin', to: '/events/e0/results' });
-    expect(items[4]).toMatchObject({ text: 'Ace vs Bolt (dashboard.draw)' });
-    expect(items[5]).toMatchObject({ tagTone: 'prestige', text: 'Lynx dashboard.def Kai & Zed · World Title' });
+    expect(items[3]).toMatchObject({ tag: 'ticker.tags.results', text: 'Warzone Wednesday · Nov 4', to: '/events/e0/results' });
+    expect(items[4]).toEqual({ id: 'result-e0-m1', text: 'RoySzn dashboard.def Devlin', to: '/events/e0/results' });
+    expect(items[5]).toMatchObject({ text: 'Ace vs Bolt (dashboard.draw)' });
+    expect(items[5]).not.toHaveProperty('tag');
+    expect(items[6]).toMatchObject({ tag: 'World Title', tagTone: 'prestige', text: 'Lynx dashboard.def Kai & Zed' });
+  });
+
+  it('keeps the newest show first and names each show only once', () => {
+    const items = buildTickerItems({ ...EMPTY, recentShows: [SHOW, EMPTY_SHOW, OLDER_SHOW] }, t, 'en');
+    expect(items.map((item) => item.id)).toEqual(['results-e0', 'result-e0-m1', 'result-e0-m2', 'result-e0-m3', 'results-e-1', 'result-e-1-m9']);
+    expect(items.filter((item) => item.tag === 'ticker.tags.results').map((item) => item.text)).toEqual([
+      'Warzone Wednesday · Nov 4',
+      'Mayhem Monday · Nov 2',
+    ]);
   });
 
   it('has no headlines without data', () => {

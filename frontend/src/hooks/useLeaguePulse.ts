@@ -20,7 +20,8 @@ const EMPTY_PULSE: LeaguePulse = { dashboard: null, news: [], upcomingShows: [],
 /** The shell reuses one answer for this long, so moving between pages adds no requests. */
 export const PULSE_MAX_AGE_MS = 5 * 60 * 1000;
 export const UPCOMING_SHOWS_SHOWN = 3;
-export const RECENT_SHOWS_SHOWN = 2;
+/** The latest show plus the one before it on each night of the Monday, Wednesday, Friday rotation. */
+export const RECENT_SHOWS_SHOWN = 4;
 
 let cached: { loadedAt: number; request: Promise<LeaguePulse> } | null = null;
 
