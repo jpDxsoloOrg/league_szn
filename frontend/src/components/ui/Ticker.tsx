@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Pause, Play } from 'lucide-react';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -36,16 +36,21 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 function TickerItems({ items, focusable }: { items: TickerItem[]; focusable: boolean }) {
   return (
     <>
-      {items.map((item) => (
-        <li key={item.id} className="ui-ticker__item">
-          {item.tag && <span className={`ui-ticker__tag ui-ticker__tag--${item.tagTone ?? 'data'}`}>{item.tag}</span>}
-          {item.to ? (
-            <Link to={item.to} className="ui-ticker__headline" tabIndex={focusable ? undefined : -1}>{item.text}</Link>
-          ) : (
+      {items.map((item) => {
+        const content = (
+          <>
+            {item.tag && <span className={`ui-ticker__tag ui-ticker__tag--${item.tagTone ?? 'data'}`}>{item.tag}</span>}
             <span className="ui-ticker__headline">{item.text}</span>
-          )}
-        </li>
-      ))}
+          </>
+        );
+        return (
+          <li key={item.id} className="ui-ticker__item">
+            {item.to ? (
+              <Link to={item.to} className="ui-ticker__link" tabIndex={focusable ? undefined : -1}>{content}</Link>
+            ) : content}
+          </li>
+        );
+      })}
     </>
   );
 }
@@ -56,18 +61,15 @@ function TickerItems({ items, focusable }: { items: TickerItem[]; focusable: boo
  * at the end. With reduced motion it is a list that scrolls sideways by hand.
  *
  * The crawl loops by drawing the list twice. The second copy is hidden from
- * screen readers and inert, so each headline is read and reached once.
+ * screen readers and its links are out of the tab order, so each headline is
+ * read and reached once. It is not inert: half the time it is the copy on
+ * screen, and a click on it has to open the headline like the first.
  */
 export default function Ticker({ label, items: allItems, ariaLabel, pauseLabel, resumeLabel, className = '' }: TickerProps) {
   const items = allItems.slice(0, TICKER_MAX_ITEM_COUNT);
   const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY);
   const [paused, setPaused] = useState(false);
-  const loopCopyRef = useRef<HTMLUListElement>(null);
   const crawling = !reducedMotion && items.length > 0;
-
-  useEffect(() => {
-    loopCopyRef.current?.setAttribute('inert', '');
-  }, [crawling]);
 
   if (items.length === 0) return null;
 
@@ -84,7 +86,7 @@ export default function Ticker({ label, items: allItems, ariaLabel, pauseLabel, 
             <TickerItems items={items} focusable />
           </ul>
           {crawling && (
-            <ul ref={loopCopyRef} className="ui-ticker__list" aria-hidden="true">
+            <ul className="ui-ticker__list" aria-hidden="true">
               <TickerItems items={items} focusable={false} />
             </ul>
           )}
