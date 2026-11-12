@@ -42,6 +42,7 @@ const TAB_COMPONENTS: Record<AdminTab, LazyExoticComponent<ComponentType>> = {
   championships: lazy(() => import('./ManageChampionships')),
   tournaments: lazy(() => import('./CreateTournament')),
   'contender-overrides': lazy(() => import('./AdminContenderOverrides')),
+  progression: lazy(() => import('./ManageProgression')),
   'match-config': lazy(() => import('./ManageMatchConfig')),
   promos: lazy(() => import('./AdminPromos')),
   rivalries: lazy(() => import('./AdminRivalries')),
