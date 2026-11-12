@@ -419,6 +419,10 @@ export interface Division {
   divisionId: string;
   name: string;
   description?: string;
+  /** Developmental (feeder) division, e.g. Young Boys. */
+  isDevelopmental?: boolean;
+  /** New sign-ups land here. At most one division carries this flag. */
+  isDefaultForNewWrestlers?: boolean;
   createdAt: string;
   updatedAt: string;
 }

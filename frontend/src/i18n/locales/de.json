@@ -2952,7 +2952,13 @@
       "descriptionLabel": "Beschreibung (optional)",
       "descriptionPlaceholder": "Kurze Beschreibung dieser Division",
       "deleteTitle": "Division löschen",
-      "deleteConfirm": "Diese Division wirklich löschen?"
+      "deleteConfirm": "Diese Division wirklich löschen?",
+      "developmentalLabel": "Entwicklungsdivision",
+      "developmentalHint": "Eine Aufbaudivision wie Young Boys. Bei einem Call-up verlassen Wrestler diese Division.",
+      "defaultLabel": "Standard für neue Wrestler",
+      "defaultHint": "Neue Anmeldungen landen hier. Nur eine Division kann Standard sein; wenn du dies aktivierst, verliert die bisherige Standarddivision die Markierung.",
+      "developmentalBadge": "Entwicklung",
+      "defaultBadge": "Standard"
     },
     "transfers": {
       "loadError": "Wechselanfragen konnten nicht geladen werden",

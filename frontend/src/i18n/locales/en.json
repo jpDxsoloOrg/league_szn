@@ -2948,7 +2948,13 @@
       "descriptionLabel": "Description (Optional)",
       "descriptionPlaceholder": "Brief description of this division",
       "deleteTitle": "Delete division",
-      "deleteConfirm": "Are you sure you want to delete this division?"
+      "deleteConfirm": "Are you sure you want to delete this division?",
+      "developmentalLabel": "Developmental division",
+      "developmentalHint": "A feeder division, like Young Boys. Call-ups move wrestlers out of it.",
+      "defaultLabel": "Default for new wrestlers",
+      "defaultHint": "New sign-ups land here. Only one division can be the default; turning this on removes it from the current default.",
+      "developmentalBadge": "Developmental",
+      "defaultBadge": "Default"
     },
     "transfers": {
       "loadError": "Failed to load transfer requests",

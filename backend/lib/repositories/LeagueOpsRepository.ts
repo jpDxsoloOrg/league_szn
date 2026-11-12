@@ -93,11 +93,15 @@ export interface CompanyPatch {
 export interface DivisionCreateInput {
   name: string;
   description?: string;
+  isDevelopmental?: boolean;
+  isDefaultForNewWrestlers?: boolean;
 }
 
 export interface DivisionPatch {
   name?: string;
   description?: string;
+  isDevelopmental?: boolean;
+  isDefaultForNewWrestlers?: boolean;
 }
 
 // ─── Location input types ───────────────────────────────────────────

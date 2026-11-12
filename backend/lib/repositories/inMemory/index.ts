@@ -51,6 +51,7 @@ export function buildInMemoryRepositories(): Repositories {
       matchRatings: matchRatings.store,
       playerProgression: progression.progressionStore,
       progressionEvents: progression.eventsStore,
+      divisions: leagueOps.divisions.store as unknown as Map<string, Record<string, unknown>>,
     });
     try {
       const result = await fn(uow);

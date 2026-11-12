@@ -1,4 +1,11 @@
-import type { UnitOfWork, RecordDelta, MatchWriteCondition, PlayerWriteCondition } from '../unitOfWork';
+import type {
+  UnitOfWork,
+  RecordDelta,
+  MatchWriteCondition,
+  PlayerWriteCondition,
+  DivisionWriteCondition,
+} from '../unitOfWork';
+import type { DivisionPatch } from '../LeagueOpsRepository';
 import type { ChallengeStatus, TagTeam } from '../types';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
 import type {
@@ -41,6 +48,8 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       matchRatings: Map<string, MatchRating>;
       playerProgression: Map<string, PlayerProgression>;
       progressionEvents: ProgressionEvent[];
+      /** Optional so callers that never touch divisions need not wire it. */
+      divisions?: Map<string, Record<string, unknown>>;
     },
   ) {}
 
@@ -130,6 +139,26 @@ export class InMemoryUnitOfWork implements UnitOfWork {
 
   deleteTagTeam(tagTeamId: string): void {
     this.staged.push(() => { this.stores.tagTeams.delete(tagTeamId); });
+  }
+
+  updateDivision(divisionId: string, patch: DivisionPatch, condition?: DivisionWriteCondition): void {
+    this.preconditions.push(() => {
+      const existing = this.stores.divisions?.get(divisionId);
+      if (!existing) throw new ConcurrencyError('Division', divisionId);
+      if (condition && (existing.isDefaultForNewWrestlers === true) !== condition.isDefaultForNewWrestlers) {
+        throw new ConcurrencyError('Division', divisionId);
+      }
+    });
+    this.staged.push(() => {
+      const existing = this.stores.divisions?.get(divisionId);
+      if (!existing) return;
+      const next: Record<string, unknown> = { ...existing };
+      for (const [key, val] of Object.entries(patch)) {
+        if (val !== undefined) next[key] = val;
+      }
+      next.updatedAt = new Date().toISOString();
+      this.stores.divisions?.set(divisionId, next);
+    });
   }
 
   updateChampionship(championshipId: string, patch: Record<string, unknown>): void {
