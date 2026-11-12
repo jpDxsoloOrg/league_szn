@@ -183,6 +183,7 @@ provider:
             - lambda:InvokeFunction
           Resource:
             - arn:aws:lambda:${self:provider.region}:*:function:${self:service}-${self:provider.stage}-contenders
+            - arn:aws:lambda:${self:provider.region}:*:function:${self:service}-${self:provider.stage}-progression
 
 plugins:
   - serverless-plugin-typescript
@@ -806,6 +807,48 @@ functions:
       - http:
           path: admin/contenders/overrides/{championshipId}/{playerId}
           method: delete
+          cors: *corsConfig
+
+  # Progression (Young Boys call-ups / division movement). Routes live in
+  # functions/progression/routes/*; auth is checked in-Lambda by lib/router.
+  # Also invoked directly (async) to recompute progression after results,
+  # ratings and promos. Recompute-all batches inside one invocation: the
+  # account's Lambda concurrency (10) is shared by prod and dev.
+  progression:
+    handler: functions/progression/handler.handler
+    timeout: 29
+    events:
+      - http:
+          path: admin/progression/recompute
+          method: post
+          cors: *corsConfig
+      - http:
+          path: progression/tracks
+          method: any
+          cors: *corsConfig
+      - http:
+          path: progression/tracks/{trackId}
+          method: put
+          cors: *corsConfig
+      - http:
+          path: progression/tracks/{trackId}/players
+          method: get
+          cors: *corsConfig
+      - http:
+          path: progression/players/{playerId}
+          method: get
+          cors: *corsConfig
+      - http:
+          path: progression/players/{playerId}/consideration
+          method: put
+          cors: *corsConfig
+      - http:
+          path: progression/players/{playerId}/execute
+          method: post
+          cors: *corsConfig
+      - http:
+          path: progression/considerations
+          method: get
           cors: *corsConfig
 
   # Images
