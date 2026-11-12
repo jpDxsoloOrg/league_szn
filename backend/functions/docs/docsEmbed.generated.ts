@@ -4220,10 +4220,58 @@ paths:
                         goals: { type: array, items: { $ref: '#/components/schemas/ProgressionGoalDetail' } }
                         consideration: { $ref: '#/components/schemas/ProgressionConsideration' }
                         computedAt: { type: string }
+                        lastMatchDate: { type: string, format: date-time, description: "Date of the player's latest completed match; absent when they have none" }
         '400': { description: 'Bad limit', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Track not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Progression: call-up history (CUP-09) ────────────────────────────
+
+  /progression/events:
+    get:
+      tags: [Progression]
+      summary: Call-up history (Moderator+)
+      description: >
+        ProgressionEvents (consideration added or removed, executed moves) across every
+        player, newest first, joined with player, track and division names. \`actorName\`
+        is the linked player name of the staff member who acted; it is null for
+        system actions (\`actorUserId: system\`) and for staff with no linked player.
+        Scans the events table, so results are capped by \`limit\`.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: trackId, in: query, schema: { type: string } }
+        - { name: kind, in: query, schema: { type: string, enum: [callup, promotion, relegation] } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+      responses:
+        '200':
+          description: Events, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [eventId, type, kind, trackId, playerId, fromDivisionId, actorUserId, createdAt]
+                  properties:
+                    eventId: { type: string }
+                    type: { type: string, enum: [consideration_added, consideration_removed, executed] }
+                    kind: { type: string, enum: [callup, promotion, relegation] }
+                    trackId: { type: string }
+                    trackName: { type: string, nullable: true }
+                    playerId: { type: string }
+                    playerName: { type: string, nullable: true }
+                    wrestlerName: { type: string, nullable: true }
+                    fromDivisionId: { type: string }
+                    fromDivisionName: { type: string, nullable: true }
+                    toDivisionId: { type: string }
+                    toDivisionName: { type: string, nullable: true }
+                    actorUserId: { type: string, description: "Cognito sub, or 'system'" }
+                    actorName: { type: string, nullable: true }
+                    createdAt: { type: string, format: date-time }
+        '400': { description: 'Bad limit or kind', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   # ── Progression: call-up considerations (CUP-05) ─────────────────────
 

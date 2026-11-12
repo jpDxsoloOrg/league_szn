@@ -241,6 +241,23 @@ describe('GET /progression/tracks/{trackId}/players', () => {
     expect((await board('mod', { limit: '0' })).statusCode).toBe(400);
   });
 
+  it('adds the latest completed match date, ignoring scheduled matches', async () => {
+    const { matches } = repos.competition;
+    await matches.create({ matchId: 'm-old', date: '2026-10-01T20:00:00.000Z', status: 'completed', participants: [ownerPlayerId, otherPlayerId] });
+    await matches.create({ matchId: 'm-new', date: '2026-11-01T20:00:00.000Z', status: 'completed', participants: [ownerPlayerId] });
+    await matches.create({ matchId: 'm-next', date: '2026-12-01T20:00:00.000Z', status: 'scheduled', participants: [otherPlayerId] });
+
+    const body = JSON.parse((await board('mod')).body);
+    const byId = new Map(body.players.map((p: { playerId: string; lastMatchDate?: string }) => [p.playerId, p.lastMatchDate]));
+    expect(byId.get(ownerPlayerId)).toBe('2026-11-01T20:00:00.000Z');
+    expect(byId.get(otherPlayerId)).toBe('2026-10-01T20:00:00.000Z');
+  });
+
+  it('omits lastMatchDate for a player with no completed match', async () => {
+    const body = JSON.parse((await board('mod')).body);
+    expect(body.players[0]).not.toHaveProperty('lastMatchDate');
+  });
+
   it('returns 404 for an unknown track', async () => {
     const result = await call(makeEvent('mod', 'GET', resource, { pathParameters: { trackId: 'nope' } }));
     expect(result.statusCode).toBe(404);

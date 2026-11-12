@@ -21,6 +21,7 @@ import ProgressionMeter from '../../progression/ProgressionMeter';
 import AdminFormModal from '../AdminFormModal';
 import AdminNotice from '../AdminNotice';
 import ExecuteModal from './ExecuteModal';
+import { daysSinceLastMatch, INACTIVE_DAYS, isInactive } from './candidateActivity';
 
 type CandidateSort = 'progress' | 'goalsMet' | 'name';
 
@@ -51,7 +52,7 @@ function sortCandidates(rows: ProgressionBoardEntry[], sort: CandidateSort): Pro
 
 /** The track's candidates ranked by progress, with flag and call-up actions. */
 export default function CandidateBoard({ track, divisions, reloadKey = 0, onLoaded }: CandidateBoardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { showToast } = useToast();
   const noteId = useId();
   const [rows, setRows] = useState<ProgressionBoardEntry[]>([]);
@@ -59,6 +60,7 @@ export default function CandidateBoard({ track, divisions, reloadKey = 0, onLoad
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sort, setSort] = useState<CandidateSort>('progress');
   const [flaggedOnly, setFlaggedOnly] = useState(false);
+  const [inactiveOnly, setInactiveOnly] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [pendingPlayerId, setPendingPlayerId] = useState<string | null>(null);
   const [flagTarget, setFlagTarget] = useState<ProgressionBoardEntry | null>(null);
@@ -91,9 +93,20 @@ export default function CandidateBoard({ track, divisions, reloadKey = 0, onLoad
   }, [track.trackId, reloadKey, retryKey]);
 
   const shownRows = useMemo(() => {
-    const filtered = flaggedOnly ? rows.filter((row) => row.consideration) : rows;
+    const now = Date.now();
+    const filtered = rows.filter((row) => (
+      (!flaggedOnly || row.consideration) && (!inactiveOnly || isInactive(row, now))
+    ));
     return sortCandidates(filtered, sort);
-  }, [rows, flaggedOnly, sort]);
+  }, [rows, flaggedOnly, inactiveOnly, sort]);
+
+  const dateFormat = useMemo(() => new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }), [i18n.language]);
+
+  const emptyTitle = () => {
+    if (inactiveOnly) return t('progression.admin.board.emptyInactive', { days: INACTIVE_DAYS });
+    if (flaggedOnly) return t('progression.admin.board.emptyFlagged');
+    return t('progression.admin.board.empty');
+  };
 
   const toggleExpanded = (playerId: string) => setExpanded((previous) => {
     const next = new Set(previous);
@@ -185,6 +198,10 @@ export default function CandidateBoard({ track, divisions, reloadKey = 0, onLoad
           <input type="checkbox" checked={flaggedOnly} onChange={(event) => setFlaggedOnly(event.target.checked)} />
           {t('progression.admin.board.flaggedOnly')}
         </label>
+        <label className="ac-check">
+          <input type="checkbox" checked={inactiveOnly} onChange={(event) => setInactiveOnly(event.target.checked)} />
+          {t('progression.admin.board.inactiveOnly', { days: INACTIVE_DAYS })}
+        </label>
         <span className="ac-toolbar__spacer" />
         <span className="ac-toolbar__count">{t('progression.admin.board.count', { count: shownRows.length })}</span>
       </div>
@@ -192,111 +209,138 @@ export default function CandidateBoard({ track, divisions, reloadKey = 0, onLoad
       {shownRows.length === 0 ? (
         <EmptyState
           icon={<Users aria-hidden="true" size={32} />}
-          title={flaggedOnly ? t('progression.admin.board.emptyFlagged') : t('progression.admin.board.empty')}
+          title={emptyTitle()}
         />
       ) : (
-        <ol className="mp-board__list" aria-label={t('progression.admin.board.caption', { track: track.name })}>
-          {shownRows.map((entry, index) => {
-            const met = goalsMet(entry);
-            const isExpanded = expanded.has(entry.playerId);
-            const goalsId = `mp-goals-${entry.playerId}`;
-            return (
-              <li key={entry.playerId} className="mp-row" data-testid="candidate-row">
-                <div className="mp-row__main">
-                  <span className="mp-row__rank" aria-hidden="true">{index + 1}</span>
-                  <div className="mp-row__player">
-                    <Avatar src={entry.imageUrl} name={entry.name} size="md" />
-                    <span className="ac-cell__text">
-                      <span className="ac-cell__title">{entry.name}</span>
-                      {entry.wrestlerName && <span className="ac-cell__sub">{entry.wrestlerName}</span>}
-                    </span>
-                  </div>
-                  <ProgressionMeter
-                    className="mp-row__meter"
-                    pct={entry.progressPct}
-                    kind={track.kind}
-                    label={t('progression.admin.board.progress')}
-                    size="sm"
-                  />
-                  <div className="mp-row__goals">
-                    <Badge tone={met === entry.goals.length && met > 0 ? 'win' : 'neutral'}>
-                      {t('progression.admin.board.goalsMet', { met, total: entry.goals.length })}
-                    </Badge>
-                    <ul className="mp-chips" aria-label={t('progression.goals.title')}>
-                      {entry.goals.map((goal) => (
-                        <li
-                          key={goal.goalId}
-                          className={goal.met ? 'mp-chip mp-chip--met' : 'mp-chip'}
-                          title={t(`progression.metrics.${goal.metric}`)}
+        <div className="mp-board__table">
+          {/* Visual column headings for the desktop grid; the meter and last-match cells carry their own labels. */}
+          <div className="mp-board__head" aria-hidden="true">
+            <span />
+            <span>{t('progression.admin.board.columns.player')}</span>
+            <span>{t('progression.admin.board.progress')}</span>
+            <span>{t('progression.admin.board.columns.goals')}</span>
+            <span>{t('progression.admin.board.columns.lastMatch')}</span>
+            <span>{t('progression.admin.board.columns.consideration')}</span>
+            <span />
+          </div>
+          <ol className="mp-board__list" aria-label={t('progression.admin.board.caption', { track: track.name })}>
+            {shownRows.map((entry, index) => {
+              const met = goalsMet(entry);
+              const daysAgo = daysSinceLastMatch(entry);
+              const stale = daysAgo === null || daysAgo >= INACTIVE_DAYS;
+              const isExpanded = expanded.has(entry.playerId);
+              const goalsId = `mp-goals-${entry.playerId}`;
+              return (
+                <li key={entry.playerId} className="mp-row" data-testid="candidate-row">
+                  <div className="mp-row__main">
+                    <span className="mp-row__rank" aria-hidden="true">{index + 1}</span>
+                    <div className="mp-row__player">
+                      <Avatar src={entry.imageUrl} name={entry.name} size="md" />
+                      <span className="ac-cell__text">
+                        <span className="ac-cell__title">{entry.name}</span>
+                        {entry.wrestlerName && <span className="ac-cell__sub">{entry.wrestlerName}</span>}
+                      </span>
+                    </div>
+                    <ProgressionMeter
+                      className="mp-row__meter"
+                      pct={entry.progressPct}
+                      kind={track.kind}
+                      label={t('progression.admin.board.progress')}
+                      size="sm"
+                    />
+                    <div className="mp-row__goals">
+                      <Badge tone={met === entry.goals.length && met > 0 ? 'win' : 'neutral'}>
+                        {t('progression.admin.board.goalsMet', { met, total: entry.goals.length })}
+                      </Badge>
+                      <ul className="mp-chips" aria-label={t('progression.goals.title')}>
+                        {entry.goals.map((goal) => (
+                          <li
+                            key={goal.goalId}
+                            className={goal.met ? 'mp-chip mp-chip--met' : 'mp-chip'}
+                            title={t(`progression.metrics.${goal.metric}`)}
+                          >
+                            {t(`progression.metrics.${goal.metric}`)}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className={stale ? 'mp-row__last mp-row__last--stale' : 'mp-row__last'} data-testid="last-match">
+                      <span className="mp-row__label">{t('progression.admin.board.columns.lastMatch')}</span>
+                      {entry.lastMatchDate && daysAgo !== null ? (
+                        <span className="ac-cell__text">
+                          <time className="ac-nowrap" dateTime={entry.lastMatchDate}>
+                            {dateFormat.format(new Date(entry.lastMatchDate))}
+                          </time>
+                          <span className="ac-cell__sub">{t('progression.admin.board.daysAgo', { count: daysAgo })}</span>
+                        </span>
+                      ) : (
+                        <span className="ac-cell__muted">{t('progression.admin.board.noMatches')}</span>
+                      )}
+                    </div>
+                    <div className="mp-row__consideration">
+                      {entry.consideration ? (
+                        <>
+                          <Badge tone="warning" icon={<Flag aria-hidden="true" size={14} />}>
+                            {t('progression.admin.board.flagged')}
+                          </Badge>
+                          {entry.consideration.note && <span className="ac-cell__sub mp-row__note">{entry.consideration.note}</span>}
+                        </>
+                      ) : (
+                        <span className="ac-cell__muted">{t('progression.admin.board.notFlagged')}</span>
+                      )}
+                    </div>
+                    <div className="ac-actions mp-row__actions">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={isExpanded ? <ChevronUp aria-hidden="true" size={16} /> : <ChevronDown aria-hidden="true" size={16} />}
+                        aria-expanded={isExpanded}
+                        aria-controls={goalsId}
+                        onClick={() => toggleExpanded(entry.playerId)}
+                      >
+                        {isExpanded ? t('progression.admin.board.hideGoals') : t('progression.admin.board.showGoals')}
+                      </Button>
+                      {entry.consideration ? (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          loading={pendingPlayerId === entry.playerId}
+                          onClick={() => void saveConsideration(entry, false)}
+                          aria-label={t('progression.admin.board.unflagFor', { name: entry.name })}
                         >
-                          {t(`progression.metrics.${goal.metric}`)}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="mp-row__consideration">
-                    {entry.consideration ? (
-                      <>
-                        <Badge tone="warning" icon={<Flag aria-hidden="true" size={14} />}>
-                          {t('progression.admin.board.flagged')}
-                        </Badge>
-                        {entry.consideration.note && <span className="ac-cell__sub mp-row__note">{entry.consideration.note}</span>}
-                      </>
-                    ) : (
-                      <span className="ac-cell__muted">{t('progression.admin.board.notFlagged')}</span>
-                    )}
-                  </div>
-                  <div className="ac-actions mp-row__actions">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      icon={isExpanded ? <ChevronUp aria-hidden="true" size={16} /> : <ChevronDown aria-hidden="true" size={16} />}
-                      aria-expanded={isExpanded}
-                      aria-controls={goalsId}
-                      onClick={() => toggleExpanded(entry.playerId)}
-                    >
-                      {isExpanded ? t('progression.admin.board.hideGoals') : t('progression.admin.board.showGoals')}
-                    </Button>
-                    {entry.consideration ? (
+                          {t('progression.admin.board.unflag')}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => openFlag(entry)}
+                          aria-label={t('progression.admin.board.flagFor', { name: entry.name })}
+                        >
+                          {t('progression.admin.board.flag')}
+                        </Button>
+                      )}
                       <Button
-                        variant="secondary"
                         size="sm"
-                        loading={pendingPlayerId === entry.playerId}
-                        onClick={() => void saveConsideration(entry, false)}
-                        aria-label={t('progression.admin.board.unflagFor', { name: entry.name })}
+                        icon={<Rocket aria-hidden="true" size={16} />}
+                        onClick={() => setExecuteTarget(entry)}
+                        disabled={!track.isActive}
+                        aria-label={t(`progression.admin.execute.actionFor.${track.kind}`, { name: entry.name })}
                       >
-                        {t('progression.admin.board.unflag')}
+                        {t(`progression.admin.execute.action.${track.kind}`)}
                       </Button>
-                    ) : (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => openFlag(entry)}
-                        aria-label={t('progression.admin.board.flagFor', { name: entry.name })}
-                      >
-                        {t('progression.admin.board.flag')}
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      icon={<Rocket aria-hidden="true" size={16} />}
-                      onClick={() => setExecuteTarget(entry)}
-                      disabled={!track.isActive}
-                      aria-label={t(`progression.admin.execute.actionFor.${track.kind}`, { name: entry.name })}
-                    >
-                      {t(`progression.admin.execute.action.${track.kind}`)}
-                    </Button>
+                    </div>
                   </div>
-                </div>
-                {isExpanded && (
-                  <div id={goalsId} className="mp-row__details">
-                    <GoalChecklist goals={entry.goals} kind={track.kind} />
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ol>
+                  {isExpanded && (
+                    <div id={goalsId} className="mp-row__details">
+                      <GoalChecklist goals={entry.goals} kind={track.kind} />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
       )}
 
       <AdminFormModal

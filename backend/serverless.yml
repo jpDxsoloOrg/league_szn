@@ -850,6 +850,10 @@ functions:
           path: progression/considerations
           method: get
           cors: *corsConfig
+      - http:
+          path: progression/events
+          method: get
+          cors: *corsConfig
 
   # Images
   generateUploadUrl:

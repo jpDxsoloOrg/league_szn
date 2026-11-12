@@ -1,10 +1,12 @@
 import { NotFoundError } from '../errors';
 import {
   progressionEventSortKey,
+  selectRecentEvents,
   type ListByTrackOptions,
   type ListProgressionEventsOptions,
   type NotifiedMilestoneCounts,
   type NotifiedMilestones,
+  type ProgressionEventFilter,
   type ProgressionRepository,
   type ProgressionTrackFilter,
 } from '../progression';
@@ -168,5 +170,12 @@ export class InMemoryProgressionRepository implements ProgressionRepository {
       .filter((event) => event.type === type)
       .sort((a, b) => progressionEventSortKey(b).localeCompare(progressionEventSortKey(a)))
       .map(clone);
+  }
+
+  async listRecentEvents(
+    filter: ProgressionEventFilter = {},
+    options: ListProgressionEventsOptions = {},
+  ): Promise<ProgressionEvent[]> {
+    return selectRecentEvents(this.eventsStore, filter, options.limit).map(clone);
   }
 }

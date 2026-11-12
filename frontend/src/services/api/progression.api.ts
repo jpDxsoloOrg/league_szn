@@ -6,6 +6,8 @@ import type {
   PlayerProgressionSummary,
   ProgressionBoard,
   ProgressionConsiderationEntry,
+  ProgressionEventEntry,
+  ProgressionEventsFilter,
   ProgressionKind,
   ProgressionTrack,
   ProgressionTrackFilter,
@@ -30,7 +32,7 @@ function toQuery(params: Record<string, string | undefined>): string {
 
 /**
  * Client for every /progression endpoint (CUP-04 read + tracks, CUP-05
- * consideration, CUP-06 execute, CUP-03 recompute). Auth is attached when
+ * consideration, CUP-06 execute, CUP-03 recompute, CUP-09 history). Auth is attached when
  * signed in; the player read returns more detail to the owner and staff.
  */
 export const progressionApi = {
@@ -96,6 +98,16 @@ export const progressionApi = {
       method: 'POST',
       body: JSON.stringify(input),
     });
+  },
+
+  /** Moderator+ (CUP-09). Call-up history: consideration and execute events, newest first. */
+  getEvents: async (filter: ProgressionEventsFilter = {}, signal?: AbortSignal): Promise<ProgressionEventEntry[]> => {
+    const query = toQuery({
+      trackId: filter.trackId,
+      kind: filter.kind,
+      limit: filter.limit === undefined ? undefined : String(filter.limit),
+    });
+    return fetchWithAuth(`${API_BASE_URL}/progression/events${query}`, {}, signal);
   },
 
   /** Moderator+ (CUP-03). Recompute the given players, or every player when `playerIds` is omitted. */
