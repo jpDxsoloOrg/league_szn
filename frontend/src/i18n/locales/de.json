@@ -2305,6 +2305,10 @@
     }
   },
   "tagTeams": {
+    "contenderChip": {
+      "label": "#{{rank}} Herausforderer — {{championship}}",
+      "listLabel": "Platzierungen als Tag-Team-Herausforderer"
+    },
     "title": "Tag Teams",
     "standings": "Tag-Team-Rangliste",
     "detail": "Tag-Team-Details",
@@ -2432,7 +2436,25 @@
       "topThreePositions": "Top-3-Positionen",
       "comingSoon": "Dein persönlicher Herausforderer-Status ist noch nicht verfügbar.",
       "requiresAuth": "Bis dahin zeigt die Gesamtrangliste, wo alle stehen.",
-      "viewRankings": "Gesamtrangliste ansehen"
+      "viewRankings": "Gesamtrangliste ansehen",
+      "tagTitles": {
+        "heading": "Tag-Team-Titel",
+        "teamLabel": "Dein Team: {{name}}",
+        "rank": "#{{rank}}",
+        "champions": "Champions",
+        "unranked": "Nicht platziert",
+        "matchesInPeriod_one": "{{count}} Kampf in diesem Zeitraum",
+        "matchesInPeriod_other": "{{count}} Kämpfe in diesem Zeitraum",
+        "matchesNeeded_one": "Teams brauchen mindestens {{count}} Tag-Team-Kampf im Ranglistenzeitraum, um sich zu qualifizieren",
+        "matchesNeeded_other": "Teams brauchen mindestens {{count}} Tag-Team-Kämpfe im Ranglistenzeitraum, um sich zu qualifizieren",
+        "notInTeam": "Du bist in keinem Tag Team und hast daher keine Platzierungen bei Tag-Team-Titeln.",
+        "goToMyTagTeam": "Mein Tag Team",
+        "teamNotActive": "Dein Tag Team ist noch nicht aktiv. Es kann platziert werden, sobald es genehmigt ist.",
+        "noTagTitles": "Es gibt keine aktiven Tag-Team-Titel.",
+        "loadFailed": "Deine Tag-Team-Platzierungen konnten nicht geladen werden.",
+        "loginRequired": "Melde dich an, um die Platzierungen deines Tag Teams zu sehen.",
+        "singlesComingSoon": "Der Einzel-Herausforderer-Status ist noch nicht verfügbar."
+      }
     },
     "overrides": {
       "badge": "Manuelle Anpassung",

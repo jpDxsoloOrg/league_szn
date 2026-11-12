@@ -14,6 +14,10 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => stableTranslation,
 }));
 
+vi.mock('../TagTeamContenderChip', () => ({
+  default: ({ tagTeamId }: { tagTeamId: string }) => <span data-testid="contender-chip">{tagTeamId}</span>,
+}));
+
 import TagTeamDetail from '../TagTeamDetail';
 
 const team = {
@@ -125,6 +129,21 @@ describe('TagTeamDetail', () => {
       renderDetail();
 
       expect(await screen.findByText('vs common.unknown')).toBeInTheDocument();
+    });
+  });
+
+  describe('contender chip', () => {
+    it('shows for an active team', async () => {
+      mockGetById.mockResolvedValue(team);
+      renderDetail();
+      expect(await screen.findByTestId('contender-chip')).toHaveTextContent('tt1');
+    });
+
+    it('is hidden for a dissolved team', async () => {
+      mockGetById.mockResolvedValue({ ...team, status: 'dissolved' });
+      renderDetail();
+      expect(await screen.findByText('Dissolved')).toBeInTheDocument();
+      expect(screen.queryByTestId('contender-chip')).not.toBeInTheDocument();
     });
   });
 });

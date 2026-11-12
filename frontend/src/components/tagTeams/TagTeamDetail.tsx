@@ -15,6 +15,7 @@ import EmptyState from '../ui/EmptyState';
 import FormDots from '../ui/FormDots';
 import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
+import TagTeamContenderChip from './TagTeamContenderChip';
 import { formatMatchDate } from '../../utils/dateUtils';
 import { formatMatchType } from '../../utils/matchDisplay';
 import { missingPlayerLabel } from '../../utils/playerName';
@@ -178,6 +179,8 @@ export default function TagTeamDetail() {
           </Badge>
         )}
       />
+
+      {tagTeam.status === 'active' && <TagTeamContenderChip tagTeamId={tagTeam.tagTeamId} />}
 
       {tagTeam.imageUrl && (
         <img src={tagTeam.imageUrl} alt={tagTeam.name} className="tag-team-detail__banner" />
