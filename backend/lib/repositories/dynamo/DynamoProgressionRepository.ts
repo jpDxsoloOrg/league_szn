@@ -3,10 +3,12 @@ import { dynamoDb, TableNames } from '../../dynamodb';
 import { NotFoundError } from '../errors';
 import {
   progressionEventSortKey,
+  selectRecentEvents,
   type ListByTrackOptions,
   type ListProgressionEventsOptions,
   type NotifiedMilestoneCounts,
   type NotifiedMilestones,
+  type ProgressionEventFilter,
   type ProgressionRepository,
   type ProgressionTrackFilter,
 } from '../progression';
@@ -241,5 +243,14 @@ export class DynamoProgressionRepository implements ProgressionRepository {
     return rows
       .map(fromProgressionEventItem)
       .sort((a, b) => progressionEventSortKey(b).localeCompare(progressionEventSortKey(a)));
+  }
+
+  async listRecentEvents(
+    filter: ProgressionEventFilter = {},
+    options: ListProgressionEventsOptions = {},
+  ): Promise<ProgressionEvent[]> {
+    // Events have no global time index; at this table's size a scan is fine.
+    const rows = await dynamoDb.scanAll({ TableName: TableNames.PROGRESSION_EVENTS });
+    return selectRecentEvents(rows.map(fromProgressionEventItem), filter, options.limit);
   }
 }

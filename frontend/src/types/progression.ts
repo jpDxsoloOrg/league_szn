@@ -124,6 +124,8 @@ export interface ProgressionBoardEntry {
   goals: ProgressionGoalDetail[];
   consideration?: ProgressionConsideration;
   computedAt: string;
+  /** Date of the player's latest completed match; absent when they have none. */
+  lastMatchDate?: string;
 }
 
 /** GET /progression/tracks/{trackId}/players */
@@ -184,6 +186,37 @@ export interface ProgressionEvent {
   fromDivisionId: string;
   toDivisionId?: string;
   actorUserId: string;
+  createdAt: string;
+}
+
+/** Query for GET /progression/events. */
+export interface ProgressionEventsFilter {
+  trackId?: string;
+  kind?: ProgressionKind;
+  /** 1-200, default 50. */
+  limit?: number;
+}
+
+/** One row of GET /progression/events (Moderator+): an event joined with names. */
+export interface ProgressionEventEntry {
+  eventId: string;
+  type: ProgressionEventType;
+  kind: ProgressionKind;
+  trackId: string;
+  /** null when the track no longer exists. */
+  trackName: string | null;
+  playerId: string;
+  /** null when the player no longer exists. */
+  playerName: string | null;
+  wrestlerName: string | null;
+  fromDivisionId: string;
+  fromDivisionName: string | null;
+  toDivisionId?: string;
+  toDivisionName?: string | null;
+  /** Cognito sub of the staff member, or 'system' for automatic actions. */
+  actorUserId: string;
+  /** The actor's linked player name; null for 'system' and for staff with no linked player. */
+  actorName: string | null;
   createdAt: string;
 }
 

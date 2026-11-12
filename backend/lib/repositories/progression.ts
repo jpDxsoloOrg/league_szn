@@ -40,6 +40,12 @@ export interface ListProgressionEventsOptions {
   limit?: number;
 }
 
+/** Filter for `listRecentEvents` (CUP-09 history). Every field is optional. */
+export interface ProgressionEventFilter {
+  trackId?: string;
+  kind?: ProgressionKind;
+}
+
 /** CUP-11: the dedupe lists stored on a PlayerProgression row. */
 export interface NotifiedMilestones {
   notifiedThresholds: number[];
@@ -55,6 +61,23 @@ export interface NotifiedMilestoneCounts {
 /** Sort key of a ProgressionEvents row. */
 export const progressionEventSortKey = (event: Pick<ProgressionEvent, 'createdAt' | 'eventId'>): string =>
   `${event.createdAt}#${event.eventId}`;
+
+/**
+ * Shared by both implementations of `listRecentEvents`: keep the events
+ * matching `filter`, newest first, cut to `limit`.
+ */
+export function selectRecentEvents(
+  events: readonly ProgressionEvent[],
+  filter: ProgressionEventFilter = {},
+  limit?: number,
+): ProgressionEvent[] {
+  const rows = events
+    .filter((event) =>
+      (filter.trackId === undefined || event.trackId === filter.trackId) &&
+      (filter.kind === undefined || event.kind === filter.kind))
+    .sort((a, b) => progressionEventSortKey(b).localeCompare(progressionEventSortKey(a)));
+  return limit === undefined ? rows : rows.slice(0, Math.max(0, limit));
+}
 
 export interface ProgressionRepository {
   // ── Tracks ───────────────────────────────────────────────────────
@@ -114,4 +137,9 @@ export interface ProgressionRepository {
   listEvents(playerId: string, options?: ListProgressionEventsOptions): Promise<ProgressionEvent[]>;
   /** Every player's events of one type (a table scan), newest first. Feeds the activity feed. */
   listEventsByType(type: ProgressionEventType): Promise<ProgressionEvent[]>;
+  /**
+   * Every player's events matching the filter (a table scan), newest first,
+   * cut to `options.limit`. Feeds the admin call-up history.
+   */
+  listRecentEvents(filter?: ProgressionEventFilter, options?: ListProgressionEventsOptions): Promise<ProgressionEvent[]>;
 }

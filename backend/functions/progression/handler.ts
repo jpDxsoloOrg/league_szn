@@ -10,6 +10,7 @@ import { recomputeRoutes, handleDirectInvoke, type ProgressionRecomputePayload }
 import { readRoutes } from './routes/read';
 import { considerationRoutes } from './routes/consideration';
 import { executeRoutes } from './routes/execute';
+import { historyRoutes } from './routes/history';
 
 const noopCallback = () => {};
 
@@ -23,6 +24,7 @@ export const routes: ReadonlyArray<RouteConfig> = [
   ...readRoutes,
   ...considerationRoutes,
   ...executeRoutes,
+  ...historyRoutes,
 ];
 
 const router = createRouter(routes);

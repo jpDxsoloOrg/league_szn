@@ -5,7 +5,7 @@ import type { ReactElement } from 'react';
 import i18n from '../../../i18n';
 import { ApiError } from '../../../services/api/apiClient';
 import type { Division } from '../../../types';
-import type { ProgressionBoardEntry, ProgressionTrack } from '../../../types/progression';
+import type { ProgressionBoardEntry, ProgressionEventEntry, ProgressionTrack } from '../../../types/progression';
 import { ToastContext } from '../../ui/toastContext';
 
 const { mockProgressionApi, mockDivisionsApi } = vi.hoisted(() => ({
@@ -17,6 +17,7 @@ const { mockProgressionApi, mockDivisionsApi } = vi.hoisted(() => ({
     setConsideration: vi.fn(),
     execute: vi.fn(),
     recompute: vi.fn(),
+    getEvents: vi.fn(),
   },
   mockDivisionsApi: { getAll: vi.fn() },
 }));
@@ -67,11 +68,65 @@ function entry(playerId: string, name: string, progressPct: number, met: [boolea
   };
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const daysAgo = (days: number) => new Date(Date.now() - days * DAY_MS - 60_000).toISOString();
+
 // Deliberately out of order: the board sorts by progress.
+// Last match: High Hana 3 days ago, Mid Mo 20 days ago, Low Larry never.
 const boardPlayers = [
   entry('p-low', 'Low Larry', 20, [false, false]),
-  entry('p-high', 'High Hana', 90, [true, true]),
-  entry('p-mid', 'Mid Mo', 55, [true, false]),
+  { ...entry('p-high', 'High Hana', 90, [true, true]), lastMatchDate: daysAgo(3) },
+  { ...entry('p-mid', 'Mid Mo', 55, [true, false]), lastMatchDate: daysAgo(20) },
+];
+
+const historyEvents: ProgressionEventEntry[] = [
+  {
+    eventId: 'e3',
+    type: 'executed',
+    kind: 'callup',
+    trackId: 't1',
+    trackName: 'Young Boys Call-Up',
+    playerId: 'p-high',
+    playerName: 'High Hana',
+    wrestlerName: 'High Hana Wrestler',
+    fromDivisionId: 'yb',
+    fromDivisionName: 'Young Boys',
+    toDivisionId: 'raw',
+    toDivisionName: 'Raw',
+    actorUserId: 'sub-gm',
+    actorName: 'GM Gina',
+    createdAt: '2026-11-11T18:00:00.000Z',
+  },
+  {
+    eventId: 'e2',
+    type: 'consideration_removed',
+    kind: 'callup',
+    trackId: 't1',
+    trackName: 'Young Boys Call-Up',
+    playerId: 'p-mid',
+    playerName: 'Mid Mo',
+    wrestlerName: null,
+    fromDivisionId: 'yb',
+    fromDivisionName: 'Young Boys',
+    actorUserId: 'system',
+    actorName: null,
+    createdAt: '2026-11-10T18:00:00.000Z',
+  },
+  {
+    eventId: 'e1',
+    type: 'consideration_added',
+    kind: 'callup',
+    trackId: 't1',
+    trackName: 'Young Boys Call-Up',
+    playerId: 'p-gone',
+    playerName: null,
+    wrestlerName: null,
+    fromDivisionId: 'yb',
+    fromDivisionName: 'Young Boys',
+    actorUserId: '0c6d3c1e-0000-4000-8000-000000000000',
+    actorName: null,
+    createdAt: '2026-11-09T18:00:00.000Z',
+  },
 ];
 
 const showToast = vi.fn();
@@ -94,6 +149,7 @@ beforeEach(() => {
   mockProgressionApi.getTracks.mockResolvedValue([track]);
   mockDivisionsApi.getAll.mockResolvedValue(divisions);
   mockProgressionApi.getBoard.mockResolvedValue({ track, players: boardPlayers.map((player) => ({ ...player })) });
+  mockProgressionApi.getEvents.mockResolvedValue(historyEvents);
 });
 
 describe('validateTrackDraft', () => {
@@ -296,6 +352,37 @@ describe('ManageProgression board', () => {
     expect(screen.getAllByTestId('candidate-row')).toHaveLength(3);
   });
 
+  it('shows each candidate\'s last match date, or that they have none', async () => {
+    const rows = await renderBoard();
+
+    const lastMatch = rows.map((row) => within(row).getByTestId('last-match'));
+    expect(lastMatch[0]).toHaveTextContent('3 days ago');
+    expect(within(lastMatch[0]).getByText((_, element) => element?.tagName === 'TIME')).toHaveAttribute(
+      'dateTime',
+      boardPlayers[1].lastMatchDate,
+    );
+    expect(lastMatch[1]).toHaveTextContent('20 days ago');
+    expect(lastMatch[2]).toHaveTextContent('No matches yet');
+    // The cell names itself for screen readers; the desktop column header is visual only.
+    expect(within(lastMatch[2]).getByText('Last match')).toBeInTheDocument();
+  });
+
+  it('filters to candidates inactive for 14+ days, counting those with no match', async () => {
+    const user = userEvent.setup();
+    await renderBoard();
+
+    await user.click(screen.getByLabelText('Inactive 14+ days'));
+
+    const rows = screen.getAllByTestId('candidate-row');
+    expect(rows.map((row) => within(row).getByText(/^(High Hana|Mid Mo|Low Larry)$/).textContent))
+      .toEqual(['Mid Mo', 'Low Larry']);
+    expect(screen.getByText('2 candidates')).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('Flagged only'));
+    expect(screen.queryAllByTestId('candidate-row')).toHaveLength(0);
+    expect(screen.getByText('No candidates have been inactive for 14+ days.')).toBeInTheDocument();
+  });
+
   it('recomputes and reports the counts', async () => {
     const user = userEvent.setup();
     mockProgressionApi.recompute.mockResolvedValue({ playersProcessed: 12, rowsUpdated: 9, rowsDropped: 1, failures: [] });
@@ -309,5 +396,73 @@ describe('ManageProgression board', () => {
       'success',
     ));
     await waitFor(() => expect(mockProgressionApi.getBoard).toHaveBeenCalledTimes(2));
+  });
+});
+
+describe('ManageProgression history', () => {
+  async function openHistory() {
+    const user = userEvent.setup();
+    await renderBoard();
+    await user.click(screen.getByRole('tab', { name: 'History' }));
+    const table = await screen.findByRole('table', { name: 'History' });
+    return { user, table };
+  }
+
+  it('lists events newest first with localized types, player, divisions and actor', async () => {
+    const { table } = await openHistory();
+
+    expect(mockProgressionApi.getEvents).toHaveBeenCalledWith({ trackId: undefined, limit: 100 }, expect.any(AbortSignal));
+    const rows = within(table).getAllByRole('row').slice(1);
+    expect(rows).toHaveLength(3);
+
+    expect(within(rows[0]).getByText('Called up')).toBeInTheDocument();
+    expect(within(rows[0]).getByText('High Hana')).toBeInTheDocument();
+    expect(within(rows[0]).getByText('Young Boys → Raw')).toBeInTheDocument();
+    expect(within(rows[0]).getByText('GM Gina')).toBeInTheDocument();
+    expect(within(rows[0]).getByText((_, element) => element?.tagName === 'TIME')).toHaveAttribute(
+      'dateTime',
+      '2026-11-11T18:00:00.000Z',
+    );
+
+    expect(within(rows[1]).getByText('Call-up flag removed')).toBeInTheDocument();
+    expect(within(rows[1]).getByText('Young Boys')).toBeInTheDocument();
+    expect(within(rows[1]).getByText('System')).toBeInTheDocument();
+
+    expect(within(rows[2]).getByText('Flagged for call-up')).toBeInTheDocument();
+    expect(within(rows[2]).getByText('Removed player')).toBeInTheDocument();
+    expect(within(rows[2]).getByText('Staff member')).toBeInTheDocument();
+    expect(screen.getByText('3 events')).toBeInTheDocument();
+  });
+
+  it('reloads for the chosen track', async () => {
+    const { user } = await openHistory();
+
+    await user.click(screen.getByRole('combobox', { name: 'Filter by track' }));
+    await user.click(await screen.findByRole('option', { name: 'Young Boys Call-Up' }));
+
+    await waitFor(() => expect(mockProgressionApi.getEvents).toHaveBeenLastCalledWith(
+      { trackId: 't1', limit: 100 },
+      expect.any(AbortSignal),
+    ));
+  });
+
+  it('shows an empty state when nothing has happened yet', async () => {
+    mockProgressionApi.getEvents.mockResolvedValue([]);
+    const user = userEvent.setup();
+    await renderBoard();
+    await user.click(screen.getByRole('tab', { name: 'History' }));
+
+    expect(await screen.findByText('No call-up activity yet.')).toBeInTheDocument();
+  });
+
+  it('reports a load failure with a retry', async () => {
+    mockProgressionApi.getEvents.mockRejectedValueOnce(new Error('boom'));
+    const user = userEvent.setup();
+    await renderBoard();
+    await user.click(screen.getByRole('tab', { name: 'History' }));
+
+    expect(await screen.findByText('Could not load the history: boom')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByRole('table', { name: 'History' })).toBeInTheDocument();
   });
 });

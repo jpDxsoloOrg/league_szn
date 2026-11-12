@@ -15,11 +15,18 @@ import Tabs from '../ui/Tabs';
 import { useToast } from '../ui/toastContext';
 import AdminNotice from './AdminNotice';
 import CandidateBoard from './progression/CandidateBoard';
+import EventHistory from './progression/EventHistory';
 import TrackEditor from './progression/TrackEditor';
 import './adminContent.css';
 import './ManageProgression.css';
 
-type View = 'board' | 'tracks';
+type View = 'board' | 'tracks' | 'history';
+
+const VIEWS: readonly View[] = ['board', 'tracks', 'history'];
+
+function toView(value: string): View {
+  return VIEWS.find((view) => view === value) ?? 'board';
+}
 
 /** The track the board opens on: the active call-up track, else any active one, else the first. */
 function defaultTrackId(tracks: ProgressionTrack[]): string {
@@ -27,7 +34,7 @@ function defaultTrackId(tracks: ProgressionTrack[]): string {
   return (activeCallup ?? tracks.find((track) => track.isActive) ?? tracks[0])?.trackId ?? '';
 }
 
-/** Admin "Call-Ups" page: rank candidates on a track, flag and call them up, and edit the tracks. */
+/** Admin "Call-Ups" page: rank candidates on a track, flag and call them up, edit the tracks, and review the history. */
 export default function ManageProgression() {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -279,10 +286,12 @@ export default function ManageProgression() {
         <Tabs
           label={title}
           value={view}
-          onValueChange={(value) => setView(value === 'tracks' ? 'tracks' : 'board')}
+          onValueChange={(value) => setView(toView(value))}
           items={[
             { value: 'board', label: t('progression.admin.tabs.board'), content: boardContent },
             { value: 'tracks', label: t('progression.admin.tabs.tracks'), content: tracksContent },
+            // Radix unmounts inactive panels, so the history reloads each time it is opened.
+            { value: 'history', label: t('progression.admin.tabs.history'), content: <EventHistory tracks={tracks} /> },
           ]}
         />
       )}

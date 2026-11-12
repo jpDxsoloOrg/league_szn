@@ -3735,7 +3735,8 @@
       "subtitle": "Rank developmental wrestlers on a track, flag candidates and move them up.",
       "tabs": {
         "board": "Candidates",
-        "tracks": "Tracks & goals"
+        "tracks": "Tracks & goals",
+        "history": "History"
       },
       "selectTrack": "Track",
       "trackRoute": "{{from}} → {{to}}",
@@ -3831,10 +3832,12 @@
           "name": "Name"
         },
         "flaggedOnly": "Flagged only",
+        "inactiveOnly": "Inactive {{days}}+ days",
         "count_one": "{{count}} candidate",
         "count_other": "{{count}} candidates",
         "empty": "No one in this division has progress on the track yet.",
         "emptyFlagged": "No candidates are flagged.",
+        "emptyInactive": "No candidates have been inactive for {{days}}+ days.",
         "trackInactive": "This track is inactive. Activate it to call players up.",
         "goalsMet": "{{met}}/{{total}} goals",
         "showGoals": "Goals",
@@ -3852,7 +3855,17 @@
         "noteHint": "Only Moderators and Admins see this.",
         "flagDone": "{{name}} is under consideration.",
         "unflagDone": "{{name}} is no longer under consideration.",
-        "flagFailed": "Could not update the flag: {{message}}"
+        "flagFailed": "Could not update the flag: {{message}}",
+        "columns": {
+          "player": "Wrestler",
+          "goals": "Goals",
+          "lastMatch": "Last match",
+          "consideration": "Consideration"
+        },
+        "daysAgo_zero": "Today",
+        "daysAgo_one": "{{count}} day ago",
+        "daysAgo_other": "{{count}} days ago",
+        "noMatches": "No matches yet"
       },
       "execute": {
         "action": {
@@ -3889,6 +3902,41 @@
           "CONCURRENT_UPDATE": "Someone else moved {{name}} first. Reload the board and try again.",
           "TARGET_IS_DEVELOPMENTAL": "A call-up cannot target a developmental division.",
           "TRACK_INACTIVE": "This track is inactive. Activate it before calling anyone up."
+        }
+      },
+      "history": {
+        "trackFilter": "Filter by track",
+        "allTracks": "All tracks",
+        "count_one": "{{count}} event",
+        "count_other": "{{count}} events",
+        "empty": "No call-up activity yet.",
+        "loadFailed": "Could not load the history: {{message}}",
+        "system": "System",
+        "unknownStaff": "Staff member",
+        "unknownPlayer": "Removed player",
+        "columns": {
+          "date": "Date",
+          "event": "Event",
+          "player": "Wrestler",
+          "divisions": "From → to",
+          "actor": "By"
+        },
+        "types": {
+          "consideration_added": {
+            "callup": "Flagged for call-up",
+            "promotion": "Flagged for promotion",
+            "relegation": "Flagged for relegation"
+          },
+          "consideration_removed": {
+            "callup": "Call-up flag removed",
+            "promotion": "Promotion flag removed",
+            "relegation": "Relegation flag removed"
+          },
+          "executed": {
+            "callup": "Called up",
+            "promotion": "Promoted",
+            "relegation": "Relegated"
+          }
         }
       }
     }

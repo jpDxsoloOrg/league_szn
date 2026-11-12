@@ -3735,7 +3735,8 @@
       "subtitle": "Entwicklungs-Wrestler pro Track ranken, Kandidaten markieren und befördern.",
       "tabs": {
         "board": "Kandidaten",
-        "tracks": "Tracks & Ziele"
+        "tracks": "Tracks & Ziele",
+        "history": "Verlauf"
       },
       "selectTrack": "Track",
       "trackRoute": "{{from}} → {{to}}",
@@ -3831,10 +3832,12 @@
           "name": "Name"
         },
         "flaggedOnly": "Nur markierte",
+        "inactiveOnly": "Seit {{days}}+ Tagen inaktiv",
         "count_one": "{{count}} Kandidat",
         "count_other": "{{count}} Kandidaten",
         "empty": "In dieser Division hat noch niemand Fortschritt auf dem Track.",
         "emptyFlagged": "Keine Kandidaten markiert.",
+        "emptyInactive": "Kein Kandidat ist seit {{days}}+ Tagen inaktiv.",
         "trackInactive": "Dieser Track ist inaktiv. Aktiviere ihn, um Spieler zu befördern.",
         "goalsMet": "{{met}}/{{total}} Ziele",
         "showGoals": "Ziele",
@@ -3852,7 +3855,17 @@
         "noteHint": "Nur Moderatoren und Admins sehen das.",
         "flagDone": "{{name}} ist in der engeren Wahl.",
         "unflagDone": "{{name}} ist nicht mehr in der engeren Wahl.",
-        "flagFailed": "Markierung konnte nicht geändert werden: {{message}}"
+        "flagFailed": "Markierung konnte nicht geändert werden: {{message}}",
+        "columns": {
+          "player": "Wrestler",
+          "goals": "Ziele",
+          "lastMatch": "Letztes Match",
+          "consideration": "Engere Wahl"
+        },
+        "daysAgo_zero": "Heute",
+        "daysAgo_one": "Vor {{count}} Tag",
+        "daysAgo_other": "Vor {{count}} Tagen",
+        "noMatches": "Noch keine Matches"
       },
       "execute": {
         "action": {
@@ -3889,6 +3902,41 @@
           "CONCURRENT_UPDATE": "Jemand anderes hat {{name}} zuerst verschoben. Lade neu und versuche es erneut.",
           "TARGET_IS_DEVELOPMENTAL": "Ein Call-Up kann keine Entwicklungsdivision als Ziel haben.",
           "TRACK_INACTIVE": "Dieser Track ist inaktiv. Aktiviere ihn, bevor du jemanden hochholst."
+        }
+      },
+      "history": {
+        "trackFilter": "Nach Track filtern",
+        "allTracks": "Alle Tracks",
+        "count_one": "{{count}} Ereignis",
+        "count_other": "{{count}} Ereignisse",
+        "empty": "Noch keine Call-Up-Aktivität.",
+        "loadFailed": "Verlauf konnte nicht geladen werden: {{message}}",
+        "system": "System",
+        "unknownStaff": "Staff-Mitglied",
+        "unknownPlayer": "Entfernter Spieler",
+        "columns": {
+          "date": "Datum",
+          "event": "Ereignis",
+          "player": "Wrestler",
+          "divisions": "Von → nach",
+          "actor": "Durch"
+        },
+        "types": {
+          "consideration_added": {
+            "callup": "Für Call-Up markiert",
+            "promotion": "Für Aufstieg markiert",
+            "relegation": "Für Abstieg markiert"
+          },
+          "consideration_removed": {
+            "callup": "Call-Up-Markierung entfernt",
+            "promotion": "Aufstiegs-Markierung entfernt",
+            "relegation": "Abstiegs-Markierung entfernt"
+          },
+          "executed": {
+            "callup": "Hochgezogen",
+            "promotion": "Aufgestiegen",
+            "relegation": "Abgestiegen"
+          }
         }
       }
     }
