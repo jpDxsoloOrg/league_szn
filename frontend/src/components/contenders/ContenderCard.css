@@ -65,6 +65,17 @@
   font-size: 0.9375rem;
 }
 
+.contender-row__team-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.contender-row__team-link:hover,
+.contender-row__team-link:focus-visible {
+  color: var(--color-pink);
+  text-decoration: underline;
+}
+
 .contender-row__badges {
   display: flex;
   flex-wrap: wrap;

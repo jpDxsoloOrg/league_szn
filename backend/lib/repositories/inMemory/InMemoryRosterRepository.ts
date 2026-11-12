@@ -151,6 +151,10 @@ export class InMemoryRosterRepository implements RosterRepository {
       return items;
     },
 
+    listAll: async (): Promise<TagTeam[]> => {
+      return Array.from(this.tagTeamsStore.values());
+    },
+
     create: async (input: TagTeamCreateInput): Promise<TagTeam> => {
       const now = new Date().toISOString();
       const item: TagTeam = {

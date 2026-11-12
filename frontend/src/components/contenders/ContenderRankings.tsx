@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Crown } from 'lucide-react';
-import { championshipsApi, contendersApi, divisionsApi } from '../../services/api';
+import { Link } from 'react-router-dom';
+import { championshipsApi, contendersApi, divisionsApi, playersApi } from '../../services/api';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
-import type { Championship, Division } from '../../types';
-import type { ChampionshipContenders } from '../../types/contender';
+import type { Championship, Division, Player } from '../../types';
+import type { ChampionshipContenders, ContenderChampion } from '../../types/contender';
 import Avatar from '../ui/Avatar';
 import EmptyState from '../ui/EmptyState';
 import PageHeader from '../ui/PageHeader';
 import Select from '../ui/Select';
 import Skeleton from '../ui/Skeleton';
 import ContenderCard from './ContenderCard';
+import { MemberAvatars, MemberNames } from './ContenderMembers';
+import type { MemberLookup } from './ContenderMembers';
 import './ContenderRankings.css';
 
 const MIN_MATCHES_HINT = 3;
@@ -27,6 +30,26 @@ export default function ContenderRankings() {
   const [error, setError] = useState<string | null>(null);
   const [contendersFailed, setContendersFailed] = useState(false);
   const [reloadCount, setReloadCount] = useState(0);
+  // Only loaded once a tag title is shown, for the members' hover cards.
+  const [players, setPlayers] = useState<Player[] | null>(null);
+
+  const selectedChampionship = championships.find(
+    (championship) => championship.championshipId === selectedChampionshipId,
+  );
+  const isTagTitle = selectedChampionship?.type === 'tag';
+  const hasTagEntries = Boolean(
+    contenderData
+      && (contenderData.currentChampion?.type === 'tagTeam'
+        || contenderData.contenders.some((contender) => contender.entityType === 'tagTeam')),
+  );
+
+  const memberLookup = useMemo<MemberLookup | undefined>(() => {
+    if (!players) return undefined;
+    return {
+      playersById: new Map(players.map((player) => [player.playerId, player])),
+      divisions,
+    };
+  }, [players, divisions]);
 
   // Division titles first, sorted by division name, then open titles. The
   // division prefix only matters when there is more than one group.
@@ -102,6 +125,23 @@ export default function ContenderRankings() {
     return () => controller.abort();
   }, [selectedChampionshipId, reloadCount]);
 
+  useEffect(() => {
+    if (!hasTagEntries || players) return;
+    const controller = new AbortController();
+
+    const loadPlayers = async () => {
+      try {
+        const data = await playersApi.getAll(controller.signal);
+        if (!controller.signal.aborted) setPlayers(data);
+      } catch {
+        // Hover cards are extra detail: member names still render without them.
+      }
+    };
+
+    loadPlayers();
+    return () => controller.abort();
+  }, [hasTagEntries, players]);
+
   const formatCalculatedAt = (dateString: string) =>
     new Date(dateString).toLocaleDateString(i18n.language, {
       month: 'long',
@@ -111,12 +151,57 @@ export default function ContenderRankings() {
       minute: 'numeric',
     });
 
-  const noContenders = (
+  const noContenders = isTagTitle ? (
+    <EmptyState
+      title={t('contenders.tagTeam.noContenders')}
+      description={t('contenders.tagTeam.noContendersHint', { minMatches: MIN_MATCHES_HINT })}
+    />
+  ) : (
     <EmptyState
       title={t('contenders.noContenders')}
       description={t('contenders.noContendersHint', { minMatches: MIN_MATCHES_HINT })}
     />
   );
+
+  const renderChampion = (champion: ContenderChampion) => {
+    if (champion.type === 'tagTeam') {
+      // The team fields are null when the holders are not a known tag team.
+      const title = champion.tagTeamName ?? champion.members.map((member) => member.wrestlerName).join(' & ');
+      return (
+        <section className="contender-champion contender-champion--tag" aria-labelledby="contender-champion-title">
+          <MemberAvatars members={champion.members} size="lg" ring="gold" />
+          <div className="contender-champion__text">
+            <h2 id="contender-champion-title" className="contender-champion__label">
+              <Crown aria-hidden="true" size={16} />
+              {t('contenders.tagTeam.currentChampions')}
+            </h2>
+            <p className="contender-champion__wrestler">
+              {champion.tagTeamId ? (
+                <Link to={`/tag-teams/${champion.tagTeamId}`} className="contender-champion__team-link">{title}</Link>
+              ) : title}
+            </p>
+            <p className="contender-champion__player">
+              <MemberNames members={champion.members} lookup={memberLookup} />
+            </p>
+          </div>
+        </section>
+      );
+    }
+
+    return (
+      <section className="contender-champion" aria-labelledby="contender-champion-title">
+        <Avatar src={champion.imageUrl} name={champion.wrestlerName} size="lg" ring="gold" />
+        <div className="contender-champion__text">
+          <h2 id="contender-champion-title" className="contender-champion__label">
+            <Crown aria-hidden="true" size={16} />
+            {t('contenders.currentChampion')}
+          </h2>
+          <p className="contender-champion__wrestler">{champion.wrestlerName}</p>
+          <p className="contender-champion__player">{champion.playerName}</p>
+        </div>
+      </section>
+    );
+  };
 
   const renderRankings = () => {
     if (contendersLoading) return <Skeleton variant="block" count={3} />;
@@ -138,26 +223,14 @@ export default function ContenderRankings() {
 
     return (
       <>
-        {champion && (
-          <section className="contender-champion" aria-labelledby="contender-champion-title">
-            <Avatar src={champion.imageUrl} name={champion.wrestlerName} size="lg" ring="gold" />
-            <div className="contender-champion__text">
-              <h2 id="contender-champion-title" className="contender-champion__label">
-                <Crown aria-hidden="true" size={16} />
-                {t('contenders.currentChampion')}
-              </h2>
-              <p className="contender-champion__wrestler">{champion.wrestlerName}</p>
-              <p className="contender-champion__player">{champion.playerName}</p>
-            </div>
-          </section>
-        )}
+        {champion && renderChampion(champion)}
 
         <section>
           <h2 className="contender-rankings__heading">{t('contenders.rankings')}</h2>
           {contenderData.contenders.length === 0 ? noContenders : (
             <ol className="contender-rankings__list">
               {contenderData.contenders.map((contender) => (
-                <ContenderCard key={contender.playerId} contender={contender} />
+                <ContenderCard key={contender.playerId} contender={contender} memberLookup={memberLookup} />
               ))}
             </ol>
           )}

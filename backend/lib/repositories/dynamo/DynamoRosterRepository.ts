@@ -179,6 +179,11 @@ export class DynamoRosterRepository implements RosterRepository {
     update: (id: string, patch: TagTeamPatch) => this._tagTeamsCrud.update(id, patch),
     delete: (id: string) => this._tagTeamsCrud.delete(id),
 
+    listAll: async (): Promise<TagTeam[]> => {
+      const items = await dynamoDb.scanAll({ TableName: TableNames.TAG_TEAMS });
+      return items as unknown as TagTeam[];
+    },
+
     listByStatus: async (status: TagTeamStatus): Promise<TagTeam[]> => {
       const items = await dynamoDb.queryAll({
         TableName: TableNames.TAG_TEAMS,

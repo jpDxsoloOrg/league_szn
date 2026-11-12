@@ -28,6 +28,8 @@ interface RankableChampionship {
   name: string;
   type: 'singles' | 'tag';
   currentChampion?: string | string[];
+  /** Read defensively: only titles that record their tag team champions have it. */
+  currentTagTeamId?: string;
   divisionId?: string;
   isActive?: boolean;
 }
@@ -133,6 +135,7 @@ async function recalculateChampionship(
     championshipId,
     championshipType: championship.type,
     currentChampion: championship.currentChampion,
+    currentTagTeamId: championship.currentTagTeamId,
     divisionId: useDivisionId,
     seasonId,
     minimumMatches: configOverrides?.minimumMatches ?? 3,
@@ -148,6 +151,9 @@ async function recalculateChampionship(
 
   for (const ranking of adjustedRankings) {
     const oldData = existingMap.get(ranking.playerId);
+    // Tag-title rows key on the tagTeamId through `playerId`; see rankingCalculator.
+    const entityType = ranking.entityType ?? 'player';
+    const tagTeamId = entityType === 'tagTeam' ? (ranking.tagTeamId ?? ranking.playerId) : undefined;
     const { previousRank, peakRank, weeksAtTop, lastTopWeek } = configOverrides?.overrideChange
       ? progressKeptThroughOverride(oldData, ranking.rank)
       : progressFromRanking(oldData, ranking.rank, currentWeek);
@@ -170,6 +176,8 @@ async function recalculateChampionship(
       isOverridden: ranking.isOverridden || false,
       overrideType: ranking.overrideType || null,
       organicRank: ranking.organicRank || null,
+      entityType,
+      ...(tagTeamId ? { tagTeamId } : {}),
     });
 
     if (configOverrides?.overrideChange) continue;
@@ -184,6 +192,8 @@ async function recalculateChampionship(
       isOverridden: ranking.isOverridden || false,
       overrideType: ranking.overrideType || null,
       organicRank: ranking.organicRank || null,
+      entityType,
+      ...(tagTeamId ? { tagTeamId } : {}),
     });
   }
 

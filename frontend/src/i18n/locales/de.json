@@ -2484,7 +2484,13 @@
     "rankingsLoadFailed": "Die Rangliste für diesen Titel konnte nicht geladen werden.",
     "movedUp": "{{places}} nach oben",
     "movedDown": "{{places}} nach unten",
-    "noMovement": "Keine Veränderung"
+    "noMovement": "Keine Veränderung",
+    "tagTeam": {
+      "noContenders": "Noch keine berechtigten Tag-Teams",
+      "noContendersHint": "Teams brauchen mindestens {{minMatches}} gemeinsame Matches im Wertungszeitraum, um sich zu qualifizieren",
+      "currentChampions": "Aktuelle Champions",
+      "dissolved": "Aufgelöst"
+    }
   },
   "notifications": {
     "title": "Benachrichtigungen",

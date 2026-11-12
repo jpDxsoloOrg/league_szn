@@ -56,6 +56,10 @@ export interface ContenderRankingInput {
   isOverridden?: boolean;
   overrideType?: string | null;
   organicRank?: number | null;
+  /** `'tagTeam'` on tag-title rows. Rows written before tag rankings have none: read as `'player'`. */
+  entityType?: 'player' | 'tagTeam';
+  /** Set on tag-team rows, equal to `playerId`. */
+  tagTeamId?: string;
 }
 
 export interface ContenderOverrideInput {
@@ -77,6 +81,10 @@ export interface RankingHistoryInput {
   isOverridden?: boolean;
   overrideType?: string | null;
   organicRank?: number | null;
+  /** `'tagTeam'` on tag-title rows. Rows written before tag rankings have none: read as `'player'`. */
+  entityType?: 'player' | 'tagTeam';
+  /** Set on tag-team rows, equal to `playerId`. */
+  tagTeamId?: string;
 }
 
 // ─── Match Type input types ─────────────────────────────────────────
