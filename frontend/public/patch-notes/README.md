@@ -27,7 +27,7 @@ The site was 1.0 before patch notes existed. The first post is 1.1.0.
 ## Publishing the next release
 
 1. Write `vX.Y.Z.md` here and `de/vX.Y.Z.md` in German.
-2. End each section with a `**Read more:**` line that links to the wiki articles explaining that feature, e.g. `[Call-Ups: Young Boys to the Main Roster](/guide/wiki/call-ups)`. Use the same paths in the German post, with the German article titles from `wiki.articles.*` in `de.json`. Only link to articles that exist.
+2. End each section with a `**Read more:**` line that links to the wiki articles explaining that feature, e.g. `[Call-Ups: Young Boys to the Main Roster](/guide/wiki/call-ups)`. Use the same paths in the German post, with the German article titles from `wiki.articles.*` in `de.json`. Only link to articles that exist, and never to staff-only (`adminOnly`) articles: patch notes are public.
 3. Add the entry to the **top** of `releases` in `index.json`, with `title`, `summary`, `titleDe` and `summaryDe`.
 4. Set `version` in `frontend/package.json` (and the two matching lines at the top of `package-lock.json`) to the new version.
 5. Update `next-features.md` and `de/next-features.md`: remove what just shipped and add what's next. Don't link to wiki articles that don't exist yet.
@@ -46,4 +46,4 @@ The site was 1.0 before patch notes existed. The first post is 1.1.0.
 - releases are not strictly newest first by version, or dates go up down the list
 - a `file` doesn't exist
 - `frontend/package.json` `version` is not the latest release
-- a `/guide/wiki/<slug>` link in any post points to an article that isn't in `public/wiki/index.json`
+- a `/guide/wiki/<slug>` link in any post points to an article that isn't in `public/wiki/index.json`, or to a staff-only one

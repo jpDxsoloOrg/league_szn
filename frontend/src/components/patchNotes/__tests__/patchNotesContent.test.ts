@@ -83,4 +83,20 @@ describe('patch notes links', () => {
     });
     expect(broken).toEqual([]);
   });
+
+  it('never links the public patch notes to staff-only wiki articles', () => {
+    const staffOnly = new Set(
+      (JSON.parse(readFileSync(join(wikiRoot, 'index.json'), 'utf8')) as { slug: string; adminOnly?: boolean }[])
+        .filter((entry) => entry.adminOnly)
+        .map((entry) => entry.slug)
+    );
+    const staffLinks = markdownFiles(patchNotesRoot).flatMap((file) => {
+      const markdown = readFileSync(file, 'utf8');
+      return [...markdown.matchAll(/\]\(\/guide\/wiki\/([^)#\s]+)/g)]
+        .map((link) => link[1]!)
+        .filter((slug) => staffOnly.has(slug))
+        .map((slug) => `${file.slice(patchNotesRoot.length + 1)} -> ${slug}`);
+    });
+    expect(staffLinks).toEqual([]);
+  });
 });
