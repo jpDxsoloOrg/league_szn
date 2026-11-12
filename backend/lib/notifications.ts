@@ -8,6 +8,7 @@ export type NotificationType =
   | 'announcement'
   | 'stable_invitation'
   | 'tag_team_invitation'
+  | 'tag_team_formed'
   | 'transfer_reviewed'
   | 'storyline_request'
   | 'storyline_request_reviewed'

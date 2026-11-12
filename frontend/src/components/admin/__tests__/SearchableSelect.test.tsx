@@ -188,4 +188,37 @@ describe('SearchableSelect', () => {
     await user.keyboard('{Enter}');
     expect(mockOnChange).toHaveBeenCalledWith('');
   });
+
+  it('shows a disabled option with its hint but will not select it by click or Enter', async () => {
+    const user = userEvent.setup();
+    render(
+      <SearchableSelect
+        options={[{ value: 'p1', label: 'The Rock', disabled: true, hint: '(in Team X)' }, mockOptions[1]]}
+        value=""
+        onChange={mockOnChange}
+        placeholder="Pick"
+      />
+    );
+
+    await user.click(screen.getByPlaceholderText('Pick'));
+    const rock = screen.getByRole('option', { name: /The Rock/ });
+    expect(rock).toHaveAttribute('aria-disabled', 'true');
+    expect(rock).toHaveTextContent('(in Team X)');
+
+    await user.click(rock);
+    await user.keyboard('{ArrowDown}{Enter}');
+    expect(mockOnChange).not.toHaveBeenCalled();
+  });
+
+  it('cannot be opened or cleared when disabled', async () => {
+    const user = userEvent.setup();
+    render(<SearchableSelect options={mockOptions} value="p1" onChange={mockOnChange} disabled />);
+
+    const input = screen.getByRole('combobox');
+    expect(input).toBeDisabled();
+    expect(input).toHaveValue('The Rock');
+    await user.click(input);
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Clear selection' })).not.toBeInTheDocument();
+  });
 });

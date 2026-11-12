@@ -3,6 +3,8 @@ import type {
   TagTeamDetailResponse,
   TagTeamStanding,
   CreateTagTeamInput,
+  AdminCreateTagTeamInput,
+  AdminCreateTagTeamResult,
 } from '../../types/tagTeam';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
@@ -26,6 +28,14 @@ export const tagTeamsApi = {
     return fetchWithAuth(`${API_BASE_URL}/tag-teams`, {
       method: 'POST',
       body: JSON.stringify(input),
+    });
+  },
+
+  /** Staff only: forms an active team in one step, with no partner or approval stage. */
+  adminCreate: async (body: AdminCreateTagTeamInput): Promise<AdminCreateTagTeamResult> => {
+    return fetchWithAuth(`${API_BASE_URL}/tag-teams/admin`, {
+      method: 'POST',
+      body: JSON.stringify(body),
     });
   },
 

@@ -1,7 +1,7 @@
 import { TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
 import { dynamoDb, TableNames } from '../../dynamodb';
 import type { UnitOfWork, RecordDelta, MatchWriteCondition, PlayerWriteCondition } from '../unitOfWork';
-import type { ChallengeStatus } from '../types';
+import type { ChallengeStatus, TagTeam } from '../types';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
 import {
   participantSk,
@@ -157,6 +157,17 @@ export class DynamoUnitOfWork implements UnitOfWork {
   }
 
   // ── Tag Teams ────────────────────────────────────────────────────
+  createTagTeam(tagTeam: TagTeam): void {
+    this.staged.push({
+      Put: {
+        TableName: TableNames.TAG_TEAMS,
+        Item: { ...tagTeam },
+        ConditionExpression: 'attribute_not_exists(tagTeamId)',
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'TagTeam', id: tagTeam.tagTeamId });
+  }
+
   updateTagTeam(tagTeamId: string, patch: Record<string, unknown>): void {
     const now = new Date().toISOString();
     const sets: string[] = [];

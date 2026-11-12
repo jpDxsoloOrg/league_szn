@@ -8,6 +8,7 @@ import { handler as approveTagTeamHandler } from './approveTagTeam';
 import { handler as rejectTagTeamHandler } from './rejectTagTeam';
 import { handler as dissolveTagTeamHandler } from './dissolveTagTeam';
 import { handler as deleteTagTeamHandler } from './deleteTagTeam';
+import { handler as adminCreateTagTeamHandler } from './adminCreateTagTeam';
 import { createRouter, type RouteConfig, ADMIN_ONLY, STAFF } from '../../lib/router';
 
 /**
@@ -37,6 +38,12 @@ export const routes: ReadonlyArray<RouteConfig> = [
     method: 'POST',
     handler: createTagTeamHandler,
     access: 'self-service',
+  },
+  {
+    resource: '/tag-teams/admin',
+    method: 'POST',
+    handler: adminCreateTagTeamHandler,
+    access: STAFF,
   },
   {
     resource: '/tag-teams/{tagTeamId}',

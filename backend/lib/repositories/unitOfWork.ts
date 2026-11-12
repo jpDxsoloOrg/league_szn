@@ -6,7 +6,7 @@ import type {
   RivalryParticipant,
   RivalryPatch,
 } from './rivalries';
-import type { ChallengeStatus } from './types';
+import type { ChallengeStatus, TagTeam } from './types';
 
 /**
  * Record delta for player/season standings.
@@ -65,6 +65,12 @@ export interface UnitOfWork {
 
   /** Stage a player tagTeamId SET with condition (attribute_not_exists OR null). */
   setPlayerTagTeamId(playerId: string, tagTeamId: string): void;
+
+  /**
+   * Stage creating a new tag team row. Fails the whole unit of work with
+   * `ConcurrencyError` if a row with the same `tagTeamId` already exists.
+   */
+  createTagTeam(tagTeam: TagTeam): void;
 
   /** Stage a tag team field update. */
   updateTagTeam(tagTeamId: string, patch: Record<string, unknown>): void;

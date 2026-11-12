@@ -100,3 +100,18 @@ export interface CreateTagTeamInput {
   partnerId: string;
   imageUrl?: string;
 }
+
+/** Body for POST /tag-teams/admin, where a GM forms an active team directly. */
+export interface AdminCreateTagTeamInput {
+  name: string;
+  player1Id: string;
+  player2Id: string;
+  imageUrl?: string;
+  /** Defaults to true on the server. */
+  notifyPlayers?: boolean;
+}
+
+export interface AdminCreateTagTeamResult extends TagTeam {
+  /** Pending requests for either player that the new team closed. */
+  supersededTagTeamIds: string[];
+}

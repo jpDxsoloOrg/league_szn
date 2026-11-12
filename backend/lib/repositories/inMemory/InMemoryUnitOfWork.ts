@@ -1,5 +1,5 @@
 import type { UnitOfWork, RecordDelta, MatchWriteCondition, PlayerWriteCondition } from '../unitOfWork';
-import type { ChallengeStatus } from '../types';
+import type { ChallengeStatus, TagTeam } from '../types';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
 import type {
   Rivalry,
@@ -102,6 +102,17 @@ export class InMemoryUnitOfWork implements UnitOfWork {
         existing.tagTeamId = tagTeamId;
         existing.updatedAt = new Date().toISOString();
       }
+    });
+  }
+
+  createTagTeam(tagTeam: TagTeam): void {
+    this.preconditions.push(() => {
+      if (this.stores.tagTeams.has(tagTeam.tagTeamId)) {
+        throw new ConcurrencyError('TagTeam', tagTeam.tagTeamId);
+      }
+    });
+    this.staged.push(() => {
+      this.stores.tagTeams.set(tagTeam.tagTeamId, { ...tagTeam });
     });
   }
 

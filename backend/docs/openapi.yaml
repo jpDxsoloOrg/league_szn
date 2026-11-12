@@ -905,6 +905,9 @@ components:
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
         dissolvedAt: { type: string, format: date-time }
+        player1WrestlerName: { type: string }
+        player2WrestlerName: { type: string }
+        rejectionReason: { type: string, description: Why a pending request was closed without becoming active }
 
     Video:
       type: object
@@ -3192,6 +3195,75 @@ paths:
       responses:
         '200': { description: Tag teams sorted by wins }
 
+  /tag-teams/admin:
+    post:
+      tags: [Tag Teams]
+      summary: Create an active tag team directly (Moderator or Admin)
+      description: |
+        Forms an active team in one step, skipping the partner-accept and
+        admin-approve stages. In the same transaction it sets both players'
+        tagTeamId and closes every pending request (pending_partner or
+        pending_admin) that involves either player: those rows become
+        `dissolved` with rejectionReason "Superseded by GM-created team".
+        Wrestler names are snapshotted from the players' current wrestlers.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, player1Id, player2Id]
+              properties:
+                name: { type: string, description: Trimmed; must be unique among active teams (case-insensitive) }
+                player1Id: { type: string }
+                player2Id: { type: string }
+                imageUrl: { type: string }
+                notifyPlayers: { type: boolean, default: true, description: Send each player a tag_team_formed notification }
+      responses:
+        '201':
+          description: Created and active
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/TagTeam'
+                  - type: object
+                    properties:
+                      supersededTagTeamIds: { type: array, items: { type: string }, description: Pending requests closed by this call }
+        '400': { description: 'Missing or invalid field, or the same player twice', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Caller is not a Moderator or Admin', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404':
+          description: A player does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  code: { type: string, enum: [PLAYER_NOT_FOUND] }
+                  playerId: { type: string }
+        '409':
+          description: |
+            PLAYER_IN_ACTIVE_TAG_TEAM - a player is already on an active team (playerId and conflictingTagTeam say which).
+            TAG_TEAM_NAME_TAKEN - an active team already has this name (conflictingTagTeam).
+            CONCURRENT_UPDATE - a player's team changed while the request ran; retry.
+            PLAYER_DEACTIVATED / PLAYER_UNAVAILABLE - a player cannot be booked right now (discipline gate).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  code: { type: string, enum: [PLAYER_IN_ACTIVE_TAG_TEAM, TAG_TEAM_NAME_TAKEN, CONCURRENT_UPDATE, PLAYER_DEACTIVATED, PLAYER_UNAVAILABLE] }
+                  playerId: { type: string }
+                  conflictingTagTeam:
+                    type: object
+                    properties:
+                      tagTeamId: { type: string }
+                      name: { type: string }
+
   /tag-teams/{tagTeamId}:
     get:
       tags: [Tag Teams]
@@ -3207,6 +3279,10 @@ paths:
     put:
       tags: [Tag Teams]
       summary: Update tag team
+      description: |
+        A member of the team, or staff (Moderator+) for any team, can change the name,
+        image and wrestler-name overrides. A new name must not match another active team's
+        name (trimmed, case-insensitive).
       security: [{ BearerAuth: [] }]
       parameters:
         - name: tagTeamId
@@ -3219,8 +3295,24 @@ paths:
             schema: { $ref: '#/components/schemas/TagTeam' }
       responses:
         '200': { description: Updated }
+        '400': { description: 'No fields to update, or an empty name', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409':
+          description: TAG_TEAM_NAME_TAKEN - another active team already has this name (conflictingTagTeam).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  code: { type: string, enum: [TAG_TEAM_NAME_TAKEN] }
+                  conflictingTagTeam:
+                    type: object
+                    properties:
+                      tagTeamId: { type: string }
+                      name: { type: string }
     delete:
       tags: [Tag Teams]
       summary: Delete tag team (admin)
