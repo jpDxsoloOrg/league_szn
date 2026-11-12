@@ -13,6 +13,20 @@ import {
 } from './dataTransferConfig';
 import { HEAT_TIER_CENTRES, type HeatTier } from '../../lib/policies/rivalryHeat';
 import { roundToHalfStar } from '../../lib/utils/halfStar';
+import { buildDefaultCallupTrack } from '../../lib/progression/defaultTracks';
+import { buildProgressionInputs, resolveProgressionWindow } from '../../lib/progression/loadInputs';
+import { PROGRESS_MILESTONE_THRESHOLDS } from '../../lib/progression/milestones';
+import { computeProgress } from '../../lib/policies/progression';
+import type {
+  Match,
+  Player,
+  PlayerProgression,
+  ProgressionEvent,
+  ProgressionTrack,
+  Promo,
+  ReactionType,
+  Season,
+} from '../../lib/repositories/types';
 
 /** Valid seed module IDs for pick-and-choose (issue 118). When modular seed exists, only these will be run when requested. */
 export const SEED_MODULE_IDS = [
@@ -342,6 +356,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         divisionId: uuidv4(),
         name: 'Young Boys',
         description: 'Default starting division for new wrestlers',
+        isDevelopmental: true,
+        isDefaultForNewWrestlers: true,
         createdAt: now,
         updatedAt: now,
       },
@@ -399,6 +415,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       losses: Math.floor(Math.random() * 12) + 2,
       draws: Math.floor(Math.random() * 3),
       divisionId: divisions[index % divisions.length].divisionId,
+      divisionJoinedAt: now,
       ...(seededMovesets[index] ?? {}),
       createdAt: now,
       updatedAt: now,
@@ -1431,17 +1448,212 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       });
     }
 
+    // ── Progression: Young Boys call-up track + prospects (CUP-04, CUP-12) ──
+    // The default call-up track, plus four Young Boys prospects at very
+    // different points on it. Their rows are computed here with the same
+    // policy the recompute uses, so the board, the profile bar and the
+    // banner have something to show straight after a seed:
+    //   Ace   → 100% (every goal met), flagged "under consideration"
+    //   Blaze → ~70% (matches, wins and rating close, one promo short)
+    //   Comet → ~23% (a handful of matches, one reacted promo)
+    //   Dash  → 10%  (four losses, nothing rated yet)
+    // Ace also has one match from before joining Young Boys, which the
+    // `sinceJoinedDivision` window leaves out. The main-roster players dealt
+    // into Young Boys above joined `now`, so they sit at 0%.
+    console.log('Creating Young Boys prospects and call-up progress...');
+    const youngBoysDivision = divisions.find((division) => division.isDevelopmental === true);
+    const youngBoysJoinedAt = daysAgo(21).toISOString();
+    type ProspectKey = 'ace' | 'blaze' | 'comet' | 'dash';
+    const prospectSeeds: Array<{ key: ProspectKey; name: string; wrestler: string }> = [
+      { key: 'ace', name: 'Kenta Mori', wrestler: 'Ace Rookie' },
+      { key: 'blaze', name: 'Leo Vance', wrestler: 'Blaze Carter' },
+      { key: 'comet', name: 'Nico Reyes', wrestler: 'Comet Kid' },
+      { key: 'dash', name: 'Owen Price', wrestler: 'Dash Malone' },
+    ];
+    const prospects: Player[] = youngBoysDivision
+      ? prospectSeeds.map((seed) => ({
+        playerId: uuidv4(),
+        name: seed.name,
+        currentWrestler: seed.wrestler,
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        divisionId: youngBoysDivision.divisionId,
+        divisionJoinedAt: youngBoysJoinedAt,
+        createdAt: daysAgo(45).toISOString(),
+        updatedAt: now,
+      }))
+      : [];
+    const prospectByKey = new Map(prospectSeeds.map((seed, index) => [seed.key, prospects[index]]));
+    const prospectId = (key: ProspectKey): string => prospectByKey.get(key)?.playerId ?? '';
+    // Main-roster sparring partners: their own window starts `now`, so these
+    // bouts only count for the prospect.
+    const sparring = [players[3].playerId, players[7].playerId, players[11].playerId];
+
+    const youngBoysMatches: Match[] = [];
+    const youngBoysRatings: Record<string, unknown>[] = [];
+    const youngBoysBout = (winnerId: string, loserId: string, ago: number, stars: number[] = []): void => {
+      const matchId = uuidv4();
+      const date = daysAgo(ago).toISOString();
+      const match: Match = {
+        matchId,
+        date,
+        matchFormat: 'singles',
+        participants: [winnerId, loserId],
+        winners: [winnerId],
+        losers: [loserId],
+        isChampionship: false,
+        seasonId: season.seasonId,
+        status: 'completed',
+        ratingsCount: stars.length,
+        createdAt: date,
+      };
+      if (stars.length > 0) {
+        const ratingAverage = stars.reduce((sum, value) => sum + value, 0) / stars.length;
+        match.ratingAverage = ratingAverage;
+        match.starRating = roundToHalfStar(ratingAverage);
+        stars.forEach((rating, index) => {
+          youngBoysRatings.push({
+            matchId,
+            userId: `seed-rater-${index + 1}`,
+            rating,
+            createdAt: new Date(Date.parse(date) + (index + 1) * 60_000).toISOString(),
+          });
+        });
+      }
+      youngBoysMatches.push(match);
+      for (const prospect of prospects) {
+        if (prospect.playerId === winnerId) prospect.wins += 1;
+        if (prospect.playerId === loserId) prospect.losses += 1;
+      }
+    };
+
+    // Reactions come from synthetic `seed-fan-*` users, never the author.
+    const reactionCycle: ReactionType[] = ['fire', 'clap', 'mic', 'mind-blown', 'fire', 'clap'];
+    const youngBoysPromos: Promo[] = [];
+    const youngBoysPromo = (playerId: string, title: string, content: string, reactionCount: number, ago: number): void => {
+      const reactions: Record<string, ReactionType> = {};
+      const reactionCounts: Record<ReactionType, number> = { fire: 0, mic: 0, trash: 0, 'mind-blown': 0, clap: 0 };
+      for (let i = 0; i < reactionCount; i++) {
+        const reaction = reactionCycle[i % reactionCycle.length];
+        reactions[`seed-fan-${i + 1}`] = reaction;
+        reactionCounts[reaction] += 1;
+      }
+      const createdAt = daysAgo(ago).toISOString();
+      youngBoysPromos.push({
+        promoId: uuidv4(),
+        playerId,
+        promoType: 'open-mic',
+        title,
+        content,
+        reactions,
+        reactionCounts,
+        isPinned: false,
+        isHidden: false,
+        createdAt,
+        updatedAt: createdAt,
+      });
+    };
+
+    if (prospects.length > 0) {
+      const ace = prospectId('ace');
+      const blaze = prospectId('blaze');
+      const comet = prospectId('comet');
+      const dash = prospectId('dash');
+      youngBoysBout(ace, sparring[2], 40); // before joining Young Boys: not counted
+      youngBoysBout(ace, blaze, 20, [3.5, 3, 4]);
+      youngBoysBout(ace, comet, 18, [3, 3.5]);
+      youngBoysBout(ace, dash, 17, [4, 3.5, 3]);
+      youngBoysBout(blaze, ace, 16, [3, 3]);
+      youngBoysBout(ace, blaze, 14, [3.5, 4]);
+      youngBoysBout(blaze, comet, 13, [2.5, 3]);
+      youngBoysBout(ace, sparring[0], 12);
+      youngBoysBout(blaze, dash, 11, [1.5, 2]);
+      youngBoysBout(ace, comet, 10, [3, 3]);
+      youngBoysBout(comet, dash, 9);
+      youngBoysBout(blaze, ace, 8);
+      youngBoysBout(sparring[0], blaze, 7);
+      youngBoysBout(ace, sparring[1], 6);
+      youngBoysBout(ace, dash, 4);
+
+      youngBoysPromo(ace, 'Knocking on the Door', 'Three weeks in the Young Boys and I have not stopped. Every night I learn something, every night I get better. The main roster can hear me knocking, and I am not going to stop until somebody opens the door.', 5, 15);
+      youngBoysPromo(ace, 'Respect the Grind', 'Nobody handed me anything. I sweep the ring, I carry the bags, and then I go out there and steal the show. Keep watching.', 4, 9);
+      youngBoysPromo(ace, 'Ready When You Are', 'To the GMs: I am ready. To the locker room: so are you, you just do not know it yet.', 3, 3);
+      youngBoysPromo(blaze, 'Fired Up', 'They keep putting me in there with Ace. Good. Iron sharpens iron, and I am getting sharper every week.', 4, 12);
+      youngBoysPromo(blaze, 'Still Burning', 'Lost one, won one. That is the job. See you next week.', 1, 5);
+      youngBoysPromo(comet, 'Watch the Sky', 'I am new here, but I move fast. Blink and you will miss me.', 3, 8);
+    }
+
+    const progressionTracks: ProgressionTrack[] = youngBoysDivision
+      ? [buildDefaultCallupTrack({ trackId: uuidv4(), fromDivisionId: youngBoysDivision.divisionId, now })]
+      : [];
+    const playerProgressionRows: PlayerProgression[] = [];
+    const progressionEventRows: ProgressionEvent[] = [];
+    const callupTrack = progressionTracks[0];
+    if (callupTrack && youngBoysDivision) {
+      const youngBoysPlayers: Player[] = [
+        ...players.filter((player) => player.divisionId === youngBoysDivision.divisionId),
+        ...prospects,
+      ];
+      const { inputs } = buildProgressionInputs(
+        youngBoysPlayers.map((player) => player.playerId),
+        { players: youngBoysPlayers, matches: youngBoysMatches, promos: youngBoysPromos, challenges: [] },
+      );
+      const activeSeason: Season = { ...season, status: 'active' };
+      for (const player of youngBoysPlayers) {
+        const playerInputs = inputs.get(player.playerId);
+        if (!playerInputs) continue;
+        const { progressPct, goals } = computeProgress(
+          callupTrack,
+          playerInputs,
+          resolveProgressionWindow(callupTrack.windowMode, player, activeSeason),
+        );
+        // Record what is already reached as announced, so the first real
+        // recompute does not send a burst of milestone notifications.
+        playerProgressionRows.push({
+          playerId: player.playerId,
+          trackId: callupTrack.trackId,
+          progressPct,
+          goals,
+          computedAt: now,
+          notifiedThresholds: PROGRESS_MILESTONE_THRESHOLDS.filter((threshold) => progressPct >= threshold),
+          notifiedGoalIds: goals.filter((goal) => goal.met).map((goal) => goal.goalId),
+        });
+      }
+
+      const flagged = playerProgressionRows.find((row) => row.playerId === prospectId('ace'));
+      if (flagged) {
+        const markedAt = daysAgo(1).toISOString();
+        flagged.consideration = {
+          status: 'considering',
+          markedBy: 'seed-script',
+          markedAt,
+          note: 'Every goal met. Pencil in for the next draft.',
+        };
+        progressionEventRows.push({
+          eventId: uuidv4(),
+          playerId: flagged.playerId,
+          trackId: callupTrack.trackId,
+          kind: 'callup',
+          type: 'consideration_added',
+          fromDivisionId: youngBoysDivision.divisionId,
+          actorUserId: 'seed-script',
+          createdAt: markedAt,
+        });
+      }
+    }
+
     // ── Import all data via repository layer ───────────────────
     console.log('Importing all seed data via repository layer...');
     const { importAllData } = getRepositories();
     const seedData: Required<ExportData> = {
       divisions,
-      players,
+      players: [...players, ...prospects.map((prospect) => ({ ...prospect }))],
       seasons: [season],
       seasonStandings: seasonStandingsItems,
       championships,
       championshipHistory: championshipHistoryItems,
-      matches: [...matches, ...tagMatches],
+      matches: [...matches, ...tagMatches, ...youngBoysMatches.map((match) => ({ ...match }))],
       tagTeams,
       tournaments,
       events,
@@ -1450,14 +1662,17 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       rankingHistory: rankingHistoryItems,
       siteConfig: siteConfigItems,
       challenges: challengeItems,
-      promos: promoItems,
+      promos: [...promoItems, ...youngBoysPromos.map((promo) => ({ ...promo }))],
       stipulations: [],
       matchTypes: matchTypeItems,
       seasonAwards: [],
       rivalries,
       rivalryMessages,
       rivalryNotes,
-      matchRatings,
+      matchRatings: [...matchRatings, ...youngBoysRatings],
+      progressionTracks: progressionTracks.map((track) => ({ ...track })),
+      playerProgression: playerProgressionRows.map((row) => ({ ...row })),
+      progressionEvents: progressionEventRows.map((row) => ({ ...row })),
     };
 
     const createdCounts = await importAllData(seedData);

@@ -15,6 +15,7 @@ import {
   InMemoryRivalryNotesRepository,
 } from './InMemoryRivalriesRepository';
 import { InMemoryMatchRatingsRepository } from './InMemoryMatchRatingsRepository';
+import { InMemoryProgressionRepository } from './InMemoryProgressionRepository';
 import { InMemoryUnitOfWork } from './InMemoryUnitOfWork';
 
 export function buildInMemoryRepositories(): Repositories {
@@ -30,6 +31,7 @@ export function buildInMemoryRepositories(): Repositories {
   const rivalryMessages = new InMemoryRivalryMessagesRepository();
   const rivalryNotes = new InMemoryRivalryNotesRepository();
   const matchRatings = new InMemoryMatchRatingsRepository();
+  const progression = new InMemoryProgressionRepository();
 
   const runInTransaction: Repositories['runInTransaction'] = async <T>(fn: (tx: import('../unitOfWork').UnitOfWork) => Promise<T>): Promise<T> => {
     const uow = new InMemoryUnitOfWork({
@@ -47,6 +49,9 @@ export function buildInMemoryRepositories(): Repositories {
       rivalryMessages: rivalryMessages.store,
       rivalryNotes: rivalryNotes.store,
       matchRatings: matchRatings.store,
+      playerProgression: progression.progressionStore,
+      progressionEvents: progression.eventsStore,
+      divisions: leagueOps.divisions.store as unknown as Map<string, Record<string, unknown>>,
     });
     try {
       const result = await fn(uow);
@@ -71,6 +76,7 @@ export function buildInMemoryRepositories(): Repositories {
     rivalryMessages,
     rivalryNotes,
     matchRatings,
+    progression,
     runInTransaction,
     clearAllData: async () => {
       const counts: Record<string, { deleted: number; errors: number }> = {};
@@ -142,4 +148,5 @@ export {
   InMemoryRivalryNotesRepository,
 } from './InMemoryRivalriesRepository';
 export { InMemoryMatchRatingsRepository } from './InMemoryMatchRatingsRepository';
+export { InMemoryProgressionRepository } from './InMemoryProgressionRepository';
 export { InMemoryUnitOfWork } from './InMemoryUnitOfWork';

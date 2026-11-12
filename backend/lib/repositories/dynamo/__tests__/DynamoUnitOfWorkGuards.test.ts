@@ -10,6 +10,7 @@ vi.mock('../../../dynamodb', () => ({
     SEASON_STANDINGS: 'SeasonStandings',
     MATCHES: 'Matches',
     MATCH_RATINGS: 'MatchRatings',
+    DIVISIONS: 'Divisions',
   },
 }));
 
@@ -68,6 +69,31 @@ describe('updatePlayer conditions', () => {
   it('surfaces a failed condition as a ConcurrencyError', async () => {
     const uow = new DynamoUnitOfWork();
     uow.updatePlayer('p1', { name: 'A' }, { disciplineVersion: 4 });
+    mockTransactWrite.mockRejectedValue(cancelled(['ConditionalCheckFailed']));
+    await expect(uow.commit()).rejects.toBeInstanceOf(ConcurrencyError);
+  });
+
+  it('requires the stored division when divisionId is given, even when the patch sets it', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updatePlayer('p1', { divisionId: 'd-raw' }, { divisionId: 'd-yb' });
+    const update = lastUpdate(uow);
+    expect(update.ConditionExpression).toBe('attribute_exists(playerId) AND #expectedDivisionId = :expectedDivisionId');
+    expect(update.ExpressionAttributeNames?.['#expectedDivisionId']).toBe('divisionId');
+    expect(update.ExpressionAttributeValues?.[':expectedDivisionId']).toBe('d-yb');
+    expect(update.ExpressionAttributeValues?.[':v0']).toBe('d-raw');
+  });
+
+  it('combines a version and a division condition', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updatePlayer('p1', { name: 'A' }, { disciplineVersion: 2, divisionId: 'd-yb' });
+    expect(lastUpdate(uow).ConditionExpression).toBe(
+      'attribute_exists(playerId) AND #disciplineVersion = :expectedDisciplineVersion AND #expectedDivisionId = :expectedDivisionId',
+    );
+  });
+
+  it('surfaces a failed division condition as a ConcurrencyError', async () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updatePlayer('p1', { divisionId: 'd-raw' }, { divisionId: 'd-yb' });
     mockTransactWrite.mockRejectedValue(cancelled(['ConditionalCheckFailed']));
     await expect(uow.commit()).rejects.toBeInstanceOf(ConcurrencyError);
   });
@@ -177,6 +203,33 @@ describe('ghost-row and ownership conditions', () => {
     const update = lastUpdate(guarded);
     expect(update.ConditionExpression).toBe('attribute_exists(wrestlerId) AND assignedPlayerId = :expectedPlayerId');
     expect(update.ExpressionAttributeValues?.[':expectedPlayerId']).toBe('p1');
+  });
+});
+
+describe('updateDivision conditions', () => {
+  it('always requires the row to exist', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updateDivision('d1', { isDefaultForNewWrestlers: true, isDevelopmental: undefined });
+    const update = lastUpdate(uow);
+    expect(update.ConditionExpression).toBe('attribute_exists(divisionId)');
+    // undefined fields are skipped, not written as null.
+    expect(Object.values(update.ExpressionAttributeNames ?? {})).toEqual(['isDefaultForNewWrestlers', 'updatedAt']);
+  });
+
+  it('guards clearing the previous default on it still being the default', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updateDivision('d1', { isDefaultForNewWrestlers: false }, { isDefaultForNewWrestlers: true });
+    const update = lastUpdate(uow);
+    expect(update.ConditionExpression).toBe('attribute_exists(divisionId) AND #isDefault = :expectedDefault');
+    expect(update.ExpressionAttributeValues?.[':expectedDefault']).toBe(true);
+  });
+
+  it('surfaces a failed guard as a ConcurrencyError naming the division', async () => {
+    mockTransactWrite.mockRejectedValue(cancelled(['ConditionalCheckFailed', 'None']));
+    const uow = new DynamoUnitOfWork();
+    uow.updateDivision('old', { isDefaultForNewWrestlers: false }, { isDefaultForNewWrestlers: true });
+    uow.updateDivision('new', { isDefaultForNewWrestlers: true });
+    await expect(uow.commit()).rejects.toThrow('Division with id old');
   });
 });
 

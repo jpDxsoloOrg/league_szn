@@ -104,6 +104,46 @@ describe('createDivision', () => {
     expect(body.description).toBe('Friday Night SmackDown');
   });
 
+  it('creates a division with both flags', async () => {
+    const event = makeEvent({
+      body: JSON.stringify({ name: 'Young Boys', isDevelopmental: true, isDefaultForNewWrestlers: true }),
+    });
+
+    const result = await createDivision(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(201);
+    expect(JSON.parse(result!.body)).toMatchObject({
+      name: 'Young Boys',
+      isDevelopmental: true,
+      isDefaultForNewWrestlers: true,
+    });
+  });
+
+  it('creating a new default clears the previous default', async () => {
+    const oldDefault = await repos.leagueOps.divisions.create({ name: 'Young Boys', isDefaultForNewWrestlers: true });
+
+    const result = await createDivision(
+      makeEvent({ body: JSON.stringify({ name: 'Dojo', isDefaultForNewWrestlers: true }) }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(201);
+    expect(JSON.parse(result!.body).isDefaultForNewWrestlers).toBe(true);
+    expect((await repos.leagueOps.divisions.findById(oldDefault.divisionId))?.isDefaultForNewWrestlers).toBe(false);
+  });
+
+  it('returns 400 for a non-boolean flag', async () => {
+    const result = await createDivision(
+      makeEvent({ body: JSON.stringify({ name: 'Raw', isDefaultForNewWrestlers: 1 }) }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toBe('isDefaultForNewWrestlers must be a boolean');
+  });
+
   it('returns 400 when name is missing', async () => {
     const event = makeEvent({ body: JSON.stringify({ description: 'No name' }) });
 

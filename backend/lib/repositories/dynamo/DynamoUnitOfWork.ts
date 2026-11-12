@@ -1,7 +1,21 @@
 import { TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
 import { dynamoDb, TableNames } from '../../dynamodb';
-import type { UnitOfWork, RecordDelta, MatchWriteCondition, PlayerWriteCondition } from '../unitOfWork';
-import type { ChallengeStatus, TagTeam } from '../types';
+import type {
+  UnitOfWork,
+  RecordDelta,
+  MatchWriteCondition,
+  PlayerWriteCondition,
+  DivisionWriteCondition,
+  ProgressionConsiderationSeed,
+} from '../unitOfWork';
+import type { DivisionPatch } from '../LeagueOpsRepository';
+import type { ChallengeStatus, PlayerProgression, ProgressionConsideration, ProgressionEvent, TagTeam } from '../types';
+import {
+  buildClearConsiderationUpdate,
+  buildSetConsiderationUpdate,
+  buildUpsertProgressionUpdate,
+  toProgressionEventItem,
+} from './progressionRows';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
 import {
   participantSk,
@@ -74,13 +88,22 @@ export class DynamoUnitOfWork implements UnitOfWork {
     }
     let conditionExpression: string | undefined;
     if (condition) {
-      names['#disciplineVersion'] = 'disciplineVersion';
-      values[':expectedDisciplineVersion'] = condition.disciplineVersion;
-      // Only version 0 may match a row with no version, as in updateDiscipline.
-      const matchesVersion = '#disciplineVersion = :expectedDisciplineVersion';
-      conditionExpression = condition.disciplineVersion === 0
-        ? `attribute_exists(playerId) AND (attribute_not_exists(#disciplineVersion) OR ${matchesVersion})`
-        : `attribute_exists(playerId) AND ${matchesVersion}`;
+      const clauses = ['attribute_exists(playerId)'];
+      if (condition.disciplineVersion !== undefined) {
+        names['#disciplineVersion'] = 'disciplineVersion';
+        values[':expectedDisciplineVersion'] = condition.disciplineVersion;
+        // Only version 0 may match a row with no version, as in updateDiscipline.
+        const matchesVersion = '#disciplineVersion = :expectedDisciplineVersion';
+        clauses.push(condition.disciplineVersion === 0
+          ? `(attribute_not_exists(#disciplineVersion) OR ${matchesVersion})`
+          : matchesVersion);
+      }
+      if (condition.divisionId !== undefined) {
+        names['#expectedDivisionId'] = 'divisionId';
+        values[':expectedDivisionId'] = condition.divisionId;
+        clauses.push('#expectedDivisionId = :expectedDivisionId');
+      }
+      conditionExpression = clauses.join(' AND ');
     }
     this.staged.push({
       Update: {
@@ -200,6 +223,45 @@ export class DynamoUnitOfWork implements UnitOfWork {
     this.staged.push({
       Delete: { TableName: TableNames.TAG_TEAMS, Key: { tagTeamId } },
     });
+  }
+
+  // ── Divisions ────────────────────────────────────────────────────
+  updateDivision(divisionId: string, patch: DivisionPatch, condition?: DivisionWriteCondition): void {
+    const now = new Date().toISOString();
+    const sets: string[] = [];
+    const names: Record<string, string> = {};
+    const values: Record<string, unknown> = {};
+    let i = 0;
+    for (const [key, val] of Object.entries(patch)) {
+      if (val === undefined || key === 'updatedAt') continue;
+      names[`#f${i}`] = key;
+      values[`:v${i}`] = val;
+      sets.push(`#f${i} = :v${i}`);
+      i++;
+    }
+    names[`#f${i}`] = 'updatedAt';
+    values[`:v${i}`] = now;
+    sets.push(`#f${i} = :v${i}`);
+
+    let conditionExpression = 'attribute_exists(divisionId)';
+    if (condition) {
+      names['#isDefault'] = 'isDefaultForNewWrestlers';
+      values[':expectedDefault'] = true;
+      conditionExpression += condition.isDefaultForNewWrestlers
+        ? ' AND #isDefault = :expectedDefault'
+        : ' AND (attribute_not_exists(#isDefault) OR #isDefault <> :expectedDefault)';
+    }
+    this.staged.push({
+      Update: {
+        TableName: TableNames.DIVISIONS,
+        Key: { divisionId },
+        UpdateExpression: `SET ${sets.join(', ')}`,
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: values,
+        ConditionExpression: conditionExpression,
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'Division', id: divisionId });
   }
 
   // ── Championships ────────────────────────────────────────────────
@@ -689,6 +751,59 @@ export class DynamoUnitOfWork implements UnitOfWork {
       kind: 'matchRating',
       matchId: input.matchId,
       userId: input.userId,
+    });
+  }
+
+  // ── Progression (CUP-01) ─────────────────────────────────────────
+  upsertPlayerProgression(progression: PlayerProgression): void {
+    this.staged.push({
+      Update: {
+        TableName: TableNames.PLAYER_PROGRESSION,
+        ...buildUpsertProgressionUpdate(progression),
+      },
+    });
+  }
+
+  appendProgressionEvent(event: ProgressionEvent): void {
+    this.staged.push({
+      Put: {
+        TableName: TableNames.PROGRESSION_EVENTS,
+        Item: toProgressionEventItem(event),
+      },
+    });
+  }
+
+  setProgressionConsideration(
+    playerId: string,
+    trackId: string,
+    consideration: ProgressionConsideration,
+    seed?: ProgressionConsiderationSeed,
+  ): void {
+    this.staged.push({
+      Update: {
+        TableName: TableNames.PLAYER_PROGRESSION,
+        ...buildSetConsiderationUpdate(playerId, trackId, consideration, seed),
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'PlayerProgression', id: `${playerId}/${trackId}` });
+  }
+
+  clearProgressionConsideration(playerId: string, trackId: string): void {
+    this.staged.push({
+      Update: {
+        TableName: TableNames.PLAYER_PROGRESSION,
+        ...buildClearConsiderationUpdate(playerId, trackId),
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'PlayerProgression', id: `${playerId}/${trackId}` });
+  }
+
+  deletePlayerProgression(playerId: string, trackId: string): void {
+    this.staged.push({
+      Delete: {
+        TableName: TableNames.PLAYER_PROGRESSION,
+        Key: { playerId, trackId },
+      },
     });
   }
 

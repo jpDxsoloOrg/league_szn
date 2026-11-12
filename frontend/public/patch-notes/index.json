@@ -1,0 +1,16 @@
+{
+  "releases": [
+    {
+      "version": "1.1.0",
+      "date": "2026-11-12",
+      "title": "Tag Team Contenders & Young Boys Call-Ups",
+      "titleDe": "Tag-Team-Herausforderer & Young Boys Call-Ups",
+      "file": "v1.1.0.md",
+      "summary": "A clear road from the Young Boys to the main roster, tag titles that rank whole teams, new GM tag team tools, developmental divisions and a sharper League Wire.",
+      "summaryDe": "Ein klarer Weg von den Young Boys in den Hauptkader, Tag-Titel mit Team-Ranglisten, neue Tag-Team-Werkzeuge für GMs, Entwicklungsdivisionen und ein schärferer Liga-Ticker."
+    }
+  ],
+  "next": {
+    "file": "next-features.md"
+  }
+}

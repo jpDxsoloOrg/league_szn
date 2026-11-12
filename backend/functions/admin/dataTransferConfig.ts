@@ -27,6 +27,9 @@ export const EXPORT_DATASET_KEYS = [
   'rivalryMessages',
   'rivalryNotes',
   'matchRatings',
+  'progressionTracks',
+  'playerProgression',
+  'progressionEvents',
 ] as const;
 
 export type ExportDatasetKey = (typeof EXPORT_DATASET_KEYS)[number];

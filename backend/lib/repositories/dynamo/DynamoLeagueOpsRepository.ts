@@ -65,6 +65,10 @@ export class DynamoLeagueOpsRepository implements LeagueOpsRepository {
       divisionId: id,
       name: input.name,
       ...(input.description !== undefined ? { description: input.description } : {}),
+      ...(input.isDevelopmental !== undefined ? { isDevelopmental: input.isDevelopmental } : {}),
+      ...(input.isDefaultForNewWrestlers !== undefined
+        ? { isDefaultForNewWrestlers: input.isDefaultForNewWrestlers }
+        : {}),
       createdAt: now,
       updatedAt: now,
     }),

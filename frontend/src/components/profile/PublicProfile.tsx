@@ -25,6 +25,8 @@ import type { Stable } from '../../types/stable';
 import type { TagTeam } from '../../types/tagTeam';
 import { computePlayerForm } from '../../utils/matchDisplay';
 import { getTitleAccent } from '../titleAccent';
+import CallUpProgress from '../progression/CallUpProgress';
+import ConsiderationBanner from '../progression/ConsiderationBanner';
 import MovesetSection from './MovesetSection';
 import ProfileHero from './ProfileHero';
 import ProfileRivalries from './ProfileRivalries';
@@ -42,7 +44,7 @@ interface PlayerProfile extends Player {
 export default function PublicProfile() {
   const { playerId } = useParams<{ playerId: string }>();
   const { t } = useTranslation();
-  const { isAuthenticated, isWrestler, playerId: currentPlayerId } = useAuth();
+  const { isAuthenticated, isWrestler, isAdminOrModerator, playerId: currentPlayerId } = useAuth();
   const { features } = useSiteConfig();
 
   const [player, setPlayer] = useState<PlayerProfile | null>(null);
@@ -212,7 +214,9 @@ export default function PublicProfile() {
         }
       />
 
+      <ConsiderationBanner playerId={player.playerId} />
       <RecordSummary record={player} titlesHeld={titles.length} />
+      <CallUpProgress playerId={player.playerId} showGoals={isAdminOrModerator} />
 
       <div className="profile-columns">
         <RecentMatches playerId={player.playerId} matches={matches} names={names} />

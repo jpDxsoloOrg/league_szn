@@ -4,6 +4,7 @@ import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { createNotification } from '../../lib/notifications';
+import { triggerProgressionRecompute } from '../../lib/progression/trigger';
 
 interface ReviewTransferBody {
   status: 'approved' | 'rejected';
@@ -54,7 +55,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // If approved, update the player's divisionId
     if (status === 'approved') {
       const toDivisionId = transferRequest.toDivisionId;
-      await repos.roster.players.update(playerId, { divisionId: toDivisionId });
+      await repos.roster.players.update(playerId, {
+        divisionId: toDivisionId,
+        divisionJoinedAt: new Date().toISOString(),
+      });
+      // New division: score the new tracks and drop the old division's rows.
+      await triggerProgressionRecompute([playerId], 'transferApproved');
     }
 
     // Look up the player's userId to send a notification

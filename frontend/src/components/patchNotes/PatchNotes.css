@@ -1,0 +1,459 @@
+.patch-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.patch-notes .page-header {
+  margin-bottom: 0;
+}
+
+/* Desktop: the post and Coming Next on the left, the version list as a sidebar. */
+.patch-notes__layout {
+  display: grid;
+  grid-template-areas:
+    'post versions'
+    'next versions';
+  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-rows: auto 1fr;
+  gap: 1.5rem 2rem;
+  align-items: start;
+}
+
+.patch-notes__post {
+  grid-area: post;
+  min-width: 0;
+}
+
+.patch-notes__next {
+  grid-area: next;
+  min-width: 0;
+}
+
+.patch-notes__versions {
+  position: sticky;
+  top: calc(var(--shell-header-offset) + var(--section-tabs-height) + 1rem);
+  grid-area: versions;
+  min-width: 0;
+}
+
+/* The picker is the phone's way to switch versions; desktop has the sidebar. */
+.patch-notes__picker {
+  display: none;
+}
+
+/* Release post */
+.patch-notes-release {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem 1.75rem;
+  border: 1px solid var(--color-hairline);
+  border-left: 4px solid var(--color-cyan);
+  border-radius: var(--radius-card);
+  background-color: var(--color-surface);
+}
+
+.patch-notes-release__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.patch-notes-release__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-label);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.patch-notes-release__version {
+  padding: 0.125rem 0.75rem;
+  transform: skewX(-9deg);
+  background-color: var(--color-cyan);
+  color: var(--color-on-accent);
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.patch-notes-release__title {
+  margin: 0;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  line-height: 1.05;
+}
+
+.patch-notes__body > :first-child {
+  margin-top: 0;
+}
+
+.patch-notes__body h3 {
+  margin: 2rem 0 0.75rem;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--color-cyan);
+  color: var(--color-text);
+  font-size: 1.375rem;
+}
+
+.patch-notes__body h4 {
+  margin: 1.5rem 0 0.5rem;
+  color: var(--color-text);
+  font-size: 1.125rem;
+}
+
+.patch-notes__body li + li {
+  margin-top: 0.375rem;
+}
+
+/* Version list */
+.patch-notes-versions__heading {
+  margin: 0 0 0.75rem;
+  padding-left: 0.75rem;
+  border-left: 4px solid var(--color-pink);
+  font-size: 1.25rem;
+}
+
+.patch-notes-versions__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.patch-notes-versions__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: var(--touch-target);
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.patch-notes-versions__item:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.patch-notes-versions__item--current {
+  border-color: var(--color-selected);
+  box-shadow: inset 3px 0 0 var(--color-selected);
+}
+
+.patch-notes-versions__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.patch-notes-versions__version {
+  color: var(--color-cyan);
+}
+
+.patch-notes-versions__title {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.patch-notes-versions__summary {
+  color: var(--color-text-secondary);
+  font-size: var(--text-dense);
+}
+
+/* Coming Next: a hatched, violet card so it never reads as a shipped release. */
+.patch-notes-next {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem 1.75rem;
+  border: 1px dashed var(--color-violet);
+  border-radius: var(--radius-card);
+  background-color: var(--tint-violet);
+  background-image: var(--hatch);
+}
+
+.patch-notes-next__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  align-self: flex-start;
+  margin: 0;
+  padding: 0.125rem 0.75rem;
+  transform: skewX(-9deg);
+  background-color: var(--color-violet);
+  color: var(--color-on-accent);
+  font-family: var(--font-heading);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.patch-notes-next__heading {
+  margin: 0;
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+  line-height: 1.1;
+}
+
+.patch-notes-next .patch-notes__body h3 {
+  border-left-color: var(--color-violet);
+}
+
+@media (max-width: 900px) {
+  .patch-notes__picker {
+    display: block;
+  }
+
+  .patch-notes__layout {
+    grid-template-areas:
+      'post'
+      'versions'
+      'next';
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+  }
+
+  .patch-notes__versions {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .patch-notes-release,
+  .patch-notes-next {
+    padding: 1.125rem;
+  }
+}
+
+/* Screenshots: small thumbnails that open in a lightbox. */
+.patch-notes-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.patch-notes-thumb {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 220px;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  text-align: left;
+  vertical-align: top;
+  cursor: zoom-in;
+}
+
+.patch-notes-thumb__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Natural aspect, so wide crops (a ticker, a table row) stay readable. */
+  max-height: 180px;
+  object-fit: contain;
+  object-position: left top;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  background-color: var(--color-surface-raised);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.patch-notes-thumb:hover .patch-notes-thumb__image {
+  border-color: var(--color-cyan);
+  box-shadow: var(--glow-cyan);
+  transform: translateY(-2px);
+}
+
+.patch-notes-thumb:focus-visible {
+  outline: none;
+}
+
+.patch-notes-thumb:focus-visible .patch-notes-thumb__image {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.patch-notes-thumb__caption {
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+.patch-notes-thumb:hover .patch-notes-thumb__caption {
+  color: var(--color-text-secondary);
+}
+
+/* Lightbox: the shared Modal, widened to fit the screenshot. */
+.ui-modal.patch-notes-lightbox {
+  width: calc(100vw - 2rem);
+  max-width: min(1400px, calc(100vw - 2rem));
+  background-color: var(--color-bg);
+}
+
+.patch-notes-lightbox .ui-modal__body {
+  position: relative;
+  padding: 3.25rem 1rem 1rem;
+  overflow: hidden;
+}
+
+.patch-notes-lightbox__figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.patch-notes-lightbox__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0 3.25rem;
+}
+
+.patch-notes-lightbox__image {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100dvh - 10rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  height: auto;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  object-fit: contain;
+}
+
+.patch-notes-lightbox__caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem 1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.patch-notes-lightbox__count {
+  color: var(--color-text-muted);
+  font-family: var(--font-label);
+  letter-spacing: var(--tracking-label);
+}
+
+.patch-notes-lightbox__close,
+.patch-notes-lightbox__nav {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  padding: 0;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-control);
+  background-color: var(--color-surface-raised);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.patch-notes-lightbox__close:hover,
+.patch-notes-lightbox__nav:hover {
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
+}
+
+.patch-notes-lightbox__close:focus-visible,
+.patch-notes-lightbox__nav:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.patch-notes-lightbox__close {
+  top: 0.5rem;
+  right: 0.5rem;
+}
+
+.patch-notes-lightbox__nav {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.patch-notes-lightbox__nav--prev {
+  left: 0.5rem;
+}
+
+.patch-notes-lightbox__nav--next {
+  right: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .patch-notes-gallery {
+    gap: 0.75rem;
+  }
+
+  .patch-notes-thumb {
+    width: calc(50% - 0.375rem);
+  }
+
+  .ui-modal.patch-notes-lightbox {
+    width: calc(100vw - 1rem);
+    max-width: calc(100vw - 1rem);
+  }
+
+  .patch-notes-lightbox .ui-modal__body {
+    padding: 3.25rem 0.5rem 4rem;
+  }
+
+  .patch-notes-lightbox__stage {
+    padding: 0;
+  }
+
+  /* On a phone the arrows sit under the image so they never cover it. */
+  .patch-notes-lightbox__nav {
+    top: auto;
+    bottom: 0.5rem;
+    transform: none;
+  }
+
+  .patch-notes-lightbox__nav--prev {
+    left: calc(50% - var(--touch-target) - 0.375rem);
+  }
+
+  .patch-notes-lightbox__nav--next {
+    right: calc(50% - var(--touch-target) - 0.375rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .patch-notes-thumb__image {
+    transition: none;
+  }
+
+  .patch-notes-thumb:hover .patch-notes-thumb__image {
+    transform: none;
+  }
+}

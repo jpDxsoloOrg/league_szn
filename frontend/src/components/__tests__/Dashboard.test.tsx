@@ -65,6 +65,10 @@ vi.mock('../rivalries/DashboardRivalries', () => ({
   default: () => null,
 }));
 
+vi.mock('../progression/DashboardCallUp', () => ({
+  default: () => null,
+}));
+
 import Dashboard from '../Dashboard';
 
 const emptyDashboard = {

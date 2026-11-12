@@ -8,7 +8,12 @@ export const divisionsApi = {
     return baseDivisionsApi.getAll(signal);
   },
 
-  create: async (division: { name: string; description?: string }): Promise<Division> => {
+  create: async (division: {
+    name: string;
+    description?: string;
+    isDevelopmental?: boolean;
+    isDefaultForNewWrestlers?: boolean;
+  }): Promise<Division> => {
     return baseDivisionsApi.create(division);
   },
 

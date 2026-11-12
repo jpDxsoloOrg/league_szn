@@ -1,4 +1,12 @@
-import type { UnitOfWork, RecordDelta, MatchWriteCondition, PlayerWriteCondition } from '../unitOfWork';
+import type {
+  UnitOfWork,
+  RecordDelta,
+  MatchWriteCondition,
+  PlayerWriteCondition,
+  DivisionWriteCondition,
+  ProgressionConsiderationSeed,
+} from '../unitOfWork';
+import type { DivisionPatch } from '../LeagueOpsRepository';
 import type { ChallengeStatus, TagTeam } from '../types';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
 import type {
@@ -10,7 +18,8 @@ import type {
 } from '../rivalries';
 import { RatingAlreadyExistsError } from '../matchRatings';
 import { ConcurrencyError } from '../errors';
-import type { MatchRating } from '../types';
+import type { MatchRating, PlayerProgression, ProgressionConsideration, ProgressionEvent } from '../types';
+import { applyEventAppend, applyProgressionUpsert, playerProgressionKey } from './InMemoryProgressionRepository';
 
 type StagedOp = () => void;
 
@@ -38,6 +47,10 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       rivalryMessages: RivalryMessage[];
       rivalryNotes: RivalryNote[];
       matchRatings: Map<string, MatchRating>;
+      playerProgression: Map<string, PlayerProgression>;
+      progressionEvents: ProgressionEvent[];
+      /** Optional so callers that never touch divisions need not wire it. */
+      divisions?: Map<string, Record<string, unknown>>;
     },
   ) {}
 
@@ -47,7 +60,11 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     if (condition) {
       this.preconditions.push(() => {
         const player = this.stores.players.get(playerId);
-        if (!player || (player.disciplineVersion ?? 0) !== condition.disciplineVersion) {
+        if (
+          !player
+          || (condition.disciplineVersion !== undefined && (player.disciplineVersion ?? 0) !== condition.disciplineVersion)
+          || (condition.divisionId !== undefined && player.divisionId !== condition.divisionId)
+        ) {
           throw new ConcurrencyError('Player', playerId);
         }
       });
@@ -127,6 +144,26 @@ export class InMemoryUnitOfWork implements UnitOfWork {
 
   deleteTagTeam(tagTeamId: string): void {
     this.staged.push(() => { this.stores.tagTeams.delete(tagTeamId); });
+  }
+
+  updateDivision(divisionId: string, patch: DivisionPatch, condition?: DivisionWriteCondition): void {
+    this.preconditions.push(() => {
+      const existing = this.stores.divisions?.get(divisionId);
+      if (!existing) throw new ConcurrencyError('Division', divisionId);
+      if (condition && (existing.isDefaultForNewWrestlers === true) !== condition.isDefaultForNewWrestlers) {
+        throw new ConcurrencyError('Division', divisionId);
+      }
+    });
+    this.staged.push(() => {
+      const existing = this.stores.divisions?.get(divisionId);
+      if (!existing) return;
+      const next: Record<string, unknown> = { ...existing };
+      for (const [key, val] of Object.entries(patch)) {
+        if (val !== undefined) next[key] = val;
+      }
+      next.updatedAt = new Date().toISOString();
+      this.stores.divisions?.set(divisionId, next);
+    });
   }
 
   updateChampionship(championshipId: string, patch: Record<string, unknown>): void {
@@ -408,6 +445,65 @@ export class InMemoryUnitOfWork implements UnitOfWork {
         createdAt: new Date().toISOString(),
       };
       this.stores.matchRatings.set(key, row);
+    });
+  }
+
+  // ── Progression (CUP-01) ─────────────────────────────────────────
+  upsertPlayerProgression(progression: PlayerProgression): void {
+    const staged = structuredClone(progression);
+    this.staged.push(() => {
+      applyProgressionUpsert(this.stores.playerProgression, staged);
+    });
+  }
+
+  appendProgressionEvent(event: ProgressionEvent): void {
+    const staged = structuredClone(event);
+    this.staged.push(() => {
+      applyEventAppend(this.stores.progressionEvents, staged);
+    });
+  }
+
+  setProgressionConsideration(
+    playerId: string,
+    trackId: string,
+    consideration: ProgressionConsideration,
+    seed?: ProgressionConsiderationSeed,
+  ): void {
+    const key = playerProgressionKey(playerId, trackId);
+    const stagedConsideration = structuredClone(consideration);
+    const stagedSeed = seed ? structuredClone(seed) : undefined;
+    this.preconditions.push(() => {
+      const existing = this.stores.playerProgression.get(key);
+      if ((!existing && !stagedSeed) || existing?.consideration) {
+        throw new ConcurrencyError('PlayerProgression', `${playerId}/${trackId}`);
+      }
+    });
+    this.staged.push(() => {
+      const existing = this.stores.playerProgression.get(key);
+      const base: PlayerProgression = existing ?? { playerId, trackId, ...(stagedSeed as ProgressionConsiderationSeed) };
+      this.stores.playerProgression.set(key, { ...base, consideration: stagedConsideration });
+    });
+  }
+
+  clearProgressionConsideration(playerId: string, trackId: string): void {
+    const key = playerProgressionKey(playerId, trackId);
+    this.preconditions.push(() => {
+      if (!this.stores.playerProgression.get(key)?.consideration) {
+        throw new ConcurrencyError('PlayerProgression', `${playerId}/${trackId}`);
+      }
+    });
+    this.staged.push(() => {
+      const existing = this.stores.playerProgression.get(key);
+      if (!existing) return;
+      const next: PlayerProgression = { ...existing };
+      delete next.consideration;
+      this.stores.playerProgression.set(key, next);
+    });
+  }
+
+  deletePlayerProgression(playerId: string, trackId: string): void {
+    this.staged.push(() => {
+      this.stores.playerProgression.delete(playerProgressionKey(playerId, trackId));
     });
   }
 

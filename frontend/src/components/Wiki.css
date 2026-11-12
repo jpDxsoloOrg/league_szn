@@ -118,6 +118,17 @@
 }
 
 /* Index */
+.wiki-whats-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: var(--touch-target);
+  margin: -0.5rem 0 0.75rem;
+  color: var(--color-cyan);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
 .wiki-search-label {
   display: block;
   margin-bottom: 1.25rem;

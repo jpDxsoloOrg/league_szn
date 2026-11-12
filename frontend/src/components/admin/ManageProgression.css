@@ -1,0 +1,292 @@
+/*
+ * Admin Call-Ups page (ManageProgression) and its pieces in ./progression.
+ * Desktop first: candidates share one grid (.mp-board__table) whose column
+ * tracks every row inherits through subgrid, so the columns line up; at
+ * 768px and below each row stacks into a card. Colours come from tokens in
+ * src/variables.css.
+ */
+
+.mp-section,
+.mp-board {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.mp-track-picker .ui-select__trigger {
+  min-width: 16rem;
+}
+
+.mp-field-error {
+  color: var(--color-loss);
+  font-size: var(--text-dense);
+}
+
+/* Candidate rows */
+
+/*
+ * The one place the column tracks are defined: rank, player, progress, goals,
+ * last match, consideration, actions. The header, the list, each row and its
+ * main line are subgrids of it, so content-sized tracks (max-content) are
+ * sized across every row instead of per row.
+ */
+.mp-board__table {
+  display: grid;
+  grid-template-columns:
+    2rem minmax(10rem, 1.2fr) minmax(7rem, 0.9fr) minmax(9rem, 1.3fr)
+    max-content minmax(8rem, 1fr) max-content;
+  column-gap: 1rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.mp-board__head,
+.mp-board__list,
+.mp-row,
+.mp-row__main {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+.mp-board__head {
+  align-items: end;
+  padding: 0.625rem 1rem;
+  border-bottom: 1px solid var(--color-hairline);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mp-board__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mp-row + .mp-row {
+  border-top: 1px solid var(--color-hairline);
+}
+
+.mp-row__main {
+  align-items: center;
+  padding: 0.75rem 1rem;
+}
+
+.mp-row__rank {
+  color: var(--color-text-muted);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  text-align: center;
+}
+
+.mp-row__player {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.mp-row__meter {
+  min-width: 0;
+}
+
+.mp-row__goals,
+.mp-row__last,
+.mp-row__consideration {
+  display: grid;
+  justify-items: start;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.mp-row__note {
+  overflow-wrap: anywhere;
+}
+
+/* The column header names the last-match cell on desktop; the label is for screen readers there. */
+.mp-row__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.mp-row__last--stale time {
+  color: var(--color-warning);
+}
+
+.mp-row__actions {
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+
+.mp-row__details {
+  grid-column: 2 / -1;
+  padding: 0 1rem 1rem 0;
+}
+
+.mp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mp-chip {
+  max-width: 10rem;
+  overflow: hidden;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-chip--met {
+  border-color: var(--color-win);
+  color: var(--color-win);
+}
+
+/* Track editor */
+
+.mp-editor__active {
+  align-content: end;
+}
+
+.mp-goals {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.mp-goal {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-raised);
+}
+
+.mp-goal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mp-goal__title {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.mp-goal__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.75rem;
+}
+
+.mp-titles {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+/*
+ * Seven columns need roughly 72rem of content width (the actions column alone
+ * is about 20rem) beside the 240px admin sidebar, so narrower desktops use
+ * the two-line layout.
+ */
+@media (max-width: 1500px) {
+  /* Four shared tracks: rank, player/last match, progress/flag, goals/actions. */
+  .mp-board__table {
+    grid-template-columns: 2rem minmax(10rem, 1fr) minmax(9rem, 1fr) minmax(8rem, 1fr);
+  }
+
+  .mp-board__head {
+    display: none;
+  }
+
+  .mp-row__main {
+    row-gap: 0.75rem;
+  }
+
+  .mp-row__label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+  }
+
+  .mp-row__last {
+    grid-column: 2 / 3;
+  }
+
+  .mp-row__consideration {
+    grid-column: 3 / 4;
+  }
+
+  .mp-row__actions {
+    flex-wrap: wrap;
+    grid-column: 4 / -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .mp-track-picker .ui-select__trigger {
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* Cards: drop the shared tracks; each row lays itself out. */
+  .mp-board__table,
+  .mp-board__list,
+  .mp-row {
+    display: block;
+  }
+
+  .mp-row__main {
+    grid-template-columns: 1.5rem minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.875rem;
+  }
+
+  .mp-row__rank {
+    align-self: start;
+    padding-top: 0.5rem;
+  }
+
+  .mp-row__meter,
+  .mp-row__goals,
+  .mp-row__last,
+  .mp-row__consideration,
+  .mp-row__actions {
+    grid-column: 2 / -1;
+  }
+
+  .mp-row__actions {
+    justify-content: flex-start;
+  }
+
+  .mp-row__details {
+    padding: 0 0.875rem 0.875rem;
+  }
+
+  .mp-row__label {
+    display: block;
+  }
+}

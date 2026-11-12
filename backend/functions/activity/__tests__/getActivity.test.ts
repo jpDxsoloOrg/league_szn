@@ -10,6 +10,10 @@ const {
   mockChallengesList,
   mockPromosList,
   mockPlayersList,
+  mockListTracks,
+  mockListByTrack,
+  mockListEventsByType,
+  mockDivisionsList,
 } = vi.hoisted(() => ({
   mockMatchesListCompleted: vi.fn(),
   mockChampionshipsListAllHistory: vi.fn(),
@@ -19,6 +23,10 @@ const {
   mockChallengesList: vi.fn(),
   mockPromosList: vi.fn(),
   mockPlayersList: vi.fn(),
+  mockListTracks: vi.fn(),
+  mockListByTrack: vi.fn(),
+  mockListEventsByType: vi.fn(),
+  mockDivisionsList: vi.fn(),
 }));
 
 vi.mock('../../../lib/repositories', () => ({
@@ -40,6 +48,8 @@ vi.mock('../../../lib/repositories', () => ({
     roster: {
       players: { listWithDeleted: mockPlayersList },
     },
+    progression: { listTracks: mockListTracks, listByTrack: mockListByTrack, listEventsByType: mockListEventsByType },
+    leagueOps: { divisions: { list: mockDivisionsList } },
   }),
 }));
 
@@ -75,6 +85,10 @@ function mockAllEmpty() {
   mockChallengesList.mockResolvedValue([]);
   mockPromosList.mockResolvedValue([]);
   mockPlayersList.mockResolvedValue([]);
+  mockListTracks.mockResolvedValue([]);
+  mockListByTrack.mockResolvedValue([]);
+  mockListEventsByType.mockResolvedValue([]);
+  mockDivisionsList.mockResolvedValue([]);
 }
 
 describe('getActivity', () => {
@@ -274,6 +288,117 @@ describe('getActivity', () => {
     expect(mockTournamentsList).not.toHaveBeenCalled();
     expect(mockChallengesList).not.toHaveBeenCalled();
     expect(mockPromosList).not.toHaveBeenCalled();
+    expect(mockListTracks).not.toHaveBeenCalled();
+    expect(mockListEventsByType).not.toHaveBeenCalled();
+    expect(mockDivisionsList).not.toHaveBeenCalled();
+  });
+
+  describe('callup_consideration', () => {
+    const player = (playerId: string, extra: Record<string, unknown> = {}) => ({
+      playerId,
+      name: `Name ${playerId}`,
+      currentWrestler: `Wrestler ${playerId}`,
+      ...extra,
+    });
+
+    beforeEach(() => {
+      mockListTracks.mockResolvedValue([{ trackId: 't1', kind: 'callup', isActive: true }]);
+      mockListByTrack.mockResolvedValue([
+        {
+          playerId: 'p1',
+          trackId: 't1',
+          progressPct: 50,
+          goals: [],
+          computedAt: '2026-11-01T00:00:00.000Z',
+          consideration: { status: 'considering', markedBy: 'gm', markedAt: '2026-11-10T00:00:00.000Z' },
+        },
+        { playerId: 'p2', trackId: 't1', progressPct: 90, goals: [], computedAt: '2026-11-01T00:00:00.000Z' },
+      ]);
+    });
+
+    it('lists current call-up marks with the player name', async () => {
+      mockPlayersList.mockResolvedValue([player('p1'), player('p2')]);
+
+      const result = await getActivity(makeEvent({ queryStringParameters: { type: 'callup' } }), ctx, cb);
+
+      expect(mockListTracks).toHaveBeenCalledWith({ kind: 'callup', isActive: true });
+      expect(mockMatchesListCompleted).not.toHaveBeenCalled();
+      const body = JSON.parse(result!.body);
+      expect(body.items).toHaveLength(1);
+      expect(body.items[0]).toMatchObject({
+        type: 'callup_consideration',
+        timestamp: '2026-11-10T00:00:00.000Z',
+        summary: 'Name p1 is being considered for a call-up',
+        metadata: { playerId: 'p1', trackId: 't1', playerName: 'Name p1' },
+      });
+    });
+
+    it('drops marks on hidden, deactivated or deleted players', async () => {
+      for (const extra of [
+        { currentWrestler: 'Needs Wrestler' },
+        { deactivatedAt: '2026-11-11T00:00:00.000Z' },
+        { deletedAt: '2026-11-11T00:00:00.000Z' },
+      ]) {
+        mockPlayersList.mockResolvedValue([player('p1', extra)]);
+        const result = await getActivity(makeEvent({ queryStringParameters: { type: 'callup' } }), ctx, cb);
+        expect(JSON.parse(result!.body).items).toEqual([]);
+      }
+    });
+
+    it('lists executed call-ups as callup_executed with the target division name', async () => {
+      mockListByTrack.mockResolvedValue([]);
+      mockListEventsByType.mockResolvedValue([
+        { eventId: 'e1', playerId: 'p1', trackId: 't1', kind: 'callup', type: 'executed', fromDivisionId: 'd-yb', toDivisionId: 'd-raw', actorUserId: 'a', createdAt: '2026-11-12T00:00:00.000Z' },
+        { eventId: 'e2', playerId: 'p1', trackId: 't2', kind: 'promotion', type: 'executed', fromDivisionId: 'd-raw', toDivisionId: 'd-top', actorUserId: 'a', createdAt: '2026-11-12T01:00:00.000Z' },
+      ]);
+      mockDivisionsList.mockResolvedValue([{ divisionId: 'd-raw', name: 'Raw' }]);
+      mockPlayersList.mockResolvedValue([{ playerId: 'p1', name: 'Kenta', currentWrestler: 'W' }]);
+
+      const result = await getActivity(makeEvent({ queryStringParameters: { type: 'callup' } }), ctx, cb);
+      const body = JSON.parse(result!.body);
+
+      expect(mockListEventsByType).toHaveBeenCalledWith('executed');
+      expect(mockMatchesListCompleted).not.toHaveBeenCalled();
+      expect(body.items).toHaveLength(1);
+      expect(body.items[0]).toMatchObject({
+        id: 'callup-e1',
+        type: 'callup_executed',
+        summary: 'Kenta was called up to Raw',
+        metadata: { playerId: 'p1', toDivisionId: 'd-raw', toDivisionName: 'Raw' },
+      });
+    });
+
+    it('returns marks and executed call-ups together, newest first', async () => {
+      mockListEventsByType.mockResolvedValue([
+        { eventId: 'e1', playerId: 'p2', trackId: 't1', kind: 'callup', type: 'executed', fromDivisionId: 'd-yb', toDivisionId: 'd-raw', actorUserId: 'a', createdAt: '2026-11-12T00:00:00.000Z' },
+      ]);
+      mockDivisionsList.mockResolvedValue([{ divisionId: 'd-raw', name: 'Raw' }]);
+      mockPlayersList.mockResolvedValue([player('p1'), player('p2')]);
+
+      const result = await getActivity(makeEvent({ queryStringParameters: { type: 'callup' } }), ctx, cb);
+      const body = JSON.parse(result!.body);
+
+      expect(body.items.map((item: { type: string }) => item.type)).toEqual(['callup_executed', 'callup_consideration']);
+      expect(body.items[0].summary).toBe('Name p2 was called up to Raw');
+    });
+
+    it('drops executed call-ups for hidden players', async () => {
+      mockListByTrack.mockResolvedValue([]);
+      mockListEventsByType.mockResolvedValue([
+        { eventId: 'e1', playerId: 'p1', trackId: 't1', kind: 'callup', type: 'executed', fromDivisionId: 'd-yb', toDivisionId: 'd-raw', actorUserId: 'a', createdAt: '2026-11-12T00:00:00.000Z' },
+      ]);
+      mockPlayersList.mockResolvedValue([player('p1', { currentWrestler: 'Needs Wrestler' })]);
+
+      const result = await getActivity(makeEvent({ queryStringParameters: { type: 'callup' } }), ctx, cb);
+      expect(JSON.parse(result!.body).items).toEqual([]);
+    });
+
+    it('treats the retired progression filter value as no filter', async () => {
+      const result = await getActivity(makeEvent({ queryStringParameters: { type: 'progression' } }), ctx, cb);
+      expect(result!.statusCode).toBe(200);
+      expect(mockMatchesListCompleted).toHaveBeenCalled();
+      expect(mockListEventsByType).toHaveBeenCalledWith('executed');
+    });
   });
 
   it('returns 500 when a repository method throws', async () => {

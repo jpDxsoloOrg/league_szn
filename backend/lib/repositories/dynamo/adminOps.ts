@@ -50,6 +50,15 @@ const TABLE_DEFINITIONS: Record<ExportDatasetKey, Omit<TableConfig, 'key'>> = {
   // re-seeds clear stale ratings and the seed handler can ferry rows in via
   // importAllData. Aggregates live on the matches table (RIV-22).
   matchRatings: { tableName: TableNames.MATCH_RATINGS, partitionKey: 'matchId', sortKey: 'userId' },
+  // Progression (CUP-01): call-up / promotion / relegation tracks, computed
+  // per-player status, and the admin audit log.
+  progressionTracks: { tableName: TableNames.PROGRESSION_TRACKS, partitionKey: 'trackId' },
+  playerProgression: { tableName: TableNames.PLAYER_PROGRESSION, partitionKey: 'playerId', sortKey: 'trackId' },
+  progressionEvents: {
+    tableName: TableNames.PROGRESSION_EVENTS,
+    partitionKey: 'playerId',
+    sortKey: 'createdAtEventId',
+  },
 };
 
 const ALL_TABLES: TableConfig[] = Object.entries(TABLE_DEFINITIONS).map(

@@ -53,6 +53,7 @@ tags:
   - name: Announcements
   - name: Notifications
   - name: Transfers
+  - name: Progression
   - name: Storyline Requests
   - name: Overalls
 
@@ -401,6 +402,12 @@ components:
         divisionId: { type: string }
         name: { type: string }
         description: { type: string }
+        isDevelopmental:
+          type: boolean
+          description: Developmental (feeder) division, such as Young Boys.
+        isDefaultForNewWrestlers:
+          type: boolean
+          description: New sign-ups land in this division. Setting it to true clears it on the previous default; at most one division carries it.
         createdAt: { type: string }
         updatedAt: { type: string }
 
@@ -1038,6 +1045,92 @@ components:
       properties:
         userId: { type: string }
 
+    ProgressionGoal:
+      type: object
+      required: [metric, threshold]
+      properties:
+        goalId: { type: string, description: Generated when omitted on create. }
+        metric:
+          type: string
+          enum: [matchesCompeted, wins, winPct, avgStarRating, promosCut, promosWithReactions, totalPromoReactions, matchOfTheNight, challengesIssued, currentWinStreak]
+        threshold: { type: number, description: Must be greater than 0. }
+        weight: { type: number, default: 1, description: Must be greater than 0. Weights are normalised by their total. }
+        direction: { type: string, enum: [atLeast, atMost], default: atLeast }
+        params:
+          type: object
+          properties:
+            minRatedMatches: { type: integer, minimum: 1, description: avgStarRating only. }
+            minReactions: { type: integer, minimum: 1, description: promosWithReactions only. }
+        labelKey: { type: string }
+
+    ProgressionTrack:
+      type: object
+      properties:
+        trackId: { type: string }
+        kind: { type: string, enum: [callup, promotion, relegation] }
+        name: { type: string }
+        fromDivisionId: { type: string }
+        toDivisionId: { type: string }
+        goals: { type: array, items: { $ref: '#/components/schemas/ProgressionGoal' } }
+        windowMode: { type: string, enum: [allTime, season, sinceJoinedDivision] }
+        isActive: { type: boolean }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    ProgressionTrackInput:
+      type: object
+      description: >-
+        On POST, kind, name, fromDivisionId and goals are required; windowMode defaults to
+        sinceJoinedDivision and isActive to true. On PUT every field is optional, goals replaces
+        the whole list, and toDivisionId null clears the destination. Only one active track may
+        exist per (kind, fromDivisionId).
+      properties:
+        kind: { type: string, enum: [callup, promotion, relegation] }
+        name: { type: string, maxLength: 100 }
+        fromDivisionId: { type: string }
+        toDivisionId: { type: string, nullable: true }
+        goals: { type: array, minItems: 1, maxItems: 20, items: { $ref: '#/components/schemas/ProgressionGoal' } }
+        windowMode: { type: string, enum: [allTime, season, sinceJoinedDivision] }
+        isActive: { type: boolean }
+
+    ProgressionGoalDetail:
+      type: object
+      properties:
+        goalId: { type: string }
+        metric: { type: string }
+        threshold: { type: number }
+        weight: { type: number }
+        direction: { type: string, enum: [atLeast, atMost] }
+        params: { type: object }
+        labelKey: { type: string }
+        current: { type: number, nullable: true, description: null while the metric is not yet computable. }
+        met: { type: boolean }
+
+    ProgressionConsideration:
+      type: object
+      properties:
+        status: { type: string, enum: [considering] }
+        markedBy: { type: string }
+        markedAt: { type: string }
+        note: { type: string }
+
+    PlayerProgressionSummary:
+      type: object
+      properties:
+        trackId: { type: string }
+        kind: { type: string, enum: [callup, promotion, relegation] }
+        trackName: { type: string }
+        progressPct: { type: number, description: 0-100 }
+        consideration: { type: boolean }
+        computedAt: { type: string }
+        goals:
+          type: array
+          description: Only for the player themselves and Moderator+.
+          items: { $ref: '#/components/schemas/ProgressionGoalDetail' }
+        considerationDetail:
+          allOf: [{ $ref: '#/components/schemas/ProgressionConsideration' }]
+          description: Who marked the player, and the GM note. Moderator+ only.
+
 paths:
   /auth/setup:
     post:
@@ -1503,9 +1596,11 @@ paths:
             schema: { $ref: '#/components/schemas/Division' }
       responses:
         '200': { description: Updated }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'The previous default division changed concurrently; retry', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     delete:
       tags: [Divisions]
       summary: Delete division
@@ -1711,6 +1806,46 @@ paths:
       security: [{ BearerAuth: [] }]
       responses:
         '200': { description: Recalculated }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /admin/progression/recompute:
+    post:
+      tags: [Admin]
+      summary: Recompute player progression (Moderator+)
+      description: |
+        Rescores every active progression track for the given players, or for every
+        player when `playerIds` is omitted, in one invocation. Existing considerations
+        are kept. Rows on tracks that no longer match the player's division are dropped.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                playerIds: { type: array, items: { type: string }, minItems: 1 }
+      responses:
+        '200':
+          description: Recompute summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  playersProcessed: { type: integer }
+                  rowsUpdated: { type: integer }
+                  rowsDropped: { type: integer }
+                  failures:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        playerId: { type: string }
+                        trackId: { type: string }
+                        message: { type: string }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
@@ -2072,7 +2207,8 @@ paths:
           description: Pagination cursor (timestamp|id)
         - name: type
           in: query
-          schema: { type: string, enum: [match, championship, challenge, promo, tournament, season] }
+          schema: { type: string, enum: [match, championship, challenge, promo, tournament, season, callup] }
+          description: '`callup` returns both item types: `callup_consideration` (current marks) and `callup_executed`. Unknown values are ignored.'
       responses:
         '200':
           description: Paginated activity items
@@ -3791,6 +3927,77 @@ paths:
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  # ── Progression: execute (CUP-06) ──────────────────────────────────
+
+  /progression/players/{playerId}/execute:
+    post:
+      tags: [Progression]
+      summary: Execute a division move (call-up, promotion, relegation)
+      description: >-
+        Moves the player from the track's source division to `toDivisionId`
+        (defaults to the track's target), deletes their progression row for the
+        track and records an `executed` event (plus `consideration_removed` if
+        they were under consideration) in one transaction. Then, best-effort:
+        notifies the wrestler, optionally publishes a News announcement,
+        recomputes their progression and recalculates contenders. A call-up
+        cannot target a developmental division.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trackId]
+              properties:
+                trackId: { type: string }
+                toDivisionId: { type: string, description: Required when the track has no toDivisionId }
+                announce: { type: boolean, description: Publish a News announcement }
+                force: { type: boolean, description: Proceed even if the player holds a title restricted to the old division }
+      responses:
+        '200':
+          description: Move executed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  playerId: { type: string }
+                  trackId: { type: string }
+                  kind: { type: string, enum: [callup, promotion, relegation] }
+                  fromDivisionId: { type: string }
+                  toDivisionId: { type: string }
+                  divisionJoinedAt: { type: string, format: date-time }
+                  event: { type: object, description: The executed ProgressionEvent }
+                  announcementId: { type: string }
+        '400': { description: 'Bad request, or code TARGET_IS_DEVELOPMENTAL or TRACK_INACTIVE', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Track, player or target division not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409':
+          description: >-
+            code NOT_IN_SOURCE_DIVISION (with playerDivisionId, fromDivisionId), or
+            code HOLDS_DIVISION_TITLE (with championships [{championshipId, name}]; retry with force true), or code CONCURRENT_UPDATE (another request moved the player first; reload)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  code: { type: string, enum: [NOT_IN_SOURCE_DIVISION, HOLDS_DIVISION_TITLE, CONCURRENT_UPDATE] }
+                  championships:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        championshipId: { type: string }
+                        name: { type: string }
+
   # ── Storyline Requests ─────────────────────────────────────────────
 
   /storyline-requests:
@@ -3900,3 +4107,251 @@ paths:
         '200': { description: All player overall submissions with names }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /progression/players/{playerId}:
+    get:
+      tags: [Progression]
+      summary: A player's progress on every active track
+      description: >-
+        Public. Anonymous callers and other wrestlers get the summary. The player themselves
+        also gets goal detail; Moderator+ also gets considerationDetail (the GM note). Send a
+        Bearer token to be identified. Hidden players return 404 except to themselves and staff.
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: One row per active track the player has been scored on
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/PlayerProgressionSummary' } }
+        '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /progression/tracks:
+    get:
+      tags: [Progression]
+      summary: List progression tracks
+      parameters:
+        - { name: kind, in: query, schema: { type: string, enum: [callup, promotion, relegation] } }
+        - { name: isActive, in: query, schema: { type: string, enum: ['true', 'false'] } }
+        - { name: fromDivisionId, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: Tracks sorted by name
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/ProgressionTrack' } }
+        '400': { description: 'Bad query parameter', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    post:
+      tags: [Progression]
+      summary: Create a progression track (Moderator+)
+      description: Queues an async recompute of every player in fromDivisionId.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProgressionTrackInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProgressionTrack' }
+        '400': { description: 'Invalid track or unknown division', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Another active track already has this kind and fromDivisionId', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /progression/tracks/{trackId}:
+    put:
+      tags: [Progression]
+      summary: Update a progression track (Moderator+)
+      description: Partial update. Queues an async recompute of every player in the old and new fromDivisionId.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: trackId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProgressionTrackInput' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProgressionTrack' }
+        '400': { description: 'Invalid track or unknown division', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Track not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Another active track already has this kind and fromDivisionId', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /progression/tracks/{trackId}/players:
+    get:
+      tags: [Progression]
+      summary: Candidate board for a track (Moderator+)
+      description: Players still in the track's fromDivisionId, highest progressPct first.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: trackId, in: path, required: true, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 500 } }
+      responses:
+        '200':
+          description: The track and its candidates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  track: { $ref: '#/components/schemas/ProgressionTrack' }
+                  players:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        playerId: { type: string }
+                        name: { type: string }
+                        wrestlerName: { type: string }
+                        imageUrl: { type: string }
+                        progressPct: { type: number }
+                        goals: { type: array, items: { $ref: '#/components/schemas/ProgressionGoalDetail' } }
+                        consideration: { $ref: '#/components/schemas/ProgressionConsideration' }
+                        computedAt: { type: string }
+                        lastMatchDate: { type: string, format: date-time, description: "Date of the player's latest completed match; absent when they have none" }
+        '400': { description: 'Bad limit', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Track not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Progression: call-up history (CUP-09) ────────────────────────────
+
+  /progression/events:
+    get:
+      tags: [Progression]
+      summary: Call-up history (Moderator+)
+      description: >
+        ProgressionEvents (consideration added or removed, executed moves) across every
+        player, newest first, joined with player, track and division names. `actorName`
+        is the linked player name of the staff member who acted; it is null for
+        system actions (`actorUserId: system`) and for staff with no linked player.
+        Scans the events table, so results are capped by `limit`.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: trackId, in: query, schema: { type: string } }
+        - { name: kind, in: query, schema: { type: string, enum: [callup, promotion, relegation] } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+      responses:
+        '200':
+          description: Events, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [eventId, type, kind, trackId, playerId, fromDivisionId, actorUserId, createdAt]
+                  properties:
+                    eventId: { type: string }
+                    type: { type: string, enum: [consideration_added, consideration_removed, executed] }
+                    kind: { type: string, enum: [callup, promotion, relegation] }
+                    trackId: { type: string }
+                    trackName: { type: string, nullable: true }
+                    playerId: { type: string }
+                    playerName: { type: string, nullable: true }
+                    wrestlerName: { type: string, nullable: true }
+                    fromDivisionId: { type: string }
+                    fromDivisionName: { type: string, nullable: true }
+                    toDivisionId: { type: string }
+                    toDivisionName: { type: string, nullable: true }
+                    actorUserId: { type: string, description: "Cognito sub, or 'system'" }
+                    actorName: { type: string, nullable: true }
+                    createdAt: { type: string, format: date-time }
+        '400': { description: 'Bad limit or kind', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Progression: call-up considerations (CUP-05) ─────────────────────
+
+  /progression/players/{playerId}/consideration:
+    put:
+      tags: [Progression]
+      summary: Mark or unmark a player as being considered (Admin, Moderator)
+      description: >
+        Writes the consideration on the player's progression row for the track and
+        appends a ProgressionEvent in one transaction. Requesting the stored state is a
+        no-op (`changed: false`, no event, no notification). A mark creates the row,
+        scored from current data, if no recompute has run yet. Marking needs an active
+        track and a player in its from-division. The wrestler is notified on a
+        call-up or promotion mark only, never on removal.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trackId, considering]
+              properties:
+                trackId: { type: string }
+                considering: { type: boolean }
+                note: { type: string, maxLength: 500, description: 'Staff-only note; never shown publicly' }
+      responses:
+        '200':
+          description: Current consideration state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  playerId: { type: string }
+                  trackId: { type: string }
+                  considering: { type: boolean }
+                  changed: { type: boolean, description: 'False when the request matched the stored state' }
+                  consideration:
+                    nullable: true
+                    type: object
+                    properties:
+                      status: { type: string, enum: [considering] }
+                      markedBy: { type: string }
+                      markedAt: { type: string, format: date-time }
+                      note: { type: string }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Track or player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Changed by another request; retry', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /progression/considerations:
+    get:
+      tags: [Progression]
+      summary: List players currently being considered (public)
+      description: >
+        One entry per player on an active track of `kind`, newest mark first. Deleted,
+        deactivated and wrestler-less players are left out. Backed by an eventually
+        consistent index, so a new mark can take a moment to appear.
+      parameters:
+        - name: kind
+          in: query
+          schema: { type: string, enum: [callup, promotion, relegation], default: callup }
+      responses:
+        '200':
+          description: Current considerations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    playerId: { type: string }
+                    name: { type: string }
+                    wrestlerName: { type: string }
+                    trackId: { type: string }
+                    markedAt: { type: string, format: date-time }
+        '400': { description: 'Unknown kind', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

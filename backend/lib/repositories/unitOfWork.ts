@@ -1,3 +1,4 @@
+import type { DivisionPatch } from './LeagueOpsRepository';
 import type { FactionMessage, FactionDirectMessage } from './factionMessages';
 import type {
   Rivalry,
@@ -6,7 +7,16 @@ import type {
   RivalryParticipant,
   RivalryPatch,
 } from './rivalries';
-import type { ChallengeStatus, TagTeam } from './types';
+import type {
+  ChallengeStatus,
+  PlayerProgression,
+  ProgressionConsideration,
+  ProgressionEvent,
+  TagTeam,
+} from './types';
+
+/** Computed fields used to create a PlayerProgression row that does not exist yet. */
+export type ProgressionConsiderationSeed = Pick<PlayerProgression, 'progressPct' | 'goals' | 'computedAt'>;
 
 /**
  * Record delta for player/season standings.
@@ -30,9 +40,23 @@ export type MatchWriteCondition =
   | { kind: 'notCompleted' }
   | { kind: 'unchangedSince'; updatedAt: string | undefined };
 
-/** Refuse the write unless the stored `disciplineVersion` still equals this value. */
+/**
+ * Refuse the write unless every given field still holds the expected value:
+ * - `disciplineVersion`: the stored version (a missing attribute counts as 0).
+ * - `divisionId`: the stored division, e.g. a call-up moving a player out of it.
+ * The player must exist whenever a condition is given.
+ */
 export interface PlayerWriteCondition {
-  disciplineVersion: number;
+  disciplineVersion?: number;
+  divisionId?: string;
+}
+
+/**
+ * Refuse the division write unless the stored `isDefaultForNewWrestlers`
+ * still equals this value (a missing attribute counts as `false`).
+ */
+export interface DivisionWriteCondition {
+  isDefaultForNewWrestlers: boolean;
 }
 
 /**
@@ -77,6 +101,13 @@ export interface UnitOfWork {
 
   /** Stage a tag team hard delete. */
   deleteTagTeam(tagTeamId: string): void;
+
+  /**
+   * Stage a division field update. The row must exist; with `condition`, the
+   * stored default flag must also match, or the whole unit of work fails
+   * with `ConcurrencyError`.
+   */
+  updateDivision(divisionId: string, patch: DivisionPatch, condition?: DivisionWriteCondition): void;
 
   /** Stage a championship field update. */
   updateChampionship(championshipId: string, patch: Record<string, unknown>): void;
@@ -168,6 +199,42 @@ export interface UnitOfWork {
    * commit path surfaces this as `RatingAlreadyExistsError`.
    */
   createMatchRating(input: { matchId: string; userId: string; rating: number }): void;
+
+  // ── Progression (CUP-01) ─────────────────────────────────────────
+  /**
+   * Stage the same write as `progression.upsertPlayerProgression`: SET the
+   * computed fields (creating the row if needed) and keep an existing
+   * `consideration` unless `progression` carries one.
+   */
+  upsertPlayerProgression(progression: PlayerProgression): void;
+
+  /** Stage a PUT into the progression events table. Caller owns `eventId` and `createdAt`. */
+  appendProgressionEvent(event: ProgressionEvent): void;
+
+  /** Stage deleting one player's row on a track (CUP-06). A missing row is not an error. */
+  deletePlayerProgression(playerId: string, trackId: string): void;
+
+  /**
+   * Stage setting `consideration` on a PlayerProgression row. Fails with
+   * `ConcurrencyError('PlayerProgression', 'playerId/trackId')` at commit when
+   * the row already has a consideration, so a racing re-mark cannot write a
+   * second event. Without `seed` the row must already exist (same error
+   * otherwise). With `seed`, a missing row is created from it; the seed's
+   * computed fields never overwrite an existing row's values.
+   */
+  setProgressionConsideration(
+    playerId: string,
+    trackId: string,
+    consideration: ProgressionConsideration,
+    seed?: ProgressionConsiderationSeed,
+  ): void;
+
+  /**
+   * Stage removing `consideration` from a PlayerProgression row. Fails with
+   * `ConcurrencyError('PlayerProgression', 'playerId/trackId')` at commit when
+   * the row has no consideration (or does not exist).
+   */
+  clearProgressionConsideration(playerId: string, trackId: string): void;
 
   /**
    * Stage assigning a wrestler to a player's primary or alternate slot.

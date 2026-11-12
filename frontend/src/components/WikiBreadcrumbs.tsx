@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { wikiTitle } from './wikiNav';
 
 interface WikiArticleEntry {
   slug: string;
   titleKey: string;
   file: string;
+  title?: string;
 }
 
 export default function WikiBreadcrumbs() {
@@ -27,7 +29,7 @@ export default function WikiBreadcrumbs() {
         const res = await fetch('/wiki/index.json');
         const data: WikiArticleEntry[] = res.ok ? await res.json() : [];
         const entry = Array.isArray(data) ? data.find((e) => e.slug === slug) : undefined;
-        setArticleTitle(t(entry?.titleKey ?? 'wiki.articleNotFound'));
+        setArticleTitle(entry ? wikiTitle(t, entry) : t('wiki.articleNotFound'));
       } catch {
         setArticleTitle(slug);
       }

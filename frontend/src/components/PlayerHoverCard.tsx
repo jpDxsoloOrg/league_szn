@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Division, Player } from '../types';
+import ConsiderationBadge from './progression/ConsiderationBadge';
 import './PlayerHoverCard.css';
 
 interface PlayerHoverCardProps {
@@ -44,6 +45,7 @@ export default function PlayerHoverCard({ player, divisions, children }: PlayerH
       {children}
       {visible && rows.length > 0 && (
         <span className="player-hover-card" role="tooltip">
+          <ConsiderationBadge playerId={player.playerId} />
           {rows.map((row) => (
             <span key={row.label} className="player-hover-card__row">
               <span className="player-hover-card__label">{row.label}</span>
