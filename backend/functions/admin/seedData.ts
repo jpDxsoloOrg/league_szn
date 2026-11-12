@@ -13,6 +13,7 @@ import {
 } from './dataTransferConfig';
 import { HEAT_TIER_CENTRES, type HeatTier } from '../../lib/policies/rivalryHeat';
 import { roundToHalfStar } from '../../lib/utils/halfStar';
+import { buildDefaultCallupTrack } from '../../lib/progression/defaultTracks';
 
 /** Valid seed module IDs for pick-and-choose (issue 118). When modular seed exists, only these will be run when requested. */
 export const SEED_MODULE_IDS = [
@@ -1434,6 +1435,13 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       });
     }
 
+    // ── Progression: default Young Boys call-up track (CUP-04) ──
+    // Player rows are computed by the progression recompute, not seeded.
+    const developmentalDivision = divisions.find((division) => division.isDevelopmental === true);
+    const progressionTracks: Record<string, unknown>[] = developmentalDivision
+      ? [{ ...buildDefaultCallupTrack({ trackId: uuidv4(), fromDivisionId: developmentalDivision.divisionId, now }) }]
+      : [];
+
     // ── Import all data via repository layer ───────────────────
     console.log('Importing all seed data via repository layer...');
     const { importAllData } = getRepositories();
@@ -1461,7 +1469,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       rivalryMessages,
       rivalryNotes,
       matchRatings,
-      progressionTracks: [],
+      progressionTracks,
       playerProgression: [],
       progressionEvents: [],
     };
