@@ -38,7 +38,12 @@ export type OverrideType = 'bump_to_top' | 'send_to_bottom';
 
 export interface ContenderOverride {
   championshipId: string;
+  /** The overridden entity's id: the tagTeamId when `entityType` is `'tagTeam'`. */
   playerId: string;
+  /** `'tagTeam'` on tag-title overrides. Missing means `'player'`. */
+  entityType?: 'player' | 'tagTeam';
+  /** Set on tag-team overrides, equal to `playerId`. */
+  tagTeamId?: string;
   overrideType: OverrideType;
   reason: string;
   createdBy: string;
@@ -47,6 +52,16 @@ export interface ContenderOverride {
   active: boolean;
   /** Stored position on the title's list, or null when the player isn't on it. */
   currentRank?: number | null;
+  /**
+   * Display names from the overrides list. On a tag override, playerName is the
+   * members' names joined with " & " and wrestlerName is the team name.
+   */
+  playerName?: string;
+  wrestlerName?: string;
+  /** Tag overrides only: the team's name ('Unknown' if the team is gone). */
+  tagTeamName?: string;
+  /** Tag overrides only: the team's members. */
+  members?: Array<{ playerId: string; playerName: string }>;
 }
 
 /** Where a new override left the player, once the title was recalculated. */
@@ -58,13 +73,20 @@ export interface SetOverrideResult extends ContenderOverride {
   placement: OverridePlacement;
 }
 
-export interface SetOverrideRequest {
+interface SetOverrideFields {
   championshipId: string;
-  playerId: string;
   overrideType: OverrideType;
   reason: string;
   expiresAt?: string;
 }
+
+/**
+ * A singles title takes `playerId`. A tag title takes `tagTeamId` (an active
+ * team), and the API refuses `playerId` on it with 400.
+ */
+export type SetOverrideRequest =
+  | (SetOverrideFields & { playerId: string; tagTeamId?: never })
+  | (SetOverrideFields & { tagTeamId: string; playerId?: never });
 
 // Display types for UI
 

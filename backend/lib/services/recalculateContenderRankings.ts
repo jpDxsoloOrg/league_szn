@@ -121,10 +121,17 @@ async function recalculateChampionship(
 
   const activeOverrides = await contenders.listActiveOverrides(championshipId);
 
+  // A tag title ranks teams, so only team overrides apply to it, and a singles
+  // title only player ones. Player overrides left on a tag title from before
+  // tag rankings are ignored here (scripts/cleanup-tag-title-player-overrides.ts
+  // removes them).
+  const rankedEntityType = championship.type === 'tag' ? 'tagTeam' : 'player';
   const validOverrides: ActiveOverride[] = activeOverrides
     .filter((o) => !o.expiresAt || o.expiresAt > now)
+    .filter((o) => (o.entityType ?? 'player') === rankedEntityType)
     .map((o) => ({
       playerId: o.playerId,
+      entityType: rankedEntityType,
       overrideType: o.overrideType as OverrideType,
       createdAt: o.createdAt,
     }));

@@ -29,6 +29,7 @@ export const contendersApi = {
     });
   },
 
+  /** `playerId` is the overridden entity's id: the tagTeamId on a tag title. */
   removeOverride: async (championshipId: string, playerId: string): Promise<void> => {
     return fetchWithAuth(`${API_BASE_URL}/admin/contenders/overrides/${championshipId}/${playerId}`, {
       method: 'DELETE',

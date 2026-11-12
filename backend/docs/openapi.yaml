@@ -997,16 +997,33 @@ components:
       type: object
       properties:
         championshipId: { type: string }
-        playerId: { type: string }
+        playerId:
+          type: string
+          description: The overridden entity's id. On a tag title (entityType tagTeam) this is the tagTeamId.
+        entityType:
+          type: string
+          enum: [player, tagTeam]
+          description: tagTeam on tag-title overrides. Overrides stored before tag overrides read as player.
+        tagTeamId: { type: string, description: 'Tag overrides only, equal to playerId.' }
         overrideType: { type: string, enum: [bump_to_top, send_to_bottom] }
         reason: { type: string }
         createdBy: { type: string }
         createdAt: { type: string, format: date-time }
         expiresAt: { type: string, format: date-time }
         active: { type: boolean }
-        playerName: { type: string }
-        wrestlerName: { type: string }
-        playerImageUrl: { type: string }
+        playerName: { type: string, description: "On a tag override, the members' names joined with ' & '." }
+        wrestlerName: { type: string, description: 'On a tag override, the team name.' }
+        playerImageUrl: { type: string, description: 'On a tag override, the team image.' }
+        tagTeamName: { type: string, description: 'Tag overrides only.' }
+        members:
+          type: array
+          description: Tag overrides only.
+          items:
+            type: object
+            properties:
+              playerId: { type: string }
+              playerName: { type: string }
+        currentRank: { type: integer, nullable: true }
 
     DeleteUserInput:
       type: object
@@ -2874,28 +2891,52 @@ paths:
           in: query
           schema: { type: string }
       responses:
-        '200': { description: 'List of overrides with player info and currentRank, the stored position or null when the player is not on the list' }
+        '200':
+          description: 'List of overrides with player (or tag team) info and currentRank, the stored position or null when the entity is not on the list'
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ContenderOverride' }
     post:
       tags: [Contenders]
       summary: Set contender override
-      description: Saves the override, recalculates the title and reports where the player ended up.
+      description: >-
+        Saves the override, recalculates the title and reports where the player or team ended up.
+        A singles title takes playerId and refuses tagTeamId. A tag title ranks tag teams, so it takes
+        tagTeamId (an active team whose members are live, visible, in the title's division and not the
+        current champions) and refuses playerId with 400. Tag overrides are stored with entityType
+        tagTeam and the tagTeamId in playerId.
       security: [{ BearerAuth: [] }]
       requestBody:
         content:
           application/json:
             schema:
               type: object
-              required: [championshipId, playerId, overrideType, reason]
+              required: [championshipId, overrideType, reason]
               properties:
                 championshipId: { type: string }
-                playerId: { type: string }
+                playerId: { type: string, description: 'Singles titles only (required there).' }
+                tagTeamId: { type: string, description: 'Tag titles only (required there).' }
                 overrideType: { type: string, enum: [bump_to_top, send_to_bottom] }
                 reason: { type: string }
                 expiresAt: { type: string, format: date-time }
       responses:
         '201':
           description: Override created. placement.status is onList, notOnList, noActiveSeason or recalculationFailed, and placement.rank is set for onList.
-        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ContenderOverride'
+                  - type: object
+                    properties:
+                      placement:
+                        type: object
+                        properties:
+                          status: { type: string, enum: [onList, notOnList, noActiveSeason, recalculationFailed] }
+                          rank: { type: integer, nullable: true }
+        '400': { description: 'Bad request, including playerId on a tag title, tagTeamId on a singles title, or an unknown or inactive tag team', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
@@ -2912,9 +2953,10 @@ paths:
         - name: playerId
           in: path
           required: true
+          description: The overridden entity's id. On a tag title, the tagTeamId.
           schema: { type: string }
       responses:
-        '200': { description: Override removed }
+        '200': { description: 'Override removed. The body echoes championshipId, playerId and entityType (plus tagTeamId on a tag override).' }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
