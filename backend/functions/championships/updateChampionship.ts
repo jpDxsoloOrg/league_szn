@@ -3,6 +3,7 @@ import { getRepositories, NotFoundError } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { championIdsOf, firstBookingRefusal, newlyAddedIds } from '../../lib/disciplineGates';
+import { resolveChampionTagTeamId } from '../../lib/tagTeams/championTagTeam';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -38,6 +39,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const addedPlayers = await Promise.all(addedIds.map((id) => players.findById(id)));
       const bookingBlocked = firstBookingRefusal(addedPlayers);
       if (bookingBlocked) return bookingBlocked;
+
+      // Keep the team link in step with the holders (TTC-10).
+      const type = body.type ?? existing.type;
+      const tagTeamId = type === 'tag'
+        ? await resolveChampionTagTeamId(championIdsOf(body.currentChampion), new Date().toISOString())
+        : null;
+      if (tagTeamId) patch.currentTagTeamId = tagTeamId;
+      else if (existing.currentTagTeamId) patch.currentTagTeamId = null;
     }
 
     const updated = await championships.update(championshipId, patch);

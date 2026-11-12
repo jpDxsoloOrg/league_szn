@@ -318,6 +318,8 @@ components:
         name: { type: string }
         type: { type: string, enum: [singles, tag] }
         currentChampion: { oneOf: [{ type: string }, { type: array, items: { type: string } }] }
+        currentTagTeamId: { type: string, description: 'Tag titles only. The registered tag team holding the title; absent for a random pairing.' }
+        currentTagTeamName: { type: string, description: 'Name of currentTagTeamId, added on read.' }
         divisionId: { type: string }
         imageUrl: { type: string }
         createdAt: { type: string }
@@ -328,6 +330,8 @@ components:
       properties:
         championshipId: { type: string }
         champion: { oneOf: [{ type: string }, { type: array, items: { type: string } }] }
+        tagTeamId: { type: string, description: 'Tag reigns only. The registered tag team that won this reign.' }
+        tagTeamName: { type: string, description: 'Name of tagTeamId, added on read.' }
         wonDate: { type: string }
         lostDate: { type: string }
         matchId: { type: string }

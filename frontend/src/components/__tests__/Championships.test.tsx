@@ -239,4 +239,42 @@ describe('Championships', () => {
 
     expect(screen.getByText('championships.noneInDivision')).toBeInTheDocument();
   });
+
+  it('names tag champions by their team, with the members alongside', async () => {
+    const user = userEvent.setup();
+    mockGetAllChampionships.mockResolvedValue([
+      { ...mockChampionships[1], currentChampion: ['p2', 'p3'], currentTagTeamId: 'tt1', currentTagTeamName: 'The Brothers' },
+    ]);
+    mockGetAllPlayers.mockResolvedValue(mockPlayers);
+    mockGetAllDivisions.mockResolvedValue([]);
+    mockGetHistory.mockResolvedValue([
+      { championshipId: 'c2', champion: ['p2', 'p3'], tagTeamId: 'tt1', tagTeamName: 'The Brothers', wonDate: '2024-03-01', matchId: 'm2' },
+      { championshipId: 'c2', champion: ['p1', 'p9'], wonDate: '2024-01-01', lostDate: '2024-03-01', matchId: 'm1', daysHeld: 60 },
+    ]);
+
+    renderChampionships();
+
+    expect(await screen.findByText('The Brothers')).toBeInTheDocument();
+    expect(screen.getByText('The Rock & Undertaker')).toBeInTheDocument();
+    expect(screen.queryByText('Tag Team')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'View History: Tag Team Championship' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Tag Team Championship History' });
+    expect(await within(dialog).findByText('The Brothers')).toBeInTheDocument();
+    expect(within(dialog).getByText('The Rock & Undertaker')).toBeInTheDocument();
+    // A random pairing has no team, so it is named by its members.
+    expect(within(dialog).getByText('John Cena & Retired Legend')).toBeInTheDocument();
+  });
+
+  it('names a random pairing by its members', async () => {
+    mockGetAllChampionships.mockResolvedValue([{ ...mockChampionships[1], currentChampion: ['p1', 'p2'] }]);
+    mockGetAllPlayers.mockResolvedValue(mockPlayers);
+    mockGetAllDivisions.mockResolvedValue([]);
+
+    renderChampionships();
+
+    expect(await screen.findByText('John Cena & The Rock')).toBeInTheDocument();
+    expect(screen.getByText('Tag Team')).toBeInTheDocument();
+  });
 });

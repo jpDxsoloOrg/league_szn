@@ -156,6 +156,7 @@ export default function TagTeamDetail() {
   }
 
   const { standings } = tagTeam;
+  const titleReigns = tagTeam.titleReigns ?? [];
   const totalMatches = tagTeam.wins + tagTeam.losses + tagTeam.draws;
   const recordColumns = {
     wins: t('tagTeams.wins', 'W'),
@@ -217,6 +218,37 @@ export default function TagTeamDetail() {
         </dl>
         {standings.recentForm.length > 0 && <FormDots results={[...standings.recentForm].reverse()} />}
       </section>
+
+      {titleReigns.length > 0 && (
+        <section className="group-section">
+          <h2 className="group-heading">{t('tagTeams.detailPage.titleReigns', 'Title Reigns')}</h2>
+          <DataTable
+            caption={t('tagTeams.detailPage.titleReigns', 'Title Reigns')}
+            rows={titleReigns}
+            rowKey={(reign) => `${reign.championshipId}-${reign.wonDate}`}
+            columns={[
+              {
+                key: 'championship',
+                header: t('tagTeams.detailPage.championship', 'Championship'),
+                render: (reign) => reign.championshipName,
+              },
+              { key: 'won', header: t('championships.table.wonDate'), render: (reign) => formatMatchDate(reign.wonDate) },
+              {
+                key: 'lost',
+                header: t('championships.table.lostDate'),
+                render: (reign) => (reign.lostDate ? formatMatchDate(reign.lostDate) : t('common.current')),
+              },
+              {
+                key: 'days',
+                header: t('championships.table.daysHeld'),
+                render: (reign) => (reign.daysHeld !== undefined ? `${reign.daysHeld} ${t('common.days')}` : '-'),
+                align: 'end',
+              },
+              { key: 'defenses', header: t('championships.table.defenses'), render: (reign) => reign.defenses, align: 'end' },
+            ]}
+          />
+        </section>
+      )}
 
       {!hasHistory && (
         <EmptyState

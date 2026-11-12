@@ -2368,6 +2368,7 @@
     },
     "detailPage": {
       "backToList": "Back to Tag Teams",
+      "championship": "Championship",
       "error": "Failed to load tag team details",
       "matchFormat": "Match Format",
       "noHistory": "This team has not wrestled yet.",
@@ -2375,6 +2376,7 @@
       "notFoundDesc": "The tag team you are looking for does not exist.",
       "opponent": "Opponent",
       "record": "Record",
+      "titleReigns": "Title Reigns",
       "totalMatches": "Total Matches",
       "unknownOpponent": "Unknown",
       "vs": "vs"

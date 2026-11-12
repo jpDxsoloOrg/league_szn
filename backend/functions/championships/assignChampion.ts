@@ -4,9 +4,12 @@ import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { bookingRefusal } from '../../lib/discipline';
 import { championIdsOf } from '../../lib/disciplineGates';
+import { resolveChampionTagTeamId } from '../../lib/tagTeams/championTagTeam';
 
 interface AssignChampionBody {
   champion?: string | string[];
+  /** Tag titles only: crown this tag team. `champion` may be left out, or must name the team's two players. */
+  tagTeamId?: string;
 }
 
 /**
@@ -25,14 +28,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody<AssignChampionBody>(event);
     if (parseError) return parseError;
 
+    const requestedTagTeamId = body.tagTeamId;
+    if (requestedTagTeamId !== undefined && (typeof requestedTagTeamId !== 'string' || requestedTagTeamId.length === 0)) {
+      return badRequest('tagTeamId must be a non-empty string');
+    }
+
     const rawChampion = body.champion;
-    const championIds = Array.isArray(rawChampion)
+    let championIds = Array.isArray(rawChampion)
       ? rawChampion.filter((id) => typeof id === 'string' && id.length > 0)
       : typeof rawChampion === 'string' && rawChampion.length > 0
         ? [rawChampion]
         : [];
 
-    if (championIds.length === 0) {
+    if (championIds.length === 0 && requestedTagTeamId === undefined) {
       return badRequest('champion is required (player ID or array of player IDs)');
     }
 
@@ -40,11 +48,32 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('champion contains duplicate player IDs');
     }
 
-    const { competition: { championships }, roster: { players }, runInTransaction } = getRepositories();
+    const { competition: { championships }, roster: { players, tagTeams }, runInTransaction } = getRepositories();
 
     const championship = await championships.findById(championshipId);
     if (!championship) {
       return notFound('Championship not found');
+    }
+
+    let tagTeamId: string | null = null;
+    if (requestedTagTeamId !== undefined) {
+      if (championship.type !== 'tag') {
+        return badRequest('tagTeamId can only be set on a tag championship');
+      }
+      const team = await tagTeams.findById(requestedTagTeamId);
+      if (!team) {
+        return badRequest(`Tag team not found: ${requestedTagTeamId}`);
+      }
+      if (team.status !== 'active') {
+        return badRequest('Only an active tag team can be crowned');
+      }
+      const teamIds = [team.player1Id, team.player2Id];
+      if (championIds.length === 0) {
+        championIds = teamIds;
+      } else if (championIds.length !== 2 || !teamIds.every((id) => championIds.includes(id))) {
+        return badRequest('champion must be the two members of the tag team');
+      }
+      tagTeamId = team.tagTeamId;
     }
 
     if (championship.type === 'singles' && championIds.length !== 1) {
@@ -82,8 +111,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const currentReign = oldChampion ? await championships.findCurrentReign(championshipId) : null;
     const wonDate = new Date().toISOString();
 
+    // No team given: link the reign if the two champions are a registered team.
+    if (tagTeamId === null && championship.type === 'tag') {
+      tagTeamId = await resolveChampionTagTeamId(championIds, wonDate);
+    }
+    const championshipPatch: Record<string, unknown> = { currentChampion: newChampion };
+    if (tagTeamId) {
+      championshipPatch.currentTagTeamId = tagTeamId;
+    } else if (championship.currentTagTeamId) {
+      championshipPatch.currentTagTeamId = null;
+    }
+
     await runInTransaction(async (tx) => {
-      tx.updateChampionship(championshipId, { currentChampion: newChampion });
+      tx.updateChampionship(championshipId, championshipPatch);
 
       if (currentReign) {
         const reignStartDate = new Date(currentReign.wonDate);
@@ -97,6 +137,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         championshipId,
         wonDate,
         champion: newChampion,
+        ...(tagTeamId ? { tagTeamId } : {}),
         defenses: 0,
         updatedAt: wonDate,
       });
