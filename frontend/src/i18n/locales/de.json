@@ -3661,5 +3661,65 @@
       "title": "Meldung nicht gefunden",
       "description": "Diese Meldung wurde entfernt oder ist abgelaufen."
     }
+  },
+  "progression": {
+    "meter": {
+      "label": {
+        "callup": "Call-Up-Fortschritt",
+        "promotion": "Aufstiegsfortschritt",
+        "relegation": "Abstiegsgefahr"
+      },
+      "percent": "{{pct}} %"
+    },
+    "profile": {
+      "title": "Der Weg in den Hauptkader"
+    },
+    "dashboard": {
+      "title": "Der Weg in den Hauptkader",
+      "link": "Deine Ziele ansehen"
+    },
+    "metrics": {
+      "matchesCompeted": "Bestrittene Matches",
+      "wins": "Siege",
+      "winPct": "Siegquote",
+      "avgStarRating": "Durchschnittliche Sternewertung",
+      "promosCut": "Gehaltene Promos",
+      "promosWithReactions": "Promos mit Reaktionen",
+      "totalPromoReactions": "Promo-Reaktionen",
+      "matchOfTheNight": "Match-of-the-Night-Auszeichnungen",
+      "challengesIssued": "Ausgesprochene Herausforderungen",
+      "currentWinStreak": "Siegesserie"
+    },
+    "goals": {
+      "title": "Call-Up-Ziele",
+      "summary": "{{met}} von {{total}} Zielen erreicht",
+      "met": "(erreicht)",
+      "notMet": "(noch nicht erreicht)",
+      "matchesCompeted_one": "Bestreite {{threshold}} Match",
+      "matchesCompeted_other": "Bestreite {{threshold}} Matches",
+      "wins_one": "Gewinne {{threshold}} Match",
+      "wins_other": "Gewinne {{threshold}} Matches",
+      "winPct": "Halte eine Siegquote von mindestens {{threshold}}",
+      "avgStarRating": "Erreiche im Schnitt mindestens {{threshold}} in bewerteten Matches",
+      "avgStarRatingMin": "Erreiche im Schnitt {{threshold}} über mindestens {{minRatedMatches}} bewertete Matches",
+      "promosCut_one": "Halte {{threshold}} Promo",
+      "promosCut_other": "Halte {{threshold}} Promos",
+      "promosWithReactions_one": "Halte {{threshold}} Promo mit mindestens {{minReactions}} Reaktionen",
+      "promosWithReactions_other": "Halte {{threshold}} Promos mit jeweils mindestens {{minReactions}} Reaktionen",
+      "totalPromoReactions_one": "Sammle {{threshold}} Promo-Reaktion",
+      "totalPromoReactions_other": "Sammle {{threshold}} Promo-Reaktionen",
+      "matchOfTheNight_one": "Gewinne {{threshold}}-mal Match of the Night",
+      "matchOfTheNight_other": "Gewinne {{threshold}}-mal Match of the Night",
+      "challengesIssued_one": "Sprich {{threshold}} Herausforderung aus",
+      "challengesIssued_other": "Sprich {{threshold}} Herausforderungen aus",
+      "currentWinStreak_one": "Gewinne {{threshold}} Match in Folge",
+      "currentWinStreak_other": "Gewinne {{threshold}} Matches in Folge",
+      "atMost": "{{metric}}: höchstens {{threshold}}",
+      "stars": "{{value}}★",
+      "currentOf": "{{current}} / {{threshold}}",
+      "noValue": "— / {{threshold}}",
+      "needsRated_one": "Benötigt {{count}} bewertetes Match",
+      "needsRated_other": "Benötigt {{count}} bewertete Matches"
+    }
   }
 }

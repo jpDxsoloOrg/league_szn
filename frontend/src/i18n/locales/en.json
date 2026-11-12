@@ -3661,5 +3661,65 @@
       "title": "Story not found",
       "description": "This story was removed or has expired."
     }
+  },
+  "progression": {
+    "meter": {
+      "label": {
+        "callup": "Call-Up Progress",
+        "promotion": "Promotion Progress",
+        "relegation": "Relegation Danger"
+      },
+      "percent": "{{pct}}%"
+    },
+    "profile": {
+      "title": "Road to the Main Roster"
+    },
+    "dashboard": {
+      "title": "Road to the Main Roster",
+      "link": "View your goals"
+    },
+    "metrics": {
+      "matchesCompeted": "Matches competed",
+      "wins": "Wins",
+      "winPct": "Win percentage",
+      "avgStarRating": "Average star rating",
+      "promosCut": "Promos cut",
+      "promosWithReactions": "Promos with reactions",
+      "totalPromoReactions": "Promo reactions",
+      "matchOfTheNight": "Match of the Night awards",
+      "challengesIssued": "Challenges issued",
+      "currentWinStreak": "Win streak"
+    },
+    "goals": {
+      "title": "Call-up goals",
+      "summary": "{{met}} of {{total}} goals met",
+      "met": "(met)",
+      "notMet": "(not met yet)",
+      "matchesCompeted_one": "Compete in {{threshold}} match",
+      "matchesCompeted_other": "Compete in {{threshold}} matches",
+      "wins_one": "Win {{threshold}} match",
+      "wins_other": "Win {{threshold}} matches",
+      "winPct": "Keep a win percentage of {{threshold}} or better",
+      "avgStarRating": "Average {{threshold}} or better in rated matches",
+      "avgStarRatingMin": "Average {{threshold}} over at least {{minRatedMatches}} rated matches",
+      "promosCut_one": "Cut {{threshold}} promo",
+      "promosCut_other": "Cut {{threshold}} promos",
+      "promosWithReactions_one": "Cut {{threshold}} promo with at least {{minReactions}} reactions",
+      "promosWithReactions_other": "Cut {{threshold}} promos with at least {{minReactions}} reactions",
+      "totalPromoReactions_one": "Earn {{threshold}} promo reaction",
+      "totalPromoReactions_other": "Earn {{threshold}} promo reactions",
+      "matchOfTheNight_one": "Win Match of the Night {{threshold}} time",
+      "matchOfTheNight_other": "Win Match of the Night {{threshold}} times",
+      "challengesIssued_one": "Issue {{threshold}} challenge",
+      "challengesIssued_other": "Issue {{threshold}} challenges",
+      "currentWinStreak_one": "Win {{threshold}} match in a row",
+      "currentWinStreak_other": "Win {{threshold}} matches in a row",
+      "atMost": "{{metric}}: at most {{threshold}}",
+      "stars": "{{value}}★",
+      "currentOf": "{{current}} / {{threshold}}",
+      "noValue": "— / {{threshold}}",
+      "needsRated_one": "Needs {{count}} rated match",
+      "needsRated_other": "Needs {{count}} rated matches"
+    }
   }
 }
