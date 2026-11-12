@@ -480,6 +480,11 @@ export interface Promo {
 
 export interface ContenderRanking {
   championshipId: string;
+  /**
+   * The ranked entity's id. On a tag title (`entityType: 'tagTeam'`) this is
+   * the tagTeamId, so the table key (`championshipId`, `playerId`) works
+   * without a migration. Readers must branch on `entityType`.
+   */
   playerId: string;
   rank: number;
   rankingScore: number;
@@ -496,6 +501,10 @@ export interface ContenderRanking {
   isOverridden?: boolean;
   overrideType?: string | null;
   organicRank?: number | null;
+  /** `'tagTeam'` on tag-title rows. Rows written before tag rankings have none: read as `'player'`. */
+  entityType?: 'player' | 'tagTeam';
+  /** Set on tag-team rows, equal to `playerId`. */
+  tagTeamId?: string;
   calculatedAt: string;
   updatedAt: string;
 }
@@ -516,6 +525,9 @@ export interface ContenderOverride {
 }
 
 export interface RankingHistoryEntry {
+  /**
+   * The ranked entity's id: a tagTeamId when `entityType` is `'tagTeam'`.
+   */
   playerId: string;
   weekKey: string;
   championshipId: string;
@@ -525,6 +537,10 @@ export interface RankingHistoryEntry {
   isOverridden?: boolean;
   overrideType?: string | null;
   organicRank?: number | null;
+  /** `'tagTeam'` on tag-title rows. Rows written before tag rankings have none: read as `'player'`. */
+  entityType?: 'player' | 'tagTeam';
+  /** Set on tag-team rows, equal to `playerId`. */
+  tagTeamId?: string;
   createdAt: string;
 }
 

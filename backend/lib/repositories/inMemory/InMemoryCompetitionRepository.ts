@@ -305,6 +305,8 @@ export class InMemoryCompetitionRepository implements CompetitionRepository {
         isOverridden: input.isOverridden || false,
         overrideType: input.overrideType || null,
         organicRank: input.organicRank || null,
+      entityType: input.entityType ?? 'player',
+      ...(input.tagTeamId ? { tagTeamId: input.tagTeamId } : {}),
         calculatedAt: now,
         updatedAt: now,
       };
@@ -378,6 +380,8 @@ export class InMemoryCompetitionRepository implements CompetitionRepository {
         isOverridden: input.isOverridden || false,
         overrideType: input.overrideType || null,
         organicRank: input.organicRank || null,
+      entityType: input.entityType ?? 'player',
+      ...(input.tagTeamId ? { tagTeamId: input.tagTeamId } : {}),
         createdAt: now,
       };
 

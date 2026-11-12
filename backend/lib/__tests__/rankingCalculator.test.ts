@@ -1,8 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock dynamodb before importing the calculator
-const { mockScanAll } = vi.hoisted(() => ({
+const { mockScanAll, mockListTagTeams } = vi.hoisted(() => ({
   mockScanAll: vi.fn(),
+  mockListTagTeams: vi.fn(),
+}));
+
+vi.mock('../repositories', () => ({
+  getRepositories: () => ({
+    roster: { tagTeams: { listAll: mockListTagTeams } },
+  }),
 }));
 
 vi.mock('../dynamodb', () => ({
@@ -31,8 +38,14 @@ function makeMatch(overrides: {
   winners?: string[];
   losers?: string[];
   seasonId?: string;
+  teams?: string[][];
+  matchFormat?: string;
+  isDraw?: boolean;
 }) {
   return {
+    ...(overrides.teams ? { teams: overrides.teams } : {}),
+    ...(overrides.matchFormat ? { matchFormat: overrides.matchFormat } : {}),
+    ...(overrides.isDraw ? { isDraw: true } : {}),
     matchId: overrides.matchId ?? 'match-1',
     date: overrides.date ?? new Date().toISOString(),
     participants: overrides.participants ?? [...(overrides.winners ?? []), ...(overrides.losers ?? [])],
@@ -405,7 +418,7 @@ describe('calculateRankingsForChampionship', () => {
     expect(ids).not.toContain('champ');
   });
 
-  it('excludes the current champion (array for tag team)', async () => {
+  it('excludes every player in an array champion', async () => {
     mockTables([
       makeMatch({ matchId: 'm1', date: daysAgo(1), winners: ['t1a', 't1b'], losers: ['p1'], participants: ['t1a', 't1b', 'p1'] }),
       makeMatch({ matchId: 'm2', date: daysAgo(2), winners: ['t1a'], losers: ['p1'], participants: ['t1a', 'p1'] }),
@@ -414,7 +427,8 @@ describe('calculateRankingsForChampionship', () => {
 
     const results = await calculateRankingsForChampionship({
       championshipId: 'champ-1',
-      championshipType: 'tag',
+      // The player path still honours an array champion.
+      championshipType: 'singles',
       currentChampion: ['t1a', 't1b'],
       seasonId: 'season-1',
       minimumMatches: 3,
@@ -646,5 +660,226 @@ describe('calculateRankingsForChampionship', () => {
     });
 
     expect(results).toEqual([]);
+  });
+});
+
+// ─── Tag titles ──────────────────────────────────────────────────────
+
+describe('calculateRankingsForChampionship on a tag title', () => {
+  function makeTeam(tagTeamId: string, player1Id: string, player2Id: string, status = 'active') {
+    return {
+      tagTeamId,
+      name: tagTeamId,
+      player1Id,
+      player2Id,
+      status,
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      createdAt: daysAgo(100),
+      updatedAt: daysAgo(100),
+    };
+  }
+
+  function tagMatch(matchId: string, days: number, winners: string[], losers: string[], isDraw = false) {
+    return makeMatch({
+      matchId,
+      date: daysAgo(days),
+      winners,
+      losers,
+      teams: [winners, losers],
+      matchFormat: 'tag',
+      isDraw,
+    });
+  }
+
+  const teams = [
+    makeTeam('team-a', 'a1', 'a2'),
+    makeTeam('team-b', 'b1', 'b2'),
+    makeTeam('team-c', 'c1', 'c2'),
+  ];
+
+  // A: 3-0. B: 1-3. C: 1-2.
+  const matches = [
+    tagMatch('m1', 1, ['a1', 'a2'], ['b1', 'b2']),
+    tagMatch('m2', 2, ['a1', 'a2'], ['c1', 'c2']),
+    tagMatch('m3', 3, ['b1', 'b2'], ['c1', 'c2']),
+    tagMatch('m4', 4, ['a1', 'a2'], ['b1', 'b2']),
+    tagMatch('m5', 5, ['c1', 'c2'], ['b1', 'b2']),
+  ];
+
+  function mockTagTables(
+    matchList: unknown[],
+    teamList: unknown[],
+    players?: Array<Record<string, unknown>>,
+  ) {
+    const playerIds = ['a1', 'a2', 'b1', 'b2', 'c1', 'c2', 'd1', 'd2', 'x1', 'x2'];
+    mockScanAll.mockResolvedValueOnce(players ?? playerIds.map((playerId) => ({ playerId, currentWrestler: 'Edge' })));
+    mockScanAll.mockResolvedValueOnce(matchList);
+    mockListTagTeams.mockResolvedValueOnce(teamList);
+  }
+
+  const baseParams = {
+    championshipId: 'tag-title',
+    championshipType: 'tag' as const,
+    currentChampion: undefined,
+    seasonId: 'season-1',
+    minimumMatches: 3,
+    maxContenders: 10,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('ranks tag teams, not players, keyed by tagTeamId', async () => {
+    mockTagTables(matches, teams);
+
+    const results = await calculateRankingsForChampionship(baseParams);
+
+    expect(results.map((r) => r.playerId)).toEqual(['team-a', 'team-c', 'team-b']);
+    for (const row of results) {
+      expect(row.entityType).toBe('tagTeam');
+      expect(row.tagTeamId).toBe(row.playerId);
+    }
+    expect(results[0]).toMatchObject({ rank: 1, matchesInPeriod: 3, winsInPeriod: 3, currentStreak: 3 });
+    // Quality uses the beaten teams' win rates: B (1/4) twice, C (1/3) once.
+    expect(results[0].qualityScore).toBeCloseTo(((0.25 + 0.25 + 1 / 3) / 3) * 100, 1);
+    expect(mockListTagTeams).toHaveBeenCalledTimes(1);
+  });
+
+  it('excludes the champions, by member array or by currentTagTeamId', async () => {
+    mockTagTables(matches, teams);
+    const byMembers = await calculateRankingsForChampionship({ ...baseParams, currentChampion: ['a2', 'a1'] });
+    expect(byMembers.map((r) => r.playerId)).not.toContain('team-a');
+    expect(byMembers).toHaveLength(2);
+
+    mockTagTables(matches, teams);
+    const byTeamId = await calculateRankingsForChampionship({ ...baseParams, currentTagTeamId: 'team-b' });
+    expect(byTeamId.map((r) => r.playerId)).toEqual(['team-a', 'team-c']);
+  });
+
+  it('does not exclude a team that shares only one member with the champions', async () => {
+    mockTagTables(matches, teams);
+    const results = await calculateRankingsForChampionship({ ...baseParams, currentChampion: ['a1', 'x1'] });
+    expect(results.map((r) => r.playerId)).toContain('team-a');
+  });
+
+  it('excludes a team below the minimum team matches', async () => {
+    mockTagTables(matches, teams);
+    const results = await calculateRankingsForChampionship({ ...baseParams, minimumMatches: 4 });
+    expect(results.map((r) => r.playerId)).toEqual(['team-b']);
+  });
+
+  it('excludes a team with one member outside the title division', async () => {
+    const players = ['a1', 'a2', 'b1', 'b2', 'c1', 'c2'].map((playerId) => ({
+      playerId,
+      currentWrestler: 'Edge',
+      divisionId: playerId === 'c2' ? 'smackdown' : 'raw',
+    }));
+    mockTagTables(matches, teams, players);
+
+    const results = await calculateRankingsForChampionship({ ...baseParams, divisionId: 'raw' });
+    expect(results.map((r) => r.playerId)).toEqual(['team-a', 'team-b']);
+  });
+
+  it('ignores teams that are not active and pairs that are not registered teams', async () => {
+    const withDissolved = [...teams, makeTeam('team-d', 'd1', 'd2', 'dissolved')];
+    mockTagTables(
+      [
+        ...matches,
+        tagMatch('m6', 1, ['d1', 'd2'], ['x1', 'x2']),
+        tagMatch('m7', 2, ['d1', 'd2'], ['x1', 'x2']),
+        tagMatch('m8', 3, ['d1', 'd2'], ['x1', 'x2']),
+      ],
+      withDissolved,
+    );
+
+    const ids = (await calculateRankingsForChampionship(baseParams)).map((r) => r.playerId);
+    expect(ids).toEqual(['team-a', 'team-c', 'team-b']);
+  });
+
+  it('counts a draw as a team match that is neither a win nor a loss', async () => {
+    mockTagTables([...matches, tagMatch('m0', 0, ['a1', 'a2'], ['c1', 'c2'], true)], teams);
+
+    const results = await calculateRankingsForChampionship(baseParams);
+    const teamA = results.find((r) => r.playerId === 'team-a');
+    expect(teamA).toMatchObject({ matchesInPeriod: 4, winsInPeriod: 3, currentStreak: 0 });
+  });
+
+  it('skips singles matches', async () => {
+    mockTagTables(
+      [...matches, makeMatch({ matchId: 's1', date: daysAgo(1), winners: ['a1'], losers: ['b1'] })],
+      teams,
+    );
+    const teamA = (await calculateRankingsForChampionship(baseParams)).find((r) => r.playerId === 'team-a');
+    expect(teamA?.matchesInPeriod).toBe(3);
+  });
+});
+
+describe('calculateRankingsForChampionship on a singles title', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('produces the same rows as before tag rankings existed', async () => {
+    const matches = [
+      makeMatch({ matchId: 'm1', date: daysAgo(1), winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm2', date: daysAgo(2), winners: ['p1'], losers: ['p3'] }),
+      makeMatch({ matchId: 'm3', date: daysAgo(3), winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm4', date: daysAgo(4), winners: ['p2'], losers: ['p3'] }),
+      makeMatch({ matchId: 'm5', date: daysAgo(5), winners: ['p2'], losers: ['p3'] }),
+      makeMatch({ matchId: 'm6', date: daysAgo(6), winners: ['p3', 'p2'], losers: [], isDraw: true }),
+    ];
+    mockScanAll.mockResolvedValueOnce(['p1', 'p2', 'p3'].map((playerId) => ({ playerId, currentWrestler: 'Edge' })));
+    mockScanAll.mockResolvedValueOnce(matches);
+
+    const results = await calculateRankingsForChampionship({
+      championshipId: 'champ-1',
+      championshipType: 'singles',
+      currentChampion: undefined,
+      seasonId: 'season-1',
+      minimumMatches: 3,
+      maxContenders: 10,
+    });
+
+    expect(mockListTagTeams).not.toHaveBeenCalled();
+    expect(results).toMatchInlineSnapshot(`
+      [
+        {
+          "currentStreak": 3,
+          "matchesInPeriod": 3,
+          "playerId": "p1",
+          "qualityScore": 26.67,
+          "rank": 1,
+          "rankingScore": 67.67,
+          "recencyScore": 100,
+          "winPercentage": 100,
+          "winsInPeriod": 3,
+        },
+        {
+          "currentStreak": -2,
+          "matchesInPeriod": 5,
+          "playerId": "p2",
+          "qualityScore": 0,
+          "rank": 2,
+          "rankingScore": 21.85,
+          "recencyScore": 39.02,
+          "winPercentage": 40,
+          "winsInPeriod": 2,
+        },
+        {
+          "currentStreak": -3,
+          "matchesInPeriod": 4,
+          "playerId": "p3",
+          "qualityScore": 0,
+          "rank": 3,
+          "rankingScore": 0,
+          "recencyScore": 0,
+          "winPercentage": 0,
+          "winsInPeriod": 0,
+        },
+      ]
+    `);
   });
 });
