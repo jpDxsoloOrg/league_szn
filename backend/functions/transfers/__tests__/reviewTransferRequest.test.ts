@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Callback, Context } from 'aws-lambda';
 
-const { mockTransfers, mockPlayers, mockCreateNotification } = vi.hoisted(() => ({
+const { mockTransfers, mockPlayers, mockCreateNotification, mockInvokeAsync } = vi.hoisted(() => ({
   mockTransfers: { findById: vi.fn(), review: vi.fn() },
   mockPlayers: { update: vi.fn(), findById: vi.fn() },
   mockCreateNotification: vi.fn(),
+  mockInvokeAsync: vi.fn(),
 }));
+
+vi.mock('../../../lib/asyncLambda', () => ({ invokeAsync: mockInvokeAsync }));
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
@@ -42,6 +45,7 @@ describe('reviewTransferRequest', () => {
     mockTransfers.review.mockResolvedValue({ requestId: 'r1', updatedAt: '2026-11-12T00:00:00.000Z' });
     mockPlayers.update.mockResolvedValue({});
     mockPlayers.findById.mockResolvedValue({ playerId: 'p1' });
+    mockInvokeAsync.mockResolvedValue(undefined);
   });
 
   it('moves the player and stamps divisionJoinedAt on approval', async () => {
@@ -61,5 +65,26 @@ describe('reviewTransferRequest', () => {
 
     expect(result!.statusCode).toBe(200);
     expect(mockPlayers.update).not.toHaveBeenCalled();
+  });
+
+  it('recomputes progression for the moved player on approval', async () => {
+    await reviewTransferRequest(event('approved'), ctx, cb);
+
+    expect(mockInvokeAsync).toHaveBeenCalledTimes(1);
+    expect(mockInvokeAsync).toHaveBeenCalledWith('progression', expect.objectContaining({ playerIds: ['p1'] }));
+  });
+
+  it('does not recompute progression on rejection', async () => {
+    await reviewTransferRequest(event('rejected'), ctx, cb);
+
+    expect(mockInvokeAsync).not.toHaveBeenCalled();
+  });
+
+  it('still succeeds when the progression invoke fails', async () => {
+    mockInvokeAsync.mockRejectedValue(new Error('lambda down'));
+
+    const result = await reviewTransferRequest(event('approved'), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
   });
 });

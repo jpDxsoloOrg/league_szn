@@ -19,6 +19,9 @@ vi.mock('../../../lib/dynamodb', () => ({
 
 vi.mock('uuid', () => ({ v4: () => 'test-promo-uuid' }));
 
+const { mockInvokeAsync } = vi.hoisted(() => ({ mockInvokeAsync: vi.fn() }));
+vi.mock('../../../lib/asyncLambda', () => ({ invokeAsync: mockInvokeAsync }));
+
 import { handler as createPromo } from '../createPromo';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
@@ -53,7 +56,36 @@ const VALID_CONTENT = 'A'.repeat(50);
 // ─── createPromo ─────────────────────────────────────────────────────
 
 describe('createPromo', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockInvokeAsync.mockResolvedValue(undefined);
+  });
+
+  const openMic = () => withAuth(
+    makeEvent({ body: JSON.stringify({ promoType: 'open-mic', content: VALID_CONTENT }) }),
+    'Wrestler',
+  );
+
+  it('recomputes progression for the promo author', async () => {
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }] });
+    mockPut.mockResolvedValue({});
+
+    const result = await createPromo(openMic(), ctx, cb);
+
+    expect(result!.statusCode).toBe(201);
+    expect(mockInvokeAsync).toHaveBeenCalledTimes(1);
+    expect(mockInvokeAsync).toHaveBeenCalledWith('progression', expect.objectContaining({ playerIds: ['player-1'] }));
+  });
+
+  it('still returns 201 when the progression invoke fails', async () => {
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }] });
+    mockPut.mockResolvedValue({});
+    mockInvokeAsync.mockRejectedValue(new Error('lambda down'));
+
+    const result = await createPromo(openMic(), ctx, cb);
+
+    expect(result!.statusCode).toBe(201);
+  });
 
   it('creates a promo with required fields and returns 201', async () => {
     mockQuery.mockResolvedValue({

@@ -16,6 +16,9 @@ vi.mock('../../../lib/dynamodb', () => ({
   TableNames: { PROMOS: 'Promos', PLAYERS: 'Players' },
 }));
 
+const { mockInvokeAsync } = vi.hoisted(() => ({ mockInvokeAsync: vi.fn() }));
+vi.mock('../../../lib/asyncLambda', () => ({ invokeAsync: mockInvokeAsync }));
+
 import { handler as reactToPromo } from '../reactToPromo';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
@@ -49,7 +52,42 @@ const body = (r: any) => JSON.parse(r!.body);
 // ─── reactToPromo ────────────────────────────────────────────────────
 
 describe('reactToPromo', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockInvokeAsync.mockResolvedValue(undefined);
+  });
+
+  const authorPromo = {
+    Item: {
+      promoId: 'p1', playerId: 'author-1', reactions: {},
+      reactionCounts: { fire: 0, mic: 0, trash: 0, 'mind-blown': 0, clap: 0 },
+    },
+  };
+  const fireEvent = () => withAuth(
+    makeEvent({ pathParameters: { promoId: 'p1' }, body: JSON.stringify({ reaction: 'fire' }) }),
+    'Wrestler',
+  );
+
+  it('recomputes progression for the promo author', async () => {
+    mockGet.mockResolvedValue(authorPromo);
+    mockUpdate.mockResolvedValue({});
+
+    const result = await reactToPromo(fireEvent(), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(mockInvokeAsync).toHaveBeenCalledTimes(1);
+    expect(mockInvokeAsync).toHaveBeenCalledWith('progression', expect.objectContaining({ playerIds: ['author-1'] }));
+  });
+
+  it('still returns 200 when the progression invoke fails', async () => {
+    mockGet.mockResolvedValue(authorPromo);
+    mockUpdate.mockResolvedValue({});
+    mockInvokeAsync.mockRejectedValue(new Error('lambda down'));
+
+    const result = await reactToPromo(fireEvent(), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+  });
 
   it('returns 403 when caller is not a Wrestler', async () => {
     const event = withAuth(

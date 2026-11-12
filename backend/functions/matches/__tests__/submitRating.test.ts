@@ -24,6 +24,9 @@ const mockSiteConfigRepo = {
 
 const mockRunInTransaction = vi.fn();
 
+const { mockInvokeAsync } = vi.hoisted(() => ({ mockInvokeAsync: vi.fn() }));
+vi.mock('../../../lib/asyncLambda', () => ({ invokeAsync: mockInvokeAsync }));
+
 // Tunables default — matches DEFAULT_HEAT_TUNABLES on the backend.
 const DEFAULT_TUNABLES = {
   pivot: 2.5,
@@ -122,6 +125,48 @@ describe('submitRating', () => {
     // Individual tests can override these mocks.
     mockPromosRepo.listByRivalry.mockResolvedValue([]);
     mockSiteConfigRepo.getHeatTunables.mockResolvedValue(DEFAULT_TUNABLES);
+    mockInvokeAsync.mockResolvedValue(undefined);
+  });
+
+  const rate = () => submitRating(
+    ev({ pathParameters: { matchId: 'm1' }, body: JSON.stringify({ rating: 4 }) }),
+    ctx,
+    cb,
+  );
+
+  it('recomputes progression for the match participants', async () => {
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue(completedMatch);
+    mockMatchRatingsRepo.getByMatch.mockResolvedValue([]);
+    stubTx();
+
+    const r = await rate();
+
+    expect(r!.statusCode).toBe(201);
+    expect(mockInvokeAsync).toHaveBeenCalledTimes(1);
+    expect(mockInvokeAsync).toHaveBeenCalledWith('progression', expect.objectContaining({ playerIds: ['p1', 'p2'] }));
+  });
+
+  it('still returns 201 when the progression invoke fails', async () => {
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue(completedMatch);
+    mockMatchRatingsRepo.getByMatch.mockResolvedValue([]);
+    stubTx();
+    mockInvokeAsync.mockRejectedValue(new Error('lambda down'));
+
+    const r = await rate();
+
+    expect(r!.statusCode).toBe(201);
+  });
+
+  it('does not recompute progression when the rating is rejected', async () => {
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue(completedMatch);
+    mockMatchRatingsRepo.getByMatch.mockResolvedValue([]);
+    mockRunInTransaction.mockImplementation(async () => {
+      throw new RatingAlreadyExistsError('m1', 'user-42');
+    });
+
+    await rate();
+
+    expect(mockInvokeAsync).not.toHaveBeenCalled();
   });
 
   it('happy path: no rivalry — averages two existing 4-star ratings plus new 5', async () => {

@@ -414,6 +414,32 @@ describe('recordResult — background ops', () => {
     expect(r!.statusCode).toBe(200);
   });
 
+  it('recomputes progression for every match participant', async () => {
+    const { invokeAsync } = await import('../../../lib/asyncLambda');
+    vi.mocked(invokeAsync).mockResolvedValue(undefined);
+    stubSuccess({ ...pending, participants: ['p1', 'p2', 'p3'] });
+    const r = await recordResult(ev({
+      pathParameters: { matchId: 'm1' },
+      body: JSON.stringify({ winners: ['p1'], losers: ['p2'] }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(200);
+    expect(invokeAsync).toHaveBeenCalledWith('contenders', { source: 'recordResult' });
+    expect(invokeAsync).toHaveBeenCalledWith(
+      'progression',
+      expect.objectContaining({ playerIds: ['p1', 'p2', 'p3'] }),
+    );
+  });
+
+  it('does not recompute progression when the result is rejected', async () => {
+    const { invokeAsync } = await import('../../../lib/asyncLambda');
+    stubSuccess();
+    await recordResult(ev({
+      pathParameters: { matchId: 'm1' },
+      body: JSON.stringify({ winners: ['p1'], losers: ['p9'] }),
+    }), ctx, cb);
+    expect(invokeAsync).not.toHaveBeenCalled();
+  });
+
   it('succeeds even if updateGroupStats throws', async () => {
     const { updateGroupStats } = await import('../updateGroupStats');
     vi.mocked(updateGroupStats).mockRejectedValue(new Error('fail'));

@@ -4,6 +4,7 @@ import type { Match, Championship } from '../../lib/repositories';
 import { isConcurrentWriteError } from '../../lib/repositories/errors';
 import { success, badRequest, conflict, notFound, serverError } from '../../lib/response';
 import { invokeAsync } from '../../lib/asyncLambda';
+import { triggerProgressionRecompute } from '../../lib/progression/trigger';
 import { parseBody } from '../../lib/parseBody';
 import { RESULT_NEEDS_CHAMPION_MESSAGE, championIsOnASide } from '../../lib/challengeTitle';
 import { updateGroupStats } from './updateGroupStats';
@@ -185,6 +186,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     } catch (err) {
       console.warn('Failed to invoke calculateRankings async:', err);
     }
+
+    // Every participant: matchesCompeted counts players in neither winners nor losers too.
+    await triggerProgressionRecompute(matchParticipants, 'recordResult');
 
     const returnedMatch = {
       ...match,

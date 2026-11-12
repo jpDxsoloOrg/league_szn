@@ -5,6 +5,7 @@ import { isHalfStarRating, roundToHalfStar } from '../../lib/utils/halfStar';
 import { type HeatTier } from '../../lib/policies/rivalryHeat';
 import { computeHeatForRivalry } from '../../lib/services/recomputeRivalryHeat';
 import { parseBody } from '../../lib/parseBody';
+import { triggerProgressionRecompute } from '../../lib/progression/trigger';
 import {
   created,
   badRequest,
@@ -134,6 +135,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
       throw err;
     }
+
+    // avgStarRating changes for everyone in the match.
+    await triggerProgressionRecompute(match.participants ?? [], 'submitRating');
 
     return created({
       matchId,

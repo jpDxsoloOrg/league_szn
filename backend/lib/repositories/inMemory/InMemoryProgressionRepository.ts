@@ -96,6 +96,10 @@ export class InMemoryProgressionRepository implements ProgressionRepository {
     return applyProgressionUpsert(this.progressionStore, progression);
   }
 
+  async deletePlayerProgression(playerId: string, trackId: string): Promise<void> {
+    this.progressionStore.delete(playerProgressionKey(playerId, trackId));
+  }
+
   async listByTrack(trackId: string, options: ListByTrackOptions = {}): Promise<PlayerProgression[]> {
     const direction = options.descending === false ? 1 : -1;
     const rows = Array.from(this.progressionStore.values())
