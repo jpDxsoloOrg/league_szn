@@ -1,12 +1,12 @@
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { ContenderWithPlayer } from '../../types/contender';
+import type { ContenderListEntry } from '../../types/contender';
 import Avatar from '../ui/Avatar';
 import Badge from '../ui/Badge';
 import './ContenderCard.css';
 
 interface ContenderCardProps {
-  contender: ContenderWithPlayer;
+  contender: ContenderListEntry;
 }
 
 function Movement({ contender }: ContenderCardProps) {

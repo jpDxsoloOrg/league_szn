@@ -587,9 +587,84 @@ components:
       properties:
         championshipId: { type: string }
         championshipName: { type: string }
-        currentChampion: { type: object }
-        contenders: { type: array }
-        calculatedAt: { type: string }
+        divisionId: { type: string, nullable: true }
+        currentChampion:
+          nullable: true
+          description: 'Singles titles: a player object (\`playerId\`, \`playerName\`, \`wrestlerName\`, \`imageUrl\`). Tag titles: a TagTeamContenderChampion built from every holder.'
+          oneOf:
+            - type: object
+              properties:
+                playerId: { type: string }
+                playerName: { type: string }
+                wrestlerName: { type: string }
+                imageUrl: { type: string, nullable: true }
+            - $ref: '#/components/schemas/TagTeamContenderChampion'
+        contenders:
+          type: array
+          description: 'Player rows have no \`entityType\`. Tag-team rows have \`entityType: tagTeam\`.'
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/PlayerContenderRow'
+              - $ref: '#/components/schemas/TagTeamContenderRow'
+        calculatedAt: { type: string, nullable: true }
+
+    ContenderMember:
+      type: object
+      properties:
+        playerId: { type: string }
+        playerName: { type: string, description: 'Former member when the player row is gone.' }
+        wrestlerName: { type: string }
+        imageUrl: { type: string, nullable: true }
+
+    PlayerContenderRow:
+      type: object
+      properties:
+        rank: { type: integer }
+        playerId: { type: string }
+        playerName: { type: string }
+        wrestlerName: { type: string }
+        imageUrl: { type: string, nullable: true }
+        rankingScore: { type: number }
+        winPercentage: { type: number }
+        currentStreak: { type: integer }
+        matchesInPeriod: { type: integer }
+        winsInPeriod: { type: integer }
+        previousRank: { type: integer, nullable: true }
+        movement: { type: integer }
+        isNew: { type: boolean }
+        isOverridden: { type: boolean }
+        overrideType: { type: string, nullable: true, enum: [bump_to_top, send_to_bottom, null] }
+        organicRank: { type: integer, nullable: true }
+
+    TagTeamContenderRow:
+      description: 'A ranked tag team. \`playerId\` equals \`tagTeamId\`. \`playerName\` (members joined with " & "), \`wrestlerName\` (team name) and \`imageUrl\` (team image) are display fallbacks for older clients.'
+      allOf:
+        - $ref: '#/components/schemas/PlayerContenderRow'
+        - type: object
+          properties:
+            entityType: { type: string, enum: [tagTeam] }
+            tagTeamId: { type: string }
+            tagTeamName: { type: string }
+            tagTeamImageUrl: { type: string, nullable: true }
+            tagTeamStatus: { type: string, description: 'Status today. A dissolved team can still have a stored row.' }
+            members:
+              type: array
+              minItems: 2
+              maxItems: 2
+              items: { $ref: '#/components/schemas/ContenderMember' }
+
+    TagTeamContenderChampion:
+      type: object
+      description: 'Tag title holders. Team fields are null when the holders are not a known tag team.'
+      properties:
+        type: { type: string, enum: [tagTeam] }
+        tagTeamId: { type: string, nullable: true }
+        tagTeamName: { type: string, nullable: true }
+        tagTeamImageUrl: { type: string, nullable: true }
+        members: { type: array, items: { $ref: '#/components/schemas/ContenderMember' } }
+        playerName: { type: string, description: 'Display fallback: member player names joined with " & ".' }
+        wrestlerName: { type: string, description: 'Display fallback: team name, or member wrestler names joined with " & ".' }
+        imageUrl: { type: string, nullable: true, description: 'Display fallback: the team image.' }
 
     SiteFeatures:
       type: object
@@ -1208,7 +1283,11 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200': { description: Contenders }
+        '200':
+          description: Contenders. Tag titles return tag-team rows and a champion block with every holder.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChampionshipContenders' }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /championships/{championshipId}:
