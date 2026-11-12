@@ -342,6 +342,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         divisionId: uuidv4(),
         name: 'Young Boys',
         description: 'Default starting division for new wrestlers',
+        isDevelopmental: true,
+        isDefaultForNewWrestlers: true,
         createdAt: now,
         updatedAt: now,
       },

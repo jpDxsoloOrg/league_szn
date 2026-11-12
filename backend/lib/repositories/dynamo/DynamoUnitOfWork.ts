@@ -1,6 +1,13 @@
 import { TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
 import { dynamoDb, TableNames } from '../../dynamodb';
-import type { UnitOfWork, RecordDelta, MatchWriteCondition, PlayerWriteCondition } from '../unitOfWork';
+import type {
+  UnitOfWork,
+  RecordDelta,
+  MatchWriteCondition,
+  PlayerWriteCondition,
+  DivisionWriteCondition,
+} from '../unitOfWork';
+import type { DivisionPatch } from '../LeagueOpsRepository';
 import type { ChallengeStatus, PlayerProgression, ProgressionEvent, TagTeam } from '../types';
 import { buildUpsertProgressionUpdate, toProgressionEventItem } from './progressionRows';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
@@ -201,6 +208,45 @@ export class DynamoUnitOfWork implements UnitOfWork {
     this.staged.push({
       Delete: { TableName: TableNames.TAG_TEAMS, Key: { tagTeamId } },
     });
+  }
+
+  // ── Divisions ────────────────────────────────────────────────────
+  updateDivision(divisionId: string, patch: DivisionPatch, condition?: DivisionWriteCondition): void {
+    const now = new Date().toISOString();
+    const sets: string[] = [];
+    const names: Record<string, string> = {};
+    const values: Record<string, unknown> = {};
+    let i = 0;
+    for (const [key, val] of Object.entries(patch)) {
+      if (val === undefined || key === 'updatedAt') continue;
+      names[`#f${i}`] = key;
+      values[`:v${i}`] = val;
+      sets.push(`#f${i} = :v${i}`);
+      i++;
+    }
+    names[`#f${i}`] = 'updatedAt';
+    values[`:v${i}`] = now;
+    sets.push(`#f${i} = :v${i}`);
+
+    let conditionExpression = 'attribute_exists(divisionId)';
+    if (condition) {
+      names['#isDefault'] = 'isDefaultForNewWrestlers';
+      values[':expectedDefault'] = true;
+      conditionExpression += condition.isDefaultForNewWrestlers
+        ? ' AND #isDefault = :expectedDefault'
+        : ' AND (attribute_not_exists(#isDefault) OR #isDefault <> :expectedDefault)';
+    }
+    this.staged.push({
+      Update: {
+        TableName: TableNames.DIVISIONS,
+        Key: { divisionId },
+        UpdateExpression: `SET ${sets.join(', ')}`,
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: values,
+        ConditionExpression: conditionExpression,
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'Division', id: divisionId });
   }
 
   // ── Championships ────────────────────────────────────────────────

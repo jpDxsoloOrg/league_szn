@@ -124,6 +124,7 @@ export interface UpdateHandlerOptions<TPatch extends object, TEntity> {
   idParam: string;
   patchFields: (keyof TPatch & string)[];
   entityLabel?: string;
+  validate?: (body: Record<string, unknown>, event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult | null>;
 }
 
 export function updateHandlerFactory<TPatch extends object, TEntity>(
@@ -148,6 +149,11 @@ export function updateHandlerFactory<TPatch extends object, TEntity>(
         }
       }
       if (!hasChanges) return badRequest('No valid fields to update');
+
+      if (options.validate) {
+        const validateError = await options.validate(raw, event);
+        if (validateError) return validateError;
+      }
 
       const item = await options.repo().update(id, patch as TPatch);
       return success(item);

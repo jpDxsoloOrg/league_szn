@@ -1,3 +1,4 @@
+import type { DivisionPatch } from './LeagueOpsRepository';
 import type { FactionMessage, FactionDirectMessage } from './factionMessages';
 import type {
   Rivalry,
@@ -33,6 +34,14 @@ export type MatchWriteCondition =
 /** Refuse the write unless the stored `disciplineVersion` still equals this value. */
 export interface PlayerWriteCondition {
   disciplineVersion: number;
+}
+
+/**
+ * Refuse the division write unless the stored `isDefaultForNewWrestlers`
+ * still equals this value (a missing attribute counts as `false`).
+ */
+export interface DivisionWriteCondition {
+  isDefaultForNewWrestlers: boolean;
 }
 
 /**
@@ -77,6 +86,13 @@ export interface UnitOfWork {
 
   /** Stage a tag team hard delete. */
   deleteTagTeam(tagTeamId: string): void;
+
+  /**
+   * Stage a division field update. The row must exist; with `condition`, the
+   * stored default flag must also match, or the whole unit of work fails
+   * with `ConcurrencyError`.
+   */
+  updateDivision(divisionId: string, patch: DivisionPatch, condition?: DivisionWriteCondition): void;
 
   /** Stage a championship field update. */
   updateChampionship(championshipId: string, patch: Record<string, unknown>): void;

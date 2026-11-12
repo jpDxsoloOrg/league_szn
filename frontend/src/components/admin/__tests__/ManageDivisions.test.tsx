@@ -72,6 +72,8 @@ describe('ManageDivisions', () => {
       expect(mockDivisionsApi.create).toHaveBeenCalledWith({
         name: 'NXT',
         description: 'NXT Brand',
+        isDevelopmental: false,
+        isDefaultForNewWrestlers: false,
       });
     });
     await waitFor(() => {
@@ -107,6 +109,8 @@ describe('ManageDivisions', () => {
       expect(mockDivisionsApi.update).toHaveBeenCalledWith('div-1', {
         name: 'RAW Updated',
         description: 'Monday Night Raw',
+        isDevelopmental: false,
+        isDefaultForNewWrestlers: false,
       });
     });
     await waitFor(() => {
@@ -150,6 +154,54 @@ describe('ManageDivisions', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Cannot delete division with assigned players')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Developmental and Default badges in the list', async () => {
+    mockDivisionsApi.getAll.mockResolvedValue([
+      ...mockDivisions,
+      {
+        divisionId: 'div-yb', name: 'Young Boys', isDevelopmental: true, isDefaultForNewWrestlers: true,
+        createdAt: '2024-01-01', updatedAt: '2024-01-01',
+      },
+    ]);
+
+    render(<ManageDivisions />);
+    await waitFor(() => { expect(screen.getByText('Young Boys')).toBeInTheDocument(); });
+
+    expect(screen.getAllByText('Developmental')).toHaveLength(1);
+    expect(screen.getAllByText('Default')).toHaveLength(1);
+  });
+
+  it('pre-fills the flags when editing and sends toggled values', async () => {
+    mockDivisionsApi.getAll.mockResolvedValue([
+      {
+        divisionId: 'div-yb', name: 'Young Boys', isDevelopmental: true,
+        createdAt: '2024-01-01', updatedAt: '2024-01-01',
+      },
+    ]);
+    mockDivisionsApi.update.mockResolvedValue({});
+    const user = userEvent.setup();
+
+    render(<ManageDivisions />);
+    await waitFor(() => { expect(screen.getByText('Young Boys')).toBeInTheDocument(); });
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+
+    const developmental = screen.getByLabelText('Developmental division');
+    const defaultToggle = screen.getByLabelText('Default for new wrestlers');
+    expect(developmental).toBeChecked();
+    expect(defaultToggle).not.toBeChecked();
+
+    await user.click(defaultToggle);
+    await user.click(screen.getByRole('button', { name: 'Update Division' }));
+
+    await waitFor(() => {
+      expect(mockDivisionsApi.update).toHaveBeenCalledWith('div-yb', {
+        name: 'Young Boys',
+        description: undefined,
+        isDevelopmental: true,
+        isDefaultForNewWrestlers: true,
+      });
     });
   });
 });
