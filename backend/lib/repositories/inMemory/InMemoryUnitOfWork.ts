@@ -4,6 +4,7 @@ import type {
   MatchWriteCondition,
   PlayerWriteCondition,
   DivisionWriteCondition,
+  ProgressionConsiderationSeed,
 } from '../unitOfWork';
 import type { DivisionPatch } from '../LeagueOpsRepository';
 import type { ChallengeStatus, TagTeam } from '../types';
@@ -17,8 +18,8 @@ import type {
 } from '../rivalries';
 import { RatingAlreadyExistsError } from '../matchRatings';
 import { ConcurrencyError } from '../errors';
-import type { MatchRating, PlayerProgression, ProgressionEvent } from '../types';
-import { applyEventAppend, applyProgressionUpsert } from './InMemoryProgressionRepository';
+import type { MatchRating, PlayerProgression, ProgressionConsideration, ProgressionEvent } from '../types';
+import { applyEventAppend, applyProgressionUpsert, playerProgressionKey } from './InMemoryProgressionRepository';
 
 type StagedOp = () => void;
 
@@ -455,6 +456,44 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     const staged = structuredClone(event);
     this.staged.push(() => {
       applyEventAppend(this.stores.progressionEvents, staged);
+    });
+  }
+
+  setProgressionConsideration(
+    playerId: string,
+    trackId: string,
+    consideration: ProgressionConsideration,
+    seed?: ProgressionConsiderationSeed,
+  ): void {
+    const key = playerProgressionKey(playerId, trackId);
+    const stagedConsideration = structuredClone(consideration);
+    const stagedSeed = seed ? structuredClone(seed) : undefined;
+    this.preconditions.push(() => {
+      const existing = this.stores.playerProgression.get(key);
+      if ((!existing && !stagedSeed) || existing?.consideration) {
+        throw new ConcurrencyError('PlayerProgression', `${playerId}/${trackId}`);
+      }
+    });
+    this.staged.push(() => {
+      const existing = this.stores.playerProgression.get(key);
+      const base: PlayerProgression = existing ?? { playerId, trackId, ...(stagedSeed as ProgressionConsiderationSeed) };
+      this.stores.playerProgression.set(key, { ...base, consideration: stagedConsideration });
+    });
+  }
+
+  clearProgressionConsideration(playerId: string, trackId: string): void {
+    const key = playerProgressionKey(playerId, trackId);
+    this.preconditions.push(() => {
+      if (!this.stores.playerProgression.get(key)?.consideration) {
+        throw new ConcurrencyError('PlayerProgression', `${playerId}/${trackId}`);
+      }
+    });
+    this.staged.push(() => {
+      const existing = this.stores.playerProgression.get(key);
+      if (!existing) return;
+      const next: PlayerProgression = { ...existing };
+      delete next.consideration;
+      this.stores.playerProgression.set(key, next);
     });
   }
 

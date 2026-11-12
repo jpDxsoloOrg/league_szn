@@ -7,7 +7,16 @@ import type {
   RivalryParticipant,
   RivalryPatch,
 } from './rivalries';
-import type { ChallengeStatus, PlayerProgression, ProgressionEvent, TagTeam } from './types';
+import type {
+  ChallengeStatus,
+  PlayerProgression,
+  ProgressionConsideration,
+  ProgressionEvent,
+  TagTeam,
+} from './types';
+
+/** Computed fields used to create a PlayerProgression row that does not exist yet. */
+export type ProgressionConsiderationSeed = Pick<PlayerProgression, 'progressPct' | 'goals' | 'computedAt'>;
 
 /**
  * Record delta for player/season standings.
@@ -195,6 +204,28 @@ export interface UnitOfWork {
 
   /** Stage a PUT into the progression events table. Caller owns `eventId` and `createdAt`. */
   appendProgressionEvent(event: ProgressionEvent): void;
+
+  /**
+   * Stage setting `consideration` on a PlayerProgression row. Fails with
+   * `ConcurrencyError('PlayerProgression', 'playerId/trackId')` at commit when
+   * the row already has a consideration, so a racing re-mark cannot write a
+   * second event. Without `seed` the row must already exist (same error
+   * otherwise). With `seed`, a missing row is created from it; the seed's
+   * computed fields never overwrite an existing row's values.
+   */
+  setProgressionConsideration(
+    playerId: string,
+    trackId: string,
+    consideration: ProgressionConsideration,
+    seed?: ProgressionConsiderationSeed,
+  ): void;
+
+  /**
+   * Stage removing `consideration` from a PlayerProgression row. Fails with
+   * `ConcurrencyError('PlayerProgression', 'playerId/trackId')` at commit when
+   * the row has no consideration (or does not exist).
+   */
+  clearProgressionConsideration(playerId: string, trackId: string): void;
 
   /**
    * Stage assigning a wrestler to a player's primary or alternate slot.

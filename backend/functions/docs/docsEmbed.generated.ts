@@ -4152,6 +4152,91 @@ paths:
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Track not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Progression: call-up considerations (CUP-05) ─────────────────────
+
+  /progression/players/{playerId}/consideration:
+    put:
+      tags: [Progression]
+      summary: Mark or unmark a player as being considered (Admin, Moderator)
+      description: >
+        Writes the consideration on the player's progression row for the track and
+        appends a ProgressionEvent in one transaction. Requesting the stored state is a
+        no-op (\`changed: false\`, no event, no notification). A mark creates the row,
+        scored from current data, if no recompute has run yet. Marking needs an active
+        track and a player in its from-division. The wrestler is notified on a
+        call-up or promotion mark only, never on removal.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trackId, considering]
+              properties:
+                trackId: { type: string }
+                considering: { type: boolean }
+                note: { type: string, maxLength: 500, description: 'Staff-only note; never shown publicly' }
+      responses:
+        '200':
+          description: Current consideration state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  playerId: { type: string }
+                  trackId: { type: string }
+                  considering: { type: boolean }
+                  changed: { type: boolean, description: 'False when the request matched the stored state' }
+                  consideration:
+                    nullable: true
+                    type: object
+                    properties:
+                      status: { type: string, enum: [considering] }
+                      markedBy: { type: string }
+                      markedAt: { type: string, format: date-time }
+                      note: { type: string }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Track or player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Changed by another request; retry', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /progression/considerations:
+    get:
+      tags: [Progression]
+      summary: List players currently being considered (public)
+      description: >
+        One entry per player on an active track of \`kind\`, newest mark first. Deleted,
+        deactivated and wrestler-less players are left out. Backed by an eventually
+        consistent index, so a new mark can take a moment to appear.
+      parameters:
+        - name: kind
+          in: query
+          schema: { type: string, enum: [callup, promotion, relegation], default: callup }
+      responses:
+        '200':
+          description: Current considerations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    playerId: { type: string }
+                    name: { type: string }
+                    wrestlerName: { type: string }
+                    trackId: { type: string }
+                    markedAt: { type: string, format: date-time }
+        '400': { description: 'Unknown kind', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 `;
 
 export const SWAGGER_HTML = `<!DOCTYPE html>

@@ -5,8 +5,9 @@ import { success, serverError } from '../../lib/response';
 import { FORMER_MEMBER, isHiddenLivePlayer, realWrestlerName } from '../../lib/needsWrestler';
 import { isChallengeLapsed } from '../../lib/challengeExpiry';
 import { isPromoArchived } from '../../lib/promoArchive';
+import { listActiveConsiderations } from '../../lib/progression/considerations';
 
-const ACTIVITY_TYPES = ['match', 'championship', 'challenge', 'promo', 'tournament', 'season'] as const;
+const ACTIVITY_TYPES = ['match', 'championship', 'challenge', 'promo', 'tournament', 'season', 'callup'] as const;
 type ActivityTypeFilter = (typeof ACTIVITY_TYPES)[number];
 
 // Summaries are shown as written, so an id must never stand in for a name.
@@ -18,7 +19,8 @@ export type ActivityItemType =
   | 'season_event'
   | 'tournament_result'
   | 'challenge_event'
-  | 'promo_posted';
+  | 'promo_posted'
+  | 'callup_consideration';
 
 export interface ActivityItem {
   id: string;
@@ -94,6 +96,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const includeTournament = !typeFilter || typeFilter === 'tournament';
     const includeChallenge = !typeFilter || typeFilter === 'challenge';
     const includePromo = !typeFilter || typeFilter === 'promo';
+    const includeCallup = !typeFilter || typeFilter === 'callup';
 
     const rawItems: { type: ActivityItemType; timestamp: string; id: string; summary: string; metadata: Record<string, unknown> }[] = [];
     const playerIds = new Set<string>();
@@ -109,6 +112,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       allPromos,
       allPlayers,
       allChampionships,
+      callupConsiderations,
     ] = await Promise.all([
       loadIf(includeMatch, () => matches.listCompleted()),
       loadIf(includeChampionship, () => championships.listAllHistory()),
@@ -118,6 +122,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       loadIf(includePromo, () => promos.list()),
       players.listWithDeleted(),
       loadIf(includeChampionship, () => championships.list()),
+      // Current marks only: an unmark removes the item, and is never news.
+      loadIf(includeCallup, () => listActiveConsiderations('callup')),
     ]);
 
     for (const m of completedMatches) {
@@ -269,6 +275,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       });
     }
 
+    for (const c of callupConsiderations) {
+      playerIds.add(c.playerId);
+      rawItems.push({
+        type: 'callup_consideration',
+        timestamp: c.consideration.markedAt,
+        id: `callup-${c.playerId}-${c.trackId}`,
+        summary: '',
+        metadata: { playerId: c.playerId, trackId: c.trackId },
+      });
+    }
+
     const playerNames = buildPlayerNameMap(allPlayers);
     const championshipNames = buildChampionshipNameMap(allChampionships);
     const nameOf = (playerId: unknown): string => playerNames[playerId as string] || FORMER_MEMBER;
@@ -316,6 +333,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const meta = item.metadata;
         meta.playerName = nameOf(meta.playerId);
         item.summary = `${meta.playerName} posted a promo`;
+      } else if (item.type === 'callup_consideration') {
+        const meta = item.metadata;
+        meta.playerName = nameOf(meta.playerId);
+        item.summary = `${meta.playerName} is being considered for a call-up`;
       }
     }
 
@@ -324,8 +345,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // and the name map above still covers everyone. A deleted player's items
     // stay as they did before the row was kept, now with the real name.
     const hiddenPlayerIds = new Set(allPlayers.filter(isHiddenLivePlayer).map((p) => p.playerId));
+    // A call-up mark is about the player's future, so a deleted player's mark goes too.
+    const livePlayerIds = new Set(allPlayers.filter((p) => !p.deletedAt).map((p) => p.playerId));
     const visibleItems = rawItems.filter((item) => {
       if (item.type === 'promo_posted') return !hiddenPlayerIds.has(item.metadata.playerId as string);
+      if (item.type === 'callup_consideration') return livePlayerIds.has(item.metadata.playerId as string)
+        && !hiddenPlayerIds.has(item.metadata.playerId as string);
       if (item.type === 'challenge_event') {
         return !hiddenPlayerIds.has(item.metadata.challengerId as string)
           && !hiddenPlayerIds.has(item.metadata.challengedId as string);

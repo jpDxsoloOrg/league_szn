@@ -12,6 +12,7 @@ vi.mock('../../dynamodb', () => ({
 
 import { DynamoUnitOfWork } from '../dynamo/DynamoUnitOfWork';
 import { buildInMemoryRepositories } from '../inMemory';
+import { ConcurrencyError } from '../errors';
 import type { PlayerProgression, ProgressionEvent } from '../types';
 
 const progression: PlayerProgression = {
@@ -118,5 +119,74 @@ describe('InMemory runInTransaction progression writes', () => {
 
     expect(await repos.progression.getPlayerProgression('p1', 't1')).toBeNull();
     expect(await repos.progression.listEvents('p1')).toEqual([]);
+  });
+});
+
+describe('consideration tx methods', () => {
+  beforeEach(() => {
+    mockTransactWrite.mockReset();
+  });
+
+  interface ConditionalItem {
+    Update: NonNullable<TransactItem['Update']> & { ConditionExpression: string };
+  }
+
+  const staged = (uow: DynamoUnitOfWork) => (uow as unknown as { staged: ConditionalItem[] }).staged;
+
+  it('Dynamo: set without a seed requires the row and no consideration', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.setProgressionConsideration('p1', 't1', consideration);
+    const [{ Update: update }] = staged(uow);
+    expect(update.UpdateExpression).toBe('SET #consideration = :consideration');
+    expect(update.ConditionExpression).toBe('attribute_exists(#playerId) AND attribute_not_exists(#consideration)');
+  });
+
+  it('Dynamo: set with a seed creates the row without overwriting computed fields', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.setProgressionConsideration('p1', 't1', consideration, {
+      progressPct: 0,
+      goals: [],
+      computedAt: '2026-11-12T00:00:00.000Z',
+    });
+    const [{ Update: update }] = staged(uow);
+    expect(update.UpdateExpression).toContain('#progressPct = if_not_exists(#progressPct, :progressPct)');
+    expect(update.ConditionExpression).toBe('attribute_not_exists(#consideration)');
+  });
+
+  it('Dynamo: clear requires a consideration and maps a failed condition to ConcurrencyError', async () => {
+    mockTransactWrite.mockRejectedValue({
+      name: 'TransactionCanceledException',
+      CancellationReasons: [{ Code: 'ConditionalCheckFailed' }],
+    });
+    const uow = new DynamoUnitOfWork();
+    uow.clearProgressionConsideration('p1', 't1');
+    const [{ Update: update }] = staged(uow);
+    expect(update.UpdateExpression).toBe('REMOVE #consideration');
+    expect(update.ConditionExpression).toBe('attribute_exists(#consideration)');
+    await expect(uow.commit()).rejects.toBeInstanceOf(ConcurrencyError);
+  });
+
+  it('InMemory: guards set and clear the same way', async () => {
+    const repos = buildInMemoryRepositories();
+    await expect(repos.runInTransaction(async (tx) => {
+      tx.setProgressionConsideration('p1', 't1', consideration);
+    })).rejects.toBeInstanceOf(ConcurrencyError);
+    await expect(repos.runInTransaction(async (tx) => {
+      tx.clearProgressionConsideration('p1', 't1');
+    })).rejects.toBeInstanceOf(ConcurrencyError);
+
+    await repos.runInTransaction(async (tx) => {
+      tx.setProgressionConsideration('p1', 't1', consideration, progression);
+    });
+    expect(await repos.progression.getPlayerProgression('p1', 't1')).toEqual({ ...progression, consideration });
+
+    await expect(repos.runInTransaction(async (tx) => {
+      tx.setProgressionConsideration('p1', 't1', consideration, progression);
+    })).rejects.toBeInstanceOf(ConcurrencyError);
+
+    await repos.runInTransaction(async (tx) => {
+      tx.clearProgressionConsideration('p1', 't1');
+    });
+    expect(await repos.progression.getPlayerProgression('p1', 't1')).toEqual(progression);
   });
 });
