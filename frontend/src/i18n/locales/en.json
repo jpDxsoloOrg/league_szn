@@ -425,6 +425,7 @@
       "events": "Events & PPV",
       "tournaments": "Tournaments",
       "contenders": "Contender Rankings",
+      "tagTeamRankings": "How Tag Team Rankings Work",
       "profile": "My Profile",
       "challenges": "Challenges",
       "promos": "Promos",
@@ -2469,6 +2470,7 @@
     },
     "admin": {
       "selectChampionship": "Select Championship",
+      "noChampionships": "No championships found. Create championships first.",
       "overrides": {
         "title": "Manual Overrides",
         "subtitle": "Override contender positions for storyline or disciplinary reasons",
@@ -3227,6 +3229,7 @@
         "rivalryNotes": "Rivalry Notes",
         "seasonStandings": "Season Standings",
         "seasons": "Seasons",
+        "tagTeams": "Tag Teams",
         "tournaments": "Tournaments"
       },
       "createdItems": "Created Items:",

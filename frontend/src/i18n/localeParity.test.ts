@@ -18,7 +18,6 @@ const UNDEFINED_SOURCE_KEYS = [
   'admin.standaloneMatches.empty',
   'admin.standaloneMatches.scheduleLink',
   'admin.standaloneMatches.title',
-  'contenders.admin.noChampionships',
   'rivalries.messages.audienceAria',
   'rivalries.messages.audiencePill',
   'rivalries.messages.feedError',

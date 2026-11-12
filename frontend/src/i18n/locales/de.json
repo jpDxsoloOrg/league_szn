@@ -425,6 +425,7 @@
       "events": "Events & PPV",
       "tournaments": "Turniere",
       "contenders": "Herausforderer-Ranglisten",
+      "tagTeamRankings": "So funktionieren die Tag-Team-Ranglisten",
       "profile": "Mein Profil",
       "challenges": "Herausforderungen",
       "promos": "Promos",
@@ -2469,6 +2470,7 @@
     },
     "admin": {
       "selectChampionship": "Meisterschaft auswählen",
+      "noChampionships": "Keine Meisterschaften gefunden. Lege zuerst Meisterschaften an.",
       "overrides": {
         "title": "Manuelle Anpassungen",
         "subtitle": "Herausforderer-Positionen für Storyline oder disziplinarische Gründe anpassen",
@@ -3227,6 +3229,7 @@
         "rivalryNotes": "Rivalitäts-Notizen",
         "seasonStandings": "Saisontabellen",
         "seasons": "Saisons",
+        "tagTeams": "Tag Teams",
         "tournaments": "Turniere"
       },
       "createdItems": "Erstellte Einträge:",

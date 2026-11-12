@@ -28,6 +28,8 @@ vi.mock('uuid', () => ({
 
 import { handler as seedData } from '../seedData';
 import { handler as clearAll } from '../clearAll';
+import { buildTagTeamIndex, splitSidesIntoTeams } from '../../../lib/tagTeams/resolveTagTeams';
+import type { Match, TagTeam } from '../../../lib/repositories/types';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
@@ -255,6 +257,61 @@ describe('seedData', () => {
 
     // At least one Match of the Night is flagged for the scorching rivalry.
     expect(ratedMatches.some((m: Record<string, unknown>) => m.matchOfTheNight === true)).toBe(true);
+  });
+
+  it('seeds active tag teams with enough tag matches to be ranked (TTC-11)', async () => {
+    mockImportAllData.mockResolvedValue({});
+
+    const result = await seedData(makeEvent(), ctx, cb);
+    expect(result!.statusCode).toBe(200);
+
+    const importData = mockImportAllData.mock.calls[0][0] as Record<string, Record<string, unknown>[]>;
+    const tagTeams = importData.tagTeams as unknown as TagTeam[];
+    expect(tagTeams.length).toBeGreaterThanOrEqual(5);
+    expect(tagTeams.every((team) => team.status === 'active')).toBe(true);
+
+    // The tag title is held by a registered team, and its reign is linked to it.
+    const tagTitle = importData.championships.find((c) => c.type === 'tag');
+    const championTeam = tagTeams.find((team) => team.tagTeamId === tagTitle?.currentTagTeamId);
+    expect(championTeam).toBeDefined();
+    expect(tagTitle?.currentChampion).toEqual([championTeam!.player1Id, championTeam!.player2Id]);
+    const reign = importData.championshipHistory.find((h) => h.championshipId === tagTitle?.championshipId);
+    expect(reign?.tagTeamId).toBe(championTeam!.tagTeamId);
+
+    // Resolve the seeded season's tag matches the way the ranking does.
+    const season = importData.seasons[0];
+    const index = buildTagTeamIndex(tagTeams);
+    const matchesPerTeam = new Map<string, number>();
+    let unresolvedSides = 0;
+    for (const match of importData.matches as unknown as Match[]) {
+      if (match.status !== 'completed' || match.seasonId !== season.seasonId) continue;
+      const split = splitSidesIntoTeams(match, index);
+      if (!split) continue;
+      for (const side of split.sides) {
+        if (!side.tagTeamId) {
+          unresolvedSides += 1;
+          continue;
+        }
+        matchesPerTeam.set(side.tagTeamId, (matchesPerTeam.get(side.tagTeamId) ?? 0) + 1);
+      }
+    }
+
+    const contenders = tagTeams.filter((team) => team.tagTeamId !== championTeam!.tagTeamId);
+    expect(contenders.length).toBeGreaterThanOrEqual(4);
+    for (const team of contenders) {
+      expect(matchesPerTeam.get(team.tagTeamId) ?? 0).toBeGreaterThanOrEqual(3);
+    }
+    // The random pairing gives two sides that belong to no team.
+    expect(unresolvedSides).toBe(2);
+
+    // Precomputed tag contender rows point at the contending teams.
+    const tagRows = importData.contenderRankings.filter((row) => row.championshipId === tagTitle?.championshipId);
+    expect(tagRows).toHaveLength(contenders.length);
+    for (const row of tagRows) {
+      expect(row.entityType).toBe('tagTeam');
+      expect(row.tagTeamId).toBe(row.playerId);
+      expect(contenders.some((team) => team.tagTeamId === row.tagTeamId)).toBe(true);
+    }
   });
 
   it('returns 500 when importAllData throws', async () => {

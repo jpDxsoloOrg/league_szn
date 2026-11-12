@@ -49,6 +49,7 @@ const DELETED_ITEMS: { key: string; label: string }[] = [
 
 const RESULT_ROWS: { key: string; label: string }[] = [
   { key: 'players', label: 'Players' },
+  { key: 'tagTeams', label: 'Tag Teams' },
   { key: 'matches', label: 'Matches' },
   { key: 'championships', label: 'Championships' },
   { key: 'championshipHistory', label: 'Championship History' },
