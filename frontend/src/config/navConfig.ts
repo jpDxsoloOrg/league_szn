@@ -34,6 +34,7 @@ import {
   Newspaper,
   RefreshCw,
   Rocket,
+  ScrollText,
   Shield,
   SlidersHorizontal,
   Star,
@@ -117,6 +118,7 @@ export const NAV_SECTIONS: NavSection[] = [
     tabs: [
       { path: '/', labelKey: 'nav.dashboard', icon: House },
       { path: '/news', labelKey: 'nav.news', icon: Newspaper },
+      { path: '/patch-notes', labelKey: 'nav.patchNotes', icon: ScrollText },
       { path: '/activity', labelKey: 'nav.activity', icon: Activity },
     ],
   },

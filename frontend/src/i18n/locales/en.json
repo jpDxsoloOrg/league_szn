@@ -257,6 +257,7 @@
     "standings": "Standings",
     "activity": "Activity",
     "news": "News",
+    "patchNotes": "Patch Notes",
     "championships": "Championships",
     "tournaments": "Tournaments",
     "events": "Events",
@@ -3952,6 +3953,25 @@
           }
         }
       }
+    }
+  },
+  "patchNotes": {
+    "title": "Patch Notes",
+    "subtitle": "What's new and what got fixed on the site, newest release first.",
+    "latest": "Latest",
+    "versions": "Previous versions",
+    "pickerLabel": "Choose a version",
+    "comingNext": "Coming Next",
+    "comingNextFlag": "In the works",
+    "loadFailed": "Patch notes couldn't be loaded",
+    "loadFailedHint": "Check your connection and try again.",
+    "postFailed": "This release post couldn't be loaded.",
+    "showingEnglishFallback": "This post isn't available in your language yet, so you're seeing the English version.",
+    "whatsNew": "What's new in {{version}}",
+    "notFound": {
+      "title": "Version not found",
+      "description": "There are no patch notes for {{version}}.",
+      "action": "Go to the latest release ({{version}})"
     }
   }
 }

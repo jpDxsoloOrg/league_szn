@@ -123,6 +123,15 @@ wwe-2k-league/
 - **To add a wiki article**: (1) Add a new `.md` file under `frontend/public/wiki/` (English). (2) For German, add the same slug under `frontend/public/wiki/de/` (e.g. `wiki/de/my-topic.md`). (3) Append an entry to `frontend/public/wiki/index.json` with `slug`, `titleKey` (e.g. `wiki.articles.myTopic`), and `file` (e.g. `my-topic.md`). (4) Add the `titleKey` translation in `frontend/src/i18n/locales/en.json` and `frontend/src/i18n/locales/de.json` under `wiki.articles`.
 - **"Edit this page" link**: On article view, an "Edit this page" link points to the GitHub edit URL for that article’s markdown file. It is shown only when `VITE_GITHUB_REPO` is set (e.g. `jpDxsoloOrg/league_szn`). Optional `VITE_GITHUB_BRANCH` (default `main`) sets the branch in the edit URL. Add these to `.env` or deployment env so the link works in your environment.
 
+### Patch notes
+
+Versioned release notes at `/patch-notes` (latest) and `/patch-notes/vX.Y.Z`. Static files in `frontend/public/patch-notes/`, loaded like the wiki (German from `de/`, falling back to English). Full guide: `frontend/public/patch-notes/README.md`.
+
+- **Versions**: semver. A feature release bumps MINOR (`1.1.0` -> `1.2.0`); a fixes-only release bumps PATCH (`1.2.0` -> `1.2.1`). Helpers in `frontend/src/components/patchNotes/versions.ts`.
+- **To publish a release**: (1) add `vX.Y.Z.md` and `de/vX.Y.Z.md`; (2) end each section with a `**Read more:**` line linking the wiki articles for that feature (`/guide/wiki/<slug>`, same paths in DE with German titles); (3) prepend the entry to `releases` in `index.json` with `version`, `date`, `title`, `summary`, `titleDe`, `summaryDe`, `file`; (4) bump `version` in `frontend/package.json` (and `package-lock.json`) to match; (5) update `next-features.md` and `de/next-features.md`, without links to wiki articles that don't exist yet.
+- **Copy**: never mention sprints, dates or timeframes.
+- `patchNotesContent.test.ts` enforces valid, unique, newest-first versions, existing files, `package.json` matching the latest release, and wiki links that resolve.
+
 ## Data Model
 
 ### Players Table
