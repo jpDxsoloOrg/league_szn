@@ -2981,7 +2981,29 @@
       "count_other": "{{count}} Tag Teams",
       "playerMissing": "Ehemaliges Mitglied",
       "dissolveTitle": "Tag Team auflösen",
-      "dissolveConfirm": "„{{name}}“ auflösen? Dies kann nicht rückgängig gemacht werden."
+      "dissolveConfirm": "„{{name}}“ auflösen? Dies kann nicht rückgängig gemacht werden.",
+      "form": {
+        "createButton": "Tag Team erstellen",
+        "createTitle": "Tag Team erstellen",
+        "createDescription": "Das Team ist sofort aktiv. Offene Anfragen, an denen einer der Spieler beteiligt ist, werden geschlossen.",
+        "createSubmit": "Tag Team erstellen",
+        "created": "Tag Team erstellt",
+        "name": "Teamname",
+        "namePlaceholder": "z. B. The Hardy Boyz",
+        "playerPlaceholder": "Spieler suchen...",
+        "inTeam": "(in {{team}})",
+        "image": "Teambild (optional)",
+        "notifyPlayers": "Spieler benachrichtigen",
+        "errors": {
+          "nameRequired": "Gib einen Teamnamen ein.",
+          "playerRequired": "Wähle einen Spieler aus.",
+          "nameTaken": "Ein aktives Tag Team heißt bereits „{{team}}“.",
+          "playerInTeam": "{{player}} ist bereits im aktiven Tag Team „{{team}}“.",
+          "playerNotFound": "Diesen Spieler gibt es nicht mehr. Wähle jemand anderen aus.",
+          "concurrentUpdate": "Einer dieser Spieler hat das Tag Team gewechselt, während dieses Team erstellt wurde. Lade neu und versuche es erneut.",
+          "createFailed": "Tag Team konnte nicht erstellt werden"
+        }
+      }
     },
     "factions": {
       "loadError": "Fraktionen konnten nicht geladen werden",

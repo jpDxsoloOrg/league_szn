@@ -1,0 +1,21 @@
+/* GM create/edit tag team dialog. The full-height phone sheet comes from
+   .am-sheet in mobile/adminMobile.css. */
+
+.ttam-field-error {
+  margin: 0;
+  color: var(--color-loss);
+  font-size: var(--text-dense);
+  overflow-wrap: anywhere;
+}
+
+.ttam-modal .ac-field input[aria-invalid='true'],
+.ttam-modal .searchable-select-input[aria-invalid='true'] {
+  border-color: var(--color-loss);
+}
+
+@media (max-width: 768px) {
+  /* One picker per line: two side by side are too narrow to read. */
+  .ttam-modal .ac-form__row {
+    grid-template-columns: 1fr;
+  }
+}

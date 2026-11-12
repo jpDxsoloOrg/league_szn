@@ -34,24 +34,32 @@ interface ApiErrorBody {
   message?: string;
   code?: string;
   blockedUntil?: string;
+  [field: string]: unknown;
 }
 
 /**
  * A failed API response. `status` is the HTTP code and `code` the refusal code,
  * if any. `message` is the server's, or its translation for a known code, so
- * call sites that show `err.message` need no changes.
+ * call sites that show `err.message` need no changes. `details` is the whole
+ * error body, for a caller that acts on extra fields such as `playerId`.
  */
 export class ApiError extends Error {
   readonly status: number;
   readonly code?: string;
   readonly blockedUntil?: string;
+  readonly details: Readonly<Record<string, unknown>>;
 
-  constructor(message: string, status: number, details: { code?: string; blockedUntil?: string } = {}) {
+  constructor(
+    message: string,
+    status: number,
+    details: { code?: string; blockedUntil?: string; body?: Record<string, unknown> } = {},
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = details.code;
     this.blockedUntil = details.blockedUntil;
+    this.details = details.body ?? {};
   }
 }
 
@@ -162,7 +170,7 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}, sign
     throw new ApiError(
       refusalMessage(error, error.message || `HTTP ${response.status}`),
       response.status,
-      { code: error.code, blockedUntil: error.blockedUntil },
+      { code: error.code, blockedUntil: error.blockedUntil, body: error },
     );
   }
 

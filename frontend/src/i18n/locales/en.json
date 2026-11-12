@@ -2977,7 +2977,29 @@
       "count_other": "{{count}} tag teams",
       "playerMissing": "Former member",
       "dissolveTitle": "Dissolve tag team",
-      "dissolveConfirm": "Dissolve \"{{name}}\"? This cannot be undone."
+      "dissolveConfirm": "Dissolve \"{{name}}\"? This cannot be undone.",
+      "form": {
+        "createButton": "Create Tag Team",
+        "createTitle": "Create Tag Team",
+        "createDescription": "The team is active at once. Pending requests involving either player are closed.",
+        "createSubmit": "Create Tag Team",
+        "created": "Tag team created",
+        "name": "Team name",
+        "namePlaceholder": "e.g. The Hardy Boyz",
+        "playerPlaceholder": "Search players...",
+        "inTeam": "(in {{team}})",
+        "image": "Team image (optional)",
+        "notifyPlayers": "Notify players",
+        "errors": {
+          "nameRequired": "Enter a team name.",
+          "playerRequired": "Pick a player.",
+          "nameTaken": "An active tag team is already named \"{{team}}\".",
+          "playerInTeam": "{{player}} is already in the active tag team \"{{team}}\".",
+          "playerNotFound": "This player no longer exists. Pick someone else.",
+          "concurrentUpdate": "One of these players changed tag teams while this team was being created. Reload and try again.",
+          "createFailed": "Failed to create tag team"
+        }
+      }
     },
     "factions": {
       "loadError": "Failed to load factions",

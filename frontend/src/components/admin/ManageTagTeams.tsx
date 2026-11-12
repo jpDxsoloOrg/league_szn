@@ -17,6 +17,7 @@ import Select from '../ui/Select';
 import { useToast } from '../ui/toastContext';
 import AdminNotice from './AdminNotice';
 import ConfirmModal from './ConfirmModal';
+import CreateTagTeamAdminModal from './CreateTagTeamAdminModal';
 import './adminRoster.css';
 
 const ALL_STATUSES: TagTeamStatus[] = ['pending_partner', 'pending_admin', 'active', 'dissolved'];
@@ -47,6 +48,7 @@ export default function ManageTagTeams() {
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<TagTeam | null>(null);
   const [pendingDissolve, setPendingDissolve] = useState<TagTeam | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const loadTagTeams = useCallback(async () => {
     try {
@@ -111,6 +113,13 @@ export default function ManageTagTeams() {
       t('adminRoster.tagTeams.dissolveError', 'Failed to dissolve tag team'),
     );
     setPendingDissolve(null);
+  };
+
+  const handleCreated = async (tagTeam: TagTeam) => {
+    setCreateOpen(false);
+    showToast(`${t('adminRoster.tagTeams.form.created', 'Tag team created')}: ${tagTeam.name}`, 'success');
+    setStatusFilter('active');
+    await loadTagTeams();
   };
 
   const renderPlayer = (playerId: string, storedWrestlerName?: string) => {
@@ -225,7 +234,14 @@ export default function ManageTagTeams() {
 
   return (
     <div className="ar-page admin-tagteams">
-      <PageHeader title={t('adminRoster.tagTeams.title', 'Manage Tag Teams')} />
+      <PageHeader
+        title={t('adminRoster.tagTeams.title', 'Manage Tag Teams')}
+        actions={!error && (
+          <Button className="am-fab" onClick={() => setCreateOpen(true)} disabled={loading}>
+            {t('adminRoster.tagTeams.form.createButton', 'Create Tag Team')}
+          </Button>
+        )}
+      />
 
       {error ? (
         <>
@@ -262,6 +278,18 @@ export default function ManageTagTeams() {
             empty={<EmptyState title={t('adminRoster.tagTeams.empty', 'No tag teams found')} />}
           />
         </>
+      )}
+
+      {/* Mounted only while open, so each opening starts from an empty form. */}
+      {createOpen && (
+        <CreateTagTeamAdminModal
+          open
+          onClose={() => setCreateOpen(false)}
+          players={players}
+          tagTeams={tagTeams}
+          onCreated={handleCreated}
+          onStale={loadTagTeams}
+        />
       )}
 
       <ConfirmModal
