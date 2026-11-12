@@ -10,7 +10,8 @@ import type {
 } from '../rivalries';
 import { RatingAlreadyExistsError } from '../matchRatings';
 import { ConcurrencyError } from '../errors';
-import type { MatchRating } from '../types';
+import type { MatchRating, PlayerProgression, ProgressionEvent } from '../types';
+import { applyEventAppend, applyProgressionUpsert } from './InMemoryProgressionRepository';
 
 type StagedOp = () => void;
 
@@ -38,6 +39,8 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       rivalryMessages: RivalryMessage[];
       rivalryNotes: RivalryNote[];
       matchRatings: Map<string, MatchRating>;
+      playerProgression: Map<string, PlayerProgression>;
+      progressionEvents: ProgressionEvent[];
     },
   ) {}
 
@@ -408,6 +411,21 @@ export class InMemoryUnitOfWork implements UnitOfWork {
         createdAt: new Date().toISOString(),
       };
       this.stores.matchRatings.set(key, row);
+    });
+  }
+
+  // ── Progression (CUP-01) ─────────────────────────────────────────
+  upsertPlayerProgression(progression: PlayerProgression): void {
+    const staged = structuredClone(progression);
+    this.staged.push(() => {
+      applyProgressionUpsert(this.stores.playerProgression, staged);
+    });
+  }
+
+  appendProgressionEvent(event: ProgressionEvent): void {
+    const staged = structuredClone(event);
+    this.staged.push(() => {
+      applyEventAppend(this.stores.progressionEvents, staged);
     });
   }
 

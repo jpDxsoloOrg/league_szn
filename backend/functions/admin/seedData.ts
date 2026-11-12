@@ -399,6 +399,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       losses: Math.floor(Math.random() * 12) + 2,
       draws: Math.floor(Math.random() * 3),
       divisionId: divisions[index % divisions.length].divisionId,
+      divisionJoinedAt: now,
       ...(seededMovesets[index] ?? {}),
       createdAt: now,
       updatedAt: now,
@@ -1458,6 +1459,9 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       rivalryMessages,
       rivalryNotes,
       matchRatings,
+      progressionTracks: [],
+      playerProgression: [],
+      progressionEvents: [],
     };
 
     const createdCounts = await importAllData(seedData);

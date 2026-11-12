@@ -54,7 +54,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // If approved, update the player's divisionId
     if (status === 'approved') {
       const toDivisionId = transferRequest.toDivisionId;
-      await repos.roster.players.update(playerId, { divisionId: toDivisionId });
+      await repos.roster.players.update(playerId, {
+        divisionId: toDivisionId,
+        divisionJoinedAt: new Date().toISOString(),
+      });
     }
 
     // Look up the player's userId to send a notification

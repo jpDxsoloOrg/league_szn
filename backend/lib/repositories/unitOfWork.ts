@@ -6,7 +6,7 @@ import type {
   RivalryParticipant,
   RivalryPatch,
 } from './rivalries';
-import type { ChallengeStatus, TagTeam } from './types';
+import type { ChallengeStatus, PlayerProgression, ProgressionEvent, TagTeam } from './types';
 
 /**
  * Record delta for player/season standings.
@@ -168,6 +168,17 @@ export interface UnitOfWork {
    * commit path surfaces this as `RatingAlreadyExistsError`.
    */
   createMatchRating(input: { matchId: string; userId: string; rating: number }): void;
+
+  // ── Progression (CUP-01) ─────────────────────────────────────────
+  /**
+   * Stage the same write as `progression.upsertPlayerProgression`: SET the
+   * computed fields (creating the row if needed) and keep an existing
+   * `consideration` unless `progression` carries one.
+   */
+  upsertPlayerProgression(progression: PlayerProgression): void;
+
+  /** Stage a PUT into the progression events table. Caller owns `eventId` and `createdAt`. */
+  appendProgressionEvent(event: ProgressionEvent): void;
 
   /**
    * Stage assigning a wrestler to a player's primary or alternate slot.

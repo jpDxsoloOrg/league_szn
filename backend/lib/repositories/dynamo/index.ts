@@ -15,6 +15,7 @@ import {
   DynamoRivalryNotesRepository,
 } from './DynamoRivalriesRepository';
 import { DynamoMatchRatingsRepository } from './DynamoMatchRatingsRepository';
+import { DynamoProgressionRepository } from './DynamoProgressionRepository';
 import { createDynamoUnitOfWorkFactory } from './DynamoUnitOfWork';
 import { dynamoClearAllData, dynamoExportAllData, dynamoImportAllData } from './adminOps';
 
@@ -31,6 +32,7 @@ registerDriver('dynamo', (): Repositories => ({
   rivalryMessages: new DynamoRivalryMessagesRepository(),
   rivalryNotes: new DynamoRivalryNotesRepository(),
   matchRatings: new DynamoMatchRatingsRepository(),
+  progression: new DynamoProgressionRepository(),
   runInTransaction: createDynamoUnitOfWorkFactory(),
   clearAllData: dynamoClearAllData,
   exportAllData: dynamoExportAllData,

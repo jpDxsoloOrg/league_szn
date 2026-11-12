@@ -59,6 +59,9 @@ export class DynamoRosterRepository implements RosterRepository {
       ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {}),
       ...(input.psnId !== undefined ? { psnId: input.psnId } : {}),
       ...(input.divisionId !== undefined ? { divisionId: input.divisionId } : {}),
+      ...(input.divisionId !== undefined
+        ? { divisionJoinedAt: input.divisionJoinedAt ?? now }
+        : {}),
       ...(input.companyId !== undefined ? { companyId: input.companyId } : {}),
       ...(input.alignment !== undefined ? { alignment: input.alignment } : {}),
       wins: 0,

@@ -45,6 +45,9 @@ provider:
     RIVALRY_MESSAGES_TABLE: ${self:service}-rivalry-messages-${self:provider.stage}
     RIVALRY_NOTES_TABLE: ${self:service}-rivalry-notes-${self:provider.stage}
     MATCH_RATINGS_TABLE: ${self:service}-match-ratings-${self:provider.stage}
+    PROGRESSION_TRACKS_TABLE: ${self:service}-progression-tracks-${self:provider.stage}
+    PLAYER_PROGRESSION_TABLE: ${self:service}-player-progression-${self:provider.stage}
+    PROGRESSION_EVENTS_TABLE: ${self:service}-progression-events-${self:provider.stage}
     VIDEOS_TABLE: ${self:service}-videos-${self:provider.stage}
     ANNOUNCEMENTS_TABLE: ${self:service}-announcements-${self:provider.stage}
     NOTIFICATIONS_TABLE: ${self:service}-notifications-${self:provider.stage}
@@ -132,6 +135,10 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RIVALRY_NOTES_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RIVALRY_NOTES_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCH_RATINGS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PROGRESSION_TRACKS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PLAYER_PROGRESSION_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PLAYER_PROGRESSION_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PROGRESSION_EVENTS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.ANNOUNCEMENTS_TABLE}
@@ -2289,6 +2296,83 @@ resources:
           - AttributeName: matchId
             KeyType: HASH
           - AttributeName: userId
+            KeyType: RANGE
+
+    # Progression (CUP-01): call-up / promotion / relegation tracks. New
+    # tables land in the Overflow nested stack via stacks-map.js (root is at
+    # the 500-resource limit).
+    ProgressionTracksTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.PROGRESSION_TRACKS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        AttributeDefinitions:
+          - AttributeName: trackId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: trackId
+            KeyType: HASH
+
+    # One row per (player, track). TrackIndex lists a track's candidates
+    # sorted by progressPct without a scan.
+    PlayerProgressionTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.PLAYER_PROGRESSION_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        AttributeDefinitions:
+          - AttributeName: playerId
+            AttributeType: S
+          - AttributeName: trackId
+            AttributeType: S
+          - AttributeName: progressPct
+            AttributeType: N
+        KeySchema:
+          - AttributeName: playerId
+            KeyType: HASH
+          - AttributeName: trackId
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: TrackIndex
+            KeySchema:
+              - AttributeName: trackId
+                KeyType: HASH
+              - AttributeName: progressPct
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    # Audit log of consideration marks and executed moves. The sort key is
+    # `${createdAt}#${eventId}` so same-millisecond events never collide.
+    ProgressionEventsTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.PROGRESSION_EVENTS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        AttributeDefinitions:
+          - AttributeName: playerId
+            AttributeType: S
+          - AttributeName: createdAtEventId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: playerId
+            KeyType: HASH
+          - AttributeName: createdAtEventId
             KeyType: RANGE
 
     VideosTable:

@@ -1,7 +1,8 @@
 import { TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
 import { dynamoDb, TableNames } from '../../dynamodb';
 import type { UnitOfWork, RecordDelta, MatchWriteCondition, PlayerWriteCondition } from '../unitOfWork';
-import type { ChallengeStatus, TagTeam } from '../types';
+import type { ChallengeStatus, PlayerProgression, ProgressionEvent, TagTeam } from '../types';
+import { buildUpsertProgressionUpdate, toProgressionEventItem } from './progressionRows';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
 import {
   participantSk,
@@ -689,6 +690,25 @@ export class DynamoUnitOfWork implements UnitOfWork {
       kind: 'matchRating',
       matchId: input.matchId,
       userId: input.userId,
+    });
+  }
+
+  // ── Progression (CUP-01) ─────────────────────────────────────────
+  upsertPlayerProgression(progression: PlayerProgression): void {
+    this.staged.push({
+      Update: {
+        TableName: TableNames.PLAYER_PROGRESSION,
+        ...buildUpsertProgressionUpdate(progression),
+      },
+    });
+  }
+
+  appendProgressionEvent(event: ProgressionEvent): void {
+    this.staged.push({
+      Put: {
+        TableName: TableNames.PROGRESSION_EVENTS,
+        Item: toProgressionEventItem(event),
+      },
     });
   }
 

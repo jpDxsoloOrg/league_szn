@@ -20,6 +20,8 @@ function makeStores(): Stores {
     rivalryMessages: [],
     rivalryNotes: [],
     matchRatings: new Map(),
+    playerProgression: new Map(),
+    progressionEvents: [],
   };
 }
 

@@ -174,6 +174,24 @@ describe('createPlayer', () => {
     expect(JSON.parse(result!.body).divisionId).toBe(divisionId);
   });
 
+  it('stamps divisionJoinedAt on a player created with a division', async () => {
+    const division = await repos.leagueOps.divisions.create({ name: 'Raw' });
+
+    const result = await createPlayer(
+      makeEvent({ body: JSON.stringify({ name: 'John', currentWrestler: 'Rock', divisionId: division.divisionId }) }),
+      ctx,
+      cb,
+    );
+
+    const body = JSON.parse(result!.body);
+    expect(body.divisionJoinedAt).toBe(body.createdAt);
+  });
+
+  it('leaves divisionJoinedAt unset on a player created without a division', async () => {
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    expect(player.divisionJoinedAt).toBeUndefined();
+  });
+
   it('returns 400 for missing body', async () => {
     const event = makeEvent({ body: null });
 
@@ -438,6 +456,30 @@ describe('updatePlayer', () => {
 
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body).divisionId).toBe(divisionId);
+  });
+
+  it('restamps divisionJoinedAt only when the division actually changes', async () => {
+    const raw = await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const smackdown = await repos.leagueOps.divisions.create({ name: 'SmackDown' });
+    const player = await repos.roster.players.create({
+      name: 'John',
+      currentWrestler: 'Rock',
+      divisionId: raw.divisionId,
+      divisionJoinedAt: '2026-01-01T00:00:00.000Z',
+    });
+    const update = (divisionId: string) => updatePlayer(
+      withAuth(makeEvent({ pathParameters: { playerId: player.playerId }, body: JSON.stringify({ divisionId }) }), 'Admin'),
+      ctx,
+      cb,
+    );
+
+    const same = JSON.parse((await update(raw.divisionId))!.body);
+    expect(same.divisionJoinedAt).toBe('2026-01-01T00:00:00.000Z');
+
+    const moved = JSON.parse((await update(smackdown.divisionId))!.body);
+    expect(moved.divisionId).toBe(smackdown.divisionId);
+    expect(moved.divisionJoinedAt).not.toBe('2026-01-01T00:00:00.000Z');
+    expect(Date.parse(moved.divisionJoinedAt)).not.toBeNaN();
   });
 
   it('returns 404 when divisionId references non-existent division', async () => {

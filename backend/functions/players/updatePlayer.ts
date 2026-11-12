@@ -92,6 +92,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           return notFound(`Division ${body.divisionId} not found`);
         }
         patch.divisionId = body.divisionId as string;
+        if (patch.divisionId !== player.divisionId) {
+          patch.divisionJoinedAt = new Date().toISOString();
+        }
         hasChanges = true;
       }
     }

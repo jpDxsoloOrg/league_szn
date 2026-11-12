@@ -153,3 +153,11 @@ export type {
   MatchRatingCreateInput,
 } from './matchRatings';
 export { RatingAlreadyExistsError } from './matchRatings';
+
+export type {
+  ProgressionRepository,
+  ProgressionTrackFilter,
+  ListByTrackOptions,
+  ListProgressionEventsOptions,
+} from './progression';
+export { progressionEventSortKey } from './progression';

@@ -32,6 +32,8 @@ export interface PlayerCreateInput {
   imageUrl?: string;
   psnId?: string;
   divisionId?: string;
+  /** Defaults to the create time when `divisionId` is set. */
+  divisionJoinedAt?: string;
   companyId?: string;
   alignment?: 'face' | 'heel' | 'neutral';
   bio?: string;
@@ -48,6 +50,8 @@ export interface PlayerPatch {
   imageUrl?: string;
   psnId?: string;
   divisionId?: string;
+  /** Set alongside `divisionId` whenever the division actually changes. */
+  divisionJoinedAt?: string;
   companyId?: string;
   stableId?: string | null;
   tagTeamId?: string | null;
