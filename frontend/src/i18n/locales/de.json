@@ -425,6 +425,7 @@
       "events": "Events & PPV",
       "tournaments": "Turniere",
       "contenders": "Herausforderer-Ranglisten",
+      "tagTeamRankings": "So funktionieren die Tag-Team-Ranglisten",
       "profile": "Mein Profil",
       "challenges": "Herausforderungen",
       "promos": "Promos",
@@ -2305,6 +2306,10 @@
     }
   },
   "tagTeams": {
+    "contenderChip": {
+      "label": "#{{rank}} Herausforderer — {{championship}}",
+      "listLabel": "Platzierungen als Tag-Team-Herausforderer"
+    },
     "title": "Tag Teams",
     "standings": "Tag-Team-Rangliste",
     "detail": "Tag-Team-Details",
@@ -2368,6 +2373,7 @@
     },
     "detailPage": {
       "backToList": "Zurück zu den Tag Teams",
+      "championship": "Meisterschaft",
       "error": "Tag-Team-Details konnten nicht geladen werden",
       "matchFormat": "Match-Format",
       "noHistory": "Dieses Team hat noch kein Match bestritten.",
@@ -2375,6 +2381,7 @@
       "notFoundDesc": "Das gesuchte Tag Team existiert nicht.",
       "opponent": "Gegner",
       "record": "Bilanz",
+      "titleReigns": "Titelregentschaften",
       "totalMatches": "Matches gesamt",
       "unknownOpponent": "Unbekannt",
       "vs": "gegen"
@@ -2432,7 +2439,25 @@
       "topThreePositions": "Top-3-Positionen",
       "comingSoon": "Dein persönlicher Herausforderer-Status ist noch nicht verfügbar.",
       "requiresAuth": "Bis dahin zeigt die Gesamtrangliste, wo alle stehen.",
-      "viewRankings": "Gesamtrangliste ansehen"
+      "viewRankings": "Gesamtrangliste ansehen",
+      "tagTitles": {
+        "heading": "Tag-Team-Titel",
+        "teamLabel": "Dein Team: {{name}}",
+        "rank": "#{{rank}}",
+        "champions": "Champions",
+        "unranked": "Nicht platziert",
+        "matchesInPeriod_one": "{{count}} Kampf in diesem Zeitraum",
+        "matchesInPeriod_other": "{{count}} Kämpfe in diesem Zeitraum",
+        "matchesNeeded_one": "Teams brauchen mindestens {{count}} Tag-Team-Kampf im Ranglistenzeitraum, um sich zu qualifizieren",
+        "matchesNeeded_other": "Teams brauchen mindestens {{count}} Tag-Team-Kämpfe im Ranglistenzeitraum, um sich zu qualifizieren",
+        "notInTeam": "Du bist in keinem Tag Team und hast daher keine Platzierungen bei Tag-Team-Titeln.",
+        "goToMyTagTeam": "Mein Tag Team",
+        "teamNotActive": "Dein Tag Team ist noch nicht aktiv. Es kann platziert werden, sobald es genehmigt ist.",
+        "noTagTitles": "Es gibt keine aktiven Tag-Team-Titel.",
+        "loadFailed": "Deine Tag-Team-Platzierungen konnten nicht geladen werden.",
+        "loginRequired": "Melde dich an, um die Platzierungen deines Tag Teams zu sehen.",
+        "singlesComingSoon": "Der Einzel-Herausforderer-Status ist noch nicht verfügbar."
+      }
     },
     "overrides": {
       "badge": "Manuelle Anpassung",
@@ -2445,10 +2470,13 @@
     },
     "admin": {
       "selectChampionship": "Meisterschaft auswählen",
+      "noChampionships": "Keine Meisterschaften gefunden. Lege zuerst Meisterschaften an.",
       "overrides": {
         "title": "Manuelle Anpassungen",
         "subtitle": "Herausforderer-Positionen für Storyline oder disziplinarische Gründe anpassen",
         "selectPlayer": "Spieler auswählen",
+        "selectTagTeam": "Tag-Team auswählen",
+        "tagTeamColumn": "Tag-Team",
         "overrideType": "Anpassungstyp",
         "bumpToTop": "Auf #1 Herausforderer setzen",
         "sendToBottom": "Ans Ende setzen",
@@ -2484,7 +2512,13 @@
     "rankingsLoadFailed": "Die Rangliste für diesen Titel konnte nicht geladen werden.",
     "movedUp": "{{places}} nach oben",
     "movedDown": "{{places}} nach unten",
-    "noMovement": "Keine Veränderung"
+    "noMovement": "Keine Veränderung",
+    "tagTeam": {
+      "noContenders": "Noch keine berechtigten Tag-Teams",
+      "noContendersHint": "Teams brauchen mindestens {{minMatches}} gemeinsame Matches im Wertungszeitraum, um sich zu qualifizieren",
+      "currentChampions": "Aktuelle Champions",
+      "dissolved": "Aufgelöst"
+    }
   },
   "notifications": {
     "title": "Benachrichtigungen",
@@ -2981,7 +3015,35 @@
       "count_other": "{{count}} Tag Teams",
       "playerMissing": "Ehemaliges Mitglied",
       "dissolveTitle": "Tag Team auflösen",
-      "dissolveConfirm": "„{{name}}“ auflösen? Dies kann nicht rückgängig gemacht werden."
+      "dissolveConfirm": "„{{name}}“ auflösen? Dies kann nicht rückgängig gemacht werden.",
+      "form": {
+        "createButton": "Tag Team erstellen",
+        "createTitle": "Tag Team erstellen",
+        "createDescription": "Das Team ist sofort aktiv. Offene Anfragen, an denen einer der Spieler beteiligt ist, werden geschlossen.",
+        "createSubmit": "Tag Team erstellen",
+        "created": "Tag Team erstellt",
+        "name": "Teamname",
+        "namePlaceholder": "z. B. The Hardy Boyz",
+        "playerPlaceholder": "Spieler suchen...",
+        "inTeam": "(in {{team}})",
+        "image": "Teambild (optional)",
+        "notifyPlayers": "Spieler benachrichtigen",
+        "errors": {
+          "nameRequired": "Gib einen Teamnamen ein.",
+          "playerRequired": "Wähle einen Spieler aus.",
+          "nameTaken": "Ein aktives Tag Team heißt bereits „{{team}}“.",
+          "playerInTeam": "{{player}} ist bereits im aktiven Tag Team „{{team}}“.",
+          "playerNotFound": "Diesen Spieler gibt es nicht mehr. Wähle jemand anderen aus.",
+          "concurrentUpdate": "Einer dieser Spieler hat das Tag Team gewechselt, während dieses Team erstellt wurde. Lade neu und versuche es erneut.",
+          "createFailed": "Tag Team konnte nicht erstellt werden",
+          "updateFailed": "Tag Team konnte nicht aktualisiert werden"
+        },
+        "editTitle": "Tag Team bearbeiten",
+        "editDescription": "Ändere Namen oder Bild des Teams. Alle Seiten zeigen den neuen Namen.",
+        "editSubmit": "Änderungen speichern",
+        "updated": "Gespeichert",
+        "membersLocked": "Mitglieder können hier nicht geändert werden. Um ein Mitglied zu tauschen, löse das Team auf und erstelle ein neues."
+      }
     },
     "factions": {
       "loadError": "Fraktionen konnten nicht geladen werden",
@@ -3167,6 +3229,7 @@
         "rivalryNotes": "Rivalitäts-Notizen",
         "seasonStandings": "Saisontabellen",
         "seasons": "Saisons",
+        "tagTeams": "Tag Teams",
         "tournaments": "Turniere"
       },
       "createdItems": "Erstellte Einträge:",

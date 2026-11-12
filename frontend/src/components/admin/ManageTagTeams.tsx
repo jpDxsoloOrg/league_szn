@@ -17,6 +17,7 @@ import Select from '../ui/Select';
 import { useToast } from '../ui/toastContext';
 import AdminNotice from './AdminNotice';
 import ConfirmModal from './ConfirmModal';
+import CreateTagTeamAdminModal from './CreateTagTeamAdminModal';
 import './adminRoster.css';
 
 const ALL_STATUSES: TagTeamStatus[] = ['pending_partner', 'pending_admin', 'active', 'dissolved'];
@@ -47,6 +48,8 @@ export default function ManageTagTeams() {
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<TagTeam | null>(null);
   const [pendingDissolve, setPendingDissolve] = useState<TagTeam | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<TagTeam | null>(null);
 
   const loadTagTeams = useCallback(async () => {
     try {
@@ -113,6 +116,19 @@ export default function ManageTagTeams() {
     setPendingDissolve(null);
   };
 
+  const handleCreated = async (tagTeam: TagTeam) => {
+    setCreateOpen(false);
+    showToast(`${t('adminRoster.tagTeams.form.created', 'Tag team created')}: ${tagTeam.name}`, 'success');
+    setStatusFilter('active');
+    await loadTagTeams();
+  };
+
+  const handleUpdated = async (tagTeam: TagTeam) => {
+    setEditingTeam(null);
+    showToast(`${t('adminRoster.tagTeams.form.updated', 'Saved')}: ${tagTeam.name}`, 'success');
+    await loadTagTeams();
+  };
+
   const renderPlayer = (playerId: string, storedWrestlerName?: string) => {
     const player = players.find((candidate) => candidate.playerId === playerId);
     if (!player) {
@@ -162,70 +178,77 @@ export default function ManageTagTeams() {
     },
   ];
 
-  // Moderators can only act on pending teams, so the column can be all blanks.
-  const hasRowActions = isSuperAdmin || filtered.some((tagTeam) => tagTeam.status === 'pending_admin');
-  if (hasRowActions) {
-    columns.push({
-      key: 'actions',
-      header: t('common.actions', 'Actions'),
-      align: 'end',
-      render: (tagTeam) => {
-        const busy = submitting === tagTeam.tagTeamId;
-        return (
-          <div className="ar-row-actions">
-            {tagTeam.status === 'pending_admin' && (
-              <>
-                <Button
-                  size="sm"
-                  disabled={busy}
-                  onClick={() => runAction(
-                    tagTeam,
-                    () => tagTeamsApi.approve(tagTeam.tagTeamId),
-                    t('adminRoster.tagTeams.approved', 'Approved'),
-                    t('adminRoster.tagTeams.approveError', 'Failed to approve tag team'),
-                  )}
-                >
-                  {t('adminRoster.tagTeams.approve', 'Approve')}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={busy}
-                  onClick={() => runAction(
-                    tagTeam,
-                    () => tagTeamsApi.reject(tagTeam.tagTeamId),
-                    t('adminRoster.tagTeams.rejected', 'Rejected'),
-                    t('adminRoster.tagTeams.rejectError', 'Failed to reject tag team'),
-                  )}
-                >
-                  {t('adminRoster.tagTeams.reject', 'Reject')}
-                </Button>
-              </>
-            )}
-            {isSuperAdmin && tagTeam.status === 'active' && (
+  // Every staff member can edit any team, so each row has at least Edit.
+  columns.push({
+    key: 'actions',
+    header: t('common.actions', 'Actions'),
+    align: 'end',
+    render: (tagTeam) => {
+      const busy = submitting === tagTeam.tagTeamId;
+      return (
+        <div className="ar-row-actions">
+          <Button variant="secondary" size="sm" disabled={busy} onClick={() => setEditingTeam(tagTeam)}>
+            {t('common.edit', 'Edit')}
+          </Button>
+          {tagTeam.status === 'pending_admin' && (
+            <>
+              <Button
+                size="sm"
+                disabled={busy}
+                onClick={() => runAction(
+                  tagTeam,
+                  () => tagTeamsApi.approve(tagTeam.tagTeamId),
+                  t('adminRoster.tagTeams.approved', 'Approved'),
+                  t('adminRoster.tagTeams.approveError', 'Failed to approve tag team'),
+                )}
+              >
+                {t('adminRoster.tagTeams.approve', 'Approve')}
+              </Button>
               <Button
                 variant="secondary"
                 size="sm"
                 disabled={busy}
-                onClick={() => setPendingDissolve(tagTeam)}
+                onClick={() => runAction(
+                  tagTeam,
+                  () => tagTeamsApi.reject(tagTeam.tagTeamId),
+                  t('adminRoster.tagTeams.rejected', 'Rejected'),
+                  t('adminRoster.tagTeams.rejectError', 'Failed to reject tag team'),
+                )}
               >
-                {t('adminRoster.tagTeams.dissolve', 'Dissolve')}
+                {t('adminRoster.tagTeams.reject', 'Reject')}
               </Button>
-            )}
-            {isSuperAdmin && (
-              <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPendingDelete(tagTeam)}>
-                {t('common.delete', 'Delete')}
-              </Button>
-            )}
-          </div>
-        );
-      },
-    });
-  }
+            </>
+          )}
+          {isSuperAdmin && tagTeam.status === 'active' && (
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={busy}
+              onClick={() => setPendingDissolve(tagTeam)}
+            >
+              {t('adminRoster.tagTeams.dissolve', 'Dissolve')}
+            </Button>
+          )}
+          {isSuperAdmin && (
+            <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPendingDelete(tagTeam)}>
+              {t('common.delete', 'Delete')}
+            </Button>
+          )}
+        </div>
+      );
+    },
+  });
 
   return (
     <div className="ar-page admin-tagteams">
-      <PageHeader title={t('adminRoster.tagTeams.title', 'Manage Tag Teams')} />
+      <PageHeader
+        title={t('adminRoster.tagTeams.title', 'Manage Tag Teams')}
+        actions={!error && (
+          <Button className="am-fab" onClick={() => setCreateOpen(true)} disabled={loading}>
+            {t('adminRoster.tagTeams.form.createButton', 'Create Tag Team')}
+          </Button>
+        )}
+      />
 
       {error ? (
         <>
@@ -262,6 +285,28 @@ export default function ManageTagTeams() {
             empty={<EmptyState title={t('adminRoster.tagTeams.empty', 'No tag teams found')} />}
           />
         </>
+      )}
+
+      {/* Mounted only while open, so each opening starts from an empty form. */}
+      {createOpen && (
+        <CreateTagTeamAdminModal
+          open
+          onClose={() => setCreateOpen(false)}
+          players={players}
+          tagTeams={tagTeams}
+          onSaved={handleCreated}
+          onStale={loadTagTeams}
+        />
+      )}
+      {editingTeam && (
+        <CreateTagTeamAdminModal
+          open
+          onClose={() => setEditingTeam(null)}
+          players={players}
+          tagTeams={tagTeams}
+          tagTeam={editingTeam}
+          onSaved={handleUpdated}
+        />
       )}
 
       <ConfirmModal

@@ -220,6 +220,8 @@ export interface RosterRepository {
     updateDiscipline(playerId: string, patch: PlayerDisciplinePatch, expectedVersion: number): Promise<Player>;
   };
   tagTeams: CrudRepository<TagTeam, TagTeamCreateInput, TagTeamPatch> & {
+    /** Every tag team of every status, including dissolved ones. Unsorted. */
+    listAll(): Promise<TagTeam[]>;
     listByStatus(status: TagTeamStatus): Promise<TagTeam[]>;
     listByPlayer(playerId: string): Promise<TagTeam[]>;
   };

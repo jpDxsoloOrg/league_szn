@@ -4,18 +4,26 @@ import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import './SearchableSelect.css';
 
-interface Option {
+export interface SearchableSelectOption {
   value: string;
   label: string;
+  /** Shown but not selectable, e.g. a player who is already on a team. */
+  disabled?: boolean;
+  /** Muted text after the label, saying why the option is disabled. */
+  hint?: string;
 }
 
 interface SearchableSelectProps {
   id?: string;
-  options: Option[];
+  options: SearchableSelectOption[];
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  /** Read-only: shows the selection but cannot be opened or cleared. */
+  disabled?: boolean;
+  /** Marks the input invalid and points it at the message that explains why. */
+  errorId?: string;
 }
 
 /** Filterable select following the ARIA combobox pattern with a listbox popup. */
@@ -26,6 +34,8 @@ export default function SearchableSelect({
   onChange,
   placeholder = 'Search...',
   className = '',
+  disabled = false,
+  errorId,
 }: SearchableSelectProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -66,15 +76,20 @@ export default function SearchableSelect({
     listRef.current?.children[activeIndex]?.scrollIntoView({ block: 'nearest' });
   }, [activeIndex]);
 
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
+  const handleSelect = (option: SearchableSelectOption) => {
+    if (option.disabled) return;
+    onChange(option.value);
     close();
+  };
+
+  const open = () => {
+    if (!disabled) setIsOpen(true);
   };
 
   const handleInputChange = (nextSearch: string) => {
     setSearch(nextSearch);
     setActiveIndex(-1);
-    if (!isOpen) setIsOpen(true);
+    if (!isOpen) open();
   };
 
   const handleClear = () => {
@@ -105,7 +120,7 @@ export default function SearchableSelect({
         // Enter picks from the list here. It must not submit the enclosing form.
         event.preventDefault();
         const activeOption = filtered[activeIndex];
-        if (activeOption) handleSelect(activeOption.value);
+        if (activeOption) handleSelect(activeOption);
         return;
       }
       case 'Escape':
@@ -138,13 +153,16 @@ export default function SearchableSelect({
           className="searchable-select-input"
           value={isOpen ? search : selectedOption?.label || ''}
           onChange={(event) => handleInputChange(event.target.value)}
-          onFocus={() => setIsOpen(true)}
-          onClick={() => setIsOpen(true)}
+          onFocus={open}
+          onClick={open}
+          disabled={disabled}
+          aria-invalid={errorId ? true : undefined}
+          aria-describedby={errorId}
           onKeyDown={handleKeyDown}
           placeholder={selectedOption ? selectedOption.label : placeholder}
           autoComplete="off"
         />
-        {value && !isOpen && (
+        {value && !isOpen && !disabled && (
           <button
             type="button"
             className="searchable-select-clear"
@@ -170,14 +188,17 @@ export default function SearchableSelect({
                 id={`${baseId}-${index}`}
                 role="option"
                 aria-selected={option.value === value}
+                aria-disabled={option.disabled ? true : undefined}
                 className={[
                   'searchable-select-option',
                   option.value === value ? 'selected' : '',
                   index === activeIndex ? 'active' : '',
+                  option.disabled ? 'disabled' : '',
                 ].filter(Boolean).join(' ')}
-                onClick={() => handleSelect(option.value)}
+                onClick={() => handleSelect(option)}
               >
                 {option.label}
+                {option.hint && <span className="searchable-select-option-hint">{option.hint}</span>}
               </li>
             ))
           )}

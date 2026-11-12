@@ -140,8 +140,13 @@ export class InMemoryCompetitionRepository implements CompetitionRepository {
     update: async (championshipId: string, patch: ChampionshipPatch): Promise<Championship> => {
       const existing = this.championshipsStore.get(championshipId);
       if (!existing) throw new NotFoundError('Championship', championshipId);
-      const { currentChampion, ...rest } = patch;
+      const { currentChampion, currentTagTeamId, ...rest } = patch;
       const updated: Championship = { ...existing, ...rest, updatedAt: new Date().toISOString() };
+      if (currentTagTeamId === null) {
+        delete updated.currentTagTeamId;
+      } else if (currentTagTeamId !== undefined) {
+        updated.currentTagTeamId = currentTagTeamId;
+      }
       if (currentChampion === null) {
         delete (updated as Partial<Championship>).currentChampion;
       } else if (currentChampion !== undefined) {
@@ -159,6 +164,7 @@ export class InMemoryCompetitionRepository implements CompetitionRepository {
       const existing = this.championshipsStore.get(championshipId);
       if (!existing) throw new NotFoundError('Championship', championshipId);
       delete (existing as Partial<Championship>).currentChampion;
+      delete existing.currentTagTeamId;
       existing.updatedAt = new Date().toISOString();
       return existing;
     },
@@ -305,6 +311,8 @@ export class InMemoryCompetitionRepository implements CompetitionRepository {
         isOverridden: input.isOverridden || false,
         overrideType: input.overrideType || null,
         organicRank: input.organicRank || null,
+      entityType: input.entityType ?? 'player',
+      ...(input.tagTeamId ? { tagTeamId: input.tagTeamId } : {}),
         calculatedAt: now,
         updatedAt: now,
       };
@@ -335,6 +343,8 @@ export class InMemoryCompetitionRepository implements CompetitionRepository {
       const item: ContenderOverride = {
         championshipId: input.championshipId,
         playerId: input.playerId,
+        entityType: input.entityType ?? 'player',
+        ...(input.entityType === 'tagTeam' ? { tagTeamId: input.playerId } : {}),
         overrideType: input.overrideType,
         reason: input.reason,
         createdBy: input.createdBy,
@@ -378,6 +388,8 @@ export class InMemoryCompetitionRepository implements CompetitionRepository {
         isOverridden: input.isOverridden || false,
         overrideType: input.overrideType || null,
         organicRank: input.organicRank || null,
+      entityType: input.entityType ?? 'player',
+      ...(input.tagTeamId ? { tagTeamId: input.tagTeamId } : {}),
         createdAt: now,
       };
 

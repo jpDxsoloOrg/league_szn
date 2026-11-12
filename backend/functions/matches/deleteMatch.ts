@@ -277,6 +277,10 @@ async function rollbackChampionshipResult(match: Match): Promise<void> {
       // Restore previous champion on the championship record
       await championships.update(championshipId, {
         currentChampion: previousReign.champion,
+        // Restore the team link too; a tag reign without one clears it.
+        ...(previousReign.tagTeamId
+          ? { currentTagTeamId: previousReign.tagTeamId }
+          : Array.isArray(previousReign.champion) ? { currentTagTeamId: null } : {}),
       });
     } else {
       // No previous reign — title becomes vacant

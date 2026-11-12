@@ -7,6 +7,7 @@ import { invokeAsync } from '../../lib/asyncLambda';
 import { parseBody } from '../../lib/parseBody';
 import { RESULT_NEEDS_CHAMPION_MESSAGE, championIsOnASide } from '../../lib/challengeTitle';
 import { updateGroupStats } from './updateGroupStats';
+import { resolveChampionTagTeamId } from '../../lib/tagTeams/championTagTeam';
 
 interface RecordResultBody {
   winners: string[];
@@ -277,9 +278,27 @@ async function handleTitleChange(
 
   const wonDate = new Date().toISOString();
 
+  // Tag titles: record which registered team won (TTC-10). A random pairing
+  // resolves to null and the reign carries no tagTeamId.
+  let tagTeamId: string | null = null;
+  if (championship.type === 'tag' && Array.isArray(newChampion)) {
+    try {
+      tagTeamId = await resolveChampionTagTeamId(newChampion, wonDate);
+    } catch (err) {
+      console.warn(`Failed to resolve tag team for championship ${championshipId}:`, err);
+    }
+  }
+  const championshipPatch: Record<string, unknown> = { currentChampion: newChampion };
+  if (tagTeamId) {
+    championshipPatch.currentTagTeamId = tagTeamId;
+  } else if (championship.currentTagTeamId) {
+    // The title left a team for a non-team holder: null removes the field.
+    championshipPatch.currentTagTeamId = null;
+  }
+
   await runInTransaction(async (tx) => {
     // Update championship current champion
-    tx.updateChampionship(championshipId, { currentChampion: newChampion });
+    tx.updateChampionship(championshipId, championshipPatch);
 
     // Close old reign if exists
     if (currentReign) {
@@ -294,6 +313,7 @@ async function handleTitleChange(
       championshipId,
       wonDate,
       champion: newChampion,
+      ...(tagTeamId ? { tagTeamId } : {}),
       matchId,
       defenses: 0,
       updatedAt: wonDate,

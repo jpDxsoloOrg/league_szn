@@ -4,10 +4,12 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 const {
   mockTagTeamsFindById,
   mockTagTeamsUpdate,
+  mockTagTeamsListByStatus,
   mockPlayersFindByUserId,
 } = vi.hoisted(() => ({
   mockTagTeamsFindById: vi.fn(),
   mockTagTeamsUpdate: vi.fn(),
+  mockTagTeamsListByStatus: vi.fn(),
   mockPlayersFindByUserId: vi.fn(),
 }));
 
@@ -17,6 +19,7 @@ vi.mock('../../../lib/repositories', () => ({
       tagTeams: {
         findById: mockTagTeamsFindById,
         update: mockTagTeamsUpdate,
+        listByStatus: mockTagTeamsListByStatus,
       },
       players: {
         findByUserId: mockPlayersFindByUserId,
@@ -73,7 +76,10 @@ const baseTagTeam = {
 };
 
 describe('updateTagTeam — TTP-01 wrestler persona fields', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockTagTeamsListByStatus.mockResolvedValue([]);
+  });
 
   it('persists player1WrestlerName and player2WrestlerName when caller is a member', async () => {
     mockTagTeamsFindById.mockResolvedValue(baseTagTeam);
@@ -175,6 +181,84 @@ describe('updateTagTeam — TTP-01 wrestler persona fields', () => {
       player1WrestlerName: '',
       player2WrestlerName: '',
     });
+
+    const result = await updateTagTeam(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(mockTagTeamsUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe('updateTagTeam — TTC-09 staff edits and name uniqueness', () => {
+  const otherActive = { ...baseTagTeam, tagTeamId: 'tt9', name: 'New Day', player1Id: 'p7', player2Id: 'p8' };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockTagTeamsFindById.mockResolvedValue(baseTagTeam);
+    mockTagTeamsListByStatus.mockResolvedValue([baseTagTeam, otherActive]);
+    mockTagTeamsUpdate.mockImplementation(async (_id: string, patch: Record<string, unknown>) => ({
+      ...baseTagTeam,
+      ...patch,
+    }));
+  });
+
+  it('lets a Moderator who is not a member rename the team and change its image', async () => {
+    const event = makeEvent('Moderator', 'mod-sub', { name: '  The Ministry  ', imageUrl: 'https://img/ministry.png' });
+
+    const result = await updateTagTeam(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(mockPlayersFindByUserId).not.toHaveBeenCalled();
+    expect(mockTagTeamsUpdate).toHaveBeenCalledWith('tt1', { name: 'The Ministry', imageUrl: 'https://img/ministry.png' });
+    expect(JSON.parse(result!.body).name).toBe('The Ministry');
+  });
+
+  it('returns 409 TAG_TEAM_NAME_TAKEN when another active team has the name, ignoring case', async () => {
+    const event = makeEvent('Moderator', 'mod-sub', { name: 'new day' });
+
+    const result = await updateTagTeam(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(409);
+    expect(JSON.parse(result!.body)).toEqual({
+      message: 'An active tag team is already named "New Day"',
+      code: 'TAG_TEAM_NAME_TAKEN',
+      conflictingTagTeam: { tagTeamId: 'tt9', name: 'New Day' },
+    });
+    expect(mockTagTeamsListByStatus).toHaveBeenCalledWith('active');
+    expect(mockTagTeamsUpdate).not.toHaveBeenCalled();
+  });
+
+  it('applies the same name check to a member renaming their own team', async () => {
+    mockPlayersFindByUserId.mockResolvedValue({ playerId: 'p1' });
+    const event = makeEvent('Wrestler', 'user-sub-1', { name: 'NEW DAY' });
+
+    const result = await updateTagTeam(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(409);
+    expect(mockTagTeamsUpdate).not.toHaveBeenCalled();
+  });
+
+  it('allows a change of case to the team\'s own name without a clash check', async () => {
+    const event = makeEvent('Moderator', 'mod-sub', { name: 'THE BROOD' });
+
+    const result = await updateTagTeam(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(mockTagTeamsListByStatus).not.toHaveBeenCalled();
+    expect(mockTagTeamsUpdate).toHaveBeenCalledWith('tt1', { name: 'THE BROOD' });
+  });
+
+  it('ignores dissolved teams, since only active teams are listed', async () => {
+    mockTagTeamsListByStatus.mockResolvedValue([baseTagTeam]);
+    const event = makeEvent('Moderator', 'mod-sub', { name: 'New Day' });
+
+    const result = await updateTagTeam(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+  });
+
+  it('returns 400 for an empty name', async () => {
+    const event = makeEvent('Moderator', 'mod-sub', { name: '   ' });
 
     const result = await updateTagTeam(event, ctx, cb);
 

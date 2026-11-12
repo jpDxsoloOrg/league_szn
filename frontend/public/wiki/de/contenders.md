@@ -40,3 +40,7 @@ Ein Unentschieden zählt als gespieltes Match, aber nicht als Sieg, und es beend
 ## Eingriffe des Liga-Teams
 
 Das Liga-Team kann einen Spieler aus Storyline- oder Disziplinargründen verschieben. Solche Spieler tragen das Badge **Auf #1 gesetzt** oder **Ans Ende gesetzt**, dazu steht der Rang, den sie sich über Ergebnisse verdient haben.
+
+## Tag-Titel
+
+Tag-Titel ranken Tag Teams statt Spieler. Unter [So funktionieren die Tag-Team-Ranglisten](/guide/wiki/tag-team-rankings) steht, welche Teams sich qualifizieren, welche Matches zählen und wie Eingriffe und Titelregentschaften bei Teams funktionieren.

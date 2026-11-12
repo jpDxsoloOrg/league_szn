@@ -3,9 +3,10 @@ import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError, forbidden } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
+import { findActiveNameClash, normalizeTagTeamName, tagTeamNameTaken } from './tagTeamNameConflict';
 
 interface UpdateTagTeamBody {
-  name?: string;
+  name?: unknown;
   imageUrl?: string;
   player1WrestlerName?: string;
   player2WrestlerName?: string;
@@ -35,8 +36,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return notFound('Tag team not found');
     }
 
-    // Unless Admin, verify caller is a member of the tag team
-    if (!hasRole(auth, 'Admin')) {
+    // Staff (Moderator and Admin) can edit any team, e.g. a storyline rebrand.
+    // Anyone else must be one of its members.
+    if (!hasRole(auth, 'Moderator')) {
       const callerPlayer = await playersRepo.findByUserId(auth.sub);
       if (!callerPlayer) {
         return badRequest('No player profile linked to your account');
@@ -46,12 +48,25 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         callerPlayer.playerId !== tagTeam.player1Id &&
         callerPlayer.playerId !== tagTeam.player2Id
       ) {
-        return forbidden('Only tag team members or admins can update this tag team');
+        return forbidden('Only tag team members or staff can update this tag team');
       }
     }
 
     const updateFields: Record<string, unknown> = {};
-    if (name !== undefined) updateFields.name = name;
+    if (name !== undefined) {
+      if (typeof name !== 'string' || name.trim() === '') {
+        return badRequest('name must be a non-empty string');
+      }
+      const trimmedName = name.trim();
+      // Same rule as POST /tag-teams/admin. Only a real change is checked, so a
+      // team that already shares a name can still change its image.
+      if (normalizeTagTeamName(trimmedName) !== normalizeTagTeamName(tagTeam.name)) {
+        const activeTeams = await tagTeamsRepo.listByStatus('active');
+        const clash = findActiveNameClash(activeTeams, trimmedName, tagTeamId);
+        if (clash) return tagTeamNameTaken(clash);
+      }
+      updateFields.name = trimmedName;
+    }
     if (imageUrl !== undefined) updateFields.imageUrl = imageUrl;
     // Empty/whitespace input is treated as "leave unchanged" — read-side
     // falls back to player.currentWrestler when the override is unset.

@@ -40,3 +40,7 @@ A draw counts as a match played but not as a win, and it ends a streak.
 ## Staff Overrides
 
 Staff can move a player for storyline or disciplinary reasons. These players carry a **Bumped to #1** or **Sent to Bottom** badge, along with the rank they earned from results.
+
+## Tag Titles
+
+Tag titles rank tag teams instead of players. See [How Tag Team Rankings Work](/guide/wiki/tag-team-rankings) for which teams qualify, which matches count and how overrides and title reigns work for teams.

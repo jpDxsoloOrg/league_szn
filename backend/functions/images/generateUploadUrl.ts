@@ -15,7 +15,7 @@ const s3Client = new S3Client({
 interface GenerateUploadUrlBody {
   fileName: string;
   fileType: string;
-  folder: 'wrestlers' | 'championships' | 'shows' | 'videos' | 'factions';
+  folder: 'wrestlers' | 'championships' | 'shows' | 'videos' | 'factions' | 'tag-teams';
 }
 
 // Accepted MIME types and the file extension each one is stored under.
@@ -33,8 +33,8 @@ const VIDEO_FOLDER_EXTENSIONS = new Map<string, string>([
   ...IMAGE_EXTENSIONS,
 ]);
 
-// Only the admin panel uploads to these, for championship and show artwork.
-const STAFF_ONLY_FOLDERS: ReadonlySet<string> = new Set(['championships', 'shows']);
+// Only the admin panel uploads to these, for championship, show and tag team artwork.
+const STAFF_ONLY_FOLDERS: ReadonlySet<string> = new Set(['championships', 'shows', 'tag-teams']);
 
 function canUploadToStaffFolder(event: APIGatewayProxyEvent): boolean {
   return process.env.IS_OFFLINE === 'true' || hasRole(getAuthContext(event), 'Admin', 'Moderator');
@@ -73,8 +73,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('fileName, fileType, and folder are required');
     }
 
-    if (!['wrestlers', 'championships', 'shows', 'videos', 'factions'].includes(body.folder)) {
-      return badRequest('folder must be "wrestlers", "championships", "shows", "videos", or "factions"');
+    if (!['wrestlers', 'championships', 'shows', 'videos', 'factions', 'tag-teams'].includes(body.folder)) {
+      return badRequest('folder must be "wrestlers", "championships", "shows", "videos", "factions", or "tag-teams"');
     }
 
     // Validate file type based on folder

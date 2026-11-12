@@ -30,6 +30,8 @@ export interface ChampionshipPatch {
   name?: string;
   type?: 'singles' | 'tag';
   currentChampion?: string | string[] | null;
+  /** null removes the field. */
+  currentTagTeamId?: string | null;
   imageUrl?: string;
   isActive?: boolean;
   defenses?: number;
@@ -56,11 +58,18 @@ export interface ContenderRankingInput {
   isOverridden?: boolean;
   overrideType?: string | null;
   organicRank?: number | null;
+  /** `'tagTeam'` on tag-title rows. Rows written before tag rankings have none: read as `'player'`. */
+  entityType?: 'player' | 'tagTeam';
+  /** Set on tag-team rows, equal to `playerId`. */
+  tagTeamId?: string;
 }
 
 export interface ContenderOverrideInput {
   championshipId: string;
+  /** The overridden entity's id: a tagTeamId when `entityType` is `'tagTeam'`. */
   playerId: string;
+  /** Defaults to `'player'`. Tag-title overrides are `'tagTeam'`. */
+  entityType?: 'player' | 'tagTeam';
   overrideType: 'bump_to_top' | 'send_to_bottom';
   reason: string;
   createdBy: string;
@@ -77,6 +86,10 @@ export interface RankingHistoryInput {
   isOverridden?: boolean;
   overrideType?: string | null;
   organicRank?: number | null;
+  /** `'tagTeam'` on tag-title rows. Rows written before tag rankings have none: read as `'player'`. */
+  entityType?: 'player' | 'tagTeam';
+  /** Set on tag-team rows, equal to `playerId`. */
+  tagTeamId?: string;
 }
 
 // ─── Match Type input types ─────────────────────────────────────────

@@ -21,6 +21,8 @@ export interface AdminFormModalProps {
   error?: string | null;
   /** Extra footer control, placed before Cancel. */
   extraAction?: ReactNode;
+  /** Extra class on the dialog, e.g. `am-sheet` to fill the screen on phones. */
+  className?: string;
   children: ReactNode;
 }
 
@@ -37,6 +39,7 @@ export default function AdminFormModal({
   submitDisabled = false,
   error,
   extraAction,
+  className,
   children,
 }: AdminFormModalProps) {
   const { t } = useTranslation();
@@ -51,6 +54,7 @@ export default function AdminFormModal({
       title={title}
       description={description}
       size={size}
+      className={className}
       footer={(
         <>
           {extraAction}

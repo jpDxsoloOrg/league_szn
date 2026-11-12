@@ -45,6 +45,9 @@ vi.mock('../MyTagTeam.css', () => ({}));
 vi.mock('../CreateTagTeamModal', () => ({
   default: () => null,
 }));
+vi.mock('../TagTeamContenderChip', () => ({
+  default: ({ tagTeamId }: { tagTeamId: string }) => <span data-testid="contender-chip">{tagTeamId}</span>,
+}));
 
 import MyTagTeam from '../MyTagTeam';
 
@@ -161,5 +164,17 @@ describe('MyTagTeam — TTP-01 edit-identity form', () => {
   it('labels the status from the statusLabel keys', async () => {
     renderMyTagTeam();
     expect(await screen.findByText('Active')).toBeInTheDocument();
+  });
+
+  it('shows the contender chip for an active team', async () => {
+    renderMyTagTeam();
+    expect(await screen.findByTestId('contender-chip')).toHaveTextContent('tt1');
+  });
+
+  it('hides the contender chip while the team is pending', async () => {
+    mockTagTeamsGetById.mockResolvedValue({ ...tagTeamDetail, status: 'pending_admin' });
+    renderMyTagTeam();
+    expect(await screen.findByText('Pending Admin')).toBeInTheDocument();
+    expect(screen.queryByTestId('contender-chip')).not.toBeInTheDocument();
   });
 });

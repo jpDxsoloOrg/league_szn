@@ -9,6 +9,8 @@ const { mockTagTeamsApi, mockPlayersApi } = vi.hoisted(() => ({
     reject: vi.fn(),
     dissolve: vi.fn(),
     delete: vi.fn(),
+    adminCreate: vi.fn(),
+    update: vi.fn(),
   },
   mockPlayersApi: { getAllIncludingHidden: vi.fn() },
 }));
@@ -17,9 +19,13 @@ const { mockUseAuth } = vi.hoisted(() => ({ mockUseAuth: vi.fn() }));
 vi.mock('../../../contexts/AuthContext', () => ({ useAuth: mockUseAuth }));
 vi.mock('react-i18next', async () => (await import('./i18nMock')).i18nMock);
 vi.mock('../../../services/api/tagTeams.api', () => ({ tagTeamsApi: mockTagTeamsApi }));
-vi.mock('../../../services/api', () => ({ playersApi: mockPlayersApi }));
+vi.mock('../../../services/api', async () => {
+  const { ApiError, isApiError } = await import('../../../services/api/apiClient');
+  return { ApiError, isApiError, playersApi: mockPlayersApi, imagesApi: {} };
+});
 
 import ManageTagTeams from '../ManageTagTeams';
+import { ToastContext } from '../../ui/toastContext';
 
 const baseTeam = {
   wins: 3,
@@ -103,13 +109,40 @@ describe('ManageTagTeams', () => {
     await waitFor(() => expect(mockTagTeamsApi.dissolve).toHaveBeenCalledWith('t2'));
   });
 
-  it('drops the Actions column for a Moderator with nothing to act on', async () => {
+  it('gives a Moderator Edit on any team, even with nothing to approve', async () => {
     mockUseAuth.mockReturnValue({ isSuperAdmin: false });
     mockTagTeamsApi.getAll.mockResolvedValue([tagTeams[1]]);
     render(<ManageTagTeams />);
 
-    await screen.findByText('New Day');
-    expect(screen.queryByRole('columnheader', { name: /actions/i })).not.toBeInTheDocument();
+    const row = (await screen.findByText('New Day')).closest('tr')!;
+    expect(screen.getByRole('columnheader', { name: /actions/i })).toBeInTheDocument();
+    expect(within(row).getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+  });
+
+  it('renames a team from the Edit dialog, then toasts and reloads', async () => {
+    const user = userEvent.setup();
+    const showToast = vi.fn();
+    mockUseAuth.mockReturnValue({ isSuperAdmin: false });
+    mockTagTeamsApi.update.mockResolvedValue({ ...tagTeams[1], name: 'The New Day' });
+    render(
+      <ToastContext.Provider value={{ showToast }}>
+        <ManageTagTeams />
+      </ToastContext.Provider>,
+    );
+    const row = (await screen.findByText('New Day')).closest('tr')!;
+
+    await user.click(within(row).getByRole('button', { name: 'Edit' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Edit Tag Team' });
+    expect(within(dialog).getByLabelText('Player 1')).toBeDisabled();
+    const nameInput = within(dialog).getByLabelText('Team name');
+    await user.clear(nameInput);
+    await user.type(nameInput, 'The New Day');
+    await user.click(within(dialog).getByRole('button', { name: 'Save Changes' }));
+
+    await waitFor(() => expect(mockTagTeamsApi.update).toHaveBeenCalledWith('t2', { name: 'The New Day' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(showToast).toHaveBeenCalledWith('Saved: The New Day', 'success');
+    expect(mockTagTeamsApi.getAll).toHaveBeenCalledTimes(2);
   });
 
   it('keeps the Actions column for a Moderator with a team to approve', async () => {
@@ -162,6 +195,47 @@ describe('ManageTagTeams', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
     await waitFor(() => { expect(mockTagTeamsApi.delete).toHaveBeenCalledWith('t2'); });
+  });
+
+  it('creates a team from the modal, then toasts, reloads and shows active teams', async () => {
+    const user = userEvent.setup();
+    const showToast = vi.fn();
+    const freePlayers = [
+      ...players,
+      { playerId: 'p3', name: 'Kofi', currentWrestler: 'Kofi Kingston', wins: 0, losses: 0, draws: 0, createdAt: '', updatedAt: '' },
+      { playerId: 'p4', name: 'Woods', currentWrestler: 'Xavier Woods', wins: 0, losses: 0, draws: 0, createdAt: '', updatedAt: '' },
+    ];
+    mockPlayersApi.getAllIncludingHidden.mockResolvedValue(freePlayers);
+    mockTagTeamsApi.adminCreate.mockResolvedValue({
+      ...baseTeam, tagTeamId: 't3', name: 'Kofi & Woods', player1Id: 'p3', player2Id: 'p4', status: 'active', supersededTagTeamIds: [],
+    });
+    render(
+      <ToastContext.Provider value={{ showToast }}>
+        <ManageTagTeams />
+      </ToastContext.Provider>,
+    );
+    await screen.findByText('The Usos');
+
+    await user.click(screen.getByRole('button', { name: 'Create Tag Team' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.type(within(dialog).getByLabelText('Team name'), 'Kofi & Woods');
+    await user.click(within(dialog).getByLabelText('Player 1'));
+    // Jey and Newbie are New Day (active), so they cannot be picked.
+    expect(within(dialog).getByRole('option', { name: /Jey Uso/ })).toHaveAttribute('aria-disabled', 'true');
+    await user.click(within(dialog).getByRole('option', { name: /Kofi Kingston/ }));
+    await user.click(within(dialog).getByLabelText('Player 2'));
+    await user.click(within(dialog).getByRole('option', { name: /Xavier Woods/ }));
+    await user.click(within(dialog).getByRole('button', { name: 'Create Tag Team' }));
+
+    await waitFor(() => expect(mockTagTeamsApi.adminCreate).toHaveBeenCalledWith({
+      name: 'Kofi & Woods', player1Id: 'p3', player2Id: 'p4', notifyPlayers: true,
+    }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(showToast).toHaveBeenCalledWith('Tag team created: Kofi & Woods', 'success');
+    expect(mockTagTeamsApi.getAll).toHaveBeenCalledTimes(2);
+    // Filtered to active: the pending team drops out of the list.
+    await waitFor(() => expect(screen.queryByText('The Usos')).not.toBeInTheDocument());
+    expect(screen.getByText('New Day')).toBeInTheDocument();
   });
 
   it('shows the error and retries', async () => {

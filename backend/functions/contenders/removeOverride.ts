@@ -6,6 +6,7 @@ import { invokeAsync } from '../../lib/asyncLambda';
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const championshipId = event.pathParameters?.championshipId;
+    // The overridden entity's id: on a tag title this is the tagTeamId.
     const playerId = event.pathParameters?.playerId;
 
     if (!championshipId || !playerId) {
@@ -18,7 +19,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const existing = await contenders.findOverride(championshipId, playerId);
 
     if (!existing || !existing.active) {
-      return notFound('No active override found for this player and championship');
+      return notFound('No active override found for this contender and championship');
     }
 
     // Deactivate the override
@@ -31,7 +32,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       console.warn('Failed to invoke calculateRankings async:', err);
     }
 
-    return success({ message: 'Override removed successfully', championshipId, playerId });
+    const entityType = existing.entityType ?? 'player';
+    return success({
+      message: 'Override removed successfully',
+      championshipId,
+      playerId,
+      entityType,
+      ...(entityType === 'tagTeam' ? { tagTeamId: playerId } : {}),
+    });
   } catch (err) {
     console.error('Error removing contender override:', err);
     return serverError('Failed to remove contender override');

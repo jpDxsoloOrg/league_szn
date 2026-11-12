@@ -270,6 +270,8 @@ export interface TagTeam {
   createdAt: string;
   updatedAt: string;
   dissolvedAt?: string;
+  /** Why a pending request was closed without becoming active. */
+  rejectionReason?: string;
 }
 
 export type StableStatus = 'pending' | 'approved' | 'active' | 'disbanded';
@@ -480,6 +482,11 @@ export interface Promo {
 
 export interface ContenderRanking {
   championshipId: string;
+  /**
+   * The ranked entity's id. On a tag title (`entityType: 'tagTeam'`) this is
+   * the tagTeamId, so the table key (`championshipId`, `playerId`) works
+   * without a migration. Readers must branch on `entityType`.
+   */
   playerId: string;
   rank: number;
   rankingScore: number;
@@ -496,6 +503,10 @@ export interface ContenderRanking {
   isOverridden?: boolean;
   overrideType?: string | null;
   organicRank?: number | null;
+  /** `'tagTeam'` on tag-title rows. Rows written before tag rankings have none: read as `'player'`. */
+  entityType?: 'player' | 'tagTeam';
+  /** Set on tag-team rows, equal to `playerId`. */
+  tagTeamId?: string;
   calculatedAt: string;
   updatedAt: string;
 }
@@ -504,7 +515,15 @@ export type OverrideType = 'bump_to_top' | 'send_to_bottom';
 
 export interface ContenderOverride {
   championshipId: string;
+  /**
+   * The overridden entity's id. On a tag title (`entityType: 'tagTeam'`) this
+   * is the tagTeamId, matching the contender rankings table.
+   */
   playerId: string;
+  /** `'tagTeam'` on tag-title overrides. Overrides written before tag overrides have none: read as `'player'`. */
+  entityType?: 'player' | 'tagTeam';
+  /** Set on tag-team overrides, equal to `playerId`. */
+  tagTeamId?: string;
   overrideType: OverrideType;
   reason: string;
   createdBy: string;
@@ -516,6 +535,9 @@ export interface ContenderOverride {
 }
 
 export interface RankingHistoryEntry {
+  /**
+   * The ranked entity's id: a tagTeamId when `entityType` is `'tagTeam'`.
+   */
   playerId: string;
   weekKey: string;
   championshipId: string;
@@ -525,6 +547,10 @@ export interface RankingHistoryEntry {
   isOverridden?: boolean;
   overrideType?: string | null;
   organicRank?: number | null;
+  /** `'tagTeam'` on tag-title rows. Rows written before tag rankings have none: read as `'player'`. */
+  entityType?: 'player' | 'tagTeam';
+  /** Set on tag-team rows, equal to `playerId`. */
+  tagTeamId?: string;
   createdAt: string;
 }
 
@@ -664,6 +690,12 @@ export interface Championship {
   name: string;
   type: 'singles' | 'tag';
   currentChampion?: string | string[];
+  /**
+   * Tag titles only: the tag team the current champions hold the title as.
+   * Absent for singles titles, a vacant title, or a random pairing that is
+   * not a registered team (TTC-10).
+   */
+  currentTagTeamId?: string;
   divisionId?: string;
   imageUrl?: string;
   isActive?: boolean;
@@ -676,6 +708,8 @@ export interface ChampionshipHistoryEntry {
   championshipId: string;
   wonDate: string;
   champion: string | string[];
+  /** Tag reigns only: the tag team that won this reign, resolved at `wonDate` (TTC-10). */
+  tagTeamId?: string;
   lostDate?: string;
   daysHeld?: number;
   defenses?: number;

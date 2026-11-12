@@ -429,6 +429,85 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       });
     }
 
+    // ── Tag Teams + tag matches (TTC-11) ───────────────────────
+    // Five active teams. The first holds the tag title; the other four play
+    // a round robin plus two non-title bouts against the champions, so each
+    // has at least the default 3 tag matches the tag ranking needs. Teams
+    // are created before the season's first tag match: a match only counts
+    // for a team that existed on the match date.
+    //
+    // Tag matches live in their own array and join `matches` at import.
+    // The rivalry seed below rewrites the first 8 completed matches as
+    // singles bouts, so they must not be mixed in before it runs.
+    console.log('Creating tag teams and tag matches...');
+    const tagTeamCreatedAt = daysAgo(28).toISOString();
+    const tagTeamSeeds: Array<{ name: string; members: [number, number] }> = [
+      { name: 'Dead Man\'s Game', members: [2, 3] },
+      { name: 'Excellence of Heartbreak', members: [4, 5] },
+      { name: 'Rated Hustle', members: [6, 7] },
+      { name: 'Straight Edge Rated R', members: [8, 9] },
+      { name: 'The Shield Reborn', members: [10, 11] },
+    ];
+    const tagTeams = tagTeamSeeds.map(({ name, members: [first, second] }) => ({
+      tagTeamId: uuidv4(),
+      name,
+      player1Id: players[first].playerId,
+      player2Id: players[second].playerId,
+      player1WrestlerName: players[first].currentWrestler,
+      player2WrestlerName: players[second].currentWrestler,
+      status: 'active',
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      createdAt: tagTeamCreatedAt,
+      updatedAt: tagTeamCreatedAt,
+    }));
+    const [championTagTeam, heartbreak, ratedHustle, straightEdge, shieldReborn] = tagTeams;
+
+    const tagMatches: Record<string, unknown>[] = [];
+    const pushTagMatch = (
+      winnerSide: string[],
+      loserSide: string[],
+      ago: number,
+      stipulation = 'Standard',
+    ): void => {
+      tagMatches.push({
+        matchId: uuidv4(),
+        date: daysAgo(ago).toISOString(),
+        matchFormat: 'tag',
+        stipulation,
+        participants: [...winnerSide, ...loserSide],
+        teams: [winnerSide, loserSide],
+        winners: winnerSide,
+        losers: loserSide,
+        isChampionship: false,
+        seasonId: season.seasonId,
+        status: 'completed',
+        ratingsCount: 0,
+        createdAt: now,
+        version: 1,
+      });
+    };
+    const teamSide = (team: (typeof tagTeams)[number]): string[] => [team.player1Id, team.player2Id];
+    const recordTagResult = (winner: (typeof tagTeams)[number], loser: (typeof tagTeams)[number], ago: number, stipulation?: string): void => {
+      pushTagMatch(teamSide(winner), teamSide(loser), ago, stipulation);
+      winner.wins += 1;
+      loser.losses += 1;
+    };
+
+    // Round robin: Shield Reborn 3-0, Heartbreak 2-1, Rated Hustle 1-2, Straight Edge 0-3.
+    recordTagResult(shieldReborn, heartbreak, 24);
+    recordTagResult(ratedHustle, straightEdge, 22, 'Tables Match');
+    recordTagResult(shieldReborn, ratedHustle, 18);
+    recordTagResult(heartbreak, straightEdge, 15);
+    recordTagResult(shieldReborn, straightEdge, 10, 'No DQ');
+    recordTagResult(heartbreak, ratedHustle, 8);
+    // Non-title bouts against the champions; Rated Hustle scores the upset.
+    recordTagResult(championTagTeam, heartbreak, 6);
+    recordTagResult(ratedHustle, championTagTeam, 4, 'Ladder Match');
+    // A random pairing: neither side is a registered team, so it counts for no team.
+    pushTagMatch([players[0].playerId, players[1].playerId], [players[4].playerId, players[6].playerId], 12);
+
     // ── Championships ──────────────────────────────────────────
     console.log('Creating championships...');
     const championships = [
@@ -457,7 +536,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         championshipId: uuidv4(),
         name: 'Tag Team Championship',
         type: 'tag',
-        currentChampion: [players[2].playerId, players[3].playerId],
+        currentChampion: [championTagTeam.player1Id, championTagTeam.player2Id],
+        currentTagTeamId: championTagTeam.tagTeamId,
         isActive: true,
         createdAt: now,
         updatedAt: now,
@@ -487,6 +567,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         champion: championships[i].currentChampion,
         matchId: uuidv4(),
         defenses: Math.floor(Math.random() * 4),
+        // The tag reign belongs to the champions' registered team (TTC-10).
+        ...(championships[i].type === 'tag' ? { tagTeamId: championTagTeam.tagTeamId } : {}),
       });
     }
 
@@ -747,6 +829,34 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         ranking.previousRank = i + 2;
       }
       contenderRankingsItems.push(ranking);
+    }
+
+    // Tag title rankings: one row per contending team, keyed by tagTeamId
+    // (stored in `playerId`, see ContenderRanking). Ordered by the tag
+    // results seeded above; the next recalculation recomputes the scores.
+    const tagContenders = [shieldReborn, ratedHustle, heartbreak, straightEdge];
+    const tagStreaks = [3, 1, -1, -3];
+    for (let i = 0; i < tagContenders.length; i++) {
+      const team = tagContenders[i];
+      const played = team.wins + team.losses + team.draws;
+      contenderRankingsItems.push({
+        championshipId: championships[2].championshipId,
+        playerId: team.tagTeamId,
+        entityType: 'tagTeam',
+        tagTeamId: team.tagTeamId,
+        rank: i + 1,
+        rankingScore: 85 - i * 15,
+        winPercentage: Math.round((team.wins / played) * 1000) / 10,
+        currentStreak: tagStreaks[i],
+        qualityScore: 70 - i * 12,
+        recencyScore: 80 - i * 10,
+        matchesInPeriod: played,
+        winsInPeriod: team.wins,
+        peakRank: i + 1,
+        weeksAtTop: i === 0 ? 1 : 0,
+        calculatedAt: now,
+        updatedAt: now,
+      });
     }
 
     // ── Ranking History ────────────────────────────────────────
@@ -1331,7 +1441,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       seasonStandings: seasonStandingsItems,
       championships,
       championshipHistory: championshipHistoryItems,
-      matches,
+      matches: [...matches, ...tagMatches],
+      tagTeams,
       tournaments,
       events,
       contenderRankings: contenderRankingsItems,

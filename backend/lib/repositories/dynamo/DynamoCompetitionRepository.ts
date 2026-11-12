@@ -177,8 +177,18 @@ class ChampionshipsDynamo implements ChampionshipsMethods {
   }
 
   async update(championshipId: string, patch: ChampionshipPatch): Promise<Championship> {
-    const { UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues } =
-      buildUpdateExpression(patch, new Date().toISOString());
+    // currentTagTeamId: null means "remove the field", not "store NULL".
+    const { currentTagTeamId, ...setFields } = patch;
+    const built = buildUpdateExpression(
+      currentTagTeamId === null ? setFields : patch,
+      new Date().toISOString(),
+    );
+    const { ExpressionAttributeNames, ExpressionAttributeValues } = built;
+    let { UpdateExpression } = built;
+    if (currentTagTeamId === null) {
+      ExpressionAttributeNames['#currentTagTeamId'] = 'currentTagTeamId';
+      UpdateExpression = `${UpdateExpression} REMOVE #currentTagTeamId`;
+    }
     try {
       const result = await dynamoDb.update({
         TableName: TableNames.CHAMPIONSHIPS,
@@ -206,7 +216,7 @@ class ChampionshipsDynamo implements ChampionshipsMethods {
     const result = await dynamoDb.update({
       TableName: TableNames.CHAMPIONSHIPS,
       Key: { championshipId },
-      UpdateExpression: 'REMOVE currentChampion SET updatedAt = :now, version = if_not_exists(version, :zero) + :one',
+      UpdateExpression: 'REMOVE currentChampion, currentTagTeamId SET updatedAt = :now, version = if_not_exists(version, :zero) + :one',
       ExpressionAttributeValues: { ':now': new Date().toISOString(), ':zero': 0, ':one': 1 },
       ReturnValues: 'ALL_NEW',
     });
@@ -400,6 +410,8 @@ class ContendersDynamo implements ContendersMethods {
       isOverridden: input.isOverridden || false,
       overrideType: input.overrideType || null,
       organicRank: input.organicRank || null,
+    entityType: input.entityType ?? 'player',
+    ...(input.tagTeamId ? { tagTeamId: input.tagTeamId } : {}),
       calculatedAt: now,
       updatedAt: now,
     };
@@ -453,6 +465,8 @@ class ContendersDynamo implements ContendersMethods {
     const item: ContenderOverride = {
       championshipId: input.championshipId,
       playerId: input.playerId,
+      entityType: input.entityType ?? 'player',
+      ...(input.entityType === 'tagTeam' ? { tagTeamId: input.playerId } : {}),
       overrideType: input.overrideType,
       reason: input.reason,
       createdBy: input.createdBy,
@@ -500,6 +514,8 @@ class ContendersDynamo implements ContendersMethods {
       isOverridden: input.isOverridden || false,
       overrideType: input.overrideType || null,
       organicRank: input.organicRank || null,
+    entityType: input.entityType ?? 'player',
+    ...(input.tagTeamId ? { tagTeamId: input.tagTeamId } : {}),
       createdAt: now,
     };
 

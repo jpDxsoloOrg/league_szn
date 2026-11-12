@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SlidersHorizontal } from 'lucide-react';
 import type { Championship, Player } from '../../types';
-import type { ContenderOverride, OverridePlacement, OverrideType } from '../../types/contender';
-import { championshipsApi, contendersApi, playersApi } from '../../services/api';
+import type { ContenderOverride, OverridePlacement, OverrideType, SetOverrideRequest } from '../../types/contender';
+import type { TagTeam } from '../../types/tagTeam';
+import { championshipsApi, contendersApi, playersApi, tagTeamsApi } from '../../services/api';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
@@ -12,7 +13,7 @@ import EmptyState from '../ui/EmptyState';
 import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
-import { pickablePlayers } from '../../utils/pickablePlayers';
+import { pickablePlayers, pickableTagTeams } from '../../utils/pickablePlayers';
 import AdminNotice from './AdminNotice';
 import useAdminConfirm from './useAdminConfirm';
 import './adminContent.css';
@@ -26,13 +27,22 @@ const PLACEMENT_MESSAGE_KEYS: Record<Exclude<OverridePlacement['status'], 'onLis
   recalculationFailed: 'contenders.admin.overrides.placedFailed',
 };
 
+/** The current champion's player ids. */
+function championIdsOf(championship: Championship | undefined): string[] {
+  const champion = championship?.currentChampion;
+  if (!champion) return [];
+  return Array.isArray(champion) ? champion : [champion];
+}
+
 export default function AdminContenderOverrides() {
   const { t } = useTranslation();
   const { confirm, confirmDialog } = useAdminConfirm();
   const [championships, setChampionships] = useState<Championship[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [tagTeams, setTagTeams] = useState<TagTeam[]>([]);
   const [selectedChampionshipId, setSelectedChampionshipId] = useState('');
-  const [selectedPlayerId, setSelectedPlayerId] = useState('');
+  // A playerId on a singles title, a tagTeamId on a tag title
+  const [selectedEntityId, setSelectedEntityId] = useState('');
   const [overrideType, setOverrideType] = useState<OverrideType>('bump_to_top');
   const [reason, setReason] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
@@ -51,12 +61,14 @@ export default function AdminContenderOverrides() {
       setLoading(true);
       setLoadError(null);
       try {
-        const [championshipData, playerData] = await Promise.all([
+        const [championshipData, playerData, tagTeamData] = await Promise.all([
           championshipsApi.getAll(controller.signal),
           playersApi.getAllIncludingHidden(controller.signal),
+          tagTeamsApi.getAll({ status: 'active' }, controller.signal),
         ]);
         setChampionships(championshipData);
         setPlayers(playerData);
+        setTagTeams(tagTeamData);
         setSelectedChampionshipId(championshipData[0]?.championshipId ?? '');
       } catch (err) {
         if (controller.signal.aborted) return;
@@ -101,20 +113,47 @@ export default function AdminContenderOverrides() {
     ? bookablePlayers.filter((player) => player.divisionId === selectedChampionship.divisionId)
     : bookablePlayers;
 
+  // A tag title ranks active teams: both members must be bookable, in the
+  // title's division, and the team must not hold the title.
+  const isTagTitle = selectedChampionship?.type === 'tag';
+  const tagTeamsById = useMemo(() => new Map(tagTeams.map((team) => [team.tagTeamId, team])), [tagTeams]);
+  const memberNames = (team: TagTeam): string => [team.player1Id, team.player2Id]
+    .map((memberId) => playersById.get(memberId)?.name ?? memberId)
+    .join(' & ');
+  const championIds = championIdsOf(selectedChampionship);
+  const filteredTagTeams = pickableTagTeams(tagTeams, players).filter((team) => {
+    const members = [playersById.get(team.player1Id), playersById.get(team.player2Id)];
+    if (members.some((member) => !member)) return false;
+    if (selectedChampionship?.divisionId && members.some((member) => member?.divisionId !== selectedChampionship.divisionId)) {
+      return false;
+    }
+    return !(championIds.includes(team.player1Id) && championIds.includes(team.player2Id));
+  });
+
+  /** The name staff see for the selected entity. */
+  const entityName = (entityId: string): string | undefined => (
+    isTagTitle ? tagTeamsById.get(entityId)?.name : playersById.get(entityId)?.name
+  );
+  const overrideName = (override: ContenderOverride): string => (
+    override.entityType === 'tagTeam'
+      ? override.tagTeamName ?? tagTeamsById.get(override.playerId)?.name ?? override.playerId
+      : playersById.get(override.playerId)?.name ?? override.playerId
+  );
+
   const clearForm = () => {
-    setSelectedPlayerId('');
+    setSelectedEntityId('');
     setOverrideType('bump_to_top');
     setReason('');
     setExpiresAt('');
   };
 
   const handleApply = async () => {
-    if (!selectedChampionshipId || !selectedPlayerId || !reason.trim()) return;
+    if (!selectedChampionshipId || !selectedEntityId || !reason.trim()) return;
 
-    const player = playersById.get(selectedPlayerId);
+    const name = entityName(selectedEntityId) ?? selectedEntityId;
     const confirmed = await confirm({
       title: t('contenders.admin.overrides.confirmApply', {
-        player: player?.name ?? selectedPlayerId,
+        player: name,
         championship: selectedChampionship?.name ?? selectedChampionshipId,
       }),
       confirmLabel: t('contenders.admin.overrides.apply'),
@@ -125,16 +164,19 @@ export default function AdminContenderOverrides() {
     setSubmitting(true);
     setMessage(null);
     try {
-      const { placement } = await contendersApi.setOverride({
+      const fields = {
         championshipId: selectedChampionshipId,
-        playerId: selectedPlayerId,
         overrideType,
         reason: reason.trim(),
         expiresAt: expiresAt || undefined,
-      });
+      };
+      const request: SetOverrideRequest = isTagTitle
+        ? { ...fields, tagTeamId: selectedEntityId }
+        : { ...fields, playerId: selectedEntityId };
+      const { placement } = await contendersApi.setOverride(request);
       setMessage(placement.status === 'onList'
-        ? { type: 'success', text: t('contenders.admin.overrides.placedOnList', { player: player?.name, rank: placement.rank }) }
-        : { type: 'warning', text: t(PLACEMENT_MESSAGE_KEYS[placement.status], { player: player?.name }) });
+        ? { type: 'success', text: t('contenders.admin.overrides.placedOnList', { player: name, rank: placement.rank }) }
+        : { type: 'warning', text: t(PLACEMENT_MESSAGE_KEYS[placement.status], { player: name }) });
       clearForm();
       setOverridesReloadKey((key) => key + 1);
     } catch (err) {
@@ -148,9 +190,9 @@ export default function AdminContenderOverrides() {
   };
 
   const handleRemove = async (override: ContenderOverride) => {
-    const player = playersById.get(override.playerId);
+    const name = overrideName(override);
     const confirmed = await confirm({
-      title: t('contenders.admin.overrides.confirmRemove', { player: player?.name ?? override.playerId }),
+      title: t('contenders.admin.overrides.confirmRemove', { player: name }),
       confirmLabel: t('contenders.admin.overrides.remove'),
     });
     if (!confirmed) return;
@@ -158,7 +200,7 @@ export default function AdminContenderOverrides() {
     setMessage(null);
     try {
       await contendersApi.removeOverride(override.championshipId, override.playerId);
-      setMessage({ type: 'success', text: t('contenders.admin.overrides.removeSuccess', { player: player?.name }) });
+      setMessage({ type: 'success', text: t('contenders.admin.overrides.removeSuccess', { player: name }) });
       setOverridesReloadKey((key) => key + 1);
     } catch (err) {
       setMessage({
@@ -220,7 +262,7 @@ export default function AdminContenderOverrides() {
               value={selectedChampionshipId}
               onChange={(event) => {
                 setSelectedChampionshipId(event.target.value);
-                setSelectedPlayerId('');
+                setSelectedEntityId('');
               }}
             >
               {championships.map((championship) => (
@@ -228,15 +270,27 @@ export default function AdminContenderOverrides() {
               ))}
             </select>
           </div>
-          <div className="ac-field">
-            <label className="ac-field__label" htmlFor="override-player-select">{t('contenders.admin.overrides.selectPlayer')}</label>
-            <select id="override-player-select" value={selectedPlayerId} onChange={(event) => setSelectedPlayerId(event.target.value)}>
-              <option value="">{t('contenders.admin.overrides.selectPlayer')}</option>
-              {filteredPlayers.map((player) => (
-                <option key={player.playerId} value={player.playerId}>{player.name} ({player.currentWrestler})</option>
-              ))}
-            </select>
-          </div>
+          {isTagTitle ? (
+            <div className="ac-field">
+              <label className="ac-field__label" htmlFor="override-tag-team-select">{t('contenders.admin.overrides.selectTagTeam')}</label>
+              <select id="override-tag-team-select" value={selectedEntityId} onChange={(event) => setSelectedEntityId(event.target.value)}>
+                <option value="">{t('contenders.admin.overrides.selectTagTeam')}</option>
+                {filteredTagTeams.map((team) => (
+                  <option key={team.tagTeamId} value={team.tagTeamId}>{team.name} ({memberNames(team)})</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="ac-field">
+              <label className="ac-field__label" htmlFor="override-player-select">{t('contenders.admin.overrides.selectPlayer')}</label>
+              <select id="override-player-select" value={selectedEntityId} onChange={(event) => setSelectedEntityId(event.target.value)}>
+                <option value="">{t('contenders.admin.overrides.selectPlayer')}</option>
+                {filteredPlayers.map((player) => (
+                  <option key={player.playerId} value={player.playerId}>{player.name} ({player.currentWrestler})</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <fieldset className="ac-field ac-choice-group">
@@ -281,7 +335,7 @@ export default function AdminContenderOverrides() {
         </div>
 
         <div className="ac-actions">
-          <Button onClick={handleApply} loading={submitting} disabled={!selectedPlayerId || !reason.trim()}>
+          <Button onClick={handleApply} loading={submitting} disabled={!selectedEntityId || !reason.trim()}>
             {t('contenders.admin.overrides.apply')}
           </Button>
         </div>
@@ -304,8 +358,21 @@ export default function AdminContenderOverrides() {
           columns={[
             {
               key: 'player',
-              header: t('adminContent.contenders.player', 'Player'),
+              header: isTagTitle
+                ? t('contenders.admin.overrides.tagTeamColumn')
+                : t('adminContent.contenders.player', 'Player'),
               render: (override) => {
+                if (override.entityType === 'tagTeam') {
+                  const team = tagTeamsById.get(override.playerId);
+                  const members = override.members?.map((member) => member.playerName).join(' & ')
+                    ?? (team ? memberNames(team) : undefined);
+                  return (
+                    <span className="ac-cell__text">
+                      <span className="ac-cell__title">{overrideName(override)}</span>
+                      {members && <span className="ac-cell__sub">{members}</span>}
+                    </span>
+                  );
+                }
                 const player = playersById.get(override.playerId);
                 return (
                   <span className="ac-cell__text">

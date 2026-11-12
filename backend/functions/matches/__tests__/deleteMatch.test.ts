@@ -162,6 +162,32 @@ describe('deleteMatch — title reign guard', () => {
     expect(mockChampionships.update).toHaveBeenCalledWith('c1', { currentChampion: 'pB' });
     expect(mockMatches.delete).toHaveBeenCalledWith('m1', completed.date);
   });
+
+  it('restores the previous tag reign team link, or clears it for a random pairing (TTC-10)', async () => {
+    captureTx();
+    mockMatches.findByIdWithDate.mockResolvedValue(titleMatch);
+    const linked = { championshipId: 'c1', wonDate: '2024-01-01T00:00:00Z', champion: ['pA', 'pB'], tagTeamId: 'tt1', lostDate: '2024-06-10T00:00:00Z' };
+    const created = { championshipId: 'c1', wonDate: '2024-06-10T00:00:00Z', champion: ['p1', 'p2'], tagTeamId: 'tt2', matchId: 'm1' };
+    mockChampionships.listHistory
+      .mockResolvedValueOnce([linked, created])
+      .mockResolvedValueOnce([linked, created])
+      .mockResolvedValueOnce([linked]);
+
+    await deleteMatch(ev(), ctx, cb);
+    expect(mockChampionships.update).toHaveBeenCalledWith('c1', { currentChampion: ['pA', 'pB'], currentTagTeamId: 'tt1' });
+
+    vi.clearAllMocks();
+    captureTx();
+    mockMatches.findByIdWithDate.mockResolvedValue(titleMatch);
+    const randomPair = { ...linked, tagTeamId: undefined };
+    mockChampionships.listHistory
+      .mockResolvedValueOnce([randomPair, created])
+      .mockResolvedValueOnce([randomPair, created])
+      .mockResolvedValueOnce([randomPair]);
+
+    await deleteMatch(ev(), ctx, cb);
+    expect(mockChampionships.update).toHaveBeenCalledWith('c1', { currentChampion: ['pA', 'pB'], currentTagTeamId: null });
+  });
 });
 
 describe('deleteMatch — title defense rollback', () => {

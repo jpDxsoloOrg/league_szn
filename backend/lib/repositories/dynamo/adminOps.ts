@@ -13,6 +13,7 @@ interface TableConfig {
 const TABLE_DEFINITIONS: Record<ExportDatasetKey, Omit<TableConfig, 'key'>> = {
   divisions: { tableName: TableNames.DIVISIONS, partitionKey: 'divisionId' },
   players: { tableName: TableNames.PLAYERS, partitionKey: 'playerId' },
+  tagTeams: { tableName: TableNames.TAG_TEAMS, partitionKey: 'tagTeamId' },
   seasons: { tableName: TableNames.SEASONS, partitionKey: 'seasonId' },
   seasonStandings: { tableName: TableNames.SEASON_STANDINGS, partitionKey: 'seasonId', sortKey: 'playerId' },
   championships: { tableName: TableNames.CHAMPIONSHIPS, partitionKey: 'championshipId' },

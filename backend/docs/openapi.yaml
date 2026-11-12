@@ -316,6 +316,8 @@ components:
         name: { type: string }
         type: { type: string, enum: [singles, tag] }
         currentChampion: { oneOf: [{ type: string }, { type: array, items: { type: string } }] }
+        currentTagTeamId: { type: string, description: 'Tag titles only. The registered tag team holding the title; absent for a random pairing.' }
+        currentTagTeamName: { type: string, description: 'Name of currentTagTeamId, added on read.' }
         divisionId: { type: string }
         imageUrl: { type: string }
         createdAt: { type: string }
@@ -326,6 +328,8 @@ components:
       properties:
         championshipId: { type: string }
         champion: { oneOf: [{ type: string }, { type: array, items: { type: string } }] }
+        tagTeamId: { type: string, description: 'Tag reigns only. The registered tag team that won this reign.' }
+        tagTeamName: { type: string, description: 'Name of tagTeamId, added on read.' }
         wonDate: { type: string }
         lostDate: { type: string }
         matchId: { type: string }
@@ -585,9 +589,84 @@ components:
       properties:
         championshipId: { type: string }
         championshipName: { type: string }
-        currentChampion: { type: object }
-        contenders: { type: array }
-        calculatedAt: { type: string }
+        divisionId: { type: string, nullable: true }
+        currentChampion:
+          nullable: true
+          description: 'Singles titles: a player object (`playerId`, `playerName`, `wrestlerName`, `imageUrl`). Tag titles: a TagTeamContenderChampion built from every holder.'
+          oneOf:
+            - type: object
+              properties:
+                playerId: { type: string }
+                playerName: { type: string }
+                wrestlerName: { type: string }
+                imageUrl: { type: string, nullable: true }
+            - $ref: '#/components/schemas/TagTeamContenderChampion'
+        contenders:
+          type: array
+          description: 'Player rows have no `entityType`. Tag-team rows have `entityType: tagTeam`.'
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/PlayerContenderRow'
+              - $ref: '#/components/schemas/TagTeamContenderRow'
+        calculatedAt: { type: string, nullable: true }
+
+    ContenderMember:
+      type: object
+      properties:
+        playerId: { type: string }
+        playerName: { type: string, description: 'Former member when the player row is gone.' }
+        wrestlerName: { type: string }
+        imageUrl: { type: string, nullable: true }
+
+    PlayerContenderRow:
+      type: object
+      properties:
+        rank: { type: integer }
+        playerId: { type: string }
+        playerName: { type: string }
+        wrestlerName: { type: string }
+        imageUrl: { type: string, nullable: true }
+        rankingScore: { type: number }
+        winPercentage: { type: number }
+        currentStreak: { type: integer }
+        matchesInPeriod: { type: integer }
+        winsInPeriod: { type: integer }
+        previousRank: { type: integer, nullable: true }
+        movement: { type: integer }
+        isNew: { type: boolean }
+        isOverridden: { type: boolean }
+        overrideType: { type: string, nullable: true, enum: [bump_to_top, send_to_bottom, null] }
+        organicRank: { type: integer, nullable: true }
+
+    TagTeamContenderRow:
+      description: 'A ranked tag team. `playerId` equals `tagTeamId`. `playerName` (members joined with " & "), `wrestlerName` (team name) and `imageUrl` (team image) are display fallbacks for older clients.'
+      allOf:
+        - $ref: '#/components/schemas/PlayerContenderRow'
+        - type: object
+          properties:
+            entityType: { type: string, enum: [tagTeam] }
+            tagTeamId: { type: string }
+            tagTeamName: { type: string }
+            tagTeamImageUrl: { type: string, nullable: true }
+            tagTeamStatus: { type: string, description: 'Status today. A dissolved team can still have a stored row.' }
+            members:
+              type: array
+              minItems: 2
+              maxItems: 2
+              items: { $ref: '#/components/schemas/ContenderMember' }
+
+    TagTeamContenderChampion:
+      type: object
+      description: 'Tag title holders. Team fields are null when the holders are not a known tag team.'
+      properties:
+        type: { type: string, enum: [tagTeam] }
+        tagTeamId: { type: string, nullable: true }
+        tagTeamName: { type: string, nullable: true }
+        tagTeamImageUrl: { type: string, nullable: true }
+        members: { type: array, items: { $ref: '#/components/schemas/ContenderMember' } }
+        playerName: { type: string, description: 'Display fallback: member player names joined with " & ".' }
+        wrestlerName: { type: string, description: 'Display fallback: team name, or member wrestler names joined with " & ".' }
+        imageUrl: { type: string, nullable: true, description: 'Display fallback: the team image.' }
 
     SiteFeatures:
       type: object
@@ -826,6 +905,9 @@ components:
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
         dissolvedAt: { type: string, format: date-time }
+        player1WrestlerName: { type: string }
+        player2WrestlerName: { type: string }
+        rejectionReason: { type: string, description: Why a pending request was closed without becoming active }
 
     Video:
       type: object
@@ -922,16 +1004,33 @@ components:
       type: object
       properties:
         championshipId: { type: string }
-        playerId: { type: string }
+        playerId:
+          type: string
+          description: The overridden entity's id. On a tag title (entityType tagTeam) this is the tagTeamId.
+        entityType:
+          type: string
+          enum: [player, tagTeam]
+          description: tagTeam on tag-title overrides. Overrides stored before tag overrides read as player.
+        tagTeamId: { type: string, description: 'Tag overrides only, equal to playerId.' }
         overrideType: { type: string, enum: [bump_to_top, send_to_bottom] }
         reason: { type: string }
         createdBy: { type: string }
         createdAt: { type: string, format: date-time }
         expiresAt: { type: string, format: date-time }
         active: { type: boolean }
-        playerName: { type: string }
-        wrestlerName: { type: string }
-        playerImageUrl: { type: string }
+        playerName: { type: string, description: "On a tag override, the members' names joined with ' & '." }
+        wrestlerName: { type: string, description: 'On a tag override, the team name.' }
+        playerImageUrl: { type: string, description: 'On a tag override, the team image.' }
+        tagTeamName: { type: string, description: 'Tag overrides only.' }
+        members:
+          type: array
+          description: Tag overrides only.
+          items:
+            type: object
+            properties:
+              playerId: { type: string }
+              playerName: { type: string }
+        currentRank: { type: integer, nullable: true }
 
     DeleteUserInput:
       type: object
@@ -1206,7 +1305,11 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200': { description: Contenders }
+        '200':
+          description: Contenders. Tag titles return tag-team rows and a champion block with every holder.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChampionshipContenders' }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /championships/{championshipId}:
@@ -2795,28 +2898,52 @@ paths:
           in: query
           schema: { type: string }
       responses:
-        '200': { description: 'List of overrides with player info and currentRank, the stored position or null when the player is not on the list' }
+        '200':
+          description: 'List of overrides with player (or tag team) info and currentRank, the stored position or null when the entity is not on the list'
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ContenderOverride' }
     post:
       tags: [Contenders]
       summary: Set contender override
-      description: Saves the override, recalculates the title and reports where the player ended up.
+      description: >-
+        Saves the override, recalculates the title and reports where the player or team ended up.
+        A singles title takes playerId and refuses tagTeamId. A tag title ranks tag teams, so it takes
+        tagTeamId (an active team whose members are live, visible, in the title's division and not the
+        current champions) and refuses playerId with 400. Tag overrides are stored with entityType
+        tagTeam and the tagTeamId in playerId.
       security: [{ BearerAuth: [] }]
       requestBody:
         content:
           application/json:
             schema:
               type: object
-              required: [championshipId, playerId, overrideType, reason]
+              required: [championshipId, overrideType, reason]
               properties:
                 championshipId: { type: string }
-                playerId: { type: string }
+                playerId: { type: string, description: 'Singles titles only (required there).' }
+                tagTeamId: { type: string, description: 'Tag titles only (required there).' }
                 overrideType: { type: string, enum: [bump_to_top, send_to_bottom] }
                 reason: { type: string }
                 expiresAt: { type: string, format: date-time }
       responses:
         '201':
           description: Override created. placement.status is onList, notOnList, noActiveSeason or recalculationFailed, and placement.rank is set for onList.
-        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ContenderOverride'
+                  - type: object
+                    properties:
+                      placement:
+                        type: object
+                        properties:
+                          status: { type: string, enum: [onList, notOnList, noActiveSeason, recalculationFailed] }
+                          rank: { type: integer, nullable: true }
+        '400': { description: 'Bad request, including playerId on a tag title, tagTeamId on a singles title, or an unknown or inactive tag team', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
@@ -2833,9 +2960,10 @@ paths:
         - name: playerId
           in: path
           required: true
+          description: The overridden entity's id. On a tag title, the tagTeamId.
           schema: { type: string }
       responses:
-        '200': { description: Override removed }
+        '200': { description: 'Override removed. The body echoes championshipId, playerId and entityType (plus tagTeamId on a tag override).' }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
@@ -3109,6 +3237,75 @@ paths:
       responses:
         '200': { description: Tag teams sorted by wins }
 
+  /tag-teams/admin:
+    post:
+      tags: [Tag Teams]
+      summary: Create an active tag team directly (Moderator or Admin)
+      description: |
+        Forms an active team in one step, skipping the partner-accept and
+        admin-approve stages. In the same transaction it sets both players'
+        tagTeamId and closes every pending request (pending_partner or
+        pending_admin) that involves either player: those rows become
+        `dissolved` with rejectionReason "Superseded by GM-created team".
+        Wrestler names are snapshotted from the players' current wrestlers.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, player1Id, player2Id]
+              properties:
+                name: { type: string, description: Trimmed; must be unique among active teams (case-insensitive) }
+                player1Id: { type: string }
+                player2Id: { type: string }
+                imageUrl: { type: string }
+                notifyPlayers: { type: boolean, default: true, description: Send each player a tag_team_formed notification }
+      responses:
+        '201':
+          description: Created and active
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/TagTeam'
+                  - type: object
+                    properties:
+                      supersededTagTeamIds: { type: array, items: { type: string }, description: Pending requests closed by this call }
+        '400': { description: 'Missing or invalid field, or the same player twice', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Caller is not a Moderator or Admin', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404':
+          description: A player does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  code: { type: string, enum: [PLAYER_NOT_FOUND] }
+                  playerId: { type: string }
+        '409':
+          description: |
+            PLAYER_IN_ACTIVE_TAG_TEAM - a player is already on an active team (playerId and conflictingTagTeam say which).
+            TAG_TEAM_NAME_TAKEN - an active team already has this name (conflictingTagTeam).
+            CONCURRENT_UPDATE - a player's team changed while the request ran; retry.
+            PLAYER_DEACTIVATED / PLAYER_UNAVAILABLE - a player cannot be booked right now (discipline gate).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  code: { type: string, enum: [PLAYER_IN_ACTIVE_TAG_TEAM, TAG_TEAM_NAME_TAKEN, CONCURRENT_UPDATE, PLAYER_DEACTIVATED, PLAYER_UNAVAILABLE] }
+                  playerId: { type: string }
+                  conflictingTagTeam:
+                    type: object
+                    properties:
+                      tagTeamId: { type: string }
+                      name: { type: string }
+
   /tag-teams/{tagTeamId}:
     get:
       tags: [Tag Teams]
@@ -3124,6 +3321,10 @@ paths:
     put:
       tags: [Tag Teams]
       summary: Update tag team
+      description: |
+        A member of the team, or staff (Moderator+) for any team, can change the name,
+        image and wrestler-name overrides. A new name must not match another active team's
+        name (trimmed, case-insensitive).
       security: [{ BearerAuth: [] }]
       parameters:
         - name: tagTeamId
@@ -3136,8 +3337,24 @@ paths:
             schema: { $ref: '#/components/schemas/TagTeam' }
       responses:
         '200': { description: Updated }
+        '400': { description: 'No fields to update, or an empty name', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409':
+          description: TAG_TEAM_NAME_TAKEN - another active team already has this name (conflictingTagTeam).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  code: { type: string, enum: [TAG_TEAM_NAME_TAKEN] }
+                  conflictingTagTeam:
+                    type: object
+                    properties:
+                      tagTeamId: { type: string }
+                      name: { type: string }
     delete:
       tags: [Tag Teams]
       summary: Delete tag team (admin)

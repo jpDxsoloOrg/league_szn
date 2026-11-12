@@ -17,6 +17,7 @@ import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import { useToast } from '../ui/toastContext';
 import CreateTagTeamModal from './CreateTagTeamModal';
+import TagTeamContenderChip from './TagTeamContenderChip';
 import '../factions/groupUi.css';
 import './MyTagTeam.css';
 
@@ -295,6 +296,8 @@ export default function MyTagTeam() {
               </Badge>
             </span>
           </div>
+
+          {tagTeam.status === 'active' && <TagTeamContenderChip tagTeamId={tagTeam.tagTeamId} />}
 
           <dl className="group-stats">
             <div>

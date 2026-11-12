@@ -81,10 +81,37 @@ export interface TagTeamDetailResponse extends TagTeamWithPlayers {
   headToHead: TagTeamHeadToHead[];
   matchTypeRecords: TagTeamMatchTypeRecord[];
   recentMatches: TagTeamRecentMatch[];
+  /** Championship reigns this team won, newest first. Older API responses may omit it. */
+  titleReigns?: TagTeamTitleReign[];
+}
+
+export interface TagTeamTitleReign {
+  championshipId: string;
+  championshipName: string;
+  imageUrl?: string;
+  wonDate: string;
+  lostDate?: string;
+  daysHeld?: number;
+  defenses: number;
 }
 
 export interface CreateTagTeamInput {
   name: string;
   partnerId: string;
   imageUrl?: string;
+}
+
+/** Body for POST /tag-teams/admin, where a GM forms an active team directly. */
+export interface AdminCreateTagTeamInput {
+  name: string;
+  player1Id: string;
+  player2Id: string;
+  imageUrl?: string;
+  /** Defaults to true on the server. */
+  notifyPlayers?: boolean;
+}
+
+export interface AdminCreateTagTeamResult extends TagTeam {
+  /** Pending requests for either player that the new team closed. */
+  supersededTagTeamIds: string[];
 }

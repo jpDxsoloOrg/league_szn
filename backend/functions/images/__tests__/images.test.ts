@@ -229,7 +229,7 @@ describe('generateUploadUrl — auth & validation', () => {
     const result = await generateUploadUrl(event, ctx, cb);
 
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('folder must be "wrestlers", "championships", "shows", "videos", or "factions"');
+    expect(JSON.parse(result!.body).message).toBe('folder must be "wrestlers", "championships", "shows", "videos", "factions", or "tag-teams"');
   });
 
   it('accepts "wrestlers" as a valid folder', async () => {
@@ -258,7 +258,7 @@ describe('generateUploadUrl — auth & validation', () => {
     expect(result!.statusCode).toBe(200);
   });
 
-  it.each(['championships', 'shows'])('refuses %s uploads from a plain wrestler', async (folder) => {
+  it.each(['championships', 'shows', 'tag-teams'])('refuses %s uploads from a plain wrestler', async (folder) => {
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ fileName: 'photo.png', fileType: 'image/png', folder }) }),
       'Wrestler',
@@ -270,7 +270,7 @@ describe('generateUploadUrl — auth & validation', () => {
     expect(mockGetSignedUrl).not.toHaveBeenCalled();
   });
 
-  it.each(['championships', 'shows'])('accepts %s uploads from a moderator', async (folder) => {
+  it.each(['championships', 'shows', 'tag-teams'])('accepts %s uploads from a moderator', async (folder) => {
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ fileName: 'photo.png', fileType: 'image/png', folder }) }),
       'Moderator',

@@ -425,6 +425,7 @@
       "events": "Events & PPV",
       "tournaments": "Tournaments",
       "contenders": "Contender Rankings",
+      "tagTeamRankings": "How Tag Team Rankings Work",
       "profile": "My Profile",
       "challenges": "Challenges",
       "promos": "Promos",
@@ -2305,6 +2306,10 @@
     }
   },
   "tagTeams": {
+    "contenderChip": {
+      "label": "#{{rank}} contender — {{championship}}",
+      "listLabel": "Tag title contender rankings"
+    },
     "title": "Tag Teams",
     "standings": "Tag Team Standings",
     "detail": "Tag Team Detail",
@@ -2368,6 +2373,7 @@
     },
     "detailPage": {
       "backToList": "Back to Tag Teams",
+      "championship": "Championship",
       "error": "Failed to load tag team details",
       "matchFormat": "Match Format",
       "noHistory": "This team has not wrestled yet.",
@@ -2375,6 +2381,7 @@
       "notFoundDesc": "The tag team you are looking for does not exist.",
       "opponent": "Opponent",
       "record": "Record",
+      "titleReigns": "Title Reigns",
       "totalMatches": "Total Matches",
       "unknownOpponent": "Unknown",
       "vs": "vs"
@@ -2432,7 +2439,25 @@
       "topThreePositions": "Top 3 Positions",
       "comingSoon": "Personal contender status isn't available yet.",
       "requiresAuth": "In the meantime, the overall rankings show where everyone stands.",
-      "viewRankings": "View Overall Rankings"
+      "viewRankings": "View Overall Rankings",
+      "tagTitles": {
+        "heading": "Tag Titles",
+        "teamLabel": "Your team: {{name}}",
+        "rank": "#{{rank}}",
+        "champions": "Champions",
+        "unranked": "Not ranked",
+        "matchesInPeriod_one": "{{count}} match this period",
+        "matchesInPeriod_other": "{{count}} matches this period",
+        "matchesNeeded_one": "Teams need at least {{count}} tag match in the ranking period to qualify",
+        "matchesNeeded_other": "Teams need at least {{count}} tag matches in the ranking period to qualify",
+        "notInTeam": "You are not in a tag team, so you have no tag title rankings.",
+        "goToMyTagTeam": "My Tag Team",
+        "teamNotActive": "Your tag team isn't active yet. It can be ranked once it is approved.",
+        "noTagTitles": "There are no active tag titles.",
+        "loadFailed": "Couldn't load your tag title rankings.",
+        "loginRequired": "Log in to see your tag team's rankings.",
+        "singlesComingSoon": "Singles contender status isn't available yet."
+      }
     },
     "overrides": {
       "badge": "Manual Override",
@@ -2445,10 +2470,13 @@
     },
     "admin": {
       "selectChampionship": "Select Championship",
+      "noChampionships": "No championships found. Create championships first.",
       "overrides": {
         "title": "Manual Overrides",
         "subtitle": "Override contender positions for storyline or disciplinary reasons",
         "selectPlayer": "Select Player",
+        "selectTagTeam": "Select Tag Team",
+        "tagTeamColumn": "Tag Team",
         "overrideType": "Override Type",
         "bumpToTop": "Bump to #1 Contender",
         "sendToBottom": "Send to Bottom",
@@ -2484,7 +2512,13 @@
     "rankingsLoadFailed": "Could not load the rankings for this title.",
     "movedUp": "Up {{places}}",
     "movedDown": "Down {{places}}",
-    "noMovement": "No change"
+    "noMovement": "No change",
+    "tagTeam": {
+      "noContenders": "No eligible tag teams yet",
+      "noContendersHint": "Teams need at least {{minMatches}} matches together in the ranking period to qualify",
+      "currentChampions": "Current Champions",
+      "dissolved": "Dissolved"
+    }
   },
   "notifications": {
     "title": "Notifications",
@@ -2977,7 +3011,35 @@
       "count_other": "{{count}} tag teams",
       "playerMissing": "Former member",
       "dissolveTitle": "Dissolve tag team",
-      "dissolveConfirm": "Dissolve \"{{name}}\"? This cannot be undone."
+      "dissolveConfirm": "Dissolve \"{{name}}\"? This cannot be undone.",
+      "form": {
+        "createButton": "Create Tag Team",
+        "createTitle": "Create Tag Team",
+        "createDescription": "The team is active at once. Pending requests involving either player are closed.",
+        "createSubmit": "Create Tag Team",
+        "created": "Tag team created",
+        "name": "Team name",
+        "namePlaceholder": "e.g. The Hardy Boyz",
+        "playerPlaceholder": "Search players...",
+        "inTeam": "(in {{team}})",
+        "image": "Team image (optional)",
+        "notifyPlayers": "Notify players",
+        "errors": {
+          "nameRequired": "Enter a team name.",
+          "playerRequired": "Pick a player.",
+          "nameTaken": "An active tag team is already named \"{{team}}\".",
+          "playerInTeam": "{{player}} is already in the active tag team \"{{team}}\".",
+          "playerNotFound": "This player no longer exists. Pick someone else.",
+          "concurrentUpdate": "One of these players changed tag teams while this team was being created. Reload and try again.",
+          "createFailed": "Failed to create tag team",
+          "updateFailed": "Failed to update tag team"
+        },
+        "editTitle": "Edit Tag Team",
+        "editDescription": "Change the team's name or image. Every page shows the new name.",
+        "editSubmit": "Save Changes",
+        "updated": "Saved",
+        "membersLocked": "Members cannot be changed here. To swap a member, dissolve the team and create a new one."
+      }
     },
     "factions": {
       "loadError": "Failed to load factions",
@@ -3167,6 +3229,7 @@
         "rivalryNotes": "Rivalry Notes",
         "seasonStandings": "Season Standings",
         "seasons": "Seasons",
+        "tagTeams": "Tag Teams",
         "tournaments": "Tournaments"
       },
       "createdItems": "Created Items:",

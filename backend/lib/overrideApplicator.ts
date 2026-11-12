@@ -1,4 +1,4 @@
-import { RankingResult } from './rankingCalculator';
+import { RankingEntityType, RankingResult } from './rankingCalculator';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -7,7 +7,10 @@ import { RankingResult } from './rankingCalculator';
 export type OverrideType = 'bump_to_top' | 'send_to_bottom';
 
 export interface ActiveOverride {
+  /** The overridden entity's id: a tagTeamId when `entityType` is `'tagTeam'`. */
   playerId: string;
+  /** Missing means `'player'`, as on overrides stored before tag titles had them. */
+  entityType?: RankingEntityType;
   overrideType: OverrideType;
   createdAt?: string;
 }
@@ -22,6 +25,16 @@ export interface RankingWithOverride extends RankingResult {
 // Main function
 // ---------------------------------------------------------------------------
 
+/**
+ * The key an override and a ranking row share when they name the same entity.
+ * A player override never matches a tag-team row, or the other way round.
+ */
+function entityKey(entityType: RankingEntityType | undefined, id: string): string {
+  return `${entityType ?? 'player'}#${id}`;
+}
+
+const overrideKey = (override: ActiveOverride): string => entityKey(override.entityType, override.playerId);
+
 /** Oldest first, with playerId settling ties so the order never depends on the read. */
 function byAge(first: ActiveOverride, second: ActiveOverride): number {
   return (first.createdAt ?? '').localeCompare(second.createdAt ?? '')
@@ -33,7 +46,9 @@ function byAge(first: ActiveOverride, second: ActiveOverride): number {
  * `maxContenders` rows numbered 1..N.
  *
  * `rankings` holds the organic list in order, plus a row for any bumped player
- * who would not make it on merit. An override with no row is skipped: the
+ * who would not make it on merit. Overrides match rows by entity type as well
+ * as id, so a player override never moves a tag team's row. An override with
+ * no row is skipped: the
  * calculator gives no row to a player who may not contend for the title, and
  * a player sent to the bottom who isn't listed has nothing to move.
  *
@@ -53,27 +68,27 @@ export function applyOverrides(
     return rankings.map((r, i) => ({ ...r, rank: i + 1 }));
   }
 
-  const rowsByPlayer = new Map<string, RankingWithOverride>(
-    rankings.map((r) => [r.playerId, { ...r, organicRank: r.rank || undefined }]),
+  const rowsByEntity = new Map<string, RankingWithOverride>(
+    rankings.map((r) => [entityKey(r.entityType, r.playerId), { ...r, organicRank: r.rank || undefined }]),
   );
 
   const placedRows = (overrideType: OverrideType): RankingWithOverride[] => overrides
-    .filter((override) => override.overrideType === overrideType && rowsByPlayer.has(override.playerId))
+    .filter((override) => override.overrideType === overrideType && rowsByEntity.has(overrideKey(override)))
     .sort(byAge)
-    .map((override) => ({ ...rowsByPlayer.get(override.playerId)!, isOverridden: true, overrideType }));
+    .map((override) => ({ ...rowsByEntity.get(overrideKey(override))!, isOverridden: true, overrideType }));
 
   const bumped = placedRows('bump_to_top').reverse().slice(0, maxContenders);
   const sentToBottom = placedRows('send_to_bottom');
   const bottomPlaces = Math.min(sentToBottom.length, maxContenders - bumped.length);
   const bottom = sentToBottom.slice(sentToBottom.length - bottomPlaces);
 
-  const overriddenIds = new Set(
+  const overriddenKeys = new Set(
     overrides
       .filter((override) => override.overrideType === 'bump_to_top' || override.overrideType === 'send_to_bottom')
-      .map((override) => override.playerId),
+      .map(overrideKey),
   );
-  const organic = [...rowsByPlayer.values()]
-    .filter((row) => !overriddenIds.has(row.playerId))
+  const organic = [...rowsByEntity.values()]
+    .filter((row) => !overriddenKeys.has(entityKey(row.entityType, row.playerId)))
     .slice(0, maxContenders - bumped.length - bottom.length);
 
   return [...bumped, ...organic, ...bottom].map((row, i) => ({ ...row, rank: i + 1 }));

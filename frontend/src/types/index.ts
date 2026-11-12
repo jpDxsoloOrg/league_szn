@@ -270,6 +270,10 @@ export interface Championship {
   name: string;
   type: 'singles' | 'tag';
   currentChampion?: string | string[]; // playerId or array for tag teams
+  /** Tag titles only: the registered team holding the title (absent for a random pairing). */
+  currentTagTeamId?: string;
+  /** Name of currentTagTeamId, added by the API. */
+  currentTagTeamName?: string;
   divisionId?: string;
   imageUrl?: string;
   createdAt: string;
@@ -279,6 +283,10 @@ export interface Championship {
 export interface ChampionshipReign {
   championshipId: string;
   champion: string | string[];
+  /** Tag reigns only: the registered team that won this reign. */
+  tagTeamId?: string;
+  /** Name of tagTeamId, added by the API. */
+  tagTeamName?: string;
   wonDate: string;
   lostDate?: string;
   matchId: string;
@@ -534,7 +542,7 @@ export interface Video {
   updatedAt: string;
 }
 
-export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'transfer_reviewed' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change' | 'strike_issued' | 'strike_removed' | 'account_reactivated';
+export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'tag_team_formed' | 'transfer_reviewed' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change' | 'strike_issued' | 'strike_removed' | 'account_reactivated';
 
 export interface AppNotification {
   notificationId: string;

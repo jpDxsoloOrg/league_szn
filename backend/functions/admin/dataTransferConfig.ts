@@ -6,6 +6,7 @@
 export const EXPORT_DATASET_KEYS = [
   'divisions',
   'players',
+  'tagTeams',
   'seasons',
   'seasonStandings',
   'championships',

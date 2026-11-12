@@ -158,6 +158,39 @@ describe('recalculateContendersJob', () => {
     expect(await rankedPlayers(world)).toEqual(['p1']);
   });
 
+  it('stores tag-title rows keyed by tagTeamId, with entityType on rankings and history', async () => {
+    const title = await repos.competition.championships.create({
+      name: 'Tag Titles', type: 'tag', currentChampion: ['a1', 'a2'], currentTagTeamId: 'team-a',
+    });
+    const singles = await createTitle('World');
+    mockCalcRankings.mockImplementation(async ({ championshipId }: { championshipId: string }) => (
+      championshipId === title.championshipId
+        ? [{ ...rankResult('team-b', 1), entityType: 'tagTeam', tagTeamId: 'team-b' }]
+        : [rankResult('p1', 1)]
+    ));
+    const writeHistory = vi.spyOn(repos.competition.contenders, 'writeHistory');
+
+    await runJob();
+
+    expect(mockCalcRankings).toHaveBeenCalledWith(expect.objectContaining({
+      championshipId: title.championshipId,
+      championshipType: 'tag',
+      currentChampion: ['a1', 'a2'],
+      currentTagTeamId: 'team-a',
+    }));
+    const [tagRow] = await repos.competition.contenders.listByChampionshipRanked(title.championshipId);
+    expect(tagRow).toMatchObject({ playerId: 'team-b', entityType: 'tagTeam', tagTeamId: 'team-b' });
+    const [singlesRow] = await repos.competition.contenders.listByChampionshipRanked(singles);
+    expect(singlesRow.entityType).toBe('player');
+    expect(singlesRow.tagTeamId).toBeUndefined();
+    expect(writeHistory).toHaveBeenCalledWith(expect.objectContaining({
+      playerId: 'team-b',
+      weekKey: expect.stringMatching(new RegExp(`^${title.championshipId}#\\d{4}-\\d{2}$`)),
+      entityType: 'tagTeam',
+      tagTeamId: 'team-b',
+    }));
+  });
+
   it('honours active overrides and ignores expired ones', async () => {
     const world = await createTitle('World');
     mockCalcRankings.mockResolvedValue([rankResult('p1', 1), rankResult('p2', 2), rankResult('p3', 3)]);

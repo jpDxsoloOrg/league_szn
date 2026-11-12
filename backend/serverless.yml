@@ -1072,6 +1072,10 @@ functions:
           method: get
           cors: *corsConfig
       - http:
+          path: tag-teams/admin
+          method: post
+          cors: *corsConfig
+      - http:
           path: tag-teams/{tagTeamId}
           method: any
           cors: *corsConfig

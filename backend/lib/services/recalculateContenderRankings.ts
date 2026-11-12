@@ -28,6 +28,8 @@ interface RankableChampionship {
   name: string;
   type: 'singles' | 'tag';
   currentChampion?: string | string[];
+  /** Read defensively: only titles that record their tag team champions have it. */
+  currentTagTeamId?: string;
   divisionId?: string;
   isActive?: boolean;
 }
@@ -119,10 +121,17 @@ async function recalculateChampionship(
 
   const activeOverrides = await contenders.listActiveOverrides(championshipId);
 
+  // A tag title ranks teams, so only team overrides apply to it, and a singles
+  // title only player ones. Player overrides left on a tag title from before
+  // tag rankings are ignored here (scripts/cleanup-tag-title-player-overrides.ts
+  // removes them).
+  const rankedEntityType = championship.type === 'tag' ? 'tagTeam' : 'player';
   const validOverrides: ActiveOverride[] = activeOverrides
     .filter((o) => !o.expiresAt || o.expiresAt > now)
+    .filter((o) => (o.entityType ?? 'player') === rankedEntityType)
     .map((o) => ({
       playerId: o.playerId,
+      entityType: rankedEntityType,
       overrideType: o.overrideType as OverrideType,
       createdAt: o.createdAt,
     }));
@@ -133,6 +142,7 @@ async function recalculateChampionship(
     championshipId,
     championshipType: championship.type,
     currentChampion: championship.currentChampion,
+    currentTagTeamId: championship.currentTagTeamId,
     divisionId: useDivisionId,
     seasonId,
     minimumMatches: configOverrides?.minimumMatches ?? 3,
@@ -148,6 +158,9 @@ async function recalculateChampionship(
 
   for (const ranking of adjustedRankings) {
     const oldData = existingMap.get(ranking.playerId);
+    // Tag-title rows key on the tagTeamId through `playerId`; see rankingCalculator.
+    const entityType = ranking.entityType ?? 'player';
+    const tagTeamId = entityType === 'tagTeam' ? (ranking.tagTeamId ?? ranking.playerId) : undefined;
     const { previousRank, peakRank, weeksAtTop, lastTopWeek } = configOverrides?.overrideChange
       ? progressKeptThroughOverride(oldData, ranking.rank)
       : progressFromRanking(oldData, ranking.rank, currentWeek);
@@ -170,6 +183,8 @@ async function recalculateChampionship(
       isOverridden: ranking.isOverridden || false,
       overrideType: ranking.overrideType || null,
       organicRank: ranking.organicRank || null,
+      entityType,
+      ...(tagTeamId ? { tagTeamId } : {}),
     });
 
     if (configOverrides?.overrideChange) continue;
@@ -184,6 +199,8 @@ async function recalculateChampionship(
       isOverridden: ranking.isOverridden || false,
       overrideType: ranking.overrideType || null,
       organicRank: ranking.organicRank || null,
+      entityType,
+      ...(tagTeamId ? { tagTeamId } : {}),
     });
   }
 

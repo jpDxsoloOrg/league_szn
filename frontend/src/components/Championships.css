@@ -72,6 +72,16 @@
   font-weight: 600;
 }
 
+.title-history__team {
+  display: flex;
+  flex-direction: column;
+}
+
+.title-history__members {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
 /* The dialog is already the surface, so the table drops its own. */
 .title-history.ui-table-wrap {
   background-color: transparent;
