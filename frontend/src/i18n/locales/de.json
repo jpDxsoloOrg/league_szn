@@ -831,6 +831,7 @@
         "promos": "Promos",
         "seasonAwards": "Saison-Auszeichnungen",
         "contenderOverrides": "Herausforderer Anpassungen",
+        "progression": "Call-Ups",
         "companies": "Unternehmen",
         "locations": "Veranstaltungsorte",
         "shows": "Shows",
@@ -3739,6 +3740,168 @@
         "callup": "Call-up-Kandidat",
         "promotion": "Aufstiegskandidat",
         "relegation": "Abstiegsgefahr"
+      }
+    },
+    "admin": {
+      "title": "Call-Ups",
+      "subtitle": "Entwicklungs-Wrestler pro Track ranken, Kandidaten markieren und befördern.",
+      "tabs": {
+        "board": "Kandidaten",
+        "tracks": "Tracks & Ziele"
+      },
+      "selectTrack": "Track",
+      "trackRoute": "{{from}} → {{to}}",
+      "inactiveTrack": "{{name}} (inaktiv)",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "newTrack": "Neuer Track",
+      "recompute": "Jetzt neu berechnen",
+      "recomputeDone": "{{players}} Spieler neu berechnet: {{updated}} Zeilen aktualisiert, {{dropped}} entfernt.",
+      "recomputeFailures_one": "{{count}} Spieler fehlgeschlagen.",
+      "recomputeFailures_other": "{{count}} Spieler fehlgeschlagen.",
+      "recomputeFailed": "Neuberechnung fehlgeschlagen: {{message}}",
+      "loadFailed": "Tracks konnten nicht geladen werden: {{message}}",
+      "noTracks": "Noch keine Tracks",
+      "noTracksText": "Lege einen Track an, um die Ziele einer Division festzulegen.",
+      "kinds": {
+        "callup": "Call-Up",
+        "promotion": "Aufstieg",
+        "relegation": "Abstieg"
+      },
+      "windowModes": {
+        "allTime": "Gesamte Zeit",
+        "season": "Aktuelle Saison",
+        "sinceJoinedDivision": "Seit Eintritt in die Division"
+      },
+      "directions": {
+        "atLeast": "Mindestens",
+        "atMost": "Höchstens"
+      },
+      "tracks": {
+        "columns": {
+          "name": "Track",
+          "divisions": "Von → nach",
+          "goals": "Ziele",
+          "window": "Zeitraum",
+          "status": "Status"
+        },
+        "edit": "Track bearbeiten",
+        "editFor": "{{name}} bearbeiten",
+        "noDestination": "Kein Standard"
+      },
+      "editor": {
+        "createTitle": "Neuer Track",
+        "editTitle": "{{name}} bearbeiten",
+        "name": "Name",
+        "kind": "Art",
+        "fromDivision": "Von Division",
+        "toDivision": "Nach Division",
+        "toDivisionNone": "Kein Standardziel",
+        "pickDivision": "Divisionen suchen…",
+        "developmentalHint": "Entwicklung",
+        "windowMode": "Statistiken zählen ab",
+        "active": "Aktiv",
+        "goals": "Ziele",
+        "goalNumber": "Ziel {{number}}",
+        "addGoal": "Ziel hinzufügen",
+        "removeGoal": "Ziel {{number}} entfernen",
+        "metric": "Kennzahl",
+        "direction": "Richtung",
+        "threshold": "Schwellenwert",
+        "weight": "Gewichtung",
+        "minRatedMatches": "Mindestanzahl bewerteter Matches",
+        "minReactions": "Mindestreaktionen pro Promo",
+        "save": "Track speichern",
+        "create": "Track anlegen",
+        "recomputeNote_one": "Beim Speichern wird {{count}} Spieler in {{division}} neu berechnet.",
+        "recomputeNote_other": "Beim Speichern werden {{count}} Spieler in {{division}} neu berechnet.",
+        "recomputeNoteUnknown": "Beim Speichern werden alle Spieler in {{division}} neu berechnet.",
+        "saved": "{{name}} gespeichert.",
+        "created": "{{name}} angelegt.",
+        "errors": {
+          "nameRequired": "Gib dem Track einen Namen.",
+          "nameTooLong": "Der Name darf höchstens 100 Zeichen lang sein.",
+          "fromRequired": "Wähle die Division, die dieser Track rankt.",
+          "toSameAsFrom": "Das Ziel muss sich von der Ausgangsdivision unterscheiden.",
+          "toDevelopmental": "Ein Call-Up kann keine Entwicklungsdivision als Ziel haben.",
+          "goalsRequired": "Füge mindestens ein Ziel hinzu.",
+          "goalsTooMany": "Ein Track kann höchstens 20 Ziele haben.",
+          "thresholdInvalid": "Gib einen Schwellenwert über 0 ein.",
+          "weightInvalid": "Gib eine Gewichtung über 0 ein.",
+          "paramInvalid": "Gib eine ganze Zahl ab 1 ein.",
+          "invalid": "Der Track wurde nicht gespeichert: {{message}}",
+          "conflict": "Hier ist bereits ein anderer Track aktiv: {{message}}"
+        }
+      },
+      "board": {
+        "caption": "Kandidaten auf {{track}}",
+        "sortLabel": "Kandidaten sortieren",
+        "progress": "Fortschritt",
+        "sort": {
+          "progress": "Fortschritt",
+          "goalsMet": "Erfüllte Ziele",
+          "name": "Name"
+        },
+        "flaggedOnly": "Nur markierte",
+        "count_one": "{{count}} Kandidat",
+        "count_other": "{{count}} Kandidaten",
+        "empty": "In dieser Division hat noch niemand Fortschritt auf dem Track.",
+        "emptyFlagged": "Keine Kandidaten markiert.",
+        "trackInactive": "Dieser Track ist inaktiv. Aktiviere ihn, um Spieler zu befördern.",
+        "goalsMet": "{{met}}/{{total}} Ziele",
+        "showGoals": "Ziele",
+        "hideGoals": "Ziele ausblenden",
+        "flagged": "In der engeren Wahl",
+        "notFlagged": "Nicht markiert",
+        "flag": "Markieren",
+        "flagFor": "{{name}} für die engere Wahl markieren",
+        "unflag": "Markierung entfernen",
+        "unflagFor": "{{name}} aus der engeren Wahl nehmen",
+        "flagTitle": "{{name}} markieren",
+        "flagDescription": "Der Wrestler erfährt, dass er in der engeren Wahl ist. Die Notiz bleibt beim Staff.",
+        "note": "GM-Notiz (optional)",
+        "notePlaceholder": "Warum er im Gespräch ist",
+        "noteHint": "Nur Moderatoren und Admins sehen das.",
+        "flagDone": "{{name}} ist in der engeren Wahl.",
+        "unflagDone": "{{name}} ist nicht mehr in der engeren Wahl.",
+        "flagFailed": "Markierung konnte nicht geändert werden: {{message}}"
+      },
+      "execute": {
+        "action": {
+          "callup": "Hochholen",
+          "promotion": "Aufsteigen",
+          "relegation": "Absteigen"
+        },
+        "actionFor": {
+          "callup": "{{name}} hochholen",
+          "promotion": "{{name}} aufsteigen lassen",
+          "relegation": "{{name}} absteigen lassen"
+        },
+        "title": {
+          "callup": "{{name}} hochholen",
+          "promotion": "{{name}} aufsteigen lassen",
+          "relegation": "{{name}} absteigen lassen"
+        },
+        "confirm": {
+          "callup": "Hochholen",
+          "promotion": "Aufsteigen",
+          "relegation": "Absteigen"
+        },
+        "description": "Verschiebt den Wrestler sofort in die Zieldivision.",
+        "targetDivision": "Zieldivision",
+        "targetRequired": "Wähle eine Zieldivision.",
+        "announce": "In den News ankündigen",
+        "proceedAnyway": "Trotzdem fortfahren",
+        "heldTitles": "Gehaltene Titel",
+        "done": "{{name}} wurde nach {{division}} verschoben.",
+        "doneAnnounced": "{{name}} wurde nach {{division}} verschoben und in den News angekündigt.",
+        "errors": {
+          "HOLDS_DIVISION_TITLE": "{{name}} hält Titel, die an die aktuelle Division gebunden sind:",
+          "NOT_IN_SOURCE_DIVISION": "{{name}} ist nicht mehr in der Division dieses Tracks. Lade die Liste neu.",
+          "CONCURRENT_UPDATE": "Jemand anderes hat {{name}} zuerst verschoben. Lade neu und versuche es erneut.",
+          "TARGET_IS_DEVELOPMENTAL": "Ein Call-Up kann keine Entwicklungsdivision als Ziel haben.",
+          "TRACK_INACTIVE": "Dieser Track ist inaktiv. Aktiviere ihn, bevor du jemanden hochholst."
+        }
       }
     }
   }

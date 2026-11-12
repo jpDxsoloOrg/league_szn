@@ -831,6 +831,7 @@
         "promos": "Promos",
         "seasonAwards": "Season Awards",
         "contenderOverrides": "Contender Overrides",
+        "progression": "Call-Ups",
         "companies": "Companies",
         "locations": "Locations",
         "shows": "Shows",
@@ -3739,6 +3740,168 @@
         "callup": "Call-up watch",
         "promotion": "Promotion watch",
         "relegation": "Relegation danger"
+      }
+    },
+    "admin": {
+      "title": "Call-Ups",
+      "subtitle": "Rank developmental wrestlers on a track, flag candidates and move them up.",
+      "tabs": {
+        "board": "Candidates",
+        "tracks": "Tracks & goals"
+      },
+      "selectTrack": "Track",
+      "trackRoute": "{{from}} → {{to}}",
+      "inactiveTrack": "{{name}} (inactive)",
+      "active": "Active",
+      "inactive": "Inactive",
+      "newTrack": "New track",
+      "recompute": "Recompute now",
+      "recomputeDone": "Recomputed {{players}} players: {{updated}} rows updated, {{dropped}} dropped.",
+      "recomputeFailures_one": "{{count}} player failed.",
+      "recomputeFailures_other": "{{count}} players failed.",
+      "recomputeFailed": "Recompute failed: {{message}}",
+      "loadFailed": "Could not load tracks: {{message}}",
+      "noTracks": "No tracks yet",
+      "noTracksText": "Create a track to set the goals a division works toward.",
+      "kinds": {
+        "callup": "Call-up",
+        "promotion": "Promotion",
+        "relegation": "Relegation"
+      },
+      "windowModes": {
+        "allTime": "All time",
+        "season": "Current season",
+        "sinceJoinedDivision": "Since joining the division"
+      },
+      "directions": {
+        "atLeast": "At least",
+        "atMost": "At most"
+      },
+      "tracks": {
+        "columns": {
+          "name": "Track",
+          "divisions": "From → to",
+          "goals": "Goals",
+          "window": "Window",
+          "status": "Status"
+        },
+        "edit": "Edit track",
+        "editFor": "Edit {{name}}",
+        "noDestination": "No default"
+      },
+      "editor": {
+        "createTitle": "New track",
+        "editTitle": "Edit {{name}}",
+        "name": "Name",
+        "kind": "Kind",
+        "fromDivision": "From division",
+        "toDivision": "To division",
+        "toDivisionNone": "No default destination",
+        "pickDivision": "Search divisions…",
+        "developmentalHint": "Developmental",
+        "windowMode": "Count stats from",
+        "active": "Active",
+        "goals": "Goals",
+        "goalNumber": "Goal {{number}}",
+        "addGoal": "Add goal",
+        "removeGoal": "Remove goal {{number}}",
+        "metric": "Metric",
+        "direction": "Direction",
+        "threshold": "Threshold",
+        "weight": "Weight",
+        "minRatedMatches": "Minimum rated matches",
+        "minReactions": "Minimum reactions per promo",
+        "save": "Save track",
+        "create": "Create track",
+        "recomputeNote_one": "Saving recomputes {{count}} player in {{division}}.",
+        "recomputeNote_other": "Saving recomputes {{count}} players in {{division}}.",
+        "recomputeNoteUnknown": "Saving recomputes every player in {{division}}.",
+        "saved": "Saved {{name}}.",
+        "created": "Created {{name}}.",
+        "errors": {
+          "nameRequired": "Give the track a name.",
+          "nameTooLong": "Keep the name to 100 characters or fewer.",
+          "fromRequired": "Pick the division this track ranks.",
+          "toSameAsFrom": "The destination must differ from the source division.",
+          "toDevelopmental": "A call-up cannot target a developmental division.",
+          "goalsRequired": "Add at least one goal.",
+          "goalsTooMany": "A track can have at most 20 goals.",
+          "thresholdInvalid": "Enter a threshold above 0.",
+          "weightInvalid": "Enter a weight above 0.",
+          "paramInvalid": "Enter a whole number of 1 or more.",
+          "invalid": "The track was not saved: {{message}}",
+          "conflict": "Another track is already active here: {{message}}"
+        }
+      },
+      "board": {
+        "caption": "Candidates on {{track}}",
+        "sortLabel": "Sort candidates",
+        "progress": "Progress",
+        "sort": {
+          "progress": "Progress",
+          "goalsMet": "Goals met",
+          "name": "Name"
+        },
+        "flaggedOnly": "Flagged only",
+        "count_one": "{{count}} candidate",
+        "count_other": "{{count}} candidates",
+        "empty": "No one in this division has progress on the track yet.",
+        "emptyFlagged": "No candidates are flagged.",
+        "trackInactive": "This track is inactive. Activate it to call players up.",
+        "goalsMet": "{{met}}/{{total}} goals",
+        "showGoals": "Goals",
+        "hideGoals": "Hide goals",
+        "flagged": "Under consideration",
+        "notFlagged": "Not flagged",
+        "flag": "Flag",
+        "flagFor": "Flag {{name}} for consideration",
+        "unflag": "Unflag",
+        "unflagFor": "Remove {{name}} from consideration",
+        "flagTitle": "Flag {{name}}",
+        "flagDescription": "The wrestler is told they are under consideration. The note stays with staff.",
+        "note": "GM note (optional)",
+        "notePlaceholder": "Why they are in the frame",
+        "noteHint": "Only Moderators and Admins see this.",
+        "flagDone": "{{name}} is under consideration.",
+        "unflagDone": "{{name}} is no longer under consideration.",
+        "flagFailed": "Could not update the flag: {{message}}"
+      },
+      "execute": {
+        "action": {
+          "callup": "Call up",
+          "promotion": "Promote",
+          "relegation": "Relegate"
+        },
+        "actionFor": {
+          "callup": "Call up {{name}}",
+          "promotion": "Promote {{name}}",
+          "relegation": "Relegate {{name}}"
+        },
+        "title": {
+          "callup": "Call up {{name}}",
+          "promotion": "Promote {{name}}",
+          "relegation": "Relegate {{name}}"
+        },
+        "confirm": {
+          "callup": "Call up",
+          "promotion": "Promote",
+          "relegation": "Relegate"
+        },
+        "description": "Moves the wrestler to the target division now.",
+        "targetDivision": "Target division",
+        "targetRequired": "Pick a target division.",
+        "announce": "Announce on News",
+        "proceedAnyway": "Proceed anyway",
+        "heldTitles": "Titles held",
+        "done": "{{name}} moved to {{division}}.",
+        "doneAnnounced": "{{name}} moved to {{division}} and announced on News.",
+        "errors": {
+          "HOLDS_DIVISION_TITLE": "{{name}} holds titles restricted to their current division:",
+          "NOT_IN_SOURCE_DIVISION": "{{name}} is no longer in this track's division. Reload the board.",
+          "CONCURRENT_UPDATE": "Someone else moved {{name}} first. Reload the board and try again.",
+          "TARGET_IS_DEVELOPMENTAL": "A call-up cannot target a developmental division.",
+          "TRACK_INACTIVE": "This track is inactive. Activate it before calling anyone up."
+        }
       }
     }
   }
