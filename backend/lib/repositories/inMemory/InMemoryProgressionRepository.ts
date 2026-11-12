@@ -10,6 +10,7 @@ import type {
   PlayerProgression,
   ProgressionConsideration,
   ProgressionEvent,
+  ProgressionEventType,
   ProgressionTrack,
 } from '../types';
 
@@ -139,5 +140,12 @@ export class InMemoryProgressionRepository implements ProgressionRepository {
       .sort((a, b) => progressionEventSortKey(b).localeCompare(progressionEventSortKey(a)))
       .map(clone);
     return options.limit === undefined ? rows : rows.slice(0, Math.max(0, options.limit));
+  }
+
+  async listEventsByType(type: ProgressionEventType): Promise<ProgressionEvent[]> {
+    return this.eventsStore
+      .filter((event) => event.type === type)
+      .sort((a, b) => progressionEventSortKey(b).localeCompare(progressionEventSortKey(a)))
+      .map(clone);
   }
 }

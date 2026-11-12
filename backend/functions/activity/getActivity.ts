@@ -6,7 +6,7 @@ import { FORMER_MEMBER, isHiddenLivePlayer, realWrestlerName } from '../../lib/n
 import { isChallengeLapsed } from '../../lib/challengeExpiry';
 import { isPromoArchived } from '../../lib/promoArchive';
 
-const ACTIVITY_TYPES = ['match', 'championship', 'challenge', 'promo', 'tournament', 'season'] as const;
+const ACTIVITY_TYPES = ['match', 'championship', 'challenge', 'promo', 'tournament', 'season', 'progression'] as const;
 type ActivityTypeFilter = (typeof ACTIVITY_TYPES)[number];
 
 // Summaries are shown as written, so an id must never stand in for a name.
@@ -18,7 +18,8 @@ export type ActivityItemType =
   | 'season_event'
   | 'tournament_result'
   | 'challenge_event'
-  | 'promo_posted';
+  | 'promo_posted'
+  | 'callup_executed';
 
 export interface ActivityItem {
   id: string;
@@ -86,7 +87,7 @@ function loadIf<TItem>(enabled: boolean, load: () => Promise<TItem[]>): Promise<
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const { limit, cursor, typeFilter } = parseQuery(event);
-    const { competition: { matches, championships, tournaments }, season: { seasons }, user: { challenges }, content: { promos }, roster: { players } } = getRepositories();
+    const { competition: { matches, championships, tournaments }, season: { seasons }, user: { challenges }, content: { promos }, roster: { players }, leagueOps: { divisions }, progression } = getRepositories();
 
     const includeMatch = !typeFilter || typeFilter === 'match';
     const includeChampionship = !typeFilter || typeFilter === 'championship';
@@ -94,6 +95,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const includeTournament = !typeFilter || typeFilter === 'tournament';
     const includeChallenge = !typeFilter || typeFilter === 'challenge';
     const includePromo = !typeFilter || typeFilter === 'promo';
+    const includeProgression = !typeFilter || typeFilter === 'progression';
 
     const rawItems: { type: ActivityItemType; timestamp: string; id: string; summary: string; metadata: Record<string, unknown> }[] = [];
     const playerIds = new Set<string>();
@@ -109,6 +111,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       allPromos,
       allPlayers,
       allChampionships,
+      executedEvents,
+      allDivisions,
     ] = await Promise.all([
       loadIf(includeMatch, () => matches.listCompleted()),
       loadIf(includeChampionship, () => championships.listAllHistory()),
@@ -118,6 +122,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       loadIf(includePromo, () => promos.list()),
       players.listWithDeleted(),
       loadIf(includeChampionship, () => championships.list()),
+      loadIf(includeProgression, () => progression.listEventsByType('executed')),
+      loadIf(includeProgression, () => divisions.list()),
     ]);
 
     for (const m of completedMatches) {
@@ -269,6 +275,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       });
     }
 
+    for (const e of executedEvents) {
+      if (e.kind !== 'callup') continue;
+      rawItems.push({
+        type: 'callup_executed',
+        timestamp: e.createdAt,
+        id: `callup-${e.eventId}`,
+        summary: '',
+        metadata: { playerId: e.playerId, trackId: e.trackId, fromDivisionId: e.fromDivisionId, toDivisionId: e.toDivisionId },
+      });
+    }
+
     const playerNames = buildPlayerNameMap(allPlayers);
     const championshipNames = buildChampionshipNameMap(allChampionships);
     const nameOf = (playerId: unknown): string => playerNames[playerId as string] || FORMER_MEMBER;
@@ -316,6 +333,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const meta = item.metadata;
         meta.playerName = nameOf(meta.playerId);
         item.summary = `${meta.playerName} posted a promo`;
+      } else if (item.type === 'callup_executed') {
+        const meta = item.metadata;
+        meta.playerName = nameOf(meta.playerId);
+        meta.toDivisionName = allDivisions.find((d) => d.divisionId === meta.toDivisionId)?.name;
+        item.summary = meta.toDivisionName
+          ? `${meta.playerName} was called up to ${meta.toDivisionName}`
+          : `${meta.playerName} was called up`;
       }
     }
 
@@ -325,7 +349,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // stay as they did before the row was kept, now with the real name.
     const hiddenPlayerIds = new Set(allPlayers.filter(isHiddenLivePlayer).map((p) => p.playerId));
     const visibleItems = rawItems.filter((item) => {
-      if (item.type === 'promo_posted') return !hiddenPlayerIds.has(item.metadata.playerId as string);
+      if (item.type === 'promo_posted' || item.type === 'callup_executed') return !hiddenPlayerIds.has(item.metadata.playerId as string);
       if (item.type === 'challenge_event') {
         return !hiddenPlayerIds.has(item.metadata.challengerId as string)
           && !hiddenPlayerIds.has(item.metadata.challengedId as string);

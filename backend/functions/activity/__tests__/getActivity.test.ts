@@ -10,6 +10,8 @@ const {
   mockChallengesList,
   mockPromosList,
   mockPlayersList,
+  mockListEventsByType,
+  mockDivisionsList,
 } = vi.hoisted(() => ({
   mockMatchesListCompleted: vi.fn(),
   mockChampionshipsListAllHistory: vi.fn(),
@@ -19,6 +21,8 @@ const {
   mockChallengesList: vi.fn(),
   mockPromosList: vi.fn(),
   mockPlayersList: vi.fn(),
+  mockListEventsByType: vi.fn(),
+  mockDivisionsList: vi.fn(),
 }));
 
 vi.mock('../../../lib/repositories', () => ({
@@ -40,6 +44,8 @@ vi.mock('../../../lib/repositories', () => ({
     roster: {
       players: { listWithDeleted: mockPlayersList },
     },
+    leagueOps: { divisions: { list: mockDivisionsList } },
+    progression: { listEventsByType: mockListEventsByType },
   }),
 }));
 
@@ -75,6 +81,8 @@ function mockAllEmpty() {
   mockChallengesList.mockResolvedValue([]);
   mockPromosList.mockResolvedValue([]);
   mockPlayersList.mockResolvedValue([]);
+  mockListEventsByType.mockResolvedValue([]);
+  mockDivisionsList.mockResolvedValue([]);
 }
 
 describe('getActivity', () => {
@@ -274,6 +282,29 @@ describe('getActivity', () => {
     expect(mockTournamentsList).not.toHaveBeenCalled();
     expect(mockChallengesList).not.toHaveBeenCalled();
     expect(mockPromosList).not.toHaveBeenCalled();
+    expect(mockListEventsByType).not.toHaveBeenCalled();
+  });
+
+  it('lists executed call-ups as callup_executed with the target division name', async () => {
+    mockListEventsByType.mockResolvedValue([
+      { eventId: 'e1', playerId: 'p1', trackId: 't1', kind: 'callup', type: 'executed', fromDivisionId: 'd-yb', toDivisionId: 'd-raw', actorUserId: 'a', createdAt: '2026-11-12T00:00:00.000Z' },
+      { eventId: 'e2', playerId: 'p1', trackId: 't2', kind: 'promotion', type: 'executed', fromDivisionId: 'd-raw', toDivisionId: 'd-top', actorUserId: 'a', createdAt: '2026-11-12T01:00:00.000Z' },
+    ]);
+    mockDivisionsList.mockResolvedValue([{ divisionId: 'd-raw', name: 'Raw' }]);
+    mockPlayersList.mockResolvedValue([{ playerId: 'p1', name: 'Kenta', currentWrestler: 'W' }]);
+
+    const result = await getActivity(makeEvent({ queryStringParameters: { type: 'progression' } }), ctx, cb);
+    const body = JSON.parse(result!.body);
+
+    expect(mockListEventsByType).toHaveBeenCalledWith('executed');
+    expect(mockMatchesListCompleted).not.toHaveBeenCalled();
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0]).toMatchObject({
+      id: 'callup-e1',
+      type: 'callup_executed',
+      summary: 'Kenta was called up to Raw',
+      metadata: { playerId: 'p1', toDivisionId: 'd-raw', toDivisionName: 'Raw' },
+    });
   });
 
   it('returns 500 when a repository method throws', async () => {

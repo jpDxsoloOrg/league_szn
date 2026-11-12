@@ -17,6 +17,7 @@ import type {
   PlayerProgression,
   ProgressionConsideration,
   ProgressionEvent,
+  ProgressionEventType,
   ProgressionKind,
   ProgressionTrack,
 } from './types';
@@ -82,4 +83,6 @@ export interface ProgressionRepository {
   appendEvent(event: ProgressionEvent): Promise<ProgressionEvent>;
   /** One player's events, newest first. */
   listEvents(playerId: string, options?: ListProgressionEventsOptions): Promise<ProgressionEvent[]>;
+  /** Every player's events of one type (a table scan), newest first. Feeds the activity feed. */
+  listEventsByType(type: ProgressionEventType): Promise<ProgressionEvent[]>;
 }

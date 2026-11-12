@@ -385,7 +385,8 @@
       "season_event": "Seasons",
       "tournament_result": "Tournaments",
       "challenge_event": "Challenges",
-      "promo_posted": "Promos"
+      "promo_posted": "Promos",
+      "callup_executed": "Call-ups"
     },
     "timeAgo": {
       "justNow": "Just now",
@@ -2540,7 +2541,8 @@
     "typeTransfer": "Transfer",
     "typeRivalry": "Rivalry",
     "typeStoryline": "Storyline",
-    "typeDiscipline": "Strikes"
+    "typeDiscipline": "Strikes",
+    "typeProgression": "Call-up"
   },
   "overalls": {
     "admin": {

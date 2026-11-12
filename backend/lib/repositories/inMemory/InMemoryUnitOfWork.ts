@@ -18,7 +18,7 @@ import type {
 import { RatingAlreadyExistsError } from '../matchRatings';
 import { ConcurrencyError } from '../errors';
 import type { MatchRating, PlayerProgression, ProgressionEvent } from '../types';
-import { applyEventAppend, applyProgressionUpsert } from './InMemoryProgressionRepository';
+import { applyEventAppend, applyProgressionUpsert, playerProgressionKey } from './InMemoryProgressionRepository';
 
 type StagedOp = () => void;
 
@@ -455,6 +455,12 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     const staged = structuredClone(event);
     this.staged.push(() => {
       applyEventAppend(this.stores.progressionEvents, staged);
+    });
+  }
+
+  deletePlayerProgression(playerId: string, trackId: string): void {
+    this.staged.push(() => {
+      this.stores.playerProgression.delete(playerProgressionKey(playerId, trackId));
     });
   }
 

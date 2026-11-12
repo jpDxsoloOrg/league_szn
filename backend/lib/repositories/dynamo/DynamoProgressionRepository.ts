@@ -1,16 +1,18 @@
 import type { QueryCommandInput } from '@aws-sdk/lib-dynamodb';
 import { dynamoDb, TableNames } from '../../dynamodb';
 import { NotFoundError } from '../errors';
-import type {
-  ListByTrackOptions,
-  ListProgressionEventsOptions,
-  ProgressionRepository,
-  ProgressionTrackFilter,
+import {
+  progressionEventSortKey,
+  type ListByTrackOptions,
+  type ListProgressionEventsOptions,
+  type ProgressionRepository,
+  type ProgressionTrackFilter,
 } from '../progression';
 import type {
   PlayerProgression,
   ProgressionConsideration,
   ProgressionEvent,
+  ProgressionEventType,
   ProgressionTrack,
 } from '../types';
 import {
@@ -184,5 +186,17 @@ export class DynamoProgressionRepository implements ProgressionRepository {
       options.limit,
     );
     return rows.map(fromProgressionEventItem);
+  }
+
+  async listEventsByType(type: ProgressionEventType): Promise<ProgressionEvent[]> {
+    const rows = await dynamoDb.scanAll({
+      TableName: TableNames.PROGRESSION_EVENTS,
+      FilterExpression: '#type = :type',
+      ExpressionAttributeNames: { '#type': 'type' },
+      ExpressionAttributeValues: { ':type': type },
+    });
+    return rows
+      .map(fromProgressionEventItem)
+      .sort((a, b) => progressionEventSortKey(b).localeCompare(progressionEventSortKey(a)));
   }
 }

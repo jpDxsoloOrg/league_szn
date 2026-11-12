@@ -196,6 +196,9 @@ export interface UnitOfWork {
   /** Stage a PUT into the progression events table. Caller owns `eventId` and `createdAt`. */
   appendProgressionEvent(event: ProgressionEvent): void;
 
+  /** Stage deleting one player's row on a track (CUP-06). A missing row is not an error. */
+  deletePlayerProgression(playerId: string, trackId: string): void;
+
   /**
    * Stage assigning a wrestler to a player's primary or alternate slot.
    * Sets `isInUse=true` (string on-disk), `assignedPlayerId`, `assignedSlot`.
