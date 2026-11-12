@@ -1,0 +1,58 @@
+.contender-duo {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+.contender-duo__avatar.ui-avatar {
+  outline: 2px solid var(--color-surface);
+}
+
+.contender-duo--md .contender-duo__avatar + .contender-duo__avatar {
+  margin-left: -0.875rem;
+}
+
+.contender-duo--lg .contender-duo__avatar + .contender-duo__avatar {
+  margin-left: -1.5rem;
+}
+
+.contender-members__link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--color-hairline);
+  text-underline-offset: 0.2em;
+}
+
+.contender-members__link:hover,
+.contender-members__link:focus-visible {
+  color: var(--color-text);
+  text-decoration-color: currentColor;
+}
+
+/* Phones: stack the two portraits diagonally inside a singles-sized (44px) box,
+   so a tag row keeps the same height as a singles row. */
+@media (max-width: 768px) {
+  .contender-duo--md {
+    width: 44px;
+    height: 44px;
+  }
+
+  .contender-duo--md .contender-duo__avatar.ui-avatar {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    font-size: 0.6875rem;
+  }
+
+  .contender-duo--md .contender-duo__avatar:first-child {
+    top: 0;
+    left: 0;
+  }
+
+  .contender-duo--md .contender-duo__avatar + .contender-duo__avatar {
+    right: 0;
+    bottom: 0;
+    margin-left: 0;
+  }
+}

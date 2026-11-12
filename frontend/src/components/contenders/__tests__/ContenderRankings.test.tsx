@@ -1,18 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // --- Hoisted mocks ---
-const { mockGetAllChampionships, mockGetAllDivisions, mockGetForChampionship } = vi.hoisted(() => ({
+const { mockGetAllChampionships, mockGetAllDivisions, mockGetForChampionship, mockGetAllPlayers } = vi.hoisted(() => ({
   mockGetAllChampionships: vi.fn(),
   mockGetAllDivisions: vi.fn(),
   mockGetForChampionship: vi.fn(),
+  mockGetAllPlayers: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
   championshipsApi: { getAll: mockGetAllChampionships },
   divisionsApi: { getAll: mockGetAllDivisions },
   contendersApi: { getForChampionship: mockGetForChampionship },
+  playersApi: { getAll: mockGetAllPlayers },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -34,6 +36,8 @@ vi.mock('react-i18next', () => ({
         'contenders.new': 'NEW',
         'contenders.openDivision': 'Open',
         'contenders.selectChampionship': 'Championship',
+        'contenders.tagTeam.noContenders': 'No eligible tag teams yet',
+        'contenders.tagTeam.currentChampions': 'Current Champions',
         'common.loading': 'Loading...',
       };
       if (key === 'contenders.noContendersHint') {
@@ -46,7 +50,10 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../ContenderRankings.css', () => ({}));
 vi.mock('../ContenderCard.css', () => ({}));
+vi.mock('../ContenderMembers.css', () => ({}));
+vi.mock('../../PlayerHoverCard.css', () => ({}));
 
+import { MemoryRouter } from 'react-router-dom';
 import ContenderRankings from '../ContenderRankings';
 
 // --- Test data ---
@@ -243,5 +250,125 @@ describe('ContenderRankings', () => {
     await waitFor(() => {
       expect(screen.getByText('No active championships found.')).toBeInTheDocument();
     });
+  });
+
+  describe('tag titles', () => {
+    const tagChampionship = {
+      championshipId: 'tag1',
+      name: 'Tag Team Championship',
+      type: 'tag' as const,
+      isActive: true,
+      createdAt: '2024-01-01',
+    };
+
+    const member = (playerId: string, playerName: string, wrestlerName: string) => ({
+      playerId, playerName, wrestlerName, imageUrl: null,
+    });
+
+    const tagRow = {
+      championshipId: 'tag1',
+      entityType: 'tagTeam' as const,
+      playerId: 'tt1',
+      tagTeamId: 'tt1',
+      tagTeamName: 'The Usos',
+      tagTeamImageUrl: null,
+      tagTeamStatus: 'active' as const,
+      members: [member('p2', 'Jey', 'Jey Uso'), member('p3', 'Jimmy', 'Jimmy Uso')],
+      playerName: 'Jey & Jimmy',
+      wrestlerName: 'The Usos',
+      imageUrl: null,
+      rank: 1,
+      rankingScore: 90,
+      winPercentage: 80,
+      currentStreak: 4,
+      qualityScore: 80,
+      recencyScore: 80,
+      matchesInPeriod: 10,
+      winsInPeriod: 8,
+      peakRank: 1,
+      weeksAtTop: 1,
+      calculatedAt: '2024-06-01T12:00:00Z',
+      updatedAt: '2024-06-01T12:00:00Z',
+      movement: 0,
+      isNew: false,
+    };
+
+    const renderPage = () => render(<MemoryRouter><ContenderRankings /></MemoryRouter>);
+
+    beforeEach(() => {
+      mockGetAllChampionships.mockResolvedValue([tagChampionship]);
+      mockGetAllDivisions.mockResolvedValue([]);
+      mockGetAllPlayers.mockResolvedValue([]);
+    });
+
+    it('shows team cards and the champion team with both members', async () => {
+      mockGetForChampionship.mockResolvedValue({
+        championshipId: 'tag1',
+        championshipName: 'Tag Team Championship',
+        currentChampion: {
+          type: 'tagTeam',
+          tagTeamId: 'tt9',
+          tagTeamName: 'New Day',
+          tagTeamImageUrl: null,
+          members: [member('p8', 'Kofi', 'Kofi Kingston'), member('p9', 'Woods', 'Xavier Woods')],
+          playerName: 'Kofi & Woods',
+          wrestlerName: 'New Day',
+          imageUrl: null,
+        },
+        contenders: [tagRow],
+        calculatedAt: null,
+      });
+
+      renderPage();
+
+      const champion = await screen.findByRole('region', { name: 'Current Champions' });
+      expect(champion).toHaveTextContent('New Day');
+      expect(champion).toHaveTextContent('Kofi & Woods');
+      expect(screen.getByRole('link', { name: 'New Day' })).toHaveAttribute('href', '/tag-teams/tt9');
+      expect(screen.getByRole('img', { name: 'Kofi Kingston' })).toBeInTheDocument();
+      expect(screen.getByRole('img', { name: 'Xavier Woods' })).toBeInTheDocument();
+
+      expect(screen.getByRole('link', { name: 'The Usos' })).toHaveAttribute('href', '/tag-teams/tt1');
+      expect(screen.getByText('#1 Contender')).toBeInTheDocument();
+      await waitFor(() => expect(mockGetAllPlayers).toHaveBeenCalled());
+    });
+
+    it('names the members when the holders are not a known team', async () => {
+      mockGetForChampionship.mockResolvedValue({
+        championshipId: 'tag1',
+        championshipName: 'Tag Team Championship',
+        currentChampion: {
+          type: 'tagTeam',
+          tagTeamId: null,
+          tagTeamName: null,
+          tagTeamImageUrl: null,
+          members: [member('p8', 'Kofi', 'Kofi Kingston'), member('p4', 'Sami', 'Sami Zayn')],
+          playerName: 'Kofi & Sami',
+          wrestlerName: 'Kofi Kingston & Sami Zayn',
+          imageUrl: null,
+        },
+        contenders: [],
+        calculatedAt: null,
+      });
+
+      renderPage();
+
+      const champion = await screen.findByRole('region', { name: 'Current Champions' });
+      expect(champion).toHaveTextContent('Kofi Kingston & Sami Zayn');
+      expect(champion).toHaveTextContent('Kofi & Sami');
+      expect(within(champion).queryByRole('link')).not.toBeInTheDocument();
+      expect(screen.getByText('No eligible tag teams yet')).toBeInTheDocument();
+    });
+  });
+
+  it('does not load players for a singles title', async () => {
+    mockGetAllChampionships.mockResolvedValue(mockChampionships);
+    mockGetAllDivisions.mockResolvedValue(mockDivisions);
+    mockGetForChampionship.mockResolvedValue(mockContenderData);
+
+    render(<ContenderRankings />);
+
+    await screen.findByText('The Great One');
+    expect(mockGetAllPlayers).not.toHaveBeenCalled();
   });
 });

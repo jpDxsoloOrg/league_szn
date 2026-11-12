@@ -39,6 +39,17 @@
   color: var(--color-text-muted);
 }
 
+.contender-champion__team-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.contender-champion__team-link:hover,
+.contender-champion__team-link:focus-visible {
+  color: var(--rim-world);
+  text-decoration: underline;
+}
+
 .contender-rankings__heading {
   margin-bottom: 0.75rem;
   font-size: 1.25rem;

@@ -2484,7 +2484,13 @@
     "rankingsLoadFailed": "Could not load the rankings for this title.",
     "movedUp": "Up {{places}}",
     "movedDown": "Down {{places}}",
-    "noMovement": "No change"
+    "noMovement": "No change",
+    "tagTeam": {
+      "noContenders": "No eligible tag teams yet",
+      "noContendersHint": "Teams need at least {{minMatches}} matches together in the ranking period to qualify",
+      "currentChampions": "Current Champions",
+      "dissolved": "Dissolved"
+    }
   },
   "notifications": {
     "title": "Notifications",
