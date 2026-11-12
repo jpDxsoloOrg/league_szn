@@ -47,6 +47,7 @@ export function buildInMemoryRepositories(): Repositories {
       rivalryMessages: rivalryMessages.store,
       rivalryNotes: rivalryNotes.store,
       matchRatings: matchRatings.store,
+      divisions: leagueOps.divisions.store as unknown as Map<string, Record<string, unknown>>,
     });
     try {
       const result = await fn(uow);

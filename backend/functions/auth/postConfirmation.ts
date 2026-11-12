@@ -5,6 +5,7 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider';
 import { getRepositories } from '../../lib/repositories';
 import { NEEDS_WRESTLER, newPlayerName } from '../../lib/needsWrestler';
+import { findDefaultDivisionForNewWrestlers } from '../../lib/divisions';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 
@@ -55,14 +56,12 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
       const existingPlayer = await players.findByUserId(sub);
 
       if (!existingPlayer) {
-        // Default new wrestlers to the "Young Boys" division if it exists.
+        // Place new wrestlers in the division flagged isDefaultForNewWrestlers
+        // (falls back to a "Young Boys" name match with a warning).
         let divisionId: string | undefined;
         try {
           const allDivisions = await divisions.list();
-          const youngBoys = allDivisions.find(
-            (d) => d.name.toLowerCase() === 'young boys'
-          );
-          divisionId = youngBoys?.divisionId;
+          divisionId = findDefaultDivisionForNewWrestlers(allDivisions).division?.divisionId;
         } catch (divisionError) {
           console.error(`Failed to resolve default division for ${username}:`, divisionError);
         }

@@ -401,6 +401,12 @@ components:
         divisionId: { type: string }
         name: { type: string }
         description: { type: string }
+        isDevelopmental:
+          type: boolean
+          description: Developmental (feeder) division, such as Young Boys.
+        isDefaultForNewWrestlers:
+          type: boolean
+          description: New sign-ups land in this division. Setting it to true clears it on the previous default; at most one division carries it.
         createdAt: { type: string }
         updatedAt: { type: string }
 
@@ -1503,9 +1509,11 @@ paths:
             schema: { $ref: '#/components/schemas/Division' }
       responses:
         '200': { description: Updated }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'The previous default division changed concurrently; retry', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     delete:
       tags: [Divisions]
       summary: Delete division

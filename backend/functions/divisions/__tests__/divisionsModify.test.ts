@@ -150,6 +150,86 @@ describe('updateDivision', () => {
   });
 });
 
+describe('updateDivision flags', () => {
+  function put(divisionId: string, body: Record<string, unknown>) {
+    return updateDivision(makeEvent({ pathParameters: { divisionId }, body: JSON.stringify(body) }), ctx, cb);
+  }
+
+  it('sets isDevelopmental', async () => {
+    const created = await repos.leagueOps.divisions.create({ name: 'Young Boys' });
+
+    const result = await put(created.divisionId, { isDevelopmental: true });
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body).isDevelopmental).toBe(true);
+  });
+
+  it('moves the default: setting a new default clears the previous one', async () => {
+    const oldDefault = await repos.leagueOps.divisions.create({ name: 'Young Boys', isDefaultForNewWrestlers: true });
+    const next = await repos.leagueOps.divisions.create({ name: 'Dojo' });
+
+    const result = await put(next.divisionId, { isDefaultForNewWrestlers: true, isDevelopmental: true });
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.isDefaultForNewWrestlers).toBe(true);
+    expect(body.isDevelopmental).toBe(true);
+    expect((await repos.leagueOps.divisions.findById(oldDefault.divisionId))?.isDefaultForNewWrestlers).toBe(false);
+    const all = await repos.leagueOps.divisions.list();
+    expect(all.filter((d) => d.isDefaultForNewWrestlers === true)).toHaveLength(1);
+  });
+
+  it('re-saving the current default keeps it the only default', async () => {
+    const current = await repos.leagueOps.divisions.create({ name: 'Young Boys', isDefaultForNewWrestlers: true });
+
+    const result = await put(current.divisionId, { isDefaultForNewWrestlers: true, name: 'Young Lions' });
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body)).toMatchObject({ name: 'Young Lions', isDefaultForNewWrestlers: true });
+  });
+
+  it('unsetting the default does not touch other divisions', async () => {
+    const current = await repos.leagueOps.divisions.create({ name: 'Young Boys', isDefaultForNewWrestlers: true });
+
+    const result = await put(current.divisionId, { isDefaultForNewWrestlers: false });
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body).isDefaultForNewWrestlers).toBe(false);
+  });
+
+  it('returns 409 when the previous default changed before the write landed', async () => {
+    const oldDefault = await repos.leagueOps.divisions.create({ name: 'Young Boys', isDefaultForNewWrestlers: true });
+    const next = await repos.leagueOps.divisions.create({ name: 'Dojo' });
+    // Simulate another admin clearing the old default between our read and write.
+    const realList = repos.leagueOps.divisions.list.bind(repos.leagueOps.divisions);
+    repos.leagueOps.divisions.list = vi.fn(async () => {
+      const snapshot = (await realList()).map((d) => ({ ...d }));
+      await repos.leagueOps.divisions.update(oldDefault.divisionId, { isDefaultForNewWrestlers: false });
+      return snapshot;
+    });
+
+    const result = await put(next.divisionId, { isDefaultForNewWrestlers: true });
+
+    expect(result!.statusCode).toBe(409);
+    expect((await repos.leagueOps.divisions.findById(next.divisionId))?.isDefaultForNewWrestlers).toBeUndefined();
+  });
+
+  it('returns 404 when setting the default on a missing division', async () => {
+    const result = await put('nonexistent', { isDefaultForNewWrestlers: true });
+
+    expect(result!.statusCode).toBe(404);
+  });
+
+  it('returns 400 for a non-boolean flag', async () => {
+    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
+
+    const result = await put(created.divisionId, { isDevelopmental: 'yes' });
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toBe('isDevelopmental must be a boolean');
+  });
+});
+
 describe('deleteDivision', () => {
   it('deletes division and returns 204', async () => {
     const created = await repos.leagueOps.divisions.create({ name: 'Raw' });

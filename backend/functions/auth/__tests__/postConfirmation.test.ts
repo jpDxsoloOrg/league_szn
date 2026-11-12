@@ -298,8 +298,28 @@ describe('postConfirmation handler', () => {
     });
   });
 
-  it('assigns the Young Boys division when it exists (case-insensitive)', async () => {
+  it('assigns the division flagged isDefaultForNewWrestlers, whatever its name', async () => {
     mockSend.mockResolvedValue({});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockDivisions.list.mockResolvedValue([
+      { divisionId: 'div-raw', name: 'Raw' },
+      // Renamed from "Young Boys": placement must follow the flag, not the name.
+      { divisionId: 'div-dojo', name: 'The Dojo', isDevelopmental: true, isDefaultForNewWrestlers: true },
+      { divisionId: 'div-yb-old', name: 'Young Boys' },
+    ]);
+
+    await handler(makePostConfirmationEvent(), dummyContext, dummyCallback);
+
+    expect(mockPlayers.create).toHaveBeenCalledWith(
+      expect.objectContaining({ divisionId: 'div-dojo' })
+    );
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('falling back to name match'));
+    warn.mockRestore();
+  });
+
+  it('falls back to the Young Boys name match (case-insensitive) with a warning when nothing is flagged', async () => {
+    mockSend.mockResolvedValue({});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     mockDivisions.list.mockResolvedValue([
       { divisionId: 'div-raw', name: 'Raw' },
       { divisionId: 'div-young-boys', name: 'YOUNG BOYS' },
@@ -311,9 +331,11 @@ describe('postConfirmation handler', () => {
     expect(mockPlayers.create).toHaveBeenCalledWith(
       expect.objectContaining({ divisionId: 'div-young-boys' })
     );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('falling back to name match'));
+    warn.mockRestore();
   });
 
-  it('falls back to no division when Young Boys is not seeded', async () => {
+  it('falls back to no division when nothing is flagged and Young Boys is not seeded', async () => {
     mockSend.mockResolvedValue({});
     mockDivisions.list.mockResolvedValue([{ divisionId: 'div-raw', name: 'Raw' }]);
 

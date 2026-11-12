@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { divisionsApi } from '../../services/api';
 import type { Division } from '../../types';
+import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import DataTable from '../ui/DataTable';
 import type { DataTableColumn } from '../ui/DataTable';
@@ -14,6 +15,13 @@ import ConfirmModal from './ConfirmModal';
 import './adminRoster.css';
 
 const FORM_ID = 'division-form';
+
+const EMPTY_FORM = {
+  name: '',
+  description: '',
+  isDevelopmental: false,
+  isDefaultForNewWrestlers: false,
+};
 
 export default function ManageDivisions() {
   const { t } = useTranslation();
@@ -27,10 +35,7 @@ export default function ManageDivisions() {
   const [pendingDelete, setPendingDelete] = useState<Division | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
 
   useEffect(() => {
     loadDivisions();
@@ -50,7 +55,7 @@ export default function ManageDivisions() {
   };
 
   const closeForm = () => {
-    setFormData({ name: '', description: '' });
+    setFormData(EMPTY_FORM);
     setFormError(null);
     setShowForm(false);
     setEditingDivision(null);
@@ -67,12 +72,16 @@ export default function ManageDivisions() {
         await divisionsApi.update(editingDivision.divisionId, {
           name: formData.name,
           description: formData.description || undefined,
+          isDevelopmental: formData.isDevelopmental,
+          isDefaultForNewWrestlers: formData.isDefaultForNewWrestlers,
         });
         setSuccess(t('adminRoster.divisions.updated', 'Division updated successfully!'));
       } else {
         await divisionsApi.create({
           name: formData.name,
           description: formData.description || undefined,
+          isDevelopmental: formData.isDevelopmental,
+          isDefaultForNewWrestlers: formData.isDefaultForNewWrestlers,
         });
         setSuccess(t('adminRoster.divisions.created', 'Division created successfully!'));
       }
@@ -89,6 +98,8 @@ export default function ManageDivisions() {
     setFormData({
       name: division.name,
       description: division.description || '',
+      isDevelopmental: division.isDevelopmental === true,
+      isDefaultForNewWrestlers: division.isDefaultForNewWrestlers === true,
     });
     setShowForm(true);
   };
@@ -115,7 +126,21 @@ export default function ManageDivisions() {
     {
       key: 'name',
       header: t('adminRoster.divisions.nameColumn', 'Name'),
-      render: (division) => <span className="ar-strong">{division.name}</span>,
+      render: (division) => (
+        <div className="ar-stack">
+          <span className="ar-strong">{division.name}</span>
+          {(division.isDevelopmental || division.isDefaultForNewWrestlers) && (
+            <div className="ar-badges">
+              {division.isDevelopmental && (
+                <Badge tone="violet">{t('adminRoster.divisions.developmentalBadge', 'Developmental')}</Badge>
+              )}
+              {division.isDefaultForNewWrestlers && (
+                <Badge tone="primary">{t('adminRoster.divisions.defaultBadge', 'Default')}</Badge>
+              )}
+            </div>
+          )}
+        </div>
+      ),
       sortValue: (division) => division.name,
     },
     {
@@ -214,6 +239,39 @@ export default function ManageDivisions() {
               placeholder={t('adminRoster.divisions.descriptionPlaceholder', 'Brief description of this division')}
               rows={3}
             />
+          </div>
+          <div className="ar-field">
+            <label className="ar-check" htmlFor="division-developmental">
+              <input
+                type="checkbox"
+                id="division-developmental"
+                checked={formData.isDevelopmental}
+                onChange={(e) => setFormData({ ...formData, isDevelopmental: e.target.checked })}
+                aria-describedby="division-developmental-hint"
+              />
+              {t('adminRoster.divisions.developmentalLabel', 'Developmental division')}
+            </label>
+            <p className="ar-field__hint" id="division-developmental-hint">
+              {t('adminRoster.divisions.developmentalHint', 'A feeder division, like Young Boys. Call-ups move wrestlers out of it.')}
+            </p>
+          </div>
+          <div className="ar-field">
+            <label className="ar-check" htmlFor="division-default">
+              <input
+                type="checkbox"
+                id="division-default"
+                checked={formData.isDefaultForNewWrestlers}
+                onChange={(e) => setFormData({ ...formData, isDefaultForNewWrestlers: e.target.checked })}
+                aria-describedby="division-default-hint"
+              />
+              {t('adminRoster.divisions.defaultLabel', 'Default for new wrestlers')}
+            </label>
+            <p className="ar-field__hint" id="division-default-hint">
+              {t(
+                'adminRoster.divisions.defaultHint',
+                'New sign-ups land here. Only one division can be the default; turning this on removes it from the current default.',
+              )}
+            </p>
           </div>
         </form>
       </Modal>
