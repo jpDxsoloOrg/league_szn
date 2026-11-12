@@ -2997,8 +2997,14 @@
           "playerInTeam": "{{player}} is already in the active tag team \"{{team}}\".",
           "playerNotFound": "This player no longer exists. Pick someone else.",
           "concurrentUpdate": "One of these players changed tag teams while this team was being created. Reload and try again.",
-          "createFailed": "Failed to create tag team"
-        }
+          "createFailed": "Failed to create tag team",
+          "updateFailed": "Failed to update tag team"
+        },
+        "editTitle": "Edit Tag Team",
+        "editDescription": "Change the team's name or image. Every page shows the new name.",
+        "editSubmit": "Save Changes",
+        "updated": "Saved",
+        "membersLocked": "Members cannot be changed here. To swap a member, dissolve the team and create a new one."
       }
     },
     "factions": {

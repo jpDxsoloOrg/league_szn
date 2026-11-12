@@ -3001,8 +3001,14 @@
           "playerInTeam": "{{player}} ist bereits im aktiven Tag Team „{{team}}“.",
           "playerNotFound": "Diesen Spieler gibt es nicht mehr. Wähle jemand anderen aus.",
           "concurrentUpdate": "Einer dieser Spieler hat das Tag Team gewechselt, während dieses Team erstellt wurde. Lade neu und versuche es erneut.",
-          "createFailed": "Tag Team konnte nicht erstellt werden"
-        }
+          "createFailed": "Tag Team konnte nicht erstellt werden",
+          "updateFailed": "Tag Team konnte nicht aktualisiert werden"
+        },
+        "editTitle": "Tag Team bearbeiten",
+        "editDescription": "Ändere Namen oder Bild des Teams. Alle Seiten zeigen den neuen Namen.",
+        "editSubmit": "Änderungen speichern",
+        "updated": "Gespeichert",
+        "membersLocked": "Mitglieder können hier nicht geändert werden. Um ein Mitglied zu tauschen, löse das Team auf und erstelle ein neues."
       }
     },
     "factions": {

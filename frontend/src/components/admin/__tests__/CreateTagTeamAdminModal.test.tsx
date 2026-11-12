@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const { mockTagTeamsApi, mockImagesApi } = vi.hoisted(() => ({
-  mockTagTeamsApi: { adminCreate: vi.fn() },
+  mockTagTeamsApi: { adminCreate: vi.fn(), update: vi.fn() },
   mockImagesApi: { generateUploadUrl: vi.fn(), uploadToS3: vi.fn() },
 }));
 
@@ -44,7 +44,7 @@ function renderModal(overrides: Partial<Parameters<typeof CreateTagTeamAdminModa
     onClose: vi.fn(),
     players,
     tagTeams,
-    onCreated: vi.fn(),
+    onSaved: vi.fn(),
     onStale: vi.fn(),
     ...overrides,
   };
@@ -80,7 +80,7 @@ describe('CreateTagTeamAdminModal', () => {
       player2Id: 'p2',
       notifyPlayers: true,
     }));
-    expect(props.onCreated).toHaveBeenCalledWith(created);
+    expect(props.onSaved).toHaveBeenCalledWith(created);
     expect(mockImagesApi.generateUploadUrl).not.toHaveBeenCalled();
   });
 
@@ -157,7 +157,7 @@ describe('CreateTagTeamAdminModal', () => {
     expect(screen.getByLabelText('Player 2')).toHaveAttribute('aria-describedby', message.id);
     expect(screen.getByLabelText('Player 2')).toHaveAttribute('aria-invalid', 'true');
     expect(props.onStale).toHaveBeenCalled();
-    expect(props.onCreated).not.toHaveBeenCalled();
+    expect(props.onSaved).not.toHaveBeenCalled();
   });
 
   it('shows a taken name under the name field', async () => {
@@ -213,4 +213,75 @@ describe('CreateTagTeamAdminModal', () => {
     expect(mockImagesApi.generateUploadUrl).toHaveBeenCalledWith('usos.png', 'image/png', 'tag-teams');
     expect(mockImagesApi.uploadToS3).toHaveBeenCalledWith('https://s3/put', file);
   });
+
+  describe('edit mode', () => {
+    const editing = team({
+      tagTeamId: 'nd', name: 'New Day', player1Id: 'p3', player2Id: 'p4', imageUrl: 'https://cdn/nd.png',
+    });
+
+    it('prefills the team, shows the members read-only and has no notify option', () => {
+      renderModal({ tagTeam: editing });
+
+      expect(screen.getByRole('dialog', { name: 'Edit Tag Team' })).toBeInTheDocument();
+      expect(screen.getByLabelText('Team name')).toHaveValue('New Day');
+      expect(screen.getByLabelText('Player 1')).toBeDisabled();
+      expect(screen.getByLabelText('Player 1')).toHaveValue('Kofi Kingston (Kofi)');
+      expect(screen.getByLabelText('Player 2')).toBeDisabled();
+      expect(screen.getByLabelText('Player 2')).toHaveValue('Xavier Woods (Xavier)');
+      expect(screen.getByText(/To swap a member, dissolve the team/)).toBeInTheDocument();
+      expect(screen.queryByRole('checkbox', { name: 'Notify players' })).not.toBeInTheDocument();
+    });
+
+    it('saves a rename through PUT without touching the image', async () => {
+      const user = userEvent.setup();
+      const updated = { ...editing, name: 'The New Day' };
+      mockTagTeamsApi.update.mockResolvedValue(updated);
+      const props = renderModal({ tagTeam: editing });
+
+      const nameInput = screen.getByLabelText('Team name');
+      await user.clear(nameInput);
+      await user.type(nameInput, 'The New Day');
+      await user.click(screen.getByRole('button', { name: 'Save Changes' }));
+
+      await waitFor(() => expect(mockTagTeamsApi.update).toHaveBeenCalledWith('nd', { name: 'The New Day' }));
+      expect(props.onSaved).toHaveBeenCalledWith(updated);
+      expect(mockTagTeamsApi.adminCreate).not.toHaveBeenCalled();
+    });
+
+    it('sends an empty imageUrl when the image is removed', async () => {
+      const user = userEvent.setup();
+      mockTagTeamsApi.update.mockResolvedValue(editing);
+      renderModal({ tagTeam: editing });
+
+      await user.click(screen.getByRole('button', { name: 'Remove Image' }));
+      await user.click(screen.getByRole('button', { name: 'Save Changes' }));
+
+      await waitFor(() => expect(mockTagTeamsApi.update).toHaveBeenCalledWith('nd', { name: 'New Day', imageUrl: '' }));
+    });
+
+    it('shows a duplicate name from the API under the name field', async () => {
+      const user = userEvent.setup();
+      mockTagTeamsApi.update.mockRejectedValue(new ApiError('An active tag team is already named "The Usos"', 409, {
+        code: 'TAG_TEAM_NAME_TAKEN',
+        body: { code: 'TAG_TEAM_NAME_TAKEN', conflictingTagTeam: { tagTeamId: 'us', name: 'The Usos' } },
+      }));
+      const props = renderModal({ tagTeam: editing });
+
+      const nameInput = screen.getByLabelText('Team name');
+      await user.clear(nameInput);
+      await user.type(nameInput, 'the usos');
+      await user.click(screen.getByRole('button', { name: 'Save Changes' }));
+
+      expect(await screen.findByText('An active tag team is already named "The Usos".')).toBeInTheDocument();
+      expect(nameInput).toHaveAttribute('aria-invalid', 'true');
+      expect(props.onSaved).not.toHaveBeenCalled();
+    });
+
+    it('names a member whose player record is gone by the billed wrestler', () => {
+      renderModal({ tagTeam: { ...editing, player1Id: 'gone', player1WrestlerName: 'Big E' } });
+
+      expect(screen.getByLabelText('Player 1')).toHaveValue('Big E');
+    });
+  });
 });
+

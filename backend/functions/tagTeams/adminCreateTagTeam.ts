@@ -9,6 +9,7 @@ import { parseBody } from '../../lib/parseBody';
 import { createNotifications, type CreateNotificationParams } from '../../lib/notifications';
 import { firstBookingRefusal } from '../../lib/disciplineGates';
 import { realWrestlerName } from '../../lib/needsWrestler';
+import { findActiveNameClash, tagTeamNameTaken } from './tagTeamNameConflict';
 
 /** Reason stored on pending requests closed by a GM-created team. */
 export const SUPERSEDED_REASON = 'Superseded by GM-created team';
@@ -125,15 +126,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    const normalizedName = name.toLowerCase();
-    const nameClash = activeTeams.find((team) => team.name.trim().toLowerCase() === normalizedName);
-    if (nameClash) {
-      return errorWithDetails(
-        409,
-        `An active tag team is already named "${nameClash.name}"`,
-        { code: 'TAG_TEAM_NAME_TAKEN', conflictingTagTeam: teamSummary(nameClash) },
-      );
-    }
+    const nameClash = findActiveNameClash(activeTeams, name);
+    if (nameClash) return tagTeamNameTaken(nameClash);
 
     const supersededById = new Map<string, TagTeam>();
     for (const team of [...player1Teams, ...player2Teams]) {

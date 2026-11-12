@@ -10,6 +10,7 @@ const { mockTagTeamsApi, mockPlayersApi } = vi.hoisted(() => ({
     dissolve: vi.fn(),
     delete: vi.fn(),
     adminCreate: vi.fn(),
+    update: vi.fn(),
   },
   mockPlayersApi: { getAllIncludingHidden: vi.fn() },
 }));
@@ -108,13 +109,40 @@ describe('ManageTagTeams', () => {
     await waitFor(() => expect(mockTagTeamsApi.dissolve).toHaveBeenCalledWith('t2'));
   });
 
-  it('drops the Actions column for a Moderator with nothing to act on', async () => {
+  it('gives a Moderator Edit on any team, even with nothing to approve', async () => {
     mockUseAuth.mockReturnValue({ isSuperAdmin: false });
     mockTagTeamsApi.getAll.mockResolvedValue([tagTeams[1]]);
     render(<ManageTagTeams />);
 
-    await screen.findByText('New Day');
-    expect(screen.queryByRole('columnheader', { name: /actions/i })).not.toBeInTheDocument();
+    const row = (await screen.findByText('New Day')).closest('tr')!;
+    expect(screen.getByRole('columnheader', { name: /actions/i })).toBeInTheDocument();
+    expect(within(row).getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+  });
+
+  it('renames a team from the Edit dialog, then toasts and reloads', async () => {
+    const user = userEvent.setup();
+    const showToast = vi.fn();
+    mockUseAuth.mockReturnValue({ isSuperAdmin: false });
+    mockTagTeamsApi.update.mockResolvedValue({ ...tagTeams[1], name: 'The New Day' });
+    render(
+      <ToastContext.Provider value={{ showToast }}>
+        <ManageTagTeams />
+      </ToastContext.Provider>,
+    );
+    const row = (await screen.findByText('New Day')).closest('tr')!;
+
+    await user.click(within(row).getByRole('button', { name: 'Edit' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Edit Tag Team' });
+    expect(within(dialog).getByLabelText('Player 1')).toBeDisabled();
+    const nameInput = within(dialog).getByLabelText('Team name');
+    await user.clear(nameInput);
+    await user.type(nameInput, 'The New Day');
+    await user.click(within(dialog).getByRole('button', { name: 'Save Changes' }));
+
+    await waitFor(() => expect(mockTagTeamsApi.update).toHaveBeenCalledWith('t2', { name: 'The New Day' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(showToast).toHaveBeenCalledWith('Saved: The New Day', 'success');
+    expect(mockTagTeamsApi.getAll).toHaveBeenCalledTimes(2);
   });
 
   it('keeps the Actions column for a Moderator with a team to approve', async () => {

@@ -30,7 +30,13 @@ export interface CreateTagTeamAdminModalProps {
   players: Player[];
   /** Every tag team, used to mark players who are already on an active one. */
   tagTeams: TagTeam[];
-  onCreated: (tagTeam: TagTeam) => void;
+  /**
+   * Edit mode: the team to rename or re-image. Its members are shown read-only;
+   * swapping a member means dissolving the team and creating a new one.
+   */
+  tagTeam?: TagTeam | null;
+  /** Called with the created or updated team. */
+  onSaved: (tagTeam: TagTeam) => void;
   /** The list is out of date (a 409 named a team it does not show), so reload it. */
   onStale?: () => void;
 }
@@ -58,22 +64,28 @@ const playerOptionLabel = (player: Player): string =>
     ? player.name
     : `${player.currentWrestler} (${player.name})`;
 
-/** Staff form for a tag team that is active at once, with no partner or approval step. */
+/**
+ * Staff form for a tag team. Create mode makes a team that is active at once,
+ * with no partner or approval step; edit mode changes a team's name and image.
+ */
 export default function CreateTagTeamAdminModal({
   open,
   onClose,
   players,
   tagTeams,
-  onCreated,
+  tagTeam: editingTeam = null,
+  onSaved,
   onStale,
 }: CreateTagTeamAdminModalProps) {
   const { t } = useTranslation();
-  const [name, setName] = useState('');
-  const [player1Id, setPlayer1Id] = useState('');
-  const [player2Id, setPlayer2Id] = useState('');
+  const isEdit = editingTeam !== null;
+  // The parent mounts the modal per opening, so the initial values are enough.
+  const [name, setName] = useState(editingTeam?.name ?? '');
+  const [player1Id, setPlayer1Id] = useState(editingTeam?.player1Id ?? '');
+  const [player2Id, setPlayer2Id] = useState(editingTeam?.player2Id ?? '');
   const [notifyPlayers, setNotifyPlayers] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(editingTeam?.imageUrl || null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -93,6 +105,15 @@ export default function CreateTagTeamAdminModal({
     () => [...players].sort((first, second) => playerOptionLabel(first).localeCompare(playerOptionLabel(second))),
     [players],
   );
+
+  /** Read-only picker for a member: the player, or the wrestler the team was billed with. */
+  const memberOption = (playerId: string, storedWrestlerName?: string): SearchableSelectOption[] => {
+    const player = players.find((candidate) => candidate.playerId === playerId);
+    const label = player
+      ? playerOptionLabel(player)
+      : storedWrestlerName || t('adminRoster.tagTeams.playerMissing', 'Former member');
+    return [{ value: playerId, label }];
+  };
 
   const optionsExcluding = (otherPlayerId: string): SearchableSelectOption[] =>
     sortedPlayers
@@ -224,8 +245,8 @@ export default function CreateTagTeamAdminModal({
     const cleanName = sanitizeInput(name, VALIDATION.MAX_NAME_LENGTH);
     const missing: FieldErrors = {};
     if (!cleanName) missing.name = t('adminRoster.tagTeams.form.errors.nameRequired', 'Enter a team name.');
-    if (!player1Id) missing.player1 = t('adminRoster.tagTeams.form.errors.playerRequired', 'Pick a player.');
-    if (!player2Id) missing.player2 = t('adminRoster.tagTeams.form.errors.playerRequired', 'Pick a player.');
+    if (!isEdit && !player1Id) missing.player1 = t('adminRoster.tagTeams.form.errors.playerRequired', 'Pick a player.');
+    if (!isEdit && !player2Id) missing.player2 = t('adminRoster.tagTeams.form.errors.playerRequired', 'Pick a player.');
     if (Object.keys(missing).length > 0) {
       setFieldErrors(missing);
       return;
@@ -234,6 +255,17 @@ export default function CreateTagTeamAdminModal({
     setSubmitting(true);
     try {
       const imageUrl = selectedFile ? await uploadImage(selectedFile) : undefined;
+      if (editingTeam) {
+        // Send the image only when it changed: a new upload, or '' to remove it.
+        const imageRemoved = !imagePreview && Boolean(editingTeam.imageUrl);
+        const updated = await tagTeamsApi.update(editingTeam.tagTeamId, {
+          name: cleanName,
+          ...(imageUrl ? { imageUrl } : {}),
+          ...(imageRemoved ? { imageUrl: '' } : {}),
+        });
+        onSaved(updated);
+        return;
+      }
       const tagTeam = await tagTeamsApi.adminCreate({
         name: cleanName,
         player1Id,
@@ -241,14 +273,16 @@ export default function CreateTagTeamAdminModal({
         notifyPlayers,
         ...(imageUrl ? { imageUrl } : {}),
       });
-      onCreated(tagTeam);
+      onSaved(tagTeam);
     } catch (err) {
       if (err instanceof ApiError) {
         showRefusal(err);
       } else {
         setFormError(err instanceof Error
           ? err.message
-          : t('adminRoster.tagTeams.form.errors.createFailed', 'Failed to create tag team'));
+          : isEdit
+            ? t('adminRoster.tagTeams.form.errors.updateFailed', 'Failed to update tag team')
+            : t('adminRoster.tagTeams.form.errors.createFailed', 'Failed to create tag team'));
       }
     } finally {
       setSubmitting(false);
@@ -262,12 +296,14 @@ export default function CreateTagTeamAdminModal({
     const label = slot === 'player1'
       ? t('adminRoster.tagTeams.player1', 'Player 1')
       : t('adminRoster.tagTeams.player2', 'Player 2');
+    const storedWrestlerName = slot === 'player1' ? editingTeam?.player1WrestlerName : editingTeam?.player2WrestlerName;
     return (
       <div className="ac-field">
         <label className="ac-field__label" htmlFor={inputId}>{label}</label>
         <SearchableSelect
           id={inputId}
-          options={optionsExcluding(otherValue)}
+          disabled={isEdit}
+          options={isEdit ? memberOption(value, storedWrestlerName) : optionsExcluding(otherValue)}
           value={value}
           onChange={(playerId) => {
             onChange(playerId);
@@ -286,12 +322,18 @@ export default function CreateTagTeamAdminModal({
       open={open}
       onClose={onClose}
       className="am-sheet ttam-modal"
-      title={t('adminRoster.tagTeams.form.createTitle', 'Create Tag Team')}
-      description={t(
-        'adminRoster.tagTeams.form.createDescription',
-        'The team is active at once. Pending requests involving either player are closed.',
-      )}
-      submitLabel={t('adminRoster.tagTeams.form.createSubmit', 'Create Tag Team')}
+      title={isEdit
+        ? t('adminRoster.tagTeams.form.editTitle', 'Edit Tag Team')
+        : t('adminRoster.tagTeams.form.createTitle', 'Create Tag Team')}
+      description={isEdit
+        ? t('adminRoster.tagTeams.form.editDescription', 'Change the team\'s name or image. Every page shows the new name.')
+        : t(
+          'adminRoster.tagTeams.form.createDescription',
+          'The team is active at once. Pending requests involving either player are closed.',
+        )}
+      submitLabel={isEdit
+        ? t('adminRoster.tagTeams.form.editSubmit', 'Save Changes')
+        : t('adminRoster.tagTeams.form.createSubmit', 'Create Tag Team')}
       onSubmit={handleSubmit}
       busy={submitting}
       error={formError}
@@ -320,6 +362,14 @@ export default function CreateTagTeamAdminModal({
         {memberField('player1', player1Id, player2Id, setPlayer1Id)}
         {memberField('player2', player2Id, player1Id, setPlayer2Id)}
       </div>
+      {isEdit && (
+        <p className="ac-field__hint">
+          {t(
+            'adminRoster.tagTeams.form.membersLocked',
+            'Members cannot be changed here. To swap a member, dissolve the team and create a new one.',
+          )}
+        </p>
+      )}
 
       <div className="ac-field">
         <label className="ac-field__label" htmlFor="tag-team-admin-image">
@@ -343,15 +393,17 @@ export default function CreateTagTeamAdminModal({
         )}
       </div>
 
-      <label className="ac-check am-toggle-row">
-        <input
-          type="checkbox"
-          className="am-toggle"
-          checked={notifyPlayers}
-          onChange={(event) => setNotifyPlayers(event.target.checked)}
-        />
-        {t('adminRoster.tagTeams.form.notifyPlayers', 'Notify players')}
-      </label>
+      {!isEdit && (
+        <label className="ac-check am-toggle-row">
+          <input
+            type="checkbox"
+            className="am-toggle"
+            checked={notifyPlayers}
+            onChange={(event) => setNotifyPlayers(event.target.checked)}
+          />
+          {t('adminRoster.tagTeams.form.notifyPlayers', 'Notify players')}
+        </label>
+      )}
     </AdminFormModal>
   );
 }
