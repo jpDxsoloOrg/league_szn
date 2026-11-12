@@ -789,6 +789,15 @@ export class DynamoUnitOfWork implements UnitOfWork {
     this.tagLastStaged({ kind: 'guarded', entityName: 'PlayerProgression', id: `${playerId}/${trackId}` });
   }
 
+  deletePlayerProgression(playerId: string, trackId: string): void {
+    this.staged.push({
+      Delete: {
+        TableName: TableNames.PLAYER_PROGRESSION,
+        Key: { playerId, trackId },
+      },
+    });
+  }
+
   // ── Commit / Rollback ────────────────────────────────────────────
   async commit(): Promise<void> {
     if (this.committed) throw new Error('UnitOfWork already committed');

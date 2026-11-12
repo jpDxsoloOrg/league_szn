@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CalendarDays, Handshake, Medal, Mic, Swords, Trophy, TrendingUp } from 'lucide-react';
+import { CircleArrowUp, CalendarDays, Handshake, Medal, Mic, Swords, Trophy, TrendingUp } from 'lucide-react';
 import { activityApi } from '../services/api';
 import type { ActivityItem, ActivityItemType } from '../types';
 import Button from './ui/Button';
@@ -25,6 +25,7 @@ const TYPE_TO_PARAM: Record<ActivityItemType, string> = {
   challenge_event: 'challenge',
   promo_posted: 'promo',
   callup_consideration: 'callup',
+  callup_executed: 'callup',
 };
 
 const TYPE_FILTERS: { value: ActivityItemType | typeof ALL_TYPES; key: string }[] = [
@@ -34,6 +35,7 @@ const TYPE_FILTERS: { value: ActivityItemType | typeof ALL_TYPES; key: string }[
   { value: 'season_event', key: 'activity.types.season_event' },
   { value: 'tournament_result', key: 'activity.types.tournament_result' },
   { value: 'promo_posted', key: 'activity.types.promo_posted' },
+  { value: 'callup_executed', key: 'activity.types.callup_executed' },
 ];
 
 const TYPE_ICONS: Record<ActivityItemType, ReactNode> = {
@@ -44,6 +46,7 @@ const TYPE_ICONS: Record<ActivityItemType, ReactNode> = {
   challenge_event: <Handshake aria-hidden="true" size={20} />,
   promo_posted: <Mic aria-hidden="true" size={20} />,
   callup_consideration: <TrendingUp aria-hidden="true" size={20} />,
+  callup_executed: <CircleArrowUp aria-hidden="true" size={20} />,
 };
 
 function getDetailLink(item: ActivityItem): string {
@@ -63,6 +66,7 @@ function getDetailLink(item: ActivityItem): string {
     case 'promo_posted':
       return meta['promoId'] ? `/promos/${meta['promoId']}` : '/promos';
     case 'callup_consideration':
+    case 'callup_executed':
       return meta['playerId'] ? `/player/${meta['playerId']}` : '/activity';
     default:
       return '/';
@@ -74,6 +78,12 @@ function getSummary(item: ActivityItem, t: (key: string, options?: Record<string
   const playerName = item.metadata['playerName'];
   if (item.type === 'callup_consideration' && typeof playerName === 'string') {
     return t('activity.summaries.callup_consideration', { name: playerName });
+  }
+  if (item.type === 'callup_executed' && typeof playerName === 'string') {
+    const divisionName = item.metadata['toDivisionName'];
+    return typeof divisionName === 'string'
+      ? t('activity.summaries.callup_executed_to', { name: playerName, division: divisionName })
+      : t('activity.summaries.callup_executed', { name: playerName });
   }
   return item.summary;
 }

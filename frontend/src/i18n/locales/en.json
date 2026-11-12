@@ -386,10 +386,13 @@
       "tournament_result": "Tournaments",
       "challenge_event": "Challenges",
       "promo_posted": "Promos",
-      "callup_consideration": "Call-ups"
+      "callup_consideration": "Call-ups",
+      "callup_executed": "Call-ups"
     },
     "summaries": {
-      "callup_consideration": "{{name}} is being considered for a call-up"
+      "callup_consideration": "{{name}} is being considered for a call-up",
+      "callup_executed": "{{name}} was called up",
+      "callup_executed_to": "{{name}} was called up to {{division}}"
     },
     "timeAgo": {
       "justNow": "Just now",

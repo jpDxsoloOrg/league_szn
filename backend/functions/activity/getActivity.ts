@@ -20,7 +20,8 @@ export type ActivityItemType =
   | 'tournament_result'
   | 'challenge_event'
   | 'promo_posted'
-  | 'callup_consideration';
+  | 'callup_consideration'
+  | 'callup_executed';
 
 export interface ActivityItem {
   id: string;
@@ -88,7 +89,7 @@ function loadIf<TItem>(enabled: boolean, load: () => Promise<TItem[]>): Promise<
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const { limit, cursor, typeFilter } = parseQuery(event);
-    const { competition: { matches, championships, tournaments }, season: { seasons }, user: { challenges }, content: { promos }, roster: { players } } = getRepositories();
+    const { competition: { matches, championships, tournaments }, season: { seasons }, user: { challenges }, content: { promos }, roster: { players }, leagueOps: { divisions }, progression } = getRepositories();
 
     const includeMatch = !typeFilter || typeFilter === 'match';
     const includeChampionship = !typeFilter || typeFilter === 'championship';
@@ -113,6 +114,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       allPlayers,
       allChampionships,
       callupConsiderations,
+      executedEvents,
+      allDivisions,
     ] = await Promise.all([
       loadIf(includeMatch, () => matches.listCompleted()),
       loadIf(includeChampionship, () => championships.listAllHistory()),
@@ -124,6 +127,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       loadIf(includeChampionship, () => championships.list()),
       // Current marks only: an unmark removes the item, and is never news.
       loadIf(includeCallup, () => listActiveConsiderations('callup')),
+      loadIf(includeCallup, () => progression.listEventsByType('executed')),
+      loadIf(includeCallup, () => divisions.list()),
     ]);
 
     for (const m of completedMatches) {
@@ -286,6 +291,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       });
     }
 
+    for (const e of executedEvents) {
+      if (e.kind !== 'callup') continue;
+      rawItems.push({
+        type: 'callup_executed',
+        timestamp: e.createdAt,
+        id: `callup-${e.eventId}`,
+        summary: '',
+        metadata: { playerId: e.playerId, trackId: e.trackId, fromDivisionId: e.fromDivisionId, toDivisionId: e.toDivisionId },
+      });
+    }
+
     const playerNames = buildPlayerNameMap(allPlayers);
     const championshipNames = buildChampionshipNameMap(allChampionships);
     const nameOf = (playerId: unknown): string => playerNames[playerId as string] || FORMER_MEMBER;
@@ -337,6 +353,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const meta = item.metadata;
         meta.playerName = nameOf(meta.playerId);
         item.summary = `${meta.playerName} is being considered for a call-up`;
+      } else if (item.type === 'callup_executed') {
+        const meta = item.metadata;
+        meta.playerName = nameOf(meta.playerId);
+        meta.toDivisionName = allDivisions.find((d) => d.divisionId === meta.toDivisionId)?.name;
+        item.summary = meta.toDivisionName
+          ? `${meta.playerName} was called up to ${meta.toDivisionName}`
+          : `${meta.playerName} was called up`;
       }
     }
 
@@ -348,7 +371,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // A call-up mark is about the player's future, so a deleted player's mark goes too.
     const livePlayerIds = new Set(allPlayers.filter((p) => !p.deletedAt).map((p) => p.playerId));
     const visibleItems = rawItems.filter((item) => {
-      if (item.type === 'promo_posted') return !hiddenPlayerIds.has(item.metadata.playerId as string);
+      if (item.type === 'promo_posted' || item.type === 'callup_executed') return !hiddenPlayerIds.has(item.metadata.playerId as string);
       if (item.type === 'callup_consideration') return livePlayerIds.has(item.metadata.playerId as string)
         && !hiddenPlayerIds.has(item.metadata.playerId as string);
       if (item.type === 'challenge_event') {

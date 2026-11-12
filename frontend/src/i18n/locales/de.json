@@ -386,10 +386,13 @@
       "tournament_result": "Turniere",
       "challenge_event": "Herausforderungen",
       "promo_posted": "Promos",
-      "callup_consideration": "Call-ups"
+      "callup_consideration": "Call-ups",
+      "callup_executed": "Call-ups"
     },
     "summaries": {
-      "callup_consideration": "{{name}} wird für einen Call-up in Betracht gezogen"
+      "callup_consideration": "{{name}} wird für einen Call-up in Betracht gezogen",
+      "callup_executed": "{{name}} wurde hochgestuft",
+      "callup_executed_to": "{{name}} wurde zu {{division}} hochgestuft"
     },
     "timeAgo": {
       "justNow": "Gerade eben",

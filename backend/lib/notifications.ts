@@ -19,7 +19,8 @@ export type NotificationType =
   | 'strike_issued'
   | 'strike_removed'
   | 'account_reactivated'
-  | 'progression_consideration';
+  | 'progression_consideration'
+  | 'progression_executed';
 
 /** Set of notification types scoped to a rivalry source. */
 export type RivalryNotificationType =

@@ -497,6 +497,12 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     });
   }
 
+  deletePlayerProgression(playerId: string, trackId: string): void {
+    this.staged.push(() => {
+      this.stores.playerProgression.delete(playerProgressionKey(playerId, trackId));
+    });
+  }
+
   async commit(): Promise<void> {
     if (this.committed) throw new Error('UnitOfWork already committed');
     this.committed = true;

@@ -205,6 +205,9 @@ export interface UnitOfWork {
   /** Stage a PUT into the progression events table. Caller owns `eventId` and `createdAt`. */
   appendProgressionEvent(event: ProgressionEvent): void;
 
+  /** Stage deleting one player's row on a track (CUP-06). A missing row is not an error. */
+  deletePlayerProgression(playerId: string, trackId: string): void;
+
   /**
    * Stage setting `consideration` on a PlayerProgression row. Fails with
    * `ConcurrencyError('PlayerProgression', 'playerId/trackId')` at commit when

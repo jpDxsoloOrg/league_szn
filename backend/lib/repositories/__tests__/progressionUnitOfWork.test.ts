@@ -42,6 +42,7 @@ const consideration = {
 };
 
 interface TransactItem {
+  Delete?: { TableName: string; Key: Record<string, unknown> };
   Put?: { TableName: string; Item: Record<string, unknown> };
   Update?: {
     TableName: string;
@@ -87,6 +88,43 @@ describe('DynamoUnitOfWork progression writes', () => {
     const [item] = (uow as unknown as { staged: TransactItem[] }).staged;
     expect(item.Update!.UpdateExpression).toContain('#consideration = :consideration');
     expect(item.Update!.ExpressionAttributeValues[':consideration']).toEqual(consideration);
+  });
+});
+
+describe('deletePlayerProgression', () => {
+  it('stages a Delete keyed by playerId and trackId', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.deletePlayerProgression('p1', 't1');
+    const [item] = (uow as unknown as { staged: TransactItem[] }).staged;
+    expect(item.Delete).toEqual({ TableName: 'PlayerProgression', Key: { playerId: 'p1', trackId: 't1' } });
+  });
+
+  it('removes the in-memory row on commit only', async () => {
+    const repos = buildInMemoryRepositories();
+    await repos.progression.upsertPlayerProgression(progression);
+
+    await expect(
+      repos.runInTransaction(async (tx) => {
+        tx.deletePlayerProgression('p1', 't1');
+        throw new Error('abort');
+      }),
+    ).rejects.toThrow('abort');
+    expect(await repos.progression.getPlayerProgression('p1', 't1')).not.toBeNull();
+
+    await repos.runInTransaction(async (tx) => {
+      tx.deletePlayerProgression('p1', 't1');
+    });
+    expect(await repos.progression.getPlayerProgression('p1', 't1')).toBeNull();
+  });
+
+  it('lists events of one type across players, newest first', async () => {
+    const repos = buildInMemoryRepositories();
+    await repos.progression.appendEvent(executed);
+    await repos.progression.appendEvent({ ...executed, eventId: 'e2', playerId: 'p2', createdAt: '2026-11-12T02:00:00.000Z' });
+    await repos.progression.appendEvent({ ...executed, eventId: 'e3', type: 'consideration_added' });
+
+    const rows = await repos.progression.listEventsByType('executed');
+    expect(rows.map((e) => e.eventId)).toEqual(['e2', 'e1']);
   });
 });
 

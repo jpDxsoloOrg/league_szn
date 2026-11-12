@@ -55,9 +55,9 @@ tags:
   - name: Announcements
   - name: Notifications
   - name: Transfers
+  - name: Progression
   - name: Storyline Requests
   - name: Overalls
-  - name: Progression
 
 components:
   securitySchemes:
@@ -2209,7 +2209,8 @@ paths:
           description: Pagination cursor (timestamp|id)
         - name: type
           in: query
-          schema: { type: string, enum: [match, championship, challenge, promo, tournament, season] }
+          schema: { type: string, enum: [match, championship, challenge, promo, tournament, season, callup] }
+          description: '\`callup\` returns both item types: \`callup_consideration\` (current marks) and \`callup_executed\`. Unknown values are ignored.'
       responses:
         '200':
           description: Paginated activity items
@@ -3927,6 +3928,77 @@ paths:
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Progression: execute (CUP-06) ──────────────────────────────────
+
+  /progression/players/{playerId}/execute:
+    post:
+      tags: [Progression]
+      summary: Execute a division move (call-up, promotion, relegation)
+      description: >-
+        Moves the player from the track's source division to \`toDivisionId\`
+        (defaults to the track's target), deletes their progression row for the
+        track and records an \`executed\` event (plus \`consideration_removed\` if
+        they were under consideration) in one transaction. Then, best-effort:
+        notifies the wrestler, optionally publishes a News announcement,
+        recomputes their progression and recalculates contenders. A call-up
+        cannot target a developmental division.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trackId]
+              properties:
+                trackId: { type: string }
+                toDivisionId: { type: string, description: Required when the track has no toDivisionId }
+                announce: { type: boolean, description: Publish a News announcement }
+                force: { type: boolean, description: Proceed even if the player holds a title restricted to the old division }
+      responses:
+        '200':
+          description: Move executed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  playerId: { type: string }
+                  trackId: { type: string }
+                  kind: { type: string, enum: [callup, promotion, relegation] }
+                  fromDivisionId: { type: string }
+                  toDivisionId: { type: string }
+                  divisionJoinedAt: { type: string, format: date-time }
+                  event: { type: object, description: The executed ProgressionEvent }
+                  announcementId: { type: string }
+        '400': { description: 'Bad request, or code TARGET_IS_DEVELOPMENTAL', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Track, player or target division not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409':
+          description: >-
+            code NOT_IN_SOURCE_DIVISION (with playerDivisionId, fromDivisionId), or
+            code HOLDS_DIVISION_TITLE (with championships [{championshipId, name}]; retry with force true)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  code: { type: string, enum: [NOT_IN_SOURCE_DIVISION, HOLDS_DIVISION_TITLE] }
+                  championships:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        championshipId: { type: string }
+                        name: { type: string }
 
   # ── Storyline Requests ─────────────────────────────────────────────
 

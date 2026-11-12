@@ -502,7 +502,8 @@ export type ActivityItemType =
   | 'tournament_result'
   | 'challenge_event'
   | 'promo_posted'
-  | 'callup_consideration';
+  | 'callup_consideration'
+  | 'callup_executed';
 
 export interface ActivityItem {
   id: string;
@@ -547,7 +548,7 @@ export interface Video {
   updatedAt: string;
 }
 
-export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'tag_team_formed' | 'transfer_reviewed' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change' | 'strike_issued' | 'strike_removed' | 'account_reactivated' | 'progression_consideration';
+export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'tag_team_formed' | 'transfer_reviewed' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change' | 'strike_issued' | 'strike_removed' | 'account_reactivated' | 'progression_consideration' | 'progression_executed';
 
 export interface AppNotification {
   notificationId: string;

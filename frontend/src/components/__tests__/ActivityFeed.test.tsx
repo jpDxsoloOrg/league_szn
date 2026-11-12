@@ -53,6 +53,23 @@ describe('ActivityFeed', () => {
       .toHaveAttribute('href', '/player/p1');
   });
 
+  it('links a call-up to the player profile and filters call-ups by the callup param', async () => {
+    mockGetAll.mockResolvedValue(page([{
+      id: 'callup-e1', type: 'callup_executed', timestamp: '2026-11-01T10:00:00.000Z',
+      summary: 'Kenta was called up to Raw', metadata: { playerId: 'p1' },
+    }]));
+    renderFeed();
+    expect(await screen.findByRole('link', { name: /Kenta was called up to Raw/ })).toHaveAttribute('href', '/player/p1');
+
+    await userEvent.click(screen.getByRole('tab', { name: 'activity.types.callup_executed' }));
+    await waitFor(() => {
+      expect(mockGetAll).toHaveBeenLastCalledWith(
+        expect.objectContaining({ type: 'callup' }),
+        expect.any(AbortSignal),
+      );
+    });
+  });
+
   it('shows the empty state', async () => {
     mockGetAll.mockResolvedValue(page([]));
     renderFeed();
