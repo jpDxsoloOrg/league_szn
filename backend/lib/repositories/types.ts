@@ -738,3 +738,93 @@ export interface SeasonStanding {
   draws: number;
   updatedAt: string;
 }
+
+// ─── Progression (Young Boys Call-Ups / division movement) ──────────────────
+
+export type ProgressionKind = 'callup' | 'promotion' | 'relegation';
+
+export type ProgressionMetric =
+  | 'matchesCompeted'
+  | 'wins'
+  | 'winPct'
+  | 'avgStarRating'
+  | 'promosCut'
+  | 'promosWithReactions'
+  | 'totalPromoReactions'
+  | 'matchOfTheNight'
+  | 'challengesIssued'
+  | 'currentWinStreak';
+
+export type ProgressionWindowMode = 'allTime' | 'season' | 'sinceJoinedDivision';
+
+export type ProgressionGoalDirection = 'atLeast' | 'atMost';
+
+export interface ProgressionGoalParams {
+  /** avgStarRating: minimum number of rated matches before the metric counts. */
+  minRatedMatches?: number;
+  /** promosWithReactions: minimum reactions (from other users) a promo needs to count. */
+  minReactions?: number;
+}
+
+export interface ProgressionGoal {
+  goalId: string;
+  metric: ProgressionMetric;
+  threshold: number;
+  weight: number;
+  /** Defaults to 'atLeast'. 'atMost' is used by relegation tracks. */
+  direction?: ProgressionGoalDirection;
+  params?: ProgressionGoalParams;
+  labelKey?: string;
+}
+
+export interface ProgressionTrack {
+  trackId: string;
+  kind: ProgressionKind;
+  name: string;
+  fromDivisionId: string;
+  toDivisionId?: string;
+  goals: ProgressionGoal[];
+  windowMode: ProgressionWindowMode;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlayerProgressionGoalStatus {
+  goalId: string;
+  /** null when the metric is not yet computable (e.g. avgStarRating below minRatedMatches). */
+  current: number | null;
+  threshold: number;
+  met: boolean;
+}
+
+export interface ProgressionConsideration {
+  status: 'considering';
+  markedBy: string;
+  markedAt: string;
+  note?: string;
+}
+
+export interface PlayerProgression {
+  playerId: string;
+  trackId: string;
+  /** 0–100 */
+  progressPct: number;
+  goals: PlayerProgressionGoalStatus[];
+  consideration?: ProgressionConsideration;
+  computedAt: string;
+}
+
+export type ProgressionEventType = 'consideration_added' | 'consideration_removed' | 'executed';
+
+export interface ProgressionEvent {
+  eventId: string;
+  playerId: string;
+  trackId: string;
+  kind: ProgressionKind;
+  type: ProgressionEventType;
+  fromDivisionId: string;
+  toDivisionId?: string;
+  actorUserId: string;
+  createdAt: string;
+}
