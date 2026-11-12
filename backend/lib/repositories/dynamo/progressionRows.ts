@@ -78,6 +78,8 @@ export function fromPlayerProgressionItem(row: Record<string, unknown>): PlayerP
   if (row.consideration) {
     progression.consideration = row.consideration as PlayerProgression['consideration'];
   }
+  if (Array.isArray(row.notifiedThresholds)) progression.notifiedThresholds = row.notifiedThresholds as number[];
+  if (Array.isArray(row.notifiedGoalIds)) progression.notifiedGoalIds = row.notifiedGoalIds as string[];
   return progression;
 }
 

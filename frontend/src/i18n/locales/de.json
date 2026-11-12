@@ -2540,7 +2540,8 @@
     "typeTransfer": "Transfer",
     "typeRivalry": "Rivalität",
     "typeStoryline": "Storyline",
-    "typeDiscipline": "Strikes"
+    "typeDiscipline": "Strikes",
+    "typeProgression": "Aufstieg"
   },
   "overalls": {
     "admin": {

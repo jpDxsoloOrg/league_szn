@@ -43,6 +43,7 @@ export async function handleDirectInvoke(payload: ProgressionRecomputePayload): 
       playersProcessed: result.playersProcessed,
       rowsUpdated: result.changes.length,
       rowsDropped: result.dropped.length,
+      milestones: result.milestones,
       failures: result.failures,
     }));
   } catch (err) {

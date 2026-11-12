@@ -34,6 +34,7 @@ import {
   resolveProgressionWindow,
   type ProgressionBatch,
 } from './loadInputs';
+import { notifyProgressionMilestones, type MilestoneNotificationSummary } from './milestoneNotifications';
 
 /** Up to this many players the trigger path uses per-player queries; above it, the table-scan batch loader. */
 export const PER_PLAYER_LOADER_MAX = 25;
@@ -82,6 +83,8 @@ export interface RecomputeProgressionResult {
   changes: ProgressionChange[];
   dropped: DroppedProgression[];
   failures: ProgressionRecomputeFailure[];
+  /** CUP-11: milestone notifications sent for `changes`. */
+  milestones: MilestoneNotificationSummary;
 }
 
 const errorMessage = (err: unknown): string => (err instanceof Error ? err.message : String(err));
@@ -208,7 +211,13 @@ async function recomputePlayer(
 export async function recomputeProgression(
   options: RecomputeProgressionOptions,
 ): Promise<RecomputeProgressionResult> {
-  const result: RecomputeProgressionResult = { playersProcessed: 0, changes: [], dropped: [], failures: [] };
+  const result: RecomputeProgressionResult = {
+    playersProcessed: 0,
+    changes: [],
+    dropped: [],
+    failures: [],
+    milestones: { rowsAnnounced: 0, notificationsSent: 0, failures: [] },
+  };
   const playerIds = await resolvePlayerIds(options);
   if (playerIds.length === 0) return result;
 
@@ -229,5 +238,10 @@ export async function recomputeProgression(
       result.failures.push({ playerId, message: errorMessage(err) });
     }
   }
+
+  // Milestones are compared against the upserted rows (`after`), whose
+  // dedupe lists are strongly consistent, so a stale `before` from the
+  // recompute-all GSI read cannot re-announce an old milestone.
+  result.milestones = await notifyProgressionMilestones(result.changes, tracks, batch.players);
   return result;
 }
