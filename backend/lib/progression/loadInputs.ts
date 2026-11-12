@@ -130,6 +130,65 @@ export async function loadProgressionBatch(playerIds: readonly string[]): Promis
   return { inputs, players: playersById, activeSeason };
 }
 
+/**
+ * Per-player variant of `loadProgressionBatch` for the trigger path (a
+ * result, rating, promo or reaction touching a few players). Promos and
+ * challenges come from their per-player GSIs and players are fetched by id,
+ * so nothing but completed matches is scanned. Matches have no participant
+ * index, so `listCompleted` is still read once for the whole call.
+ *
+ * Same filtering rules as `loadProgressionBatch`. For recompute-all use the
+ * batch loader: it reads each table once instead of 2 queries per player.
+ */
+export async function loadProgressionForPlayers(playerIds: readonly string[]): Promise<ProgressionBatch> {
+  const repos = getRepositories();
+  const uniqueIds = [...new Set(playerIds)];
+  const [players, matches, activeSeason, perPlayer] = await Promise.all([
+    Promise.all(uniqueIds.map((playerId) => repos.roster.players.findById(playerId))),
+    repos.competition.matches.listCompleted(),
+    repos.season.seasons.findActive(),
+    Promise.all(uniqueIds.map(async (playerId) => {
+      const [promos, challenges] = await Promise.all([
+        repos.content.promos.listByPlayer(playerId),
+        repos.user.challenges.listByChallenger(playerId),
+      ]);
+      return { playerId, promos, challenges };
+    })),
+  ]);
+
+  const inputs = new Map<string, ProgressionInputs>();
+  for (const playerId of uniqueIds) {
+    inputs.set(playerId, { playerId, matches: [], promos: [], challenges: [] });
+  }
+
+  const playersById = new Map<string, Player>();
+  for (const player of players) {
+    if (player) playersById.set(player.playerId, player);
+  }
+
+  for (const match of matches) {
+    for (const playerId of new Set(match.participants)) {
+      inputs.get(playerId)?.matches.push(toMatchInput(match, playerId));
+    }
+  }
+
+  for (const { playerId, promos, challenges } of perPlayer) {
+    const target = inputs.get(playerId);
+    if (!target) continue;
+    const authorUserId = playersById.get(playerId)?.userId;
+    for (const promo of promos) {
+      if (promo.isHidden || promo.playerId !== playerId) continue;
+      target.promos.push(toPromoInput(promo, authorUserId));
+    }
+    for (const challenge of challenges) {
+      if (challenge.status === 'cancelled') continue;
+      target.challenges.push(toChallengeInput(challenge));
+    }
+  }
+
+  return { inputs, players: playersById, activeSeason };
+}
+
 /** Convenience wrapper when only the inputs are needed. */
 export async function loadProgressionInputs(
   playerIds: readonly string[],

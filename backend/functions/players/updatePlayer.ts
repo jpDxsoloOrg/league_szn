@@ -5,6 +5,7 @@ import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { NEEDS_WRESTLER, isNeedsWrestler } from '../../lib/needsWrestler';
 import { requireRole } from '../../lib/auth';
+import { triggerProgressionRecompute } from '../../lib/progression/trigger';
 import { applyMovesetFields } from './movesetFields';
 import type { PlayerPatch } from '../../lib/repositories';
 import {
@@ -203,6 +204,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('No valid fields to update');
     }
 
+    // A division change (including clearing it) moves the player onto other
+    // progression tracks: score the new ones and drop the old division's rows.
+    const divisionChanged = 'divisionId' in patch && patch.divisionId !== player.divisionId;
+    const recomputeOnDivisionChange = async (): Promise<void> => {
+      if (divisionChanged) await triggerProgressionRecompute([playerId], 'playerDivisionChanged');
+    };
+
     // If any FK transition happened, stage the player update + wrestler
     // release/assign atomically. Otherwise fall through to the simple update.
     // A clear also goes this way even with nothing to release: only the staged
@@ -222,10 +230,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         tx.updatePlayer(playerId, patch as Record<string, unknown>);
       });
       const refreshed = await roster.players.findById(playerId);
+      await recomputeOnDivisionChange();
       return success(refreshed);
     }
 
     const updated = await roster.players.update(playerId, patch);
+    await recomputeOnDivisionChange();
     return success(updated);
   } catch (err) {
     if (err instanceof NotFoundError) return notFound(err.message);

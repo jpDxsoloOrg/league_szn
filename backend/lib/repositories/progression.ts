@@ -63,6 +63,11 @@ export interface ProgressionRepository {
    */
   upsertPlayerProgression(progression: PlayerProgression): Promise<PlayerProgression>;
   /**
+   * Remove one player's row on a track (consideration included). A missing
+   * row is a no-op. Used by the recompute when a track no longer applies.
+   */
+  deletePlayerProgression(playerId: string, trackId: string): Promise<void>;
+  /**
    * Every player row on a track via the TrackIndex GSI, sorted by
    * `progressPct` (highest first by default). The index is eventually
    * consistent.

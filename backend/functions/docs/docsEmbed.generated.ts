@@ -1724,6 +1724,46 @@ paths:
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  /admin/progression/recompute:
+    post:
+      tags: [Admin]
+      summary: Recompute player progression (Moderator+)
+      description: |
+        Rescores every active progression track for the given players, or for every
+        player when \`playerIds\` is omitted, in one invocation. Existing considerations
+        are kept. Rows on tracks that no longer match the player's division are dropped.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                playerIds: { type: array, items: { type: string }, minItems: 1 }
+      responses:
+        '200':
+          description: Recompute summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  playersProcessed: { type: integer }
+                  rowsUpdated: { type: integer }
+                  rowsDropped: { type: integer }
+                  failures:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        playerId: { type: string }
+                        trackId: { type: string }
+                        message: { type: string }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   /images/upload-url:
     post:
       tags: [Images]

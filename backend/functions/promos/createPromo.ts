@@ -3,6 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, forbidden, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
+import { triggerProgressionRecompute } from '../../lib/progression/trigger';
 import { createNotification } from '../../lib/notifications';
 import { recomputeRivalryHeat } from '../../lib/services/recomputeRivalryHeat';
 import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
@@ -167,6 +168,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         console.error('Failed to recompute rivalry heat after promo create:', heatErr);
       }
     }
+
+    await triggerProgressionRecompute([player.playerId], 'createPromo');
 
     return created(promo);
   } catch (err) {

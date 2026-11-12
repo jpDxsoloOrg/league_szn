@@ -32,6 +32,9 @@ vi.mock('../../../lib/dynamodb', () => ({
   },
 }));
 
+const { mockInvokeAsync } = vi.hoisted(() => ({ mockInvokeAsync: vi.fn() }));
+vi.mock('../../../lib/asyncLambda', () => ({ invokeAsync: mockInvokeAsync }));
+
 let uuidCounter = 0;
 vi.mock('uuid', () => ({
   v4: () => `test-uuid-${++uuidCounter}`,
@@ -480,6 +483,63 @@ describe('updatePlayer', () => {
     expect(moved.divisionId).toBe(smackdown.divisionId);
     expect(moved.divisionJoinedAt).not.toBe('2026-01-01T00:00:00.000Z');
     expect(Date.parse(moved.divisionJoinedAt)).not.toBeNaN();
+  });
+
+  describe('progression recompute on division change', () => {
+    const update = (playerId: string, body: Record<string, unknown>) => updatePlayer(
+      withAuth(makeEvent({ pathParameters: { playerId }, body: JSON.stringify(body) }), 'Admin'),
+      ctx,
+      cb,
+    );
+
+    beforeEach(() => {
+      mockInvokeAsync.mockReset();
+      mockInvokeAsync.mockResolvedValue(undefined);
+    });
+
+    it('recomputes the player when the division changes', async () => {
+      const dojo = await repos.leagueOps.divisions.create({ name: 'Dojo' });
+      const raw = await repos.leagueOps.divisions.create({ name: 'Raw' });
+      const player = await repos.roster.players.create({ name: 'YB', currentWrestler: 'Rock', divisionId: dojo.divisionId });
+
+      const result = await update(player.playerId, { divisionId: raw.divisionId });
+
+      expect(result!.statusCode).toBe(200);
+      expect(mockInvokeAsync).toHaveBeenCalledTimes(1);
+      expect(mockInvokeAsync).toHaveBeenCalledWith('progression', expect.objectContaining({ playerIds: [player.playerId] }));
+    });
+
+    it('recomputes the player when the division is cleared', async () => {
+      const dojo = await repos.leagueOps.divisions.create({ name: 'Dojo' });
+      const player = await repos.roster.players.create({ name: 'YB', currentWrestler: 'Rock', divisionId: dojo.divisionId });
+
+      const result = await update(player.playerId, { divisionId: '' });
+
+      expect(result!.statusCode).toBe(200);
+      expect(mockInvokeAsync).toHaveBeenCalledWith('progression', expect.objectContaining({ playerIds: [player.playerId] }));
+    });
+
+    it('does not recompute when the division is unchanged or not sent', async () => {
+      const dojo = await repos.leagueOps.divisions.create({ name: 'Dojo' });
+      const player = await repos.roster.players.create({ name: 'YB', currentWrestler: 'Rock', divisionId: dojo.divisionId });
+
+      await update(player.playerId, { divisionId: dojo.divisionId });
+      await update(player.playerId, { name: 'Renamed' });
+
+      expect(mockInvokeAsync).not.toHaveBeenCalled();
+    });
+
+    it('still saves the player when the progression invoke fails', async () => {
+      const dojo = await repos.leagueOps.divisions.create({ name: 'Dojo' });
+      const raw = await repos.leagueOps.divisions.create({ name: 'Raw' });
+      const player = await repos.roster.players.create({ name: 'YB', currentWrestler: 'Rock', divisionId: dojo.divisionId });
+      mockInvokeAsync.mockRejectedValue(new Error('lambda down'));
+
+      const result = await update(player.playerId, { divisionId: raw.divisionId });
+
+      expect(result!.statusCode).toBe(200);
+      expect((await repos.roster.players.findById(player.playerId))?.divisionId).toBe(raw.divisionId);
+    });
   });
 
   it('returns 404 when divisionId references non-existent division', async () => {

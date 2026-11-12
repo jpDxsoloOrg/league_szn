@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
+import { triggerProgressionRecompute } from '../../lib/progression/trigger';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import { recomputeRivalryHeat } from '../../lib/services/recomputeRivalryHeat';
 import type { ReactionType, PromoType } from '../../lib/repositories/types';
@@ -74,6 +75,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         console.error('Failed to recompute rivalry heat after reaction:', heatErr);
       }
     }
+
+    // Reactions feed the author's promo goals (self-reactions are ignored by the scorer).
+    await triggerProgressionRecompute([promo.playerId], 'reactToPromo');
 
     return success({ reactionCounts: updatedPromo.reactionCounts });
   } catch (err) {

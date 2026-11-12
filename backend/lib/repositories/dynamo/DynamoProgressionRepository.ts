@@ -103,6 +103,13 @@ export class DynamoProgressionRepository implements ProgressionRepository {
     return fromPlayerProgressionItem(result.Attributes ?? {});
   }
 
+  async deletePlayerProgression(playerId: string, trackId: string): Promise<void> {
+    await dynamoDb.delete({
+      TableName: TableNames.PLAYER_PROGRESSION,
+      Key: { playerId, trackId },
+    });
+  }
+
   async listByTrack(trackId: string, options: ListByTrackOptions = {}): Promise<PlayerProgression[]> {
     const rows = await queryUpTo(
       {
