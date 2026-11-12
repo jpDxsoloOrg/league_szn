@@ -385,7 +385,11 @@
       "season_event": "Saisons",
       "tournament_result": "Turniere",
       "challenge_event": "Herausforderungen",
-      "promo_posted": "Promos"
+      "promo_posted": "Promos",
+      "callup_consideration": "Call-ups"
+    },
+    "summaries": {
+      "callup_consideration": "{{name}} wird für einen Call-up in Betracht gezogen"
     },
     "timeAgo": {
       "justNow": "Gerade eben",
@@ -2540,7 +2544,8 @@
     "typeTransfer": "Transfer",
     "typeRivalry": "Rivalität",
     "typeStoryline": "Storyline",
-    "typeDiscipline": "Strikes"
+    "typeDiscipline": "Strikes",
+    "typeProgression": "Call-up"
   },
   "overalls": {
     "admin": {

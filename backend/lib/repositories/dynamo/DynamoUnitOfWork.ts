@@ -6,10 +6,16 @@ import type {
   MatchWriteCondition,
   PlayerWriteCondition,
   DivisionWriteCondition,
+  ProgressionConsiderationSeed,
 } from '../unitOfWork';
 import type { DivisionPatch } from '../LeagueOpsRepository';
-import type { ChallengeStatus, PlayerProgression, ProgressionEvent, TagTeam } from '../types';
-import { buildUpsertProgressionUpdate, toProgressionEventItem } from './progressionRows';
+import type { ChallengeStatus, PlayerProgression, ProgressionConsideration, ProgressionEvent, TagTeam } from '../types';
+import {
+  buildClearConsiderationUpdate,
+  buildSetConsiderationUpdate,
+  buildUpsertProgressionUpdate,
+  toProgressionEventItem,
+} from './progressionRows';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
 import {
   participantSk,
@@ -756,6 +762,31 @@ export class DynamoUnitOfWork implements UnitOfWork {
         Item: toProgressionEventItem(event),
       },
     });
+  }
+
+  setProgressionConsideration(
+    playerId: string,
+    trackId: string,
+    consideration: ProgressionConsideration,
+    seed?: ProgressionConsiderationSeed,
+  ): void {
+    this.staged.push({
+      Update: {
+        TableName: TableNames.PLAYER_PROGRESSION,
+        ...buildSetConsiderationUpdate(playerId, trackId, consideration, seed),
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'PlayerProgression', id: `${playerId}/${trackId}` });
+  }
+
+  clearProgressionConsideration(playerId: string, trackId: string): void {
+    this.staged.push({
+      Update: {
+        TableName: TableNames.PLAYER_PROGRESSION,
+        ...buildClearConsiderationUpdate(playerId, trackId),
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'PlayerProgression', id: `${playerId}/${trackId}` });
   }
 
   // ── Commit / Rollback ────────────────────────────────────────────

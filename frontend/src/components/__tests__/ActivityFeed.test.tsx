@@ -40,6 +40,19 @@ describe('ActivityFeed', () => {
     expect(await screen.findByRole('link', { name: /Edge beat Sting/ })).toHaveAttribute('href', '/events/e1');
   });
 
+  it('renders a call-up consideration with a translated summary linking to the profile', async () => {
+    mockGetAll.mockResolvedValue(page([{
+      id: 'callup-p1-t1',
+      type: 'callup_consideration',
+      timestamp: '2026-11-01T10:00:00.000Z',
+      summary: 'Edge is being considered for a call-up',
+      metadata: { playerId: 'p1', trackId: 't1', playerName: 'Edge' },
+    }]));
+    renderFeed();
+    expect(await screen.findByRole('link', { name: /activity\.summaries\.callup_consideration/ }))
+      .toHaveAttribute('href', '/player/p1');
+  });
+
   it('shows the empty state', async () => {
     mockGetAll.mockResolvedValue(page([]));
     renderFeed();

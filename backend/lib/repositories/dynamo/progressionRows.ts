@@ -3,8 +3,10 @@
  * the direct and transactional write paths produce identical items.
  */
 import { progressionEventSortKey } from '../progression';
+import type { ProgressionConsiderationSeed } from '../unitOfWork';
 import type {
   PlayerProgression,
+  ProgressionConsideration,
   ProgressionEvent,
   ProgressionTrack,
 } from '../types';
@@ -42,6 +44,64 @@ export function buildUpsertProgressionUpdate(progression: PlayerProgression): Up
     UpdateExpression: `SET ${sets.join(', ')}`,
     ExpressionAttributeNames: names,
     ExpressionAttributeValues: values,
+  };
+}
+
+export interface ConditionalUpdateParts {
+  Key: Record<string, unknown>;
+  UpdateExpression: string;
+  ExpressionAttributeNames: Record<string, string>;
+  ExpressionAttributeValues?: Record<string, unknown>;
+  ConditionExpression: string;
+}
+
+/**
+ * SET `consideration`, only while the row has none. Without a seed the row
+ * must exist; with one, a missing row is created from the seed and an
+ * existing row keeps its computed fields (`if_not_exists`).
+ */
+export function buildSetConsiderationUpdate(
+  playerId: string,
+  trackId: string,
+  consideration: ProgressionConsideration,
+  seed?: ProgressionConsiderationSeed,
+): ConditionalUpdateParts {
+  const names: Record<string, string> = { '#consideration': 'consideration' };
+  const values: Record<string, unknown> = { ':consideration': consideration };
+  const sets = ['#consideration = :consideration'];
+  let condition = 'attribute_not_exists(#consideration)';
+  if (seed) {
+    names['#progressPct'] = 'progressPct';
+    names['#goals'] = 'goals';
+    names['#computedAt'] = 'computedAt';
+    values[':progressPct'] = seed.progressPct;
+    values[':goals'] = seed.goals;
+    values[':computedAt'] = seed.computedAt;
+    sets.push(
+      '#progressPct = if_not_exists(#progressPct, :progressPct)',
+      '#goals = if_not_exists(#goals, :goals)',
+      '#computedAt = if_not_exists(#computedAt, :computedAt)',
+    );
+  } else {
+    names['#playerId'] = 'playerId';
+    condition = `attribute_exists(#playerId) AND ${condition}`;
+  }
+  return {
+    Key: { playerId, trackId },
+    UpdateExpression: `SET ${sets.join(', ')}`,
+    ExpressionAttributeNames: names,
+    ExpressionAttributeValues: values,
+    ConditionExpression: condition,
+  };
+}
+
+/** REMOVE `consideration`, only while the row has one. */
+export function buildClearConsiderationUpdate(playerId: string, trackId: string): ConditionalUpdateParts {
+  return {
+    Key: { playerId, trackId },
+    UpdateExpression: 'REMOVE #consideration',
+    ExpressionAttributeNames: { '#consideration': 'consideration' },
+    ConditionExpression: 'attribute_exists(#consideration)',
   };
 }
 

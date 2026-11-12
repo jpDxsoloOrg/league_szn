@@ -10,6 +10,8 @@ const {
   mockChallengesList,
   mockPromosList,
   mockPlayersList,
+  mockListTracks,
+  mockListByTrack,
 } = vi.hoisted(() => ({
   mockMatchesListCompleted: vi.fn(),
   mockChampionshipsListAllHistory: vi.fn(),
@@ -19,6 +21,8 @@ const {
   mockChallengesList: vi.fn(),
   mockPromosList: vi.fn(),
   mockPlayersList: vi.fn(),
+  mockListTracks: vi.fn(),
+  mockListByTrack: vi.fn(),
 }));
 
 vi.mock('../../../lib/repositories', () => ({
@@ -40,6 +44,7 @@ vi.mock('../../../lib/repositories', () => ({
     roster: {
       players: { listWithDeleted: mockPlayersList },
     },
+    progression: { listTracks: mockListTracks, listByTrack: mockListByTrack },
   }),
 }));
 
@@ -75,6 +80,8 @@ function mockAllEmpty() {
   mockChallengesList.mockResolvedValue([]);
   mockPromosList.mockResolvedValue([]);
   mockPlayersList.mockResolvedValue([]);
+  mockListTracks.mockResolvedValue([]);
+  mockListByTrack.mockResolvedValue([]);
 }
 
 describe('getActivity', () => {
@@ -274,6 +281,60 @@ describe('getActivity', () => {
     expect(mockTournamentsList).not.toHaveBeenCalled();
     expect(mockChallengesList).not.toHaveBeenCalled();
     expect(mockPromosList).not.toHaveBeenCalled();
+    expect(mockListTracks).not.toHaveBeenCalled();
+  });
+
+  describe('callup_consideration', () => {
+    const player = (playerId: string, extra: Record<string, unknown> = {}) => ({
+      playerId,
+      name: `Name ${playerId}`,
+      currentWrestler: `Wrestler ${playerId}`,
+      ...extra,
+    });
+
+    beforeEach(() => {
+      mockListTracks.mockResolvedValue([{ trackId: 't1', kind: 'callup', isActive: true }]);
+      mockListByTrack.mockResolvedValue([
+        {
+          playerId: 'p1',
+          trackId: 't1',
+          progressPct: 50,
+          goals: [],
+          computedAt: '2026-11-01T00:00:00.000Z',
+          consideration: { status: 'considering', markedBy: 'gm', markedAt: '2026-11-10T00:00:00.000Z' },
+        },
+        { playerId: 'p2', trackId: 't1', progressPct: 90, goals: [], computedAt: '2026-11-01T00:00:00.000Z' },
+      ]);
+    });
+
+    it('lists current call-up marks with the player name', async () => {
+      mockPlayersList.mockResolvedValue([player('p1'), player('p2')]);
+
+      const result = await getActivity(makeEvent({ queryStringParameters: { type: 'callup' } }), ctx, cb);
+
+      expect(mockListTracks).toHaveBeenCalledWith({ kind: 'callup', isActive: true });
+      expect(mockMatchesListCompleted).not.toHaveBeenCalled();
+      const body = JSON.parse(result!.body);
+      expect(body.items).toHaveLength(1);
+      expect(body.items[0]).toMatchObject({
+        type: 'callup_consideration',
+        timestamp: '2026-11-10T00:00:00.000Z',
+        summary: 'Name p1 is being considered for a call-up',
+        metadata: { playerId: 'p1', trackId: 't1', playerName: 'Name p1' },
+      });
+    });
+
+    it('drops marks on hidden, deactivated or deleted players', async () => {
+      for (const extra of [
+        { currentWrestler: 'Needs Wrestler' },
+        { deactivatedAt: '2026-11-11T00:00:00.000Z' },
+        { deletedAt: '2026-11-11T00:00:00.000Z' },
+      ]) {
+        mockPlayersList.mockResolvedValue([player('p1', extra)]);
+        const result = await getActivity(makeEvent({ queryStringParameters: { type: 'callup' } }), ctx, cb);
+        expect(JSON.parse(result!.body).items).toEqual([]);
+      }
+    });
   });
 
   it('returns 500 when a repository method throws', async () => {
