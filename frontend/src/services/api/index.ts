@@ -38,7 +38,7 @@ export { overallsApi } from './overalls.api';
 export { transfersApi } from './transfers.api';
 export { storylineRequestsApi } from './storylineRequests.api';
 export { locationsApi } from './locations.api';
-export { progressionApi } from './progression.api';
+export { progressionApi, executeProgressionError } from './progression.api';
 
 // Type/interface re-exports
 export type { SiteFeatures } from './siteConfig.api';

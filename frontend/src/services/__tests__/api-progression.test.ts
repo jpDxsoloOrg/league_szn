@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { progressionApi } from '../api';
+import { executeProgressionError, progressionApi } from '../api';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 type FetchMock = ReturnType<typeof vi.fn>;
@@ -71,8 +71,28 @@ describe('progressionApi', () => {
     expect(callUrl(2)).toBe(`${API_BASE}/progression/players/p1/execute`);
     expect(callOpts(2).method).toBe('POST');
 
-    await progressionApi.recompute({ all: true });
+    await progressionApi.recompute({ playerIds: ['p1'] });
     expect(callUrl(3)).toBe(`${API_BASE}/admin/progression/recompute`);
-    expect(callBody(3)).toEqual({ all: true });
+    expect(callBody(3)).toEqual({ playerIds: ['p1'] });
+
+    await progressionApi.recompute();
+    expect(callBody(4)).toEqual({});
+  });
+
+  it('reads a coded execute refusal from the thrown error', async () => {
+    fetchMock().mockResolvedValue(mockRes({
+      code: 'HOLDS_DIVISION_TITLE',
+      message: 'Player holds a championship restricted to their current division',
+      championships: [{ championshipId: 'c1', name: 'YB Title' }],
+    }, 409));
+
+    const err = await progressionApi.execute('p1', { trackId: 't1' }).catch((e: unknown) => e);
+    const refusal = executeProgressionError(err);
+
+    expect(refusal?.code).toBe('HOLDS_DIVISION_TITLE');
+    if (refusal?.code === 'HOLDS_DIVISION_TITLE') {
+      expect(refusal.championships).toEqual([{ championshipId: 'c1', name: 'YB Title' }]);
+    }
+    expect(executeProgressionError(new Error('network'))).toBeNull();
   });
 });

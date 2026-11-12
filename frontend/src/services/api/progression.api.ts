@@ -1,7 +1,8 @@
 import type {
   CreateProgressionTrackInput,
+  ExecuteProgressionError,
   ExecuteProgressionInput,
-  PlayerProgression,
+  ExecuteProgressionResult,
   PlayerProgressionSummary,
   ProgressionBoard,
   ProgressionConsiderationEntry,
@@ -9,10 +10,12 @@ import type {
   ProgressionTrack,
   ProgressionTrackFilter,
   RecomputeProgressionInput,
+  RecomputeProgressionResult,
   SetConsiderationInput,
+  SetConsiderationResult,
   UpdateProgressionTrackInput,
 } from '../../types/progression';
-import { API_BASE_URL, fetchWithAuth } from './apiClient';
+import { API_BASE_URL, ApiError, fetchWithAuth } from './apiClient';
 
 const enc = encodeURIComponent;
 
@@ -69,7 +72,7 @@ export const progressionApi = {
   },
 
   /** Moderator+ (CUP-05). Mark or unmark a player as under consideration on a track. */
-  setConsideration: async (playerId: string, input: SetConsiderationInput): Promise<PlayerProgression> => {
+  setConsideration: async (playerId: string, input: SetConsiderationInput): Promise<SetConsiderationResult> => {
     return fetchWithAuth(`${API_BASE_URL}/progression/players/${enc(playerId)}/consideration`, {
       method: 'PUT',
       body: JSON.stringify(input),
@@ -86,23 +89,34 @@ export const progressionApi = {
 
   /**
    * Moderator+ (CUP-06). Move the player to the destination division.
-   * The response shape is defined by CUP-06; pass it as `TResult`.
+   * Coded refusals throw an ApiError; read them with `executeProgressionError`.
    */
-  execute: async <TResult = unknown>(playerId: string, input: ExecuteProgressionInput): Promise<TResult> => {
+  execute: async (playerId: string, input: ExecuteProgressionInput): Promise<ExecuteProgressionResult> => {
     return fetchWithAuth(`${API_BASE_URL}/progression/players/${enc(playerId)}/execute`, {
       method: 'POST',
       body: JSON.stringify(input),
     });
   },
 
-  /**
-   * Moderator+ (CUP-03). Recompute progression for some players, or `all`.
-   * The response shape is defined by CUP-03; pass it as `TResult`.
-   */
-  recompute: async <TResult = unknown>(input: RecomputeProgressionInput): Promise<TResult> => {
+  /** Moderator+ (CUP-03). Recompute the given players, or every player when `playerIds` is omitted. */
+  recompute: async (input: RecomputeProgressionInput = {}): Promise<RecomputeProgressionResult> => {
     return fetchWithAuth(`${API_BASE_URL}/admin/progression/recompute`, {
       method: 'POST',
       body: JSON.stringify(input),
     });
   },
 };
+
+const EXECUTE_ERROR_CODES: ReadonlySet<string> = new Set([
+  'NOT_IN_SOURCE_DIVISION',
+  'HOLDS_DIVISION_TITLE',
+  'CONCURRENT_UPDATE',
+  'TARGET_IS_DEVELOPMENTAL',
+  'TRACK_INACTIVE',
+]);
+
+/** The coded refusal behind a failed `progressionApi.execute`, or null for any other error. */
+export function executeProgressionError(err: unknown): ExecuteProgressionError | null {
+  if (!(err instanceof ApiError) || !err.code || !EXECUTE_ERROR_CODES.has(err.code)) return null;
+  return { ...err.details, code: err.code, message: err.message } as ExecuteProgressionError;
+}

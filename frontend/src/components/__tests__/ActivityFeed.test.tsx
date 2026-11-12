@@ -70,6 +70,17 @@ describe('ActivityFeed', () => {
     });
   });
 
+  it('translates an executed call-up summary when the player name is known', async () => {
+    mockGetAll.mockResolvedValue(page([{
+      id: 'callup-e2', type: 'callup_executed', timestamp: '2026-11-01T10:00:00.000Z',
+      summary: 'Kenta was called up to Raw',
+      metadata: { playerId: 'p1', playerName: 'Kenta', toDivisionName: 'Raw' },
+    }]));
+    renderFeed();
+    expect(await screen.findByRole('link', { name: /activity\.summaries\.callup_executed_to/ }))
+      .toHaveAttribute('href', '/player/p1');
+  });
+
   it('shows the empty state', async () => {
     mockGetAll.mockResolvedValue(page([]));
     renderFeed();
