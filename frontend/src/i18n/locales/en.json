@@ -3972,6 +3972,14 @@
       "title": "Version not found",
       "description": "There are no patch notes for {{version}}.",
       "action": "Go to the latest release ({{version}})"
+    },
+    "lightbox": {
+      "open": "Enlarge screenshot: {{alt}}",
+      "close": "Close screenshot",
+      "previous": "Previous screenshot",
+      "next": "Next screenshot",
+      "position": "{{current}} of {{total}}",
+      "untitled": "Screenshot"
     }
   }
 }

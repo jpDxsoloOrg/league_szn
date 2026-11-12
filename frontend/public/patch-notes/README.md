@@ -14,6 +14,16 @@ Static release notes served at `/patch-notes` (latest release) and `/patch-notes
 - `next-features.md`: the "Coming Next" section.
 - `de/`: German copies with the same file names. A missing German file falls back to English.
 
+## Screenshots
+
+Add screenshots where they help a reader see the feature. In a post, a markdown image renders as a small thumbnail with its alt text as the caption; clicking it opens the full image in a lightbox. Images on consecutive lines form a gallery row, and the lightbox's arrows (and arrow keys) step through the images of that section.
+
+- Put them in `images/vX.Y.Z/` with a descriptive name, e.g. `images/v1.1.0/callups-board.webp`, and reference them as `![Alt text](/patch-notes/images/v1.1.0/callups-board.webp)`.
+- WebP (quality around 80) or an optimized PNG, under 200 KB each. Capture at desktop width with a device scale factor of 2, in the dark theme.
+- Crop to the feature panel. No personal data: no PSN IDs, emails, notification contents or admin-only details beyond the feature itself.
+- 1-3 per section, right after the section's intro or bullet list and before the `**Read more:**` line.
+- The German post uses the same image paths with German alt text.
+
 ## Version numbers
 
 The site was 1.0 before patch notes existed. The first post is 1.1.0.
@@ -47,3 +57,5 @@ The site was 1.0 before patch notes existed. The first post is 1.1.0.
 - a `file` doesn't exist
 - `frontend/package.json` `version` is not the latest release
 - a `/guide/wiki/<slug>` link in any post points to an article that isn't in `public/wiki/index.json`, or to a staff-only one
+- an image in any post points to a file that doesn't exist under `public/`
+- a file in `images/` is not in a `vX.Y.Z` folder, is not WebP or PNG, or is over 200 KB

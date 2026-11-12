@@ -244,3 +244,216 @@
     padding: 1.125rem;
   }
 }
+
+/* Screenshots: small thumbnails that open in a lightbox. */
+.patch-notes-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.patch-notes-thumb {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 220px;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  text-align: left;
+  vertical-align: top;
+  cursor: zoom-in;
+}
+
+.patch-notes-thumb__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Natural aspect, so wide crops (a ticker, a table row) stay readable. */
+  max-height: 180px;
+  object-fit: contain;
+  object-position: left top;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  background-color: var(--color-surface-raised);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.patch-notes-thumb:hover .patch-notes-thumb__image {
+  border-color: var(--color-cyan);
+  box-shadow: var(--glow-cyan);
+  transform: translateY(-2px);
+}
+
+.patch-notes-thumb:focus-visible {
+  outline: none;
+}
+
+.patch-notes-thumb:focus-visible .patch-notes-thumb__image {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.patch-notes-thumb__caption {
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+.patch-notes-thumb:hover .patch-notes-thumb__caption {
+  color: var(--color-text-secondary);
+}
+
+/* Lightbox: the shared Modal, widened to fit the screenshot. */
+.ui-modal.patch-notes-lightbox {
+  width: calc(100vw - 2rem);
+  max-width: min(1400px, calc(100vw - 2rem));
+  background-color: var(--color-bg);
+}
+
+.patch-notes-lightbox .ui-modal__body {
+  position: relative;
+  padding: 3.25rem 1rem 1rem;
+  overflow: hidden;
+}
+
+.patch-notes-lightbox__figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.patch-notes-lightbox__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0 3.25rem;
+}
+
+.patch-notes-lightbox__image {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100dvh - 10rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  height: auto;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  object-fit: contain;
+}
+
+.patch-notes-lightbox__caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem 1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.patch-notes-lightbox__count {
+  color: var(--color-text-muted);
+  font-family: var(--font-label);
+  letter-spacing: var(--tracking-label);
+}
+
+.patch-notes-lightbox__close,
+.patch-notes-lightbox__nav {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  padding: 0;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-control);
+  background-color: var(--color-surface-raised);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.patch-notes-lightbox__close:hover,
+.patch-notes-lightbox__nav:hover {
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
+}
+
+.patch-notes-lightbox__close:focus-visible,
+.patch-notes-lightbox__nav:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.patch-notes-lightbox__close {
+  top: 0.5rem;
+  right: 0.5rem;
+}
+
+.patch-notes-lightbox__nav {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.patch-notes-lightbox__nav--prev {
+  left: 0.5rem;
+}
+
+.patch-notes-lightbox__nav--next {
+  right: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .patch-notes-gallery {
+    gap: 0.75rem;
+  }
+
+  .patch-notes-thumb {
+    width: calc(50% - 0.375rem);
+  }
+
+  .ui-modal.patch-notes-lightbox {
+    width: calc(100vw - 1rem);
+    max-width: calc(100vw - 1rem);
+  }
+
+  .patch-notes-lightbox .ui-modal__body {
+    padding: 3.25rem 0.5rem 4rem;
+  }
+
+  .patch-notes-lightbox__stage {
+    padding: 0;
+  }
+
+  /* On a phone the arrows sit under the image so they never cover it. */
+  .patch-notes-lightbox__nav {
+    top: auto;
+    bottom: 0.5rem;
+    transform: none;
+  }
+
+  .patch-notes-lightbox__nav--prev {
+    left: calc(50% - var(--touch-target) - 0.375rem);
+  }
+
+  .patch-notes-lightbox__nav--next {
+    right: calc(50% - var(--touch-target) - 0.375rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .patch-notes-thumb__image {
+    transition: none;
+  }
+
+  .patch-notes-thumb:hover .patch-notes-thumb__image {
+    transform: none;
+  }
+}

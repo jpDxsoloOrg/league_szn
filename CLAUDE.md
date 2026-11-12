@@ -130,7 +130,8 @@ Versioned release notes at `/patch-notes` (latest) and `/patch-notes/vX.Y.Z`. St
 - **Versions**: semver. A feature release bumps MINOR (`1.1.0` -> `1.2.0`); a fixes-only release bumps PATCH (`1.2.0` -> `1.2.1`). Helpers in `frontend/src/components/patchNotes/versions.ts`.
 - **To publish a release**: (1) add `vX.Y.Z.md` and `de/vX.Y.Z.md`; (2) end each section with a `**Read more:**` line linking the wiki articles for that feature (`/guide/wiki/<slug>`, same paths in DE with German titles); (3) prepend the entry to `releases` in `index.json` with `version`, `date`, `title`, `summary`, `titleDe`, `summaryDe`, `file`; (4) bump `version` in `frontend/package.json` (and `package-lock.json`) to match; (5) update `next-features.md` and `de/next-features.md`, without links to wiki articles that don't exist yet.
 - **Copy**: never mention sprints, dates or timeframes.
-- `patchNotesContent.test.ts` enforces valid, unique, newest-first versions, existing files, `package.json` matching the latest release, and wiki links that resolve.
+- **Screenshots**: `![alt](/patch-notes/images/vX.Y.Z/name.webp)` renders as a small thumbnail that opens in a lightbox; consecutive images form a gallery row, and the lightbox steps through a section's images. Store them in `frontend/public/patch-notes/images/vX.Y.Z/` as WebP (or optimized PNG) under 200 KB, cropped to the feature, with no personal data (PSN IDs, emails, notifications). Use the same paths in the DE post with German alt text. 1-3 per section, before the `**Read more:**` line.
+- `patchNotesContent.test.ts` enforces valid, unique, newest-first versions, existing files, `package.json` matching the latest release, wiki links that resolve, and screenshots that exist, sit in `images/vX.Y.Z/` and stay under 200 KB.
 
 ## Data Model
 

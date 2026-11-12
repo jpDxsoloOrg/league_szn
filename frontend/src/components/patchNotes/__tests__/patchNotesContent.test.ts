@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { PatchNotesIndex } from '../patchNotesData';
@@ -82,6 +82,35 @@ describe('patch notes links', () => {
         .map((slug) => `${file.slice(patchNotesRoot.length + 1)} -> ${slug}`);
     });
     expect(broken).toEqual([]);
+  });
+
+  it('only references screenshots that exist under public/', () => {
+    const publicRoot = join(process.cwd(), 'public');
+    const missing = markdownFiles(patchNotesRoot).flatMap((file) => {
+      const markdown = readFileSync(file, 'utf8');
+      return [...markdown.matchAll(/!\[[^\]]*\]\(\s*([^)\s]+)/g)]
+        .map((image) => image[1]!)
+        .filter((src) => !src.startsWith('/') || !existsSync(join(publicRoot, src)))
+        .map((src) => `${file.slice(patchNotesRoot.length + 1)} -> ${src}`);
+    });
+    expect(missing).toEqual([]);
+  });
+
+  it('keeps screenshots under images/vX.Y.Z/ as WebP or PNG below 200 KB', () => {
+    const imagesRoot = join(patchNotesRoot, 'images');
+    if (!existsSync(imagesRoot)) return;
+    const problems = readdirSync(imagesRoot, { withFileTypes: true }).flatMap((entry) => {
+      if (!entry.isDirectory() || !/^v\d+\.\d+\.\d+$/.test(entry.name)) return [`images/${entry.name} is not a vX.Y.Z folder`];
+      const folder = join(imagesRoot, entry.name);
+      return readdirSync(folder).flatMap((name) => {
+        const path = join(folder, name);
+        const issues: string[] = [];
+        if (!/\.(webp|png)$/.test(name)) issues.push(`${entry.name}/${name} is not WebP or PNG`);
+        if (statSync(path).size > 200 * 1024) issues.push(`${entry.name}/${name} is over 200 KB`);
+        return issues;
+      });
+    });
+    expect(problems).toEqual([]);
   });
 
   it('never links the public patch notes to staff-only wiki articles', () => {
