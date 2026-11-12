@@ -26,6 +26,7 @@ import type { TagTeam } from '../../types/tagTeam';
 import { computePlayerForm } from '../../utils/matchDisplay';
 import { getTitleAccent } from '../titleAccent';
 import CallUpProgress from '../progression/CallUpProgress';
+import ConsiderationBanner from '../progression/ConsiderationBanner';
 import MovesetSection from './MovesetSection';
 import ProfileHero from './ProfileHero';
 import ProfileRivalries from './ProfileRivalries';
@@ -213,6 +214,7 @@ export default function PublicProfile() {
         }
       />
 
+      <ConsiderationBanner playerId={player.playerId} />
       <RecordSummary record={player} titlesHeld={titles.length} />
       <CallUpProgress playerId={player.playerId} showGoals={isAdminOrModerator} />
 

@@ -9,6 +9,7 @@ import { WRESTLER_NAME_ENTRY_MODE } from '../../config/wrestlerNameEntry';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
 import DisciplineNotice from '../discipline/DisciplineNotice';
 import CallUpProgress from '../progression/CallUpProgress';
+import ConsiderationBanner from '../progression/ConsiderationBanner';
 import EmbeddedPlayerStats from '../statistics/EmbeddedPlayerStats';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
@@ -169,6 +170,7 @@ export default function WrestlerProfile() {
           </Button>
         )}
       />
+      <ConsiderationBanner playerId={player.playerId} />
 
       {editing ? (
         <ProfileEditForm
