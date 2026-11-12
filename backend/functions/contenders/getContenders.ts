@@ -79,10 +79,9 @@ function toIdList(currentChampion: Championship['currentChampion']): string[] {
   return Array.isArray(currentChampion) ? currentChampion.filter(Boolean) : [currentChampion];
 }
 
-/** `currentTagTeamId` is added to Championship by TTC-10; read it defensively until then. */
+/** The registered tag team holding the title, if one is recorded. */
 function readCurrentTagTeamId(championship: Championship): string | undefined {
-  const value = (championship as Championship & { currentTagTeamId?: unknown }).currentTagTeamId;
-  return typeof value === 'string' && value.length > 0 ? value : undefined;
+  return championship.currentTagTeamId || undefined;
 }
 
 function rowStats(ranking: ContenderRanking, adjustedRank: number): ContenderRowStats {

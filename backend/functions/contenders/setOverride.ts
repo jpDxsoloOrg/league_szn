@@ -30,10 +30,9 @@ type TargetCheck =
   | { entityType: OverrideEntityType; entityId: string; error?: undefined }
   | { error: APIGatewayProxyResult };
 
-/** `currentTagTeamId` is added to Championship by TTC-10; read it defensively until then. */
+/** The registered tag team holding the title, if one is recorded. */
 function currentTagTeamIdOf(championship: Championship): string | undefined {
-  const value = (championship as Championship & { currentTagTeamId?: unknown }).currentTagTeamId;
-  return typeof value === 'string' && value ? value : undefined;
+  return championship.currentTagTeamId || undefined;
 }
 
 /** The current champion's player ids. */
