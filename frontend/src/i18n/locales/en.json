@@ -2305,6 +2305,10 @@
     }
   },
   "tagTeams": {
+    "contenderChip": {
+      "label": "#{{rank}} contender — {{championship}}",
+      "listLabel": "Tag title contender rankings"
+    },
     "title": "Tag Teams",
     "standings": "Tag Team Standings",
     "detail": "Tag Team Detail",
@@ -2432,7 +2436,25 @@
       "topThreePositions": "Top 3 Positions",
       "comingSoon": "Personal contender status isn't available yet.",
       "requiresAuth": "In the meantime, the overall rankings show where everyone stands.",
-      "viewRankings": "View Overall Rankings"
+      "viewRankings": "View Overall Rankings",
+      "tagTitles": {
+        "heading": "Tag Titles",
+        "teamLabel": "Your team: {{name}}",
+        "rank": "#{{rank}}",
+        "champions": "Champions",
+        "unranked": "Not ranked",
+        "matchesInPeriod_one": "{{count}} match this period",
+        "matchesInPeriod_other": "{{count}} matches this period",
+        "matchesNeeded_one": "Teams need at least {{count}} tag match in the ranking period to qualify",
+        "matchesNeeded_other": "Teams need at least {{count}} tag matches in the ranking period to qualify",
+        "notInTeam": "You are not in a tag team, so you have no tag title rankings.",
+        "goToMyTagTeam": "My Tag Team",
+        "teamNotActive": "Your tag team isn't active yet. It can be ranked once it is approved.",
+        "noTagTitles": "There are no active tag titles.",
+        "loadFailed": "Couldn't load your tag title rankings.",
+        "loginRequired": "Log in to see your tag team's rankings.",
+        "singlesComingSoon": "Singles contender status isn't available yet."
+      }
     },
     "overrides": {
       "badge": "Manual Override",
