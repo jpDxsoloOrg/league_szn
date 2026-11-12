@@ -1,0 +1,57 @@
+/* Shared by the profile banner and the list badge. Kind modifiers match ProgressionMeter. */
+.consideration-banner {
+  --consideration-accent: var(--color-win);
+  --consideration-tint: var(--tint-win);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 1rem 0;
+  padding: 0.875rem 1.25rem;
+  border: 1px solid var(--consideration-accent);
+  border-left-width: 4px;
+  border-radius: var(--radius-card);
+  background-color: var(--consideration-tint);
+  color: var(--color-text);
+}
+
+.consideration-banner--promotion {
+  --consideration-accent: var(--color-warn);
+  --consideration-tint: var(--tint-warn);
+}
+
+.consideration-banner--relegation {
+  --consideration-accent: var(--color-loss);
+  --consideration-tint: var(--tint-loss);
+}
+
+.consideration-banner__icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.consideration-banner__text {
+  font-family: var(--font-label);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.consideration-badge {
+  margin-left: 0.5rem;
+  padding: 0 0.5rem;
+  font-size: 0.6875rem;
+  vertical-align: middle;
+}
+
+@media (max-width: 640px) {
+  .consideration-banner {
+    padding: 0.75rem 1rem;
+  }
+
+  .consideration-banner__text {
+    font-size: 0.8125rem;
+  }
+}

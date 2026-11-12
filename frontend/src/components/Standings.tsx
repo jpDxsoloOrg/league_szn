@@ -8,6 +8,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { useShowMore } from '../hooks/useShowMore';
 import type { Standings as StandingsType, Season, Division, Player } from '../types';
 import PlayerHoverCard from './PlayerHoverCard';
+import ConsiderationBadge from './progression/ConsiderationBadge';
 import DivisionFilter from './DivisionFilter';
 import Avatar from './ui/Avatar';
 import DataTable from './ui/DataTable';
@@ -201,6 +202,7 @@ export default function Standings() {
             <PlayerHoverCard player={player} divisions={divisions}>
               <Link to={`/player/${player.playerId}`} className="standings-player__name">{player.name}</Link>
             </PlayerHoverCard>
+            <ConsiderationBadge playerId={player.playerId} />
             <span className="standings-player__wrestler">{player.currentWrestler}</span>
           </div>
         </div>
@@ -298,7 +300,7 @@ export default function Standings() {
                       <span className="standings-rank">#{player.rank}</span>
                       <Avatar src={player.imageUrl} name={player.name} />
                       <span className="standings-row__names">
-                        <span className="standings-row__name">{player.name}</span>
+                        <span className="standings-row__name">{player.name}<ConsiderationBadge playerId={player.playerId} /></span>
                         <span className="standings-row__wrestler">
                           {player.mainOverall !== undefined && `${t('standings.table.overall')} ${player.mainOverall} · `}
                           {player.currentWrestler}

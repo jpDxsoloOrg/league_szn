@@ -3728,6 +3728,18 @@
       "noValue": "— / {{threshold}}",
       "needsRated_one": "Needs {{count}} rated match",
       "needsRated_other": "Needs {{count}} rated matches"
+    },
+    "consideration": {
+      "banner": {
+        "callup": "Being considered for a call-up",
+        "promotion": "On promotion watch",
+        "relegation": "In relegation danger"
+      },
+      "badge": {
+        "callup": "Call-up watch",
+        "promotion": "Promotion watch",
+        "relegation": "Relegation danger"
+      }
     }
   }
 }

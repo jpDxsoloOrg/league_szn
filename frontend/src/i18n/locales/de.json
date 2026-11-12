@@ -3728,6 +3728,18 @@
       "noValue": "— / {{threshold}}",
       "needsRated_one": "Benötigt {{count}} bewertetes Match",
       "needsRated_other": "Benötigt {{count}} bewertete Matches"
+    },
+    "consideration": {
+      "banner": {
+        "callup": "Kandidat für eine Beförderung in den Hauptkader",
+        "promotion": "Aufstiegskandidat",
+        "relegation": "Abstiegsgefahr"
+      },
+      "badge": {
+        "callup": "Call-up-Kandidat",
+        "promotion": "Aufstiegskandidat",
+        "relegation": "Abstiegsgefahr"
+      }
     }
   }
 }
