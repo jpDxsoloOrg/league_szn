@@ -658,3 +658,4 @@ export interface StorylineRequestWithDetails extends StorylineRequest {
 export * from './location';
 export * from './factionMessage';
 export * from './rivalry';
+export * from './progression';
