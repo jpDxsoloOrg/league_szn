@@ -31,6 +31,7 @@ const Standings = lazy(() => import('./components/Standings'));
 const ActivityFeed = lazy(() => import('./components/ActivityFeed'));
 const News = lazy(() => import('./components/news/News'));
 const NewsArticle = lazy(() => import('./components/news/NewsArticle'));
+const PatchNotes = lazy(() => import('./components/patchNotes/PatchNotes'));
 const Championships = lazy(() => import('./components/Championships'));
 const Tournaments = lazy(() => import('./components/Tournaments'));
 const MatchSearch = lazy(() => import('./components/MatchSearch'));
@@ -164,6 +165,8 @@ function AppLayout() {
             <Route path="/activity" element={<ActivityFeed />} />
             <Route path="/news" element={<News />} />
             <Route path="/news/:newsId" element={<NewsArticle />} />
+            <Route path="/patch-notes" element={<PatchNotes />} />
+            <Route path="/patch-notes/:version" element={<PatchNotes />} />
             <Route path="/championships" element={<Championships />} />
             <Route path="/matches" element={<MatchSearch />} />
             <Route path="/tournaments" element={<Tournaments />} />

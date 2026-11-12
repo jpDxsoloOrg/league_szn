@@ -257,6 +257,7 @@
     "standings": "Tabelle",
     "activity": "Aktivität",
     "news": "News",
+    "patchNotes": "Patch Notes",
     "championships": "Meisterschaften",
     "tournaments": "Turniere",
     "events": "Veranstaltungen",
@@ -3952,6 +3953,33 @@
           }
         }
       }
+    }
+  },
+  "patchNotes": {
+    "title": "Patch Notes",
+    "subtitle": "Was neu ist und was behoben wurde, das neueste Release zuerst.",
+    "latest": "Neueste",
+    "versions": "Frühere Versionen",
+    "pickerLabel": "Version auswählen",
+    "comingNext": "Als Nächstes",
+    "comingNextFlag": "In Arbeit",
+    "loadFailed": "Die Patch Notes konnten nicht geladen werden",
+    "loadFailedHint": "Prüf deine Verbindung und versuch es noch einmal.",
+    "postFailed": "Dieser Beitrag konnte nicht geladen werden.",
+    "showingEnglishFallback": "Diesen Beitrag gibt es noch nicht auf Deutsch, deshalb siehst du die englische Version.",
+    "whatsNew": "Neu in {{version}}",
+    "notFound": {
+      "title": "Version nicht gefunden",
+      "description": "Für {{version}} gibt es keine Patch Notes.",
+      "action": "Zum neuesten Release ({{version}})"
+    },
+    "lightbox": {
+      "open": "Screenshot vergrößern: {{alt}}",
+      "close": "Screenshot schließen",
+      "previous": "Vorheriger Screenshot",
+      "next": "Nächster Screenshot",
+      "position": "{{current}} von {{total}}",
+      "untitled": "Screenshot"
     }
   }
 }

@@ -2,13 +2,15 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Fuse from 'fuse.js';
-import { ChevronRight, SearchX } from 'lucide-react';
+import { ChevronRight, ScrollText, SearchX } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Card from './ui/Card';
 import EmptyState from './ui/EmptyState';
 import PageHeader from './ui/PageHeader';
 import Skeleton from './ui/Skeleton';
 import { buildWikiNav, wikiTitle, type WikiArticleEntry } from './wikiNav';
+import { version as appVersion } from '../../package.json';
+import { versionSlug } from './patchNotes/versions';
 import './Wiki.css';
 
 interface SearchableEntry extends WikiArticleEntry {
@@ -94,6 +96,10 @@ export default function WikiIndex() {
   return (
     <>
       <PageHeader title={t('wiki.indexTitle')} />
+      <Link to="/patch-notes" className="wiki-whats-new">
+        <ScrollText aria-hidden="true" size={16} />
+        {t('patchNotes.whatsNew', { version: versionSlug(appVersion) })}
+      </Link>
       <label htmlFor="wiki-search" className="wiki-search-label">
         <span className="sr-only">{t('wiki.searchPlaceholder')}</span>
         <input
