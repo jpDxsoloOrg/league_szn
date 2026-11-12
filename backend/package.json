@@ -20,6 +20,7 @@
     "backfill-rivalry-heat": "ts-node scripts/backfill-rivalry-heat.ts",
     "delete-transfer-requests": "ts-node scripts/delete-transfer-requests.ts",
     "backfill-tag-reigns": "ts-node scripts/backfill-tag-reigns.ts",
+    "cleanup-tag-title-player-overrides": "ts-node scripts/cleanup-tag-title-player-overrides.ts",
     "lint": "eslint functions/ lib/",
     "test": "vitest run",
     "test:watch": "vitest"

@@ -471,4 +471,201 @@ describe('contender overrides through every recalculation', () => {
     expect(rows.find((row) => row.playerId === bumped)?.currentRank).toBe(1);
     expect(rows.find((row) => row.playerId === offList)?.currentRank).toBeNull();
   });
+
+  describe('on a tag title', () => {
+    type TeamKey = 'a' | 'b' | 'c';
+    let teams: Record<TeamKey, string>;
+
+    async function addTeam(name: string, status: 'active' | 'dissolved' = 'active', divisionId?: string): Promise<string> {
+      const first = await addPlayer(`${name} One`, divisionId ? { divisionId } : {});
+      const second = await addPlayer(`${name} Two`, divisionId ? { divisionId } : {});
+      const team = await repos.roster.tagTeams.create({ name, player1Id: first, player2Id: second, status });
+      return team.tagTeamId;
+    }
+
+    async function membersOf(tagTeamId: string): Promise<[string, string]> {
+      const team = await repos.roster.tagTeams.findById(tagTeamId);
+      return [team?.player1Id as string, team?.player2Id as string];
+    }
+
+    /** A beats B and C, B beats C, each twice: A 4-0, B 2-2, C 0-4. */
+    async function addTagField(): Promise<void> {
+      teams = { a: await addTeam('Team A'), b: await addTeam('Team B'), c: await addTeam('Team C') };
+      // After the teams were formed, so each side resolves to its team
+      const date = new Date(Date.now() + 1000).toISOString();
+      const pairings: Array<[TeamKey, TeamKey]> = [['a', 'b'], ['a', 'c'], ['b', 'c']];
+      for (const [winner, loser] of pairings) {
+        const winners = await membersOf(teams[winner]);
+        const losers = await membersOf(teams[loser]);
+        for (let game = 0; game < 2; game += 1) {
+          matches.push({
+            matchId: `tag-${winner}-${loser}-${game}`,
+            date,
+            matchFormat: 'tag',
+            teams: [winners, losers],
+            participants: [...winners, ...losers],
+            winners,
+            losers,
+            status: 'completed',
+            seasonId,
+          });
+        }
+      }
+    }
+
+    async function tagOverrideRequest(body: Record<string, unknown>) {
+      const result = await setOverride(
+        apiEvent({ body: JSON.stringify({ championshipId, overrideType: 'bump_to_top', reason: 'Storyline', ...body }) }),
+        ctx,
+        cb,
+      );
+      return result as { statusCode: number; body: string };
+    }
+
+    beforeEach(async () => {
+      const title = await repos.competition.championships.create({ name: 'Tag Titles', type: 'tag' });
+      championshipId = title.championshipId;
+      await addTagField();
+    });
+
+    it('ranks the teams organically to begin with', async () => {
+      await runJob();
+      expect((await storedList()).map((row) => row.playerId)).toEqual([teams.a, teams.b, teams.c]);
+    });
+
+    it('refuses a bare playerId with 400 and stores nothing', async () => {
+      const [member] = await membersOf(teams.c);
+      const result = await tagOverrideRequest({ playerId: member });
+
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toMatch(/tagTeamId/);
+      expect(await repos.competition.contenders.listActiveOverrides(championshipId)).toEqual([]);
+    });
+
+    it('refuses a playerId sent alongside a tagTeamId', async () => {
+      const [member] = await membersOf(teams.c);
+      expect((await tagOverrideRequest({ playerId: member, tagTeamId: teams.c })).statusCode).toBe(400);
+    });
+
+    it('requires a tagTeamId', async () => {
+      expect((await tagOverrideRequest({})).statusCode).toBe(400);
+    });
+
+    it('refuses an unknown or inactive team', async () => {
+      const dissolved = await addTeam('Gone Team', 'dissolved');
+      expect((await tagOverrideRequest({ tagTeamId: 'no-such-team' })).statusCode).toBe(400);
+      expect((await tagOverrideRequest({ tagTeamId: dissolved })).statusCode).toBe(400);
+    });
+
+    it('refuses the current champions', async () => {
+      await repos.competition.championships.update(championshipId, { currentChampion: await membersOf(teams.a) });
+      expect((await tagOverrideRequest({ tagTeamId: teams.a })).statusCode).toBe(400);
+    });
+
+    it('refuses a team outside the division a tag title is locked to', async () => {
+      const locked = await repos.competition.championships.create({ name: 'Locked Tag', type: 'tag', divisionId: 'd1' });
+      championshipId = locked.championshipId;
+      const outsiders = await addTeam('Outsiders', 'active', 'd2');
+      const insiders = await addTeam('Insiders', 'active', 'd1');
+
+      expect((await tagOverrideRequest({ tagTeamId: outsiders })).statusCode).toBe(400);
+      expect((await tagOverrideRequest({ tagTeamId: insiders })).statusCode).toBe(201);
+    });
+
+    it('refuses a tagTeamId on a singles title', async () => {
+      const singles = await repos.competition.championships.create({ name: 'Singles', type: 'singles' });
+      championshipId = singles.championshipId;
+      const [member] = await membersOf(teams.a);
+
+      expect((await tagOverrideRequest({ tagTeamId: teams.a })).statusCode).toBe(400);
+      expect((await tagOverrideRequest({ playerId: member, tagTeamId: teams.a })).statusCode).toBe(400);
+      expect((await tagOverrideRequest({ playerId: member })).statusCode).toBe(201);
+    });
+
+    it('bumps a team to #1 and stores a tag-team override', async () => {
+      await runJob();
+
+      const result = await tagOverrideRequest({ tagTeamId: teams.c });
+
+      expect(result.statusCode).toBe(201);
+      const body = JSON.parse(result.body);
+      expect(body).toMatchObject({ playerId: teams.c, entityType: 'tagTeam', tagTeamId: teams.c });
+      expect(body.placement).toEqual({ status: 'onList', rank: 1 });
+      const list = await storedList();
+      expect(list.map((row) => row.playerId)).toEqual([teams.c, teams.a, teams.b]);
+      expect(list[0]).toMatchObject({
+        entityType: 'tagTeam', tagTeamId: teams.c, isOverridden: true, overrideType: 'bump_to_top', organicRank: 3,
+      });
+    });
+
+    it('sends a team to the bottom', async () => {
+      await runJob();
+
+      const result = await tagOverrideRequest({ tagTeamId: teams.a, overrideType: 'send_to_bottom' });
+
+      expect(JSON.parse(result.body).placement).toEqual({ status: 'onList', rank: 3 });
+      expect((await storedList()).map((row) => row.playerId)).toEqual([teams.b, teams.c, teams.a]);
+    });
+
+    it('shows the bumped team first on the public list', async () => {
+      await tagOverrideRequest({ tagTeamId: teams.c });
+
+      const result = await getContenders(apiEvent({ httpMethod: 'GET', pathParameters: { championshipId } }), ctx, cb);
+      const { contenders } = JSON.parse((result as { body: string }).body);
+
+      expect(contenders[0]).toMatchObject({
+        entityType: 'tagTeam', tagTeamId: teams.c, tagTeamName: 'Team C', rank: 1, isOverridden: true,
+      });
+    });
+
+    it('restores the organic order when the override is removed', async () => {
+      await runJob();
+      const organic = (await storedList()).map((row) => row.playerId);
+      await tagOverrideRequest({ tagTeamId: teams.c });
+      mockInvokeAsync.mockClear();
+
+      const result = await removeOverride(
+        apiEvent({ httpMethod: 'DELETE', pathParameters: { championshipId, playerId: teams.c } }),
+        ctx,
+        cb,
+      ) as { statusCode: number; body: string };
+      expect(result.statusCode).toBe(200);
+      expect(JSON.parse(result.body)).toMatchObject({ entityType: 'tagTeam', tagTeamId: teams.c });
+      const [, payload] = mockInvokeAsync.mock.calls[0] as [string, Record<string, unknown>];
+      await contendersLambda(payload as unknown as APIGatewayProxyEvent, ctx, cb);
+
+      const list = await storedList();
+      expect(list.map((row) => row.playerId)).toEqual(organic);
+      expect(list.every((row) => !row.isOverridden)).toBe(true);
+    });
+
+    it('ignores a player-level override left on a tag title', async () => {
+      const [member] = await membersOf(teams.c);
+      await createOverride(member, 'bump_to_top');
+
+      await runJob();
+
+      const list = await storedList();
+      expect(list.map((row) => row.playerId)).toEqual([teams.a, teams.b, teams.c]);
+      expect(list.some((row) => row.isOverridden)).toBe(false);
+    });
+
+    it('getOverrides names the team and its members', async () => {
+      await tagOverrideRequest({ tagTeamId: teams.b });
+
+      const result = await getOverrides(apiEvent({ httpMethod: 'GET', queryStringParameters: { championshipId } }), ctx, cb);
+      const [row] = JSON.parse((result as { body: string }).body);
+
+      expect(row).toMatchObject({
+        playerId: teams.b,
+        entityType: 'tagTeam',
+        tagTeamId: teams.b,
+        tagTeamName: 'Team B',
+        playerName: 'Team B One & Team B Two',
+        wrestlerName: 'Team B',
+        members: [{ playerName: 'Team B One' }, { playerName: 'Team B Two' }],
+        currentRank: 1,
+      });
+    });
+  });
 });

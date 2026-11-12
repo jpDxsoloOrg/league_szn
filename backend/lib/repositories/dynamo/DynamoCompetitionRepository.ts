@@ -465,6 +465,8 @@ class ContendersDynamo implements ContendersMethods {
     const item: ContenderOverride = {
       championshipId: input.championshipId,
       playerId: input.playerId,
+      entityType: input.entityType ?? 'player',
+      ...(input.entityType === 'tagTeam' ? { tagTeamId: input.playerId } : {}),
       overrideType: input.overrideType,
       reason: input.reason,
       createdBy: input.createdBy,

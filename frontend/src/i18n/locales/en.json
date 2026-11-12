@@ -2473,6 +2473,8 @@
         "title": "Manual Overrides",
         "subtitle": "Override contender positions for storyline or disciplinary reasons",
         "selectPlayer": "Select Player",
+        "selectTagTeam": "Select Tag Team",
+        "tagTeamColumn": "Tag Team",
         "overrideType": "Override Type",
         "bumpToTop": "Bump to #1 Contender",
         "sendToBottom": "Send to Bottom",

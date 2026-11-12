@@ -66,7 +66,10 @@ export interface ContenderRankingInput {
 
 export interface ContenderOverrideInput {
   championshipId: string;
+  /** The overridden entity's id: a tagTeamId when `entityType` is `'tagTeam'`. */
   playerId: string;
+  /** Defaults to `'player'`. Tag-title overrides are `'tagTeam'`. */
+  entityType?: 'player' | 'tagTeam';
   overrideType: 'bump_to_top' | 'send_to_bottom';
   reason: string;
   createdBy: string;

@@ -515,7 +515,15 @@ export type OverrideType = 'bump_to_top' | 'send_to_bottom';
 
 export interface ContenderOverride {
   championshipId: string;
+  /**
+   * The overridden entity's id. On a tag title (`entityType: 'tagTeam'`) this
+   * is the tagTeamId, matching the contender rankings table.
+   */
   playerId: string;
+  /** `'tagTeam'` on tag-title overrides. Overrides written before tag overrides have none: read as `'player'`. */
+  entityType?: 'player' | 'tagTeam';
+  /** Set on tag-team overrides, equal to `playerId`. */
+  tagTeamId?: string;
   overrideType: OverrideType;
   reason: string;
   createdBy: string;

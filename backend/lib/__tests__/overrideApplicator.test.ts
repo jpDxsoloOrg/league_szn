@@ -15,6 +15,33 @@ const send = (playerId: string, createdAt = '2026-01-01'): ActiveOverride => ({ 
 const ids = (rows: Array<{ playerId: string }>) => rows.map((r) => r.playerId);
 
 describe('applyOverrides', () => {
+  describe('with tag-team rows', () => {
+    const teamRow = (tagTeamId: string, rank: number): RankingResult => ({
+      ...row(tagTeamId, rank), entityType: 'tagTeam', tagTeamId,
+    });
+    const teamList = [teamRow('t1', 1), teamRow('t2', 2), teamRow('t3', 3)];
+
+    it('moves a team row for a tag-team override', () => {
+      const result = applyOverrides(teamList, [{ ...bump('t3'), entityType: 'tagTeam' }], 3);
+
+      expect(ids(result)).toEqual(['t3', 't1', 't2']);
+      expect(result[0]).toMatchObject({ entityType: 'tagTeam', isOverridden: true, organicRank: 3 });
+    });
+
+    it('never matches a player override to a team row with the same id', () => {
+      const result = applyOverrides(teamList, [bump('t3'), send('t1')], 3);
+
+      expect(ids(result)).toEqual(['t1', 't2', 't3']);
+      expect(result.some((r) => r.isOverridden)).toBe(false);
+    });
+
+    it('never matches a tag-team override to a player row', () => {
+      const result = applyOverrides(organicList(3), [{ ...bump('p3'), entityType: 'tagTeam' }], 3);
+
+      expect(ids(result)).toEqual(['p1', 'p2', 'p3']);
+    });
+  });
+
   it('numbers the list when there are no overrides', () => {
     expect(applyOverrides(organicList(2), []).map((r) => r.rank)).toEqual([1, 2]);
   });
