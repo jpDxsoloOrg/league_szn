@@ -270,6 +270,8 @@ export interface TagTeam {
   createdAt: string;
   updatedAt: string;
   dissolvedAt?: string;
+  /** Why a pending request was closed without becoming active. */
+  rejectionReason?: string;
 }
 
 export type StableStatus = 'pending' | 'approved' | 'active' | 'disbanded';

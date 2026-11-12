@@ -80,6 +80,23 @@ export const conflict = (message: string = 'Conflict'): APIGatewayProxyResult =>
   return error(409, message);
 };
 
+/**
+ * An error response that carries machine-readable fields next to `message`,
+ * for a caller that has to act on the details (e.g. show which record clashed).
+ * `message` always wins over a `message` key in `details`.
+ */
+export const errorWithDetails = (
+  statusCode: number,
+  message: string,
+  details: Record<string, unknown>,
+): APIGatewayProxyResult => {
+  return {
+    statusCode,
+    headers,
+    body: JSON.stringify({ ...details, message }),
+  };
+};
+
 export const noContent = (): APIGatewayProxyResult => {
   return {
     statusCode: 204,

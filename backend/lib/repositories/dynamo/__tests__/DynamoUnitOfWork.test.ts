@@ -82,3 +82,27 @@ describe('DynamoUnitOfWork.updatePlayer', () => {
     expect(update.UpdateExpression).toMatch(/^SET /);
   });
 });
+
+describe('DynamoUnitOfWork.createTagTeam', () => {
+  it('stages a Put that refuses to overwrite an existing tag team', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.createTagTeam({
+      tagTeamId: 'tt-1',
+      name: 'Team',
+      player1Id: 'p1',
+      player2Id: 'p2',
+      status: 'active',
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+    type PutView = { Put?: { TableName: string; Item: Record<string, unknown>; ConditionExpression?: string } };
+    const [item] = (uow as unknown as { staged: PutView[] }).staged;
+    expect(item.Put).toMatchObject({
+      Item: { tagTeamId: 'tt-1', status: 'active' },
+      ConditionExpression: 'attribute_not_exists(tagTeamId)',
+    });
+  });
+});
