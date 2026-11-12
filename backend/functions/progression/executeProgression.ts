@@ -8,6 +8,7 @@ import { parseBody } from '../../lib/parseBody';
 import { createNotification } from '../../lib/notifications';
 import { invokeAsync } from '../../lib/asyncLambda';
 import { championIdsOf } from '../../lib/disciplineGates';
+import { isConcurrentWriteError } from '../../lib/repositories/errors';
 
 /**
  * Body of POST /progression/players/{playerId}/execute (CUP-06).
@@ -100,6 +101,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const [track, player] = await Promise.all([progression.getTrack(trackId), players.findById(playerId)]);
     if (!track) return notFound('Track not found');
     if (!player) return notFound('Player not found');
+    if (!track.isActive) {
+      return errorWithDetails(400, 'Progression track is not active', { code: 'TRACK_INACTIVE' });
+    }
 
     const fromDivisionId = track.fromDivisionId;
     if (player.divisionId !== fromDivisionId) {
@@ -151,14 +155,24 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     };
     const executedEvent: ProgressionEvent = { ...baseEvent, eventId: uuidv4(), type: 'executed' };
 
-    await runInTransaction(async (tx) => {
-      tx.updatePlayer(playerId, { divisionId: toDivisionId, divisionJoinedAt: now });
-      tx.deletePlayerProgression(playerId, trackId);
-      if (existingRow?.consideration) {
-        tx.appendProgressionEvent({ ...baseEvent, eventId: uuidv4(), type: 'consideration_removed' });
+    try {
+      await runInTransaction(async (tx) => {
+        // Guard on the source division so two concurrent moves cannot both apply.
+        tx.updatePlayer(playerId, { divisionId: toDivisionId, divisionJoinedAt: now }, { divisionId: fromDivisionId });
+        tx.deletePlayerProgression(playerId, trackId);
+        if (existingRow?.consideration) {
+          tx.appendProgressionEvent({ ...baseEvent, eventId: uuidv4(), type: 'consideration_removed' });
+        }
+        tx.appendProgressionEvent(executedEvent);
+      });
+    } catch (err: unknown) {
+      if (isConcurrentWriteError(err)) {
+        return errorWithDetails(409, 'The player was moved by another request; reload and try again', {
+          code: 'CONCURRENT_UPDATE',
+        });
       }
-      tx.appendProgressionEvent(executedEvent);
-    });
+      throw err;
+    }
 
     const result: ExecuteProgressionResult = {
       playerId,

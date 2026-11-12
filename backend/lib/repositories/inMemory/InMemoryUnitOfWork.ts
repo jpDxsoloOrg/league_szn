@@ -60,7 +60,11 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     if (condition) {
       this.preconditions.push(() => {
         const player = this.stores.players.get(playerId);
-        if (!player || (player.disciplineVersion ?? 0) !== condition.disciplineVersion) {
+        if (
+          !player
+          || (condition.disciplineVersion !== undefined && (player.disciplineVersion ?? 0) !== condition.disciplineVersion)
+          || (condition.divisionId !== undefined && player.divisionId !== condition.divisionId)
+        ) {
           throw new ConcurrencyError('Player', playerId);
         }
       });

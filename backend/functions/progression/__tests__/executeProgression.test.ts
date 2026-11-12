@@ -157,7 +157,11 @@ describe('executeProgression', () => {
       'appendProgressionEvent',
       'appendProgressionEvent',
     ]);
-    expect(calls[0][1]).toEqual([fx.playerId, { divisionId: fx.rawId, divisionJoinedAt: expect.any(String) }]);
+    expect(calls[0][1]).toEqual([
+      fx.playerId,
+      { divisionId: fx.rawId, divisionJoinedAt: expect.any(String) },
+      { divisionId: fx.youngBoysId },
+    ]);
     expect(calls[1][1]).toEqual([fx.playerId, fx.track.trackId]);
     expect((calls[2][1][0] as { type: string }).type).toBe('consideration_removed');
     expect((calls[3][1][0] as { type: string }).type).toBe('executed');
@@ -242,5 +246,35 @@ describe('executeProgression', () => {
     expect(res.statusCode).toBe(200);
     expect((await state.repos.roster.players.findById(fx.playerId))?.divisionId).toBe(fx.rawId);
     errorSpy.mockRestore();
+  });
+
+  it('returns 409 CONCURRENT_UPDATE when another request moves the player first', async () => {
+    const realRun = state.repos.runInTransaction;
+    state.repos.runInTransaction = async (fn) => {
+      // Another call-up lands between the handler's read and its commit.
+      await state.repos.roster.players.update(fx.playerId, { divisionId: fx.ncId });
+      return realRun(fn);
+    };
+
+    const res = await call(fx.playerId, { trackId: fx.track.trackId });
+
+    expect(res.statusCode).toBe(409);
+    expect(JSON.parse(res.body).code).toBe('CONCURRENT_UPDATE');
+    expect((await state.repos.roster.players.findById(fx.playerId))?.divisionId).toBe(fx.ncId);
+    expect(await state.repos.progression.getPlayerProgression(fx.playerId, fx.track.trackId)).not.toBeNull();
+    expect(await state.repos.progression.listEvents(fx.playerId)).toEqual([]);
+    expect(mockCreateNotification).not.toHaveBeenCalled();
+    expect(mockInvokeAsync).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 TRACK_INACTIVE on an inactive track and leaves the player alone', async () => {
+    await state.repos.progression.putTrack({ ...fx.track, isActive: false });
+
+    const res = await call(fx.playerId, { trackId: fx.track.trackId });
+
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body).code).toBe('TRACK_INACTIVE');
+    expect((await state.repos.roster.players.findById(fx.playerId))?.divisionId).toBe(fx.youngBoysId);
+    expect(await state.repos.progression.listEvents(fx.playerId)).toEqual([]);
   });
 });

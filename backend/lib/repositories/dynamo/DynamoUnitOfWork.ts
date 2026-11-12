@@ -88,13 +88,22 @@ export class DynamoUnitOfWork implements UnitOfWork {
     }
     let conditionExpression: string | undefined;
     if (condition) {
-      names['#disciplineVersion'] = 'disciplineVersion';
-      values[':expectedDisciplineVersion'] = condition.disciplineVersion;
-      // Only version 0 may match a row with no version, as in updateDiscipline.
-      const matchesVersion = '#disciplineVersion = :expectedDisciplineVersion';
-      conditionExpression = condition.disciplineVersion === 0
-        ? `attribute_exists(playerId) AND (attribute_not_exists(#disciplineVersion) OR ${matchesVersion})`
-        : `attribute_exists(playerId) AND ${matchesVersion}`;
+      const clauses = ['attribute_exists(playerId)'];
+      if (condition.disciplineVersion !== undefined) {
+        names['#disciplineVersion'] = 'disciplineVersion';
+        values[':expectedDisciplineVersion'] = condition.disciplineVersion;
+        // Only version 0 may match a row with no version, as in updateDiscipline.
+        const matchesVersion = '#disciplineVersion = :expectedDisciplineVersion';
+        clauses.push(condition.disciplineVersion === 0
+          ? `(attribute_not_exists(#disciplineVersion) OR ${matchesVersion})`
+          : matchesVersion);
+      }
+      if (condition.divisionId !== undefined) {
+        names['#expectedDivisionId'] = 'divisionId';
+        values[':expectedDivisionId'] = condition.divisionId;
+        clauses.push('#expectedDivisionId = :expectedDivisionId');
+      }
+      conditionExpression = clauses.join(' AND ');
     }
     this.staged.push({
       Update: {

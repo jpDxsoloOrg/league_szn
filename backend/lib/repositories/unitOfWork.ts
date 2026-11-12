@@ -40,9 +40,15 @@ export type MatchWriteCondition =
   | { kind: 'notCompleted' }
   | { kind: 'unchangedSince'; updatedAt: string | undefined };
 
-/** Refuse the write unless the stored `disciplineVersion` still equals this value. */
+/**
+ * Refuse the write unless every given field still holds the expected value:
+ * - `disciplineVersion`: the stored version (a missing attribute counts as 0).
+ * - `divisionId`: the stored division, e.g. a call-up moving a player out of it.
+ * The player must exist whenever a condition is given.
+ */
 export interface PlayerWriteCondition {
-  disciplineVersion: number;
+  disciplineVersion?: number;
+  divisionId?: string;
 }
 
 /**

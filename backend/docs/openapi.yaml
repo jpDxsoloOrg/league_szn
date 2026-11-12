@@ -3975,21 +3975,21 @@ paths:
                   divisionJoinedAt: { type: string, format: date-time }
                   event: { type: object, description: The executed ProgressionEvent }
                   announcementId: { type: string }
-        '400': { description: 'Bad request, or code TARGET_IS_DEVELOPMENTAL', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '400': { description: 'Bad request, or code TARGET_IS_DEVELOPMENTAL or TRACK_INACTIVE', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Track, player or target division not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '409':
           description: >-
             code NOT_IN_SOURCE_DIVISION (with playerDivisionId, fromDivisionId), or
-            code HOLDS_DIVISION_TITLE (with championships [{championshipId, name}]; retry with force true)
+            code HOLDS_DIVISION_TITLE (with championships [{championshipId, name}]; retry with force true), or code CONCURRENT_UPDATE (another request moved the player first; reload)
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   message: { type: string }
-                  code: { type: string, enum: [NOT_IN_SOURCE_DIVISION, HOLDS_DIVISION_TITLE] }
+                  code: { type: string, enum: [NOT_IN_SOURCE_DIVISION, HOLDS_DIVISION_TITLE, CONCURRENT_UPDATE] }
                   championships:
                     type: array
                     items:

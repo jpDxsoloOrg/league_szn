@@ -72,6 +72,31 @@ describe('updatePlayer conditions', () => {
     mockTransactWrite.mockRejectedValue(cancelled(['ConditionalCheckFailed']));
     await expect(uow.commit()).rejects.toBeInstanceOf(ConcurrencyError);
   });
+
+  it('requires the stored division when divisionId is given, even when the patch sets it', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updatePlayer('p1', { divisionId: 'd-raw' }, { divisionId: 'd-yb' });
+    const update = lastUpdate(uow);
+    expect(update.ConditionExpression).toBe('attribute_exists(playerId) AND #expectedDivisionId = :expectedDivisionId');
+    expect(update.ExpressionAttributeNames?.['#expectedDivisionId']).toBe('divisionId');
+    expect(update.ExpressionAttributeValues?.[':expectedDivisionId']).toBe('d-yb');
+    expect(update.ExpressionAttributeValues?.[':v0']).toBe('d-raw');
+  });
+
+  it('combines a version and a division condition', () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updatePlayer('p1', { name: 'A' }, { disciplineVersion: 2, divisionId: 'd-yb' });
+    expect(lastUpdate(uow).ConditionExpression).toBe(
+      'attribute_exists(playerId) AND #disciplineVersion = :expectedDisciplineVersion AND #expectedDivisionId = :expectedDivisionId',
+    );
+  });
+
+  it('surfaces a failed division condition as a ConcurrencyError', async () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updatePlayer('p1', { divisionId: 'd-raw' }, { divisionId: 'd-yb' });
+    mockTransactWrite.mockRejectedValue(cancelled(['ConditionalCheckFailed']));
+    await expect(uow.commit()).rejects.toBeInstanceOf(ConcurrencyError);
+  });
 });
 
 describe('updateChallenge conditions', () => {
