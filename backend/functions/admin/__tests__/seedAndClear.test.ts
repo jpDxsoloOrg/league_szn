@@ -29,7 +29,13 @@ vi.mock('uuid', () => ({
 import { handler as seedData } from '../seedData';
 import { handler as clearAll } from '../clearAll';
 import { buildTagTeamIndex, splitSidesIntoTeams } from '../../../lib/tagTeams/resolveTagTeams';
-import type { Match, TagTeam } from '../../../lib/repositories/types';
+import type {
+  Match,
+  PlayerProgression,
+  ProgressionEvent,
+  ProgressionTrack,
+  TagTeam,
+} from '../../../lib/repositories/types';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
@@ -210,7 +216,8 @@ describe('seedData', () => {
     expect(mockImportAllData).toHaveBeenCalledOnce();
     const importData = mockImportAllData.mock.calls[0][0];
     expect(importData.divisions).toHaveLength(4);
-    expect(importData.players).toHaveLength(12);
+    // 12 league players plus 4 Young Boys prospects (CUP-12).
+    expect(importData.players).toHaveLength(16);
   });
 
   it('seeds match ratings + rivalry heat aggregates (RIV-33)', async () => {
@@ -237,7 +244,8 @@ describe('seedData', () => {
     const ratedMatches = importData.matches.filter(
       (m: Record<string, unknown>) => typeof m.ratingsCount === 'number' && (m.ratingsCount as number) > 0,
     );
-    expect(ratedMatches.length).toBe(8); // 5 (rivalry 1) + 3 (rivalry 2).
+    // 5 (rivalry 1) + 3 (rivalry 2); the Young Boys bouts are rated too but carry no rivalry.
+    expect(ratedMatches.filter((m: Record<string, unknown>) => typeof m.rivalryId === 'string')).toHaveLength(8);
     for (const m of ratedMatches) {
       expect(typeof m.ratingAverage).toBe('number');
       expect(typeof m.starRating).toBe('number');
@@ -312,6 +320,61 @@ describe('seedData', () => {
       expect(row.tagTeamId).toBe(row.playerId);
       expect(contenders.some((team) => team.tagTeamId === row.tagTeamId)).toBe(true);
     }
+  });
+
+  it('seeds the call-up track with Young Boys at varied progress, one flagged (CUP-12)', async () => {
+    mockImportAllData.mockResolvedValue({});
+
+    const result = await seedData(makeEvent(), ctx, cb);
+    expect(result!.statusCode).toBe(200);
+
+    const importData = mockImportAllData.mock.calls[0][0] as Record<string, Record<string, unknown>[]>;
+    const youngBoys = importData.divisions.find((division) => division.isDevelopmental === true);
+    expect(youngBoys).toBeDefined();
+
+    const tracks = importData.progressionTracks as unknown as ProgressionTrack[];
+    expect(tracks).toHaveLength(1);
+    const [track] = tracks;
+    expect(track.kind).toBe('callup');
+    expect(track.fromDivisionId).toBe(youngBoys!.divisionId);
+    expect(track.windowMode).toBe('sinceJoinedDivision');
+
+    // One row per Young Boys player, all on the default track.
+    const youngBoysIds = importData.players
+      .filter((player) => player.divisionId === youngBoys!.divisionId)
+      .map((player) => player.playerId);
+    const rows = importData.playerProgression as unknown as PlayerProgression[];
+    expect(rows.map((row) => row.playerId).sort()).toEqual([...youngBoysIds].sort());
+    expect(rows.every((row) => row.trackId === track.trackId)).toBe(true);
+
+    // The four prospects land at clearly different points: 100, ~70, ~23, 10.
+    const pctByName = new Map(
+      rows.map((row) => [importData.players.find((p) => p.playerId === row.playerId)?.currentWrestler, row.progressPct]),
+    );
+    expect(pctByName.get('Ace Rookie')).toBe(100);
+    expect(pctByName.get('Blaze Carter')).toBeCloseTo(70.4, 1);
+    expect(pctByName.get('Comet Kid')).toBeCloseTo(23.3, 1);
+    expect(pctByName.get('Dash Malone')).toBe(10);
+    const prospectPcts = ['Ace Rookie', 'Blaze Carter', 'Comet Kid', 'Dash Malone'].map((name) => pctByName.get(name));
+    expect(new Set(prospectPcts).size).toBe(4);
+
+    // Ace's pre-join match is outside the window: 10 matches count, not 11.
+    const ace = rows.find((row) => row.progressPct === 100)!;
+    expect(ace.goals.find((goal) => goal.goalId === 'matches-competed')?.current).toBe(10);
+
+    // Milestones already reached are recorded, so the first recompute stays quiet.
+    expect(ace.notifiedThresholds).toEqual([50, 75, 100]);
+    expect(ace.notifiedGoalIds).toHaveLength(track.goals.length);
+
+    // Exactly one prospect is flagged, with a matching history event.
+    const flagged = rows.filter((row) => row.consideration);
+    expect(flagged).toHaveLength(1);
+    expect(flagged[0].playerId).toBe(ace.playerId);
+    expect(flagged[0].consideration?.status).toBe('considering');
+    const events = importData.progressionEvents as unknown as ProgressionEvent[];
+    expect(events).toEqual([
+      expect.objectContaining({ playerId: ace.playerId, type: 'consideration_added', kind: 'callup' }),
+    ]);
   });
 
   it('returns 500 when importAllData throws', async () => {

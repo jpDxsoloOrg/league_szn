@@ -43,5 +43,6 @@
   {"slug":"rivalries","titleKey":"wiki.articles.rivalries","file":"rivalries.md"},
   {"slug":"admin-rivalries","titleKey":"wiki.articles.adminRivalries","file":"admin-rivalries.md","adminOnly":true,"parent":"admin","navTitleKey":"wiki.navLabels.adminRivalries"},
   {"slug":"rate-matches","titleKey":"wiki.articles.rateMatches","file":"rate-matches.md"},
-  {"slug":"rivalry-heat-explained","titleKey":"wiki.articles.rivalryHeatExplained","file":"rivalry-heat-explained.md"}
+  {"slug":"rivalry-heat-explained","titleKey":"wiki.articles.rivalryHeatExplained","file":"rivalry-heat-explained.md"},
+  {"slug":"call-ups","titleKey":"wiki.articles.callUps","file":"call-ups.md"}
 ]

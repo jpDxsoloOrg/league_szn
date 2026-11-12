@@ -99,35 +99,55 @@ export async function loadProgressionBatch(playerIds: readonly string[]): Promis
     repos.season.seasons.findActive(),
   ]);
 
+  return { ...buildProgressionInputs(playerIds, { players, matches, promos, challenges }), activeSeason };
+}
+
+export interface ProgressionSourceData {
+  players: readonly Player[];
+  /** Completed matches only: the caller filters, as `listCompleted` does. */
+  matches: readonly Match[];
+  promos: readonly Promo[];
+  challenges: readonly Challenge[];
+}
+
+/**
+ * Pure core of `loadProgressionBatch`: groups already-loaded rows into
+ * per-player inputs with the same rules. The seed uses it to compute
+ * progression rows without a database round trip.
+ */
+export function buildProgressionInputs(
+  playerIds: readonly string[],
+  source: ProgressionSourceData,
+): Pick<ProgressionBatch, 'inputs' | 'players'> {
   const inputs = new Map<string, ProgressionInputs>();
   for (const playerId of playerIds) {
     inputs.set(playerId, { playerId, matches: [], promos: [], challenges: [] });
   }
 
   const playersById = new Map<string, Player>();
-  for (const player of players) {
+  for (const player of source.players) {
     if (inputs.has(player.playerId)) playersById.set(player.playerId, player);
   }
 
-  for (const match of matches) {
+  for (const match of source.matches) {
     for (const playerId of new Set(match.participants)) {
       inputs.get(playerId)?.matches.push(toMatchInput(match, playerId));
     }
   }
 
-  for (const promo of promos) {
+  for (const promo of source.promos) {
     if (promo.isHidden) continue;
     const target = inputs.get(promo.playerId);
     if (!target) continue;
     target.promos.push(toPromoInput(promo, playersById.get(promo.playerId)?.userId));
   }
 
-  for (const challenge of challenges) {
+  for (const challenge of source.challenges) {
     if (challenge.status === 'cancelled') continue;
     inputs.get(challenge.challengerId)?.challenges.push(toChallengeInput(challenge));
   }
 
-  return { inputs, players: playersById, activeSeason };
+  return { inputs, players: playersById };
 }
 
 /**
