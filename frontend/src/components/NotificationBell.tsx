@@ -67,8 +67,8 @@ function getNavigationPath(notification: AppNotification, playerId: string | nul
     case 'storyline_request': return '/profile';
     case 'discipline': return '/profile';
     case 'progression':
-      // A consideration carries the playerId as sourceId; an executed move carries the eventId.
-      return notification.type === 'progression_consideration' && notification.sourceId
+      // Considerations and milestones carry the playerId as sourceId; an executed move carries the eventId.
+      return notification.type !== 'progression_executed' && notification.sourceId
         ? `/player/${notification.sourceId}`
         : '/profile';
     default: return '/';

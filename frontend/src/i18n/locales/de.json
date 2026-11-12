@@ -391,8 +391,8 @@
     },
     "summaries": {
       "callup_consideration": "{{name}} wird für einen Call-up in Betracht gezogen",
-      "callup_executed": "{{name}} wurde hochgestuft",
-      "callup_executed_to": "{{name}} wurde zu {{division}} hochgestuft"
+      "callup_executed": "{{name}} hat einen Call-up erhalten",
+      "callup_executed_to": "{{name}} hat einen Call-up zu {{division}} erhalten"
     },
     "timeAgo": {
       "justNow": "Gerade eben",
@@ -2548,7 +2548,7 @@
     "typeRivalry": "Rivalität",
     "typeStoryline": "Storyline",
     "typeDiscipline": "Strikes",
-    "typeProgression": "Call-up"
+    "typeProgression": "Call-ups"
   },
   "overalls": {
     "admin": {

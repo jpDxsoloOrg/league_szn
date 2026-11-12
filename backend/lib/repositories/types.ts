@@ -823,6 +823,13 @@ export interface PlayerProgression {
   goals: PlayerProgressionGoalStatus[];
   consideration?: ProgressionConsideration;
   computedAt: string;
+  /**
+   * CUP-11 milestone dedupe (new, optional). Progress thresholds (50/75/100)
+   * and goalIds already announced on this track. Both only grow, are written
+   * by `recordNotifiedMilestones`, and survive `upsertPlayerProgression`.
+   */
+  notifiedThresholds?: number[];
+  notifiedGoalIds?: string[];
 }
 
 export type ProgressionEventType = 'consideration_added' | 'consideration_removed' | 'executed';

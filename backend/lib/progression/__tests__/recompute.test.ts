@@ -185,7 +185,13 @@ describe('recomputeProgression', () => {
   it('skips unknown players without failing', async () => {
     await repos.progression.putTrack(track('t-dojo', 'div-dojo'));
     const result = await recomputeProgression({ playerIds: ['missing'] });
-    expect(result).toEqual({ playersProcessed: 0, changes: [], dropped: [], failures: [] });
+    expect(result).toEqual({
+      playersProcessed: 0,
+      changes: [],
+      dropped: [],
+      failures: [],
+      milestones: { rowsAnnounced: 0, notificationsSent: 0, failures: [] },
+    });
   });
 
   it('records a bad track as a failure and still scores the others', async () => {
@@ -235,7 +241,13 @@ describe('recomputeProgression', () => {
 
   it('does nothing for an empty request', async () => {
     const result = await recomputeProgression({ playerIds: [] });
-    expect(result).toEqual({ playersProcessed: 0, changes: [], dropped: [], failures: [] });
+    expect(result).toEqual({
+      playersProcessed: 0,
+      changes: [],
+      dropped: [],
+      failures: [],
+      milestones: { rowsAnnounced: 0, notificationsSent: 0, failures: [] },
+    });
   });
 });
 

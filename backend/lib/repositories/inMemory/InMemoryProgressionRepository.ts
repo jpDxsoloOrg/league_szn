@@ -3,6 +3,8 @@ import {
   progressionEventSortKey,
   type ListByTrackOptions,
   type ListProgressionEventsOptions,
+  type NotifiedMilestoneCounts,
+  type NotifiedMilestones,
   type ProgressionRepository,
   type ProgressionTrackFilter,
 } from '../progression';
@@ -124,6 +126,21 @@ export class InMemoryProgressionRepository implements ProgressionRepository {
     const row = this.requireRow(playerId, trackId);
     delete row.consideration;
     return clone(row);
+  }
+
+  async recordNotifiedMilestones(
+    playerId: string,
+    trackId: string,
+    next: NotifiedMilestones,
+    expected: NotifiedMilestoneCounts,
+  ): Promise<boolean> {
+    const row = this.progressionStore.get(playerProgressionKey(playerId, trackId));
+    if (!row) return false;
+    if ((row.notifiedThresholds?.length ?? 0) !== expected.thresholds) return false;
+    if ((row.notifiedGoalIds?.length ?? 0) !== expected.goals) return false;
+    row.notifiedThresholds = [...next.notifiedThresholds];
+    row.notifiedGoalIds = [...next.notifiedGoalIds];
+    return true;
   }
 
   private requireRow(playerId: string, trackId: string): PlayerProgression {

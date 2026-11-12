@@ -5,6 +5,8 @@ import {
   progressionEventSortKey,
   type ListByTrackOptions,
   type ListProgressionEventsOptions,
+  type NotifiedMilestoneCounts,
+  type NotifiedMilestones,
   type ProgressionRepository,
   type ProgressionTrackFilter,
 } from '../progression';
@@ -144,6 +146,40 @@ export class DynamoProgressionRepository implements ProgressionRepository {
       UpdateExpression: 'REMOVE #consideration',
       ExpressionAttributeNames: { '#consideration': 'consideration' },
     });
+  }
+
+  async recordNotifiedMilestones(
+    playerId: string,
+    trackId: string,
+    next: NotifiedMilestones,
+    expected: NotifiedMilestoneCounts,
+  ): Promise<boolean> {
+    // An absent list counts as size 0; a present one must match the size read.
+    const sizeCheck = (name: string, value: string, count: number): string =>
+      count === 0 ? `(attribute_not_exists(${name}) OR size(${name}) = ${value})` : `size(${name}) = ${value}`;
+    try {
+      await dynamoDb.update({
+        TableName: TableNames.PLAYER_PROGRESSION,
+        Key: { playerId, trackId },
+        UpdateExpression: 'SET #nt = :nt, #ng = :ng',
+        ConditionExpression: [
+          'attribute_exists(playerId)',
+          sizeCheck('#nt', ':ntCount', expected.thresholds),
+          sizeCheck('#ng', ':ngCount', expected.goals),
+        ].join(' AND '),
+        ExpressionAttributeNames: { '#nt': 'notifiedThresholds', '#ng': 'notifiedGoalIds' },
+        ExpressionAttributeValues: {
+          ':nt': next.notifiedThresholds,
+          ':ng': next.notifiedGoalIds,
+          ':ntCount': expected.thresholds,
+          ':ngCount': expected.goals,
+        },
+      });
+      return true;
+    } catch (err: unknown) {
+      if (isConditionalCheckFailed(err)) return false;
+      throw err;
+    }
   }
 
   private async updateExisting(

@@ -40,6 +40,18 @@ export interface ListProgressionEventsOptions {
   limit?: number;
 }
 
+/** CUP-11: the dedupe lists stored on a PlayerProgression row. */
+export interface NotifiedMilestones {
+  notifiedThresholds: number[];
+  notifiedGoalIds: string[];
+}
+
+/** Sizes of the stored dedupe lists the caller read (0 when absent). */
+export interface NotifiedMilestoneCounts {
+  thresholds: number;
+  goals: number;
+}
+
 /** Sort key of a ProgressionEvents row. */
 export const progressionEventSortKey = (event: Pick<ProgressionEvent, 'createdAt' | 'eventId'>): string =>
   `${event.createdAt}#${event.eventId}`;
@@ -82,6 +94,18 @@ export interface ProgressionRepository {
   ): Promise<PlayerProgression>;
   /** Remove the consideration mark. Throws `NotFoundError` when the row does not exist. */
   clearConsideration(playerId: string, trackId: string): Promise<PlayerProgression>;
+  /**
+   * CUP-11: store the milestones already announced on a row. Optimistic:
+   * writes only when the row exists and its stored lists still have the
+   * sizes in `expected` (the lists only grow, so two concurrent recomputes
+   * can never both win). Returns false when the check fails.
+   */
+  recordNotifiedMilestones(
+    playerId: string,
+    trackId: string,
+    next: NotifiedMilestones,
+    expected: NotifiedMilestoneCounts,
+  ): Promise<boolean>;
 
   // ── Events ──────────────────────────────────────────────────────
   /** Append one audit event. The caller owns `eventId` and `createdAt`. */
