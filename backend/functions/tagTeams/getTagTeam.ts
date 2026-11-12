@@ -45,6 +45,47 @@ interface RecentMatch {
   opponentPlayerIds: string[];
 }
 
+interface TitleReign {
+  championshipId: string;
+  championshipName: string;
+  imageUrl?: string;
+  wonDate: string;
+  lostDate?: string;
+  daysHeld?: number;
+  defenses: number;
+}
+
+/**
+ * Every championship reign this team won, newest first (TTC-10). Reigns are
+ * linked by `tagTeamId` on the history entry. A failure here leaves the list
+ * empty instead of failing the whole team page.
+ */
+async function fetchTitleReigns(tagTeamId: string): Promise<TitleReign[]> {
+  try {
+    const { competition: { championships } } = getRepositories();
+    const [history, titles] = await Promise.all([championships.listAllHistory(), championships.list()]);
+    const titlesById = new Map(titles.map((title) => [title.championshipId, title]));
+    return history
+      .filter((reign) => reign.tagTeamId === tagTeamId)
+      .sort((a, b) => b.wonDate.localeCompare(a.wonDate))
+      .map((reign) => {
+        const title = titlesById.get(reign.championshipId);
+        return {
+          championshipId: reign.championshipId,
+          championshipName: title?.name ?? 'Unknown Championship',
+          imageUrl: title?.imageUrl,
+          wonDate: reign.wonDate,
+          lostDate: reign.lostDate,
+          daysHeld: reign.daysHeld,
+          defenses: reign.defenses ?? 0,
+        };
+      });
+  } catch (err) {
+    console.warn(`Failed to load title reigns for tag team ${tagTeamId}:`, err);
+    return [];
+  }
+}
+
 interface TagTeamStandingsInfo {
   winPercentage: number;
   recentForm: FormResult[];
@@ -147,12 +188,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Fetch player details, completed matches, and all active tag teams in parallel
     // Note: completedMatches uses dynamoDb directly — matches migration deferred to Wave 5+
-    const [player1, player2, completedMatches, activeTagTeams] =
+    const [player1, player2, completedMatches, activeTagTeams, titleReigns] =
       await Promise.all([
         playersRepo.findById(tagTeam.player1Id),
         playersRepo.findById(tagTeam.player2Id),
         fetchCompletedMatches(),
         tagTeamsRepo.listByStatus('active'),
+        fetchTitleReigns(tagTeamId),
       ]);
 
     const hiddenIds = new Set(
@@ -217,6 +259,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       headToHead,
       matchTypeRecords,
       recentMatches,
+      titleReigns,
     });
   } catch (err) {
     console.error('Error fetching tag team:', err);

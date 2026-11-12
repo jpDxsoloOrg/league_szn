@@ -122,7 +122,12 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     this.staged.push(() => {
       const existing = this.stores.championships.get(championshipId);
       if (existing) {
-        this.stores.championships.set(championshipId, { ...existing, ...patch, updatedAt: new Date().toISOString() });
+        const next: Record<string, unknown> = { ...existing, ...patch, updatedAt: new Date().toISOString() };
+        // null removes the attribute, matching the Dynamo implementation.
+        for (const [key, val] of Object.entries(patch)) {
+          if (val === null) delete next[key];
+        }
+        this.stores.championships.set(championshipId, next as typeof existing);
       }
     });
   }
@@ -132,6 +137,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       const existing = this.stores.championships.get(championshipId);
       if (existing) {
         delete existing.currentChampion;
+        delete existing.currentTagTeamId;
         existing.updatedAt = new Date().toISOString();
       }
     });

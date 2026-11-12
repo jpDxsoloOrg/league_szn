@@ -680,6 +680,12 @@ export interface Championship {
   name: string;
   type: 'singles' | 'tag';
   currentChampion?: string | string[];
+  /**
+   * Tag titles only: the tag team the current champions hold the title as.
+   * Absent for singles titles, a vacant title, or a random pairing that is
+   * not a registered team (TTC-10).
+   */
+  currentTagTeamId?: string;
   divisionId?: string;
   imageUrl?: string;
   isActive?: boolean;
@@ -692,6 +698,8 @@ export interface ChampionshipHistoryEntry {
   championshipId: string;
   wonDate: string;
   champion: string | string[];
+  /** Tag reigns only: the tag team that won this reign, resolved at `wonDate` (TTC-10). */
+  tagTeamId?: string;
   lostDate?: string;
   daysHeld?: number;
   defenses?: number;

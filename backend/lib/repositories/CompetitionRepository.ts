@@ -30,6 +30,8 @@ export interface ChampionshipPatch {
   name?: string;
   type?: 'singles' | 'tag';
   currentChampion?: string | string[] | null;
+  /** null removes the field. */
+  currentTagTeamId?: string | null;
   imageUrl?: string;
   isActive?: boolean;
   defenses?: number;

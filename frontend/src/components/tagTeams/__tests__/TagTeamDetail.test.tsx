@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 const { mockGetById, mockGetDirectory } = vi.hoisted(() => ({ mockGetById: vi.fn(), mockGetDirectory: vi.fn() }));
@@ -64,6 +64,36 @@ describe('TagTeamDetail', () => {
 
     expect(await screen.findByRole('link', { name: /Edge/ })).toHaveAttribute('href', '/player/p1');
     expect(screen.getByRole('link', { name: /Christian/ })).toHaveAttribute('href', '/player/p2');
+  });
+
+  it('lists the title reigns the team won', async () => {
+    mockGetById.mockResolvedValue({
+      ...team,
+      titleReigns: [
+        { championshipId: 'c1', championshipName: 'Tag Team Titles', wonDate: '2024-06-01T00:00:00Z', defenses: 1 },
+        {
+          championshipId: 'c1', championshipName: 'Tag Team Titles', wonDate: '2024-01-01T00:00:00Z',
+          lostDate: '2024-03-01T00:00:00Z', daysHeld: 60, defenses: 2,
+        },
+      ],
+    });
+
+    renderDetail();
+
+    const table = await screen.findByRole('table', { name: 'Title Reigns' });
+    expect(screen.getByRole('heading', { name: 'Title Reigns' })).toBeInTheDocument();
+    expect(within(table).getAllByText('Tag Team Titles')).toHaveLength(2);
+    expect(within(table).getByText('common.current')).toBeInTheDocument();
+    expect(within(table).getByText('60 common.days')).toBeInTheDocument();
+  });
+
+  it('hides the title reigns section when the team never held a title', async () => {
+    mockGetById.mockResolvedValue({ ...team, titleReigns: [] });
+
+    renderDetail();
+
+    await screen.findByRole('link', { name: /Edge/ });
+    expect(screen.queryByRole('heading', { name: 'Title Reigns' })).not.toBeInTheDocument();
   });
 
   it('renders an unlinked row from the stored name when a player record is gone', async () => {

@@ -195,25 +195,32 @@ export class DynamoUnitOfWork implements UnitOfWork {
   updateChampionship(championshipId: string, patch: Record<string, unknown>): void {
     const now = new Date().toISOString();
     const sets: string[] = [];
+    const removes: string[] = [];
     const names: Record<string, string> = {};
     const values: Record<string, unknown> = {};
     let i = 0;
     for (const [key, val] of Object.entries(patch)) {
       const nameKey = `#f${i}`;
-      const valKey = `:v${i}`;
       names[nameKey] = key;
-      values[valKey] = val;
-      sets.push(`${nameKey} = ${valKey}`);
+      if (val === null) {
+        // null removes the attribute (e.g. currentTagTeamId when a non-team wins).
+        removes.push(nameKey);
+      } else {
+        const valKey = `:v${i}`;
+        values[valKey] = val;
+        sets.push(`${nameKey} = ${valKey}`);
+      }
       i++;
     }
     names[`#f${i}`] = 'updatedAt';
     values[`:v${i}`] = now;
     sets.push(`#f${i} = :v${i}`);
+    const removeClause = removes.length > 0 ? ` REMOVE ${removes.join(', ')}` : '';
     this.staged.push({
       Update: {
         TableName: TableNames.CHAMPIONSHIPS,
         Key: { championshipId },
-        UpdateExpression: `SET ${sets.join(', ')}`,
+        UpdateExpression: `SET ${sets.join(', ')}${removeClause}`,
         ExpressionAttributeNames: names,
         ExpressionAttributeValues: values,
       },
@@ -225,7 +232,7 @@ export class DynamoUnitOfWork implements UnitOfWork {
       Update: {
         TableName: TableNames.CHAMPIONSHIPS,
         Key: { championshipId },
-        UpdateExpression: 'REMOVE currentChampion SET updatedAt = :now, version = if_not_exists(version, :zero) + :one',
+        UpdateExpression: 'REMOVE currentChampion, currentTagTeamId SET updatedAt = :now, version = if_not_exists(version, :zero) + :one',
         ExpressionAttributeValues: { ':now': new Date().toISOString(), ':zero': 0, ':one': 1 },
       },
     });

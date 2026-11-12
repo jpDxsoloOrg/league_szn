@@ -129,7 +129,14 @@ export default function Championships() {
     {
       key: 'champion',
       header: t('championships.table.champion'),
-      render: (reign) => <span className="title-history__champion">{getHolderName(reign.champion)}</span>,
+      render: (reign) => (reign.tagTeamName ? (
+        <span className="title-history__team">
+          <span className="title-history__champion">{reign.tagTeamName}</span>
+          <span className="title-history__members">{getHolderName(reign.champion)}</span>
+        </span>
+      ) : (
+        <span className="title-history__champion">{getHolderName(reign.champion)}</span>
+      )),
     },
     { key: 'won', header: t('championships.table.wonDate'), render: (reign) => formatMatchDate(reign.wonDate) },
     {
@@ -188,7 +195,7 @@ export default function Championships() {
                 imageUrl={imageUrl}
                 imageAlt={championship.name}
                 eyebrow={championship.name}
-                title={holder ? getHolderName(holder) : t('common.vacant')}
+                title={holder ? (championship.currentTagTeamName || getHolderName(holder)) : t('common.vacant')}
                 fallbackIcon={holder ? undefined : <Crown />}
                 accent={inactive ? 'none' : getTitleAccent(championship)}
                 badge={inactive ? <Badge>{t('championships.inactive')}</Badge> : undefined}
@@ -197,7 +204,10 @@ export default function Championships() {
                     {holderIds.map((playerId) => (
                       <Avatar key={playerId} size="sm" src={playerImages.get(playerId)} name={playerNames.get(playerId) ?? t('common.formerMember')} />
                     ))}
-                    {championship.type !== 'singles' && t('championships.tagTeam')}
+                    {/* A named team shows its members here; a random pairing is already named in the title. */}
+                    {holder && championship.currentTagTeamName
+                      ? getHolderName(holder)
+                      : championship.type !== 'singles' && t('championships.tagTeam')}
                     <span className="title-item__history">
                       {t('championships.history')}
                       <ChevronRight aria-hidden="true" size={16} />

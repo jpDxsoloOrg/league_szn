@@ -6,7 +6,11 @@ const {
   mockTagTeamsListByStatus,
   mockPlayersFindById,
   mockMatchesListCompleted,
+  mockListAllHistory,
+  mockChampionshipsList,
 } = vi.hoisted(() => ({
+  mockListAllHistory: vi.fn(),
+  mockChampionshipsList: vi.fn(),
   mockTagTeamsFindById: vi.fn(),
   mockTagTeamsListByStatus: vi.fn(),
   mockPlayersFindById: vi.fn(),
@@ -27,6 +31,10 @@ vi.mock('../../../lib/repositories', () => ({
     competition: {
       matches: {
         listCompleted: mockMatchesListCompleted,
+      },
+      championships: {
+        listAllHistory: mockListAllHistory,
+        list: mockChampionshipsList,
       },
     },
   }),
@@ -75,6 +83,8 @@ describe('getTagTeam — TTP-01 wrestler-name fallback', () => {
     vi.clearAllMocks();
     mockTagTeamsListByStatus.mockResolvedValue([]);
     mockMatchesListCompleted.mockResolvedValue([]);
+    mockListAllHistory.mockResolvedValue([]);
+    mockChampionshipsList.mockResolvedValue([]);
     mockPlayersFindById.mockImplementation(async (id: string) => {
       if (id === 'p1') return player1;
       if (id === 'p2') return player2;
@@ -179,5 +189,44 @@ describe('getTagTeam — TTP-01 wrestler-name fallback', () => {
     expect(body.standings.winPercentage).toBe(66.7);
     expect(body.standings.currentStreak).toEqual({ type: 'W', count: 1 });
     expect(body.matchTypeRecords).toEqual([{ matchFormat: 'tag', wins: 2, losses: 1, draws: 0 }]);
+  });
+
+  it('lists the title reigns linked to this team, newest first (TTC-10)', async () => {
+    mockTagTeamsFindById.mockResolvedValue({
+      tagTeamId: 'tt1', name: 'Brothers', player1Id: 'p1', player2Id: 'p2',
+      status: 'active', wins: 0, losses: 0, draws: 0, createdAt: '', updatedAt: '',
+    });
+    mockChampionshipsList.mockResolvedValue([{ championshipId: 'c1', name: 'Tag Titles', type: 'tag' }]);
+    mockListAllHistory.mockResolvedValue([
+      { championshipId: 'c1', wonDate: '2024-01-01T00:00:00Z', champion: ['p1', 'p2'], tagTeamId: 'tt1', lostDate: '2024-03-01T00:00:00Z', daysHeld: 60, defenses: 2 },
+      { championshipId: 'c1', wonDate: '2024-06-01T00:00:00Z', champion: ['p1', 'p2'], tagTeamId: 'tt1' },
+      { championshipId: 'c1', wonDate: '2024-03-01T00:00:00Z', champion: ['x', 'y'], tagTeamId: 'tt2' },
+      { championshipId: 'c1', wonDate: '2023-01-01T00:00:00Z', champion: ['p1', 'p2'] },
+    ]);
+
+    const result = await getTagTeam(makeEvent(), ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    expect(body.titleReigns).toEqual([
+      { championshipId: 'c1', championshipName: 'Tag Titles', wonDate: '2024-06-01T00:00:00Z', defenses: 0 },
+      {
+        championshipId: 'c1', championshipName: 'Tag Titles', wonDate: '2024-01-01T00:00:00Z',
+        lostDate: '2024-03-01T00:00:00Z', daysHeld: 60, defenses: 2,
+      },
+    ]);
+  });
+
+  it('still returns the team when title reigns fail to load', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockTagTeamsFindById.mockResolvedValue({
+      tagTeamId: 'tt1', name: 'Brothers', player1Id: 'p1', player2Id: 'p2',
+      status: 'active', wins: 0, losses: 0, draws: 0, createdAt: '', updatedAt: '',
+    });
+    mockListAllHistory.mockRejectedValue(new Error('boom'));
+
+    const result = await getTagTeam(makeEvent(), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body).titleReigns).toEqual([]);
   });
 });

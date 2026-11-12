@@ -75,6 +75,11 @@ const mockSeasonsRepo = {
   })),
 };
 
+const mockTagTeamsRepo = {
+  listAll: vi.fn(async (): Promise<Record<string, unknown>[]> => []),
+  findById: vi.fn(),
+};
+
 const mockRunInTransaction = vi.fn();
 
 vi.mock('../../../lib/repositories', () => ({
@@ -88,7 +93,7 @@ vi.mock('../../../lib/repositories', () => ({
     leagueOps: {
       events: mockEventsRepo,
     },
-    roster: { players: mockPlayersRepo },
+    roster: { players: mockPlayersRepo, tagTeams: mockTagTeamsRepo },
     season: { seasons: mockSeasonsRepo },
     runInTransaction: mockRunInTransaction,
   }),
@@ -399,5 +404,99 @@ describe('recordResult — challenge title match whose champion is no longer in 
     expect(result!.statusCode).toBe(200);
     expect(capturedTxCalls[capturedTxCalls.length - 1].updateChampionship)
       .toHaveBeenCalledWith('c1', { currentChampion: 'p1' });
+  });
+});
+
+describe('recordResult — tag title reigns link to tag teams (TTC-10)', () => {
+  const tagTitle = { championshipId: 'c1', type: 'tag', currentChampion: ['p1', 'p2'] };
+  const oldReign = { championshipId: 'c1', wonDate: '2024-01-01T00:00:00Z', champion: ['p1', 'p2'] };
+  const usos = {
+    tagTeamId: 'tt-usos', name: 'The Usos', player1Id: 'p3', player2Id: 'p4',
+    status: 'active', wins: 0, losses: 0, draws: 0,
+    createdAt: '2020-01-01T00:00:00Z', updatedAt: '2020-01-01T00:00:00Z',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockTagTeamsRepo.listAll.mockResolvedValue([]);
+  });
+
+  function stubTagMatch(title: Record<string, unknown>) {
+    stubChamp(title, oldReign);
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue({ ...champMatch, participants: ['p1', 'p2', 'p3', 'p4', 'p5'] });
+  }
+
+  it('stamps currentTagTeamId and the reign tagTeamId in the title-change transaction', async () => {
+    mockTagTeamsRepo.listAll.mockResolvedValue([usos]);
+    stubTagMatch(tagTitle);
+
+    await recordResult(ev({ winners: ['p4', 'p3'], losers: ['p1', 'p2'] }), ctx, cb);
+
+    const champTx = capturedTxCalls[capturedTxCalls.length - 1];
+    expect(champTx.updateChampionship).toHaveBeenCalledWith('c1', {
+      currentChampion: ['p4', 'p3'],
+      currentTagTeamId: 'tt-usos',
+    });
+    expect(champTx.startReign).toHaveBeenCalledWith(expect.objectContaining({
+      championshipId: 'c1', champion: ['p4', 'p3'], tagTeamId: 'tt-usos', matchId: 'm1',
+    }));
+  });
+
+  it('leaves both fields undefined when the winners are a random pairing', async () => {
+    mockTagTeamsRepo.listAll.mockResolvedValue([usos]);
+    stubTagMatch(tagTitle);
+
+    await recordResult(ev({ winners: ['p3', 'p5'], losers: ['p1', 'p2'] }), ctx, cb);
+
+    const champTx = capturedTxCalls[capturedTxCalls.length - 1];
+    expect(champTx.updateChampionship).toHaveBeenCalledWith('c1', { currentChampion: ['p3', 'p5'] });
+    const reign = champTx.startReign.mock.calls[0][0] as Record<string, unknown>;
+    expect(reign).not.toHaveProperty('tagTeamId');
+  });
+
+  it('ignores a team that was dissolved before the title changed hands', async () => {
+    mockTagTeamsRepo.listAll.mockResolvedValue([
+      { ...usos, status: 'dissolved', dissolvedAt: '2021-01-01T00:00:00Z' },
+    ]);
+    stubTagMatch(tagTitle);
+
+    await recordResult(ev({ winners: ['p3', 'p4'], losers: ['p1', 'p2'] }), ctx, cb);
+
+    const champTx = capturedTxCalls[capturedTxCalls.length - 1];
+    expect(champTx.updateChampionship).toHaveBeenCalledWith('c1', { currentChampion: ['p3', 'p4'] });
+  });
+
+  it('clears currentTagTeamId when the title passes from a team to a random pairing', async () => {
+    stubTagMatch({ ...tagTitle, currentTagTeamId: 'tt-old' });
+
+    await recordResult(ev({ winners: ['p3', 'p5'], losers: ['p1', 'p2'] }), ctx, cb);
+
+    const champTx = capturedTxCalls[capturedTxCalls.length - 1];
+    expect(champTx.updateChampionship).toHaveBeenCalledWith('c1', {
+      currentChampion: ['p3', 'p5'],
+      currentTagTeamId: null,
+    });
+  });
+
+  it('still changes the title when the tag team lookup fails', async () => {
+    mockTagTeamsRepo.listAll.mockRejectedValue(new Error('boom'));
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    stubTagMatch(tagTitle);
+
+    await recordResult(ev({ winners: ['p3', 'p4'], losers: ['p1', 'p2'] }), ctx, cb);
+
+    const champTx = capturedTxCalls[capturedTxCalls.length - 1];
+    expect(champTx.updateChampionship).toHaveBeenCalledWith('c1', { currentChampion: ['p3', 'p4'] });
+  });
+
+  it('does not read tag teams for a singles title', async () => {
+    stubChamp(
+      { championshipId: 'c1', type: 'singles', currentChampion: 'p2' },
+      { championshipId: 'c1', wonDate: '2024-01-01T00:00:00Z', champion: 'p2' },
+    );
+
+    await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
+
+    expect(mockTagTeamsRepo.listAll).not.toHaveBeenCalled();
   });
 });

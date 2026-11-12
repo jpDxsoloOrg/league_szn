@@ -2372,6 +2372,7 @@
     },
     "detailPage": {
       "backToList": "Zurück zu den Tag Teams",
+      "championship": "Meisterschaft",
       "error": "Tag-Team-Details konnten nicht geladen werden",
       "matchFormat": "Match-Format",
       "noHistory": "Dieses Team hat noch kein Match bestritten.",
@@ -2379,6 +2380,7 @@
       "notFoundDesc": "Das gesuchte Tag Team existiert nicht.",
       "opponent": "Gegner",
       "record": "Bilanz",
+      "titleReigns": "Titelregentschaften",
       "totalMatches": "Matches gesamt",
       "unknownOpponent": "Unbekannt",
       "vs": "gegen"

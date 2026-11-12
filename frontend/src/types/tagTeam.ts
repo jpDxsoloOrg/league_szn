@@ -81,6 +81,18 @@ export interface TagTeamDetailResponse extends TagTeamWithPlayers {
   headToHead: TagTeamHeadToHead[];
   matchTypeRecords: TagTeamMatchTypeRecord[];
   recentMatches: TagTeamRecentMatch[];
+  /** Championship reigns this team won, newest first. Older API responses may omit it. */
+  titleReigns?: TagTeamTitleReign[];
+}
+
+export interface TagTeamTitleReign {
+  championshipId: string;
+  championshipName: string;
+  imageUrl?: string;
+  wonDate: string;
+  lostDate?: string;
+  daysHeld?: number;
+  defenses: number;
 }
 
 export interface CreateTagTeamInput {
