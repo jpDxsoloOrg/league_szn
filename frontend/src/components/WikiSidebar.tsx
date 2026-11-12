@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { buildWikiNav, type WikiArticleEntry } from './wikiNav';
+import { buildWikiNav, wikiTitle, type WikiArticleEntry } from './wikiNav';
 import './Wiki.css';
 
 export default function WikiSidebar() {
@@ -67,14 +67,14 @@ export default function WikiSidebar() {
               <li key={entry.slug}>
                 {renderLink(
                   entry,
-                  t(entry.titleKey),
+                  wikiTitle(t, entry),
                   children.some((child) => child.slug === currentSlug)
                 )}
                 {children.length > 0 && (
                   <ul className="wiki-sidebar-sublist">
                     {children.map((child) => (
                       <li key={child.slug}>
-                        {renderLink(child, t(child.navTitleKey ?? child.titleKey))}
+                        {renderLink(child, wikiTitle(t, child, child.navTitleKey))}
                       </li>
                     ))}
                   </ul>

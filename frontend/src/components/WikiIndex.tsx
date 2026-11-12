@@ -8,7 +8,7 @@ import Card from './ui/Card';
 import EmptyState from './ui/EmptyState';
 import PageHeader from './ui/PageHeader';
 import Skeleton from './ui/Skeleton';
-import { buildWikiNav, type WikiArticleEntry } from './wikiNav';
+import { buildWikiNav, wikiTitle, type WikiArticleEntry } from './wikiNav';
 import './Wiki.css';
 
 interface SearchableEntry extends WikiArticleEntry {
@@ -52,7 +52,7 @@ export default function WikiIndex() {
   );
 
   const searchableList = useMemo<SearchableEntry[]>(
-    () => visibleArticles.map((a) => ({ ...a, title: t(a.titleKey) })),
+    () => visibleArticles.map((a) => ({ ...a, title: wikiTitle(t, a) })),
     [visibleArticles, t]
   );
 
@@ -112,7 +112,7 @@ export default function WikiIndex() {
             {navItems.map(({ entry, children }) => (
               <li key={entry.slug}>
                 <Link to={`/guide/wiki/${entry.slug}`}>
-                  {t(entry.titleKey)}
+                  {wikiTitle(t, entry)}
                   <ChevronRight aria-hidden="true" size={18} />
                 </Link>
                 {children.length > 0 && (
@@ -120,7 +120,7 @@ export default function WikiIndex() {
                     {children.map((child) => (
                       <li key={child.slug}>
                         <Link to={`/guide/wiki/${child.slug}`}>
-                          {t(child.navTitleKey ?? child.titleKey)}
+                          {wikiTitle(t, child, child.navTitleKey)}
                           <ChevronRight aria-hidden="true" size={18} />
                         </Link>
                       </li>

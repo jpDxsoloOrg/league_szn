@@ -8,6 +8,7 @@ import type { Components } from 'react-markdown';
 import { ChevronDown, ShieldAlert } from 'lucide-react';
 import EmptyState from './ui/EmptyState';
 import Skeleton from './ui/Skeleton';
+import { wikiTitle } from './wikiNav';
 import './Wiki.css';
 
 export interface WikiArticleEntry {
@@ -15,6 +16,7 @@ export interface WikiArticleEntry {
   titleKey: string;
   file: string;
   adminOnly?: boolean;
+  title?: string;
 }
 
 interface TocItem {
@@ -297,9 +299,9 @@ export default function WikiArticle() {
               <Link
                 to={`/guide/wiki/${prevEntry.slug}`}
                 className="wiki-article-nav-prev"
-                aria-label={t('wiki.previousArticle', { title: t(prevEntry.titleKey) })}
+                aria-label={t('wiki.previousArticle', { title: wikiTitle(t, prevEntry) })}
               >
-                {t('wiki.previousArticle', { title: t(prevEntry.titleKey) })}
+                {t('wiki.previousArticle', { title: wikiTitle(t, prevEntry) })}
               </Link>
             ) : (
               <span className="wiki-article-nav-placeholder" aria-hidden="true" />
@@ -308,9 +310,9 @@ export default function WikiArticle() {
               <Link
                 to={`/guide/wiki/${nextEntry.slug}`}
                 className="wiki-article-nav-next"
-                aria-label={t('wiki.nextArticle', { title: t(nextEntry.titleKey) })}
+                aria-label={t('wiki.nextArticle', { title: wikiTitle(t, nextEntry) })}
               >
-                {t('wiki.nextArticle', { title: t(nextEntry.titleKey) })}
+                {t('wiki.nextArticle', { title: wikiTitle(t, nextEntry) })}
               </Link>
             ) : (
               <span className="wiki-article-nav-placeholder" aria-hidden="true" />
