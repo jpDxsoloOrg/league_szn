@@ -1,0 +1,84 @@
+.progression-meter {
+  --progression-fill: var(--color-win);
+  --progression-track: var(--tint-win);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.progression-meter--promotion {
+  --progression-fill: var(--color-warn);
+  --progression-track: var(--tint-warn);
+}
+
+.progression-meter--relegation {
+  --progression-fill: var(--color-loss);
+  --progression-track: var(--tint-loss);
+}
+
+.progression-meter__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.progression-meter__label {
+  color: var(--color-text);
+  font-family: var(--font-label);
+  font-size: 0.8125rem;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.progression-meter__pct {
+  color: var(--progression-fill);
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.progression-meter--sm .progression-meter__pct {
+  font-size: 1.25rem;
+}
+
+.progression-meter__bar {
+  width: 100%;
+  height: 0.75rem;
+  overflow: hidden;
+  border: none;
+  border-radius: var(--radius-pill);
+  appearance: none;
+  background-color: var(--progression-track);
+}
+
+.progression-meter--sm .progression-meter__bar {
+  height: 0.5rem;
+}
+
+.progression-meter__bar::-webkit-progress-bar {
+  background-color: var(--progression-track);
+}
+
+.progression-meter__bar::-webkit-progress-value {
+  background-color: var(--progression-fill);
+}
+
+.progression-meter__bar::-moz-progress-bar {
+  background-color: var(--progression-fill);
+}
+
+.progression-meter__caption {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+/* The fill grows in from zero. Firefox has no transition on the bar and jumps. */
+@media (prefers-reduced-motion: no-preference) {
+  .progression-meter__bar::-webkit-progress-value {
+    transition: width 0.8s ease-out;
+  }
+}

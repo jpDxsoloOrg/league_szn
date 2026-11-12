@@ -8,6 +8,7 @@ import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { WRESTLER_NAME_ENTRY_MODE } from '../../config/wrestlerNameEntry';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
 import DisciplineNotice from '../discipline/DisciplineNotice';
+import CallUpProgress from '../progression/CallUpProgress';
 import EmbeddedPlayerStats from '../statistics/EmbeddedPlayerStats';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
@@ -191,6 +192,7 @@ export default function WrestlerProfile() {
 
           <div hidden={tab !== 'overview'}>
             <RecordSummary record={player} />
+            <CallUpProgress playerId={player.playerId} />
             <MovesetSection player={player} showEmpty />
             {overall && (
               <section className="profile-section" aria-labelledby="profile-overalls-title">
