@@ -178,6 +178,7 @@ export default function Standings() {
     record: formatRecord(player),
     subtitle: player.currentWrestler,
     to: `/player/${player.playerId}`,
+    badge: <ConsiderationBadge playerId={player.playerId} />,
     stats: [
       { label: t('standings.table.winPercent'), value: formatWinRate(player) },
       { label: t('standings.table.streak'), value: <Streak streak={player.currentStreak} /> },

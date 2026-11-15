@@ -21,10 +21,11 @@ The League Wire runs along the bottom of every page except Admin. On a phone it 
 
 1. **Upcoming shows** — The next shows with their dates. A show that is running now is tagged **Live**.
 2. **News** — The latest headlines from the News page, tagged in gold.
-3. **Champions** — Each current champion with the title they hold and a small picture of the belt. Choose one to open the Championships page.
-4. **Results** — Match results from the most recent show, then from the shows before it in the Monday, Wednesday, Friday rotation, newest first. Each show's name and date appear once, tagged **Results**, followed by that show's matches in card order. Title matches are tagged in gold with the title's name.
+3. **Call-up watch** — Each wrestler the GMs are considering for a call-up. Choose one to open their profile. See [Call-Ups](call-ups).
+4. **Champions** — Each current champion with the title they hold and a small picture of the belt. Choose one to open the Championships page.
+5. **Results** — Match results from the most recent completed show. The show's name and date appear once, tagged **Results**, followed by its matches in card order. Title matches are tagged in gold with the title's name.
 
-Choose a headline to open the show, the story, the championships or the show's results.
+Choose a headline to open the show, the story, the player, the championships or the show's results.
 
 ### Pausing it
 

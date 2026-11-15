@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockGetStandings, mockGetAllSeasons, mockGetAllDivisions } = vi.hoisted(() => ({
+const { mockGetStandings, mockGetAllSeasons, mockGetAllDivisions, mockGetConsiderations } = vi.hoisted(() => ({
+  mockGetConsiderations: vi.fn(),
   mockGetStandings: vi.fn(),
   mockGetAllSeasons: vi.fn(),
   mockGetAllDivisions: vi.fn(),
@@ -14,6 +15,7 @@ vi.mock('../../services/api', () => ({
   standingsApi: { get: mockGetStandings },
   seasonsApi: { getAll: mockGetAllSeasons },
   divisionsApi: { getAll: mockGetAllDivisions },
+  progressionApi: { getConsiderations: mockGetConsiderations },
 }));
 
 vi.mock('../../utils/logger', () => ({
@@ -72,6 +74,7 @@ vi.mock('../Standings.css', () => ({}));
 vi.mock('../PlayerHoverCard.css', () => ({}));
 
 import Standings from '../Standings';
+import { resetConsiderationsCache } from '../../hooks/useConsiderations';
 
 function renderStandings() {
   return render(
@@ -176,6 +179,20 @@ describe('Standings', () => {
     mockGetAllSeasons.mockResolvedValue(mockSeasons);
     mockGetAllDivisions.mockResolvedValue(mockDivisions);
     mockGetStandings.mockResolvedValue({ players: allPlayers, sortedByWins: true });
+    mockGetConsiderations.mockResolvedValue([]);
+    resetConsiderationsCache();
+  });
+
+  it('shows the call-up badge on a flagged player in the podium as well as in the table', async () => {
+    mockGetConsiderations.mockResolvedValue([
+      { playerId: 'p1', name: 'John Cena', wrestlerName: '', trackId: 't1', markedAt: '2026-11-15T00:00:00Z' },
+      { playerId: 'p4', name: 'p4', wrestlerName: '', trackId: 't1', markedAt: '2026-11-15T00:00:00Z' },
+    ]);
+    renderStandings();
+
+    const podium = await screen.findByRole('list', { name: 'Top three' });
+    expect(await within(podium).findAllByTestId('consideration-badge')).toHaveLength(1);
+    expect(within(screen.getByRole('table')).getAllByTestId('consideration-badge')).toHaveLength(1);
   });
 
   it('puts the top three on the podium and the rest in a six column table', async () => {

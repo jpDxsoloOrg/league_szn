@@ -20,6 +20,8 @@ export interface PodiumEntry {
   /** Phones show only the first value, to keep the podium compact. */
   stats?: PodiumStat[];
   to?: string;
+  /** Extra marker under the name, such as a call-up badge. Rendered as given. */
+  badge?: ReactNode;
 }
 
 export interface PodiumProps {
@@ -41,6 +43,7 @@ function PodiumCard({ entry, rank }: { entry: PodiumEntry; rank: number }) {
       <span className="ui-podium__rank">{entry.label ?? `#${rank}`}</span>
       <Avatar src={entry.imageUrl} name={entry.name} size={rank === 1 ? 'xl' : 'lg'} ring={ring} />
       <span className="ui-podium__name">{entry.name}</span>
+      {entry.badge}
       {entry.subtitle && <span className="ui-podium__subtitle">{entry.subtitle}</span>}
       <span className="ui-podium__record">{entry.record}</span>
       {entry.stats && entry.stats.length > 0 && (

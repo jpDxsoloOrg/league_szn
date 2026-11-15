@@ -44,7 +44,7 @@ function linkNames() {
 beforeEach(() => {
   mockUseSiteConfig.mockReturnValue({ features: FEATURES });
   mockUseAuth.mockReturnValue({ ...WRESTLER, signOut: vi.fn() });
-  mockUseLeaguePulse.mockReturnValue({ dashboard: null, news: [], upcomingShows: [], recentShows: [] });
+  mockUseLeaguePulse.mockReturnValue({ dashboard: null, news: [], upcomingShows: [], recentShows: [], callUps: [] });
 });
 
 describe('ShellSidebar', () => {
@@ -115,6 +115,7 @@ describe('ShellHeader', () => {
       news: [],
       upcomingShows: [],
       recentShows: [],
+      callUps: [],
       dashboard: {
         seasonInfo: { seasonId: 's4', name: 'Season 4', status: 'active' },
         upcomingEvents: [{ eventId: 'e2', name: 'Mayhem Monday', date: '2026-11-09', eventType: 'weekly' }],

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { announcementsApi, dashboardApi, eventsApi } from '../services/api';
+import { announcementsApi, dashboardApi, eventsApi, progressionApi } from '../services/api';
 import type { Announcement, DashboardData } from '../types';
 import type { EventWithMatches, LeagueEvent } from '../types/event';
+import type { ProgressionConsiderationEntry } from '../types/progression';
 import { toCalendarDate } from '../utils/dateUtils';
 import { waitForPageRequests } from '../utils/deferShellRequest';
 
@@ -11,17 +12,21 @@ export interface LeaguePulse {
   news: Announcement[];
   /** Shows still to come or under way, soonest first. */
   upcomingShows: LeagueEvent[];
-  /** The latest finished shows with their cards, newest first. */
+  /** The latest finished show with its card (at most RECENT_SHOWS_SHOWN), newest first. */
   recentShows: EventWithMatches[];
+  /** Players the GMs are considering for a call-up, newest mark first. */
+  callUps: ProgressionConsiderationEntry[];
 }
 
-const EMPTY_PULSE: LeaguePulse = { dashboard: null, news: [], upcomingShows: [], recentShows: [] };
+const EMPTY_PULSE: LeaguePulse = { dashboard: null, news: [], upcomingShows: [], recentShows: [], callUps: [] };
 
 /** The shell reuses one answer for this long, so moving between pages adds no requests. */
 export const PULSE_MAX_AGE_MS = 5 * 60 * 1000;
 export const UPCOMING_SHOWS_SHOWN = 3;
-/** The latest show plus the one before it on each night of the Monday, Wednesday, Friday rotation. */
-export const RECENT_SHOWS_SHOWN = 4;
+/** Results cover only the last finished show. */
+export const RECENT_SHOWS_SHOWN = 1;
+/** Older shows tried, newest first, when the latest one fails to load. */
+const RECENT_SHOW_ATTEMPTS = 3;
 
 let cached: { loadedAt: number; request: Promise<LeaguePulse> } | null = null;
 
@@ -39,10 +44,11 @@ async function loadShow(eventId: string): Promise<EventWithMatches | null> {
 }
 
 async function loadPulse(): Promise<LeaguePulse> {
-  const [dashboard, news, events] = await Promise.allSettled([
+  const [dashboard, news, events, callUps] = await Promise.allSettled([
     dashboardApi.get(),
     announcementsApi.getActive(),
     eventsApi.getAll(),
+    progressionApi.getConsiderations('callup'),
   ]);
   const allEvents = events.status === 'fulfilled' ? events.value : [];
 
@@ -53,11 +59,12 @@ async function loadPulse(): Promise<LeaguePulse> {
   const finished = allEvents
     .filter((event) => event.status === 'completed')
     .sort((first, second) => byDate(second, first))
-    .slice(0, RECENT_SHOWS_SHOWN);
+    .slice(0, RECENT_SHOW_ATTEMPTS);
 
   // One at a time: the account allows few concurrent Lambdas.
   const recentShows: EventWithMatches[] = [];
   for (const event of finished) {
+    if (recentShows.length >= RECENT_SHOWS_SHOWN) break;
     const show = await loadShow(event.eventId);
     if (show) recentShows.push(show);
   }
@@ -67,6 +74,7 @@ async function loadPulse(): Promise<LeaguePulse> {
     news: news.status === 'fulfilled' ? news.value : [],
     upcomingShows,
     recentShows,
+    callUps: callUps.status === 'fulfilled' ? callUps.value : [],
   };
 }
 
