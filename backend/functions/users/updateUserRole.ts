@@ -1,21 +1,15 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import {
   CognitoIdentityProviderClient,
-  AdminAddUserToGroupCommand,
-  AdminRemoveUserFromGroupCommand,
   AdminListGroupsForUserCommand,
-  AdminGetUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { success, badRequest, forbidden, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { requireRole, getAuthContext, isSuperAdmin } from '../../lib/auth';
-import { getRepositories } from '../../lib/repositories';
-import { NEEDS_WRESTLER, newPlayerName } from '../../lib/needsWrestler';
+import { MANAGED_ROLES, changeUserRole, type ManagedRole } from './userActions';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
-
-const VALID_ROLES = ['Admin', 'Moderator', 'Wrestler'] as const;
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Admin');
@@ -34,8 +28,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('username, role, and action are required');
     }
 
-    if (!VALID_ROLES.includes(role as typeof VALID_ROLES[number])) {
-      return badRequest(`Invalid role: ${role}. Must be one of: ${VALID_ROLES.join(', ')}`);
+    if (!MANAGED_ROLES.includes(role as ManagedRole)) {
+      return badRequest(`Invalid role: ${role}. Must be one of: ${MANAGED_ROLES.join(', ')}`);
     }
 
     if (action !== 'promote' && action !== 'demote') {
@@ -47,97 +41,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return forbidden('Only full Admins can manage Admin and Moderator roles');
     }
 
-    if (action === 'promote') {
-      await cognitoClient.send(
-        new AdminAddUserToGroupCommand({
-          UserPoolId: USER_POOL_ID,
-          Username: username,
-          GroupName: role,
-        })
-      );
-
-      if (role === 'Wrestler') {
-        // Auto-create a Player record for this Wrestler if one doesn't exist
-        try {
-          const userResult = await cognitoClient.send(
-            new AdminGetUserCommand({
-              UserPoolId: USER_POOL_ID,
-              Username: username,
-            })
-          );
-
-          const attrs = userResult.UserAttributes || [];
-          const sub = attrs.find((a) => a.Name === 'sub')?.Value;
-          const wrestlerName = attrs.find((a) => a.Name === 'custom:wrestler_name')?.Value || '';
-          const playerName = attrs.find((a) => a.Name === 'custom:player_name')?.Value;
-          const psnId = attrs.find((a) => a.Name === 'custom:psn_id')?.Value;
-
-          if (!sub) {
-            console.error('User sub attribute missing for username:', username);
-            throw new Error('User sub attribute missing');
-          }
-
-          // Check if a player already exists for this userId
-          const { roster: { players } } = getRepositories();
-          const existingPlayer = await players.findByUserId(sub);
-
-          if (!existingPlayer) {
-            const newPlayer = await players.create({
-              name: newPlayerName(playerName, wrestlerName, sub),
-              currentWrestler: wrestlerName || NEEDS_WRESTLER,
-              psnId: psnId || undefined,
-            });
-            await players.update(newPlayer.playerId, {
-              userId: sub,
-              hasWrestlerRole: true,
-            });
-          } else if (existingPlayer.hasWrestlerRole !== true) {
-            // Re-granting the role has to re-show a player who was hidden by
-            // an earlier demote.
-            await players.update(existingPlayer.playerId, {
-              hasWrestlerRole: true,
-            });
-          }
-        } catch (playerError) {
-          console.error('Failed to auto-create player for wrestler:', playerError);
-          // Non-blocking: don't fail the role change
-        }
-      }
-    } else {
-      await cognitoClient.send(
-        new AdminRemoveUserFromGroupCommand({
-          UserPoolId: USER_POOL_ID,
-          Username: username,
-          GroupName: role,
-        })
-      );
-
-      if (role === 'Wrestler') {
-        // Mirror the removal onto the player so the public roster filters
-        // drop them. Non-blocking, same as the promote path.
-        try {
-          const userResult = await cognitoClient.send(
-            new AdminGetUserCommand({
-              UserPoolId: USER_POOL_ID,
-              Username: username,
-            })
-          );
-          const sub = (userResult.UserAttributes || []).find(
-            (a) => a.Name === 'sub'
-          )?.Value;
-
-          if (sub) {
-            const { roster: { players } } = getRepositories();
-            const player = await players.findByUserId(sub);
-            if (player) {
-              await players.update(player.playerId, { hasWrestlerRole: false });
-            }
-          }
-        } catch (playerError) {
-          console.error('Failed to clear wrestler flag on demote:', playerError);
-        }
-      }
-    }
+    await changeUserRole(username, role as ManagedRole, action);
 
     // Return updated groups
     const groupsResult = await cognitoClient.send(

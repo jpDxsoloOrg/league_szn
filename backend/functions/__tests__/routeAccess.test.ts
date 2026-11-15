@@ -71,6 +71,7 @@ const ADMIN_ONLY_ROUTES = new Set([
   'POST /admin/users/toggle-enabled',
   'POST /admin/users/delete',
   'POST /admin/users/sync-roles',
+  'POST /admin/users/bulk',
   'DELETE /challenges/{challengeId}',
   'POST /challenges/bulk-delete',
   'DELETE /stables/{stableId}',

@@ -188,6 +188,14 @@ describe('listUsers', () => {
     ]);
   });
 
+  it('does not read the Players table', async () => {
+    mockDirectory([{ Username: 'john', Attributes: [{ Name: 'sub', Value: 'sub-1' }], Enabled: true }], {});
+    const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    expect(body(result).users[0]).not.toHaveProperty('player');
+    expect(mockPlayersList).not.toHaveBeenCalled();
+  });
+
   it('returns 500 on Cognito error', async () => {
     mockSend.mockRejectedValue(new Error('Cognito down'));
     const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
@@ -207,42 +215,6 @@ describe('listUsers', () => {
     expect(result!.statusCode).toBe(500);
   });
 
-  it('links the player record even when it has no wrestler assigned', async () => {
-    mockPlayersList.mockResolvedValue([
-      { playerId: 'pl-1', userId: 'sub-1', currentWrestler: '', currentWrestlerId: undefined, divisionId: undefined },
-      { playerId: 'pl-2', userId: 'other-sub', currentWrestler: 'The Rock' },
-    ]);
-    mockDirectory([{ Username: 'john', Attributes: [{ Name: 'sub', Value: 'sub-1' }], Enabled: true }], { Wrestler: ['john'] });
-
-    const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
-
-    expect(result!.statusCode).toBe(200);
-    expect(body(result).users[0].player).toEqual({
-      playerId: 'pl-1', divisionId: '', currentWrestler: '', currentWrestlerId: '',
-    });
-  });
-
-  it('returns a null player for users with no linked player record', async () => {
-    mockPlayersList.mockResolvedValue([
-      { playerId: 'pl-2', userId: 'other-sub', currentWrestler: 'The Rock' },
-    ]);
-    mockDirectory([{ Username: 'john', Attributes: [{ Name: 'sub', Value: 'sub-1' }], Enabled: true }], {});
-
-    const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
-
-    expect(result!.statusCode).toBe(200);
-    expect(body(result).users[0].player).toBeNull();
-  });
-
-  it('still returns users when the player lookup fails', async () => {
-    mockPlayersList.mockRejectedValue(new Error('dynamo down'));
-    mockDirectory([{ Username: 'john', Attributes: [{ Name: 'sub', Value: 'sub-1' }], Enabled: true }], {});
-
-    const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
-
-    expect(result!.statusCode).toBe(200);
-    expect(body(result).users[0].player).toBeNull();
-  });
 });
 
 // ─── toggleUserEnabled ──────────────────────────────────────────────

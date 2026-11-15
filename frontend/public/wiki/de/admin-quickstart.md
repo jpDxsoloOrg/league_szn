@@ -4,7 +4,7 @@ Neu als Admin? Mit diesen Schritten richtest du deine Liga von Grund auf ein. Ö
 
 ## Schritte
 
-1. **Benutzer prüfen** — Gehe zur **Benutzerverwaltung**. Jeder, der sich registriert, bekommt automatisch die Rolle **Wrestler** und einen Spielereintrag. Du brauchst diese Seite also nur, um Moderatoren und Admins zu ernennen oder jemandem einen Wrestler oder eine Division zuzuweisen.
+1. **Benutzer prüfen** — Gehe zur **Benutzerverwaltung**. Jeder, der sich registriert, bekommt automatisch die Rolle **Wrestler** und einen Spielereintrag. Du brauchst diese Seite also nur, um Moderatoren und Admins zu ernennen oder viele Konten auf einmal zu deaktivieren, zu löschen oder ihre Rollen zu ändern. Wrestler und Divisionen legst du unter **Spieler verwalten** fest.
 
 2. **Divisionen erstellen** — Gehe zu **Divisionen** und erstelle die Divisionen deiner Liga. Divisionen gruppieren Spieler und können einen Titel samt Herausforderer-Rangliste auf eine Division beschränken.
 

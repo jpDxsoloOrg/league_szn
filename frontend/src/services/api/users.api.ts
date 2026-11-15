@@ -1,5 +1,19 @@
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
+/** Users per bulk request; the API refuses more. */
+export const BULK_USERS_MAX = 50;
+
+export type BulkUserAction = 'enable' | 'disable' | 'addRole' | 'removeRole' | 'delete';
+export type BulkUserRole = 'Wrestler' | 'Moderator';
+
+export interface BulkUserResult {
+  username: string;
+  ok: boolean;
+  /** Set when ok is false, e.g. USER_ENABLED, PLAYER_DEACTIVATED, DISCIPLINE_ACTIVE, SELF, ERROR. */
+  code?: string;
+  message?: string;
+}
+
 export const usersApi = {
   list: async (signal?: AbortSignal): Promise<{
     users: Array<{
@@ -14,12 +28,6 @@ export const usersApi = {
       enabled: boolean;
       created: string;
       groups: string[];
-      player: {
-        playerId: string;
-        divisionId: string;
-        currentWrestler: string;
-        currentWrestlerId: string;
-      } | null;
     }>;
   }> => {
     return fetchWithAuth(`${API_BASE_URL}/admin/users`, {}, signal);
@@ -60,6 +68,19 @@ export const usersApi = {
   }> => {
     return fetchWithAuth(`${API_BASE_URL}/admin/users/sync-roles`, {
       method: 'POST',
+    });
+  },
+
+  /** One action on up to BULK_USERS_MAX accounts, with a result per account. */
+  bulk: async (action: BulkUserAction, usernames: string[], role?: BulkUserRole): Promise<{
+    action: BulkUserAction;
+    results: BulkUserResult[];
+    succeeded: number;
+    failed: number;
+  }> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/users/bulk`, {
+      method: 'POST',
+      body: JSON.stringify({ action, usernames, ...(role ? { role } : {}) }),
     });
   },
 

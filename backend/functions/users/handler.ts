@@ -3,6 +3,7 @@ import { handler as updateUserRoleHandler } from './updateUserRole';
 import { handler as toggleUserEnabledHandler } from './toggleUserEnabled';
 import { handler as deleteUserHandler } from './deleteUser';
 import { handler as syncWrestlerRolesHandler } from './syncWrestlerRoles';
+import { handler as bulkUsersHandler } from './bulkUsers';
 import { createRouter, type RouteConfig, ADMIN_ONLY } from '../../lib/router';
 
 /**
@@ -32,6 +33,12 @@ export const routes: ReadonlyArray<RouteConfig> = [
     resource: '/admin/users/delete',
     method: 'POST',
     handler: deleteUserHandler,
+    access: ADMIN_ONLY,
+  },
+  {
+    resource: '/admin/users/bulk',
+    method: 'POST',
+    handler: bulkUsersHandler,
     access: ADMIN_ONLY,
   },
   {

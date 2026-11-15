@@ -1047,6 +1047,31 @@ components:
       properties:
         userId: { type: string }
 
+    BulkUsersInput:
+      type: object
+      required: [action, usernames]
+      properties:
+        action: { type: string, enum: [enable, disable, addRole, removeRole, delete] }
+        role: { type: string, enum: [Wrestler, Moderator], description: 'Required for addRole and removeRole' }
+        usernames: { type: array, minItems: 1, maxItems: 50, items: { type: string } }
+
+    BulkUsersResult:
+      type: object
+      properties:
+        action: { type: string }
+        role: { type: string }
+        succeeded: { type: integer }
+        failed: { type: integer }
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              username: { type: string }
+              ok: { type: boolean }
+              code: { type: string, description: 'Set when ok is false, e.g. USER_ENABLED, PLAYER_DEACTIVATED, DISCIPLINE_ACTIVE, SELF, ERROR' }
+              message: { type: string }
+
     ProgressionGoal:
       type: object
       required: [metric, threshold]
@@ -2305,6 +2330,30 @@ paths:
             schema: { $ref: '#/components/schemas/DeleteUserInput' }
       responses:
         '200': { description: User deleted }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /admin/users/bulk:
+    post:
+      tags: [Users]
+      summary: Apply one action to many users (Admin)
+      description: >
+        Enables, disables, adds or removes a role (Wrestler or Moderator), or deletes up to 50 accounts.
+        Each account gets the same checks as the single-user routes, and one failure does not stop the rest.
+        The caller's own account is never disabled, deleted or stripped of a role (result code SELF).
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BulkUsersInput' }
+      responses:
+        '200':
+          description: Per-account results
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BulkUsersResult' }
+        '400': { description: 'Invalid action, role or usernames', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 

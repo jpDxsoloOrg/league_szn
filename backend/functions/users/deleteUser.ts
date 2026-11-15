@@ -1,17 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import {
-  CognitoIdentityProviderClient,
-  AdminDeleteUserCommand,
-  AdminGetUserCommand,
-} from '@aws-sdk/client-cognito-identity-provider';
 import { success, badRequest, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
-import { findPlayerForCognitoUsername } from '../../lib/disciplineActions';
-import { deleteRefusal } from '../../lib/disciplineGates';
-
-const cognitoClient = new CognitoIdentityProviderClient({});
-const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
+import { deleteUserAccount } from './userActions';
 
 interface DeleteUserBody {
   username: string;
@@ -30,29 +21,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('username is required');
     }
 
-    // A lookup error lands in the catch, so nothing is deleted without this check.
-    const player = await findPlayerForCognitoUsername(username);
-    const refusal = player && deleteRefusal(player);
-    if (refusal) return refusal;
-
-    // Verify the user is disabled before allowing deletion
-    const userResult = await cognitoClient.send(
-      new AdminGetUserCommand({
-        UserPoolId: USER_POOL_ID,
-        Username: username,
-      })
-    );
-
-    if (userResult.Enabled) {
-      return badRequest('User must be disabled before deletion. Disable the user first.');
-    }
-
-    await cognitoClient.send(
-      new AdminDeleteUserCommand({
-        UserPoolId: USER_POOL_ID,
-        Username: username,
-      })
-    );
+    const outcome = await deleteUserAccount(username);
+    if (!outcome.ok) return outcome.response;
 
     return success({
       message: `User ${username} has been permanently deleted`,

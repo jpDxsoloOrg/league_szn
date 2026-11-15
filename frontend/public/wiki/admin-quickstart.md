@@ -4,7 +4,7 @@ New admin? Follow these steps to set up your league from scratch. Open **Admin**
 
 ## Steps
 
-1. **Check Users** — Go to **User Management**. Everyone who signs up gets the **Wrestler** role and a player record automatically, so you only need this page to add Moderators and Admins, or to give someone a wrestler or division.
+1. **Check Users** — Go to **User Management**. Everyone who signs up gets the **Wrestler** role and a player record automatically, so you only need this page to add Moderators and Admins, or to disable, delete or change roles on many accounts at once. Wrestlers and divisions are set in **Manage Players**.
 
 2. **Create Divisions** — Go to **Divisions** and create the divisions your league uses. Divisions group players and can lock a title and its contender rankings to one division.
 

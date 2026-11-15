@@ -18,23 +18,41 @@ A Moderator also can't do these jobs, which are for full Admins only:
 
 Everyone gets the **Wrestler** role and a player record automatically when they sign up.
 
+## Finding Users
+
+The list loads every account at once and shows 50 per page. Use **Previous** and **Next** under the table to move between pages.
+
+- **Tabs** narrow the list to All Users, Wrestlers, Admins & Moderators, No Role or Disabled. Each tab shows how many accounts it holds.
+- **Search** matches the player name, account name, email, PSN ID and wrestler name.
+- **Sorting** by User, Roles, Status or Joined covers every matching account, not just the page you're on.
+
+Each row shows the user (name, email and PSN ID), their roles, whether they can sign in, and when they joined.
+
 ## Assigning Roles
 
 1. Go to **User Management**
-2. Find the user. The tabs narrow the list to Wrestler Requests, Wrestlers, Admins or Disabled
+2. Find the user
 3. Click **Manage**
-4. Use the role buttons, such as **Make Moderator**, **Make Admin** or **Remove Wrestler**
+4. Use the role buttons, such as **Make Wrestler**, **Make Moderator**, **Make Admin** or **Remove Wrestler**
 5. Changes save straight away
 
 Users must have an account before you can give them a role. Removing the Wrestler role takes the player off the standings and dashboard.
 
-## Wrestler Requests
+## Bulk Actions
 
-If an account has a wrestler name but no Wrestler role, it shows under **Wrestler Requests** with an **Approve Wrestler** button. New sign-ups get the role by themselves, so this list is usually empty.
+Tick the box at the start of a row to select it, or use **Select all N shown** to select every account the current tab and search show, on every page. The bar above the table shows how many are selected.
+
+- **Enable login** and **Disable login**
+- **Add role** and **Remove role** for the role picked next to them: Wrestler, or Moderator for full Admins. Admin is given and taken one account at a time, from **Manage**
+- **Delete accounts**, after you type **DELETE** to confirm
+
+Every action asks for confirmation first. Each account gets the same checks as when you change it on its own, so an enabled account isn't deleted and a deactivated player's login isn't turned back on. Your own account is always skipped for disable, delete and remove role.
+
+When it finishes, a message says how many worked. Accounts that couldn't be changed stay selected, with the reason listed, so you can look at them or try again.
 
 ## Wrestlers and Divisions
 
-Each row has an **Assigned Wrestler** and a **Division** dropdown, and both save as soon as you change them. A **Hidden** badge means the player has no wrestler name and is off the public pages. Assigning a wrestler brings them back.
+User Management deals with accounts and roles. To assign a wrestler or a division, use [Manage Players](admin-manage-players).
 
 ## Disabling and Deleting Accounts
 
@@ -46,4 +64,4 @@ An account must be disabled before **Delete** appears. Deleting is permanent and
 
 ## Sync Wrestler Roles
 
-**Sync Wrestler Roles** matches every player to their account's role, then reports how many were shown, hidden, unchanged or skipped. It is safe to run again. You only need it if the standings seem to disagree with who has the Wrestler role.
+**Sync Wrestler Roles** matches every player to their account's role, then reports how many were shown, hidden or unchanged. It is safe to run again. You only need it if the standings seem to disagree with who has the Wrestler role.

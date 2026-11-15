@@ -4,12 +4,11 @@ import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockUsersApi, mockPlayersApi, mockDivisionsApi, mockWrestlersApi, mockUseAuth } = vi.hoisted(() => ({
-  mockUsersApi: { list: vi.fn(), updateRole: vi.fn(), toggleEnabled: vi.fn(),
-      deleteUser: vi.fn(), syncRoles: vi.fn() },
-  mockPlayersApi: { getAll: vi.fn(), update: vi.fn() },
-  mockDivisionsApi: { getAll: vi.fn() },
-  mockWrestlersApi: { getAll: vi.fn() },
+const { mockUsersApi, mockUseAuth } = vi.hoisted(() => ({
+  mockUsersApi: {
+    list: vi.fn(), updateRole: vi.fn(), toggleEnabled: vi.fn(),
+    deleteUser: vi.fn(), syncRoles: vi.fn(), bulk: vi.fn(),
+  },
   mockUseAuth: vi.fn(),
 }));
 
@@ -17,150 +16,102 @@ vi.mock('react-i18next', async () => (await import('./i18nMock')).i18nMock);
 
 vi.mock('../../../services/api', () => ({
   usersApi: mockUsersApi,
-  playersApi: mockPlayersApi,
-  divisionsApi: mockDivisionsApi,
-  wrestlersApi: mockWrestlersApi,
+  BULK_USERS_MAX: 50,
 }));
 
 vi.mock('../../../contexts/AuthContext', () => ({
   useAuth: mockUseAuth,
 }));
 
-import ManageUsers from '../ManageUsers';
-import type { Division, Wrestler } from '../../../types';
+import ManageUsers, { USERS_PAGE_SIZE } from '../ManageUsers';
+import type { BulkUserAction } from '../../../services/api';
 
 // --- Test data ---
-interface LinkedPlayer {
-  playerId: string; divisionId: string; currentWrestler: string; currentWrestlerId: string;
-}
-
 interface CognitoUser {
   username: string; sub: string; email: string; name: string;
-  wrestlerName: string; status: string; enabled: boolean;
-  created: string; groups: string[]; player: LinkedPlayer | null;
+  wrestlerName: string; psnId: string; playerName: string; status: string; enabled: boolean;
+  created: string; groups: string[];
 }
 
-const mockDivisions: Division[] = [
-  { divisionId: 'div-1', name: 'Raw', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
-  { divisionId: 'div-2', name: 'SmackDown', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
-];
-
-const mockWrestlers: Wrestler[] = [
-  {
-    wrestlerId: 'w-rock', promotion: 'WWE', name: 'The Rock', overallCap: 95,
-    isInUse: true, assignedPlayerId: 'pl-1', assignedSlot: 'primary',
-    createdAt: '2024-01-01', updatedAt: '2024-01-01',
-  },
-  {
-    wrestlerId: 'w-austin', promotion: 'WWE', name: 'Stone Cold', overallCap: 94,
-    isInUse: false, createdAt: '2024-01-01', updatedAt: '2024-01-01',
-  },
-  {
-    wrestlerId: 'w-omega', promotion: 'AEW', name: 'Kenny Omega', overallCap: 93,
-    isInUse: false, createdAt: '2024-01-01', updatedAt: '2024-01-01',
-  },
-];
+function account(overrides: Partial<CognitoUser> & Pick<CognitoUser, 'username' | 'email'>): CognitoUser {
+  return {
+    sub: `sub-${overrides.username}`, name: '', wrestlerName: '', psnId: '', playerName: '',
+    status: 'CONFIRMED', enabled: true, created: '2024-01-01T00:00:00Z', groups: [],
+    ...overrides,
+  };
+}
 
 const mockUsers: CognitoUser[] = [
-  {
-    username: 'admin-user', sub: 'sub-1', email: 'admin@league.com', name: 'Admin',
-    wrestlerName: '', status: 'CONFIRMED', enabled: true,
-    created: '2024-01-01T00:00:00Z', groups: ['Admin'], player: null,
-  },
-  {
-    username: 'wrestler-user', sub: 'sub-2', email: 'wrestler@league.com', name: 'Wrestler',
-    wrestlerName: 'The Rock', status: 'CONFIRMED', enabled: true,
-    created: '2024-02-01T00:00:00Z', groups: ['Wrestler'],
-    player: { playerId: 'pl-1', divisionId: 'div-1', currentWrestler: 'The Rock', currentWrestlerId: 'w-rock' },
-  },
-  {
-    username: 'request-user', sub: 'sub-3', email: 'request@league.com', name: 'Requester',
-    wrestlerName: 'Stone Cold', status: 'CONFIRMED', enabled: true,
-    created: '2024-03-01T00:00:00Z', groups: [], player: null,
-  },
-  {
-    username: 'disabled-user', sub: 'sub-4', email: 'disabled@league.com', name: 'Disabled',
-    wrestlerName: '', status: 'CONFIRMED', enabled: false,
-    created: '2024-01-15T00:00:00Z', groups: [], player: null,
-  },
-  {
-    username: 'mod-user', sub: 'sub-5', email: 'mod@league.com', name: 'Moderator',
-    wrestlerName: '', status: 'CONFIRMED', enabled: true,
-    created: '2024-01-20T00:00:00Z', groups: ['Moderator'], player: null,
-  },
-  // Regression case: approved Wrestler whose auto-created Player has no
-  // wrestler assigned yet. `GET /players` hides these, so the admin used to
-  // get "-" in the Division column with no way to slot them.
-  {
-    username: 'no-wrestler-user', sub: 'sub-6', email: 'nowrestler@league.com', name: 'No Wrestler',
-    wrestlerName: '', status: 'CONFIRMED', enabled: true,
-    created: '2024-04-01T00:00:00Z', groups: ['Wrestler'],
-    player: { playerId: 'pl-2', divisionId: '', currentWrestler: '', currentWrestlerId: '' },
-  },
+  account({ username: 'admin-user', email: 'admin@league.com', name: 'Admin', groups: ['Admin'] }),
+  account({
+    username: 'wrestler-user', email: 'wrestler@league.com', playerName: 'Rocky',
+    psnId: 'rocky_psn', wrestlerName: 'The Rock', groups: ['Wrestler'], created: '2024-02-01T00:00:00Z',
+  }),
+  account({ username: 'plain-user', email: 'plain@league.com', name: 'Plain' }),
+  account({ username: 'disabled-user', email: 'disabled@league.com', name: 'Disabled', enabled: false }),
+  account({ username: 'mod-user', email: 'mod@league.com', name: 'Moderator', groups: ['Moderator'] }),
 ];
 
-function setupMocks(overrides: { isSuperAdmin?: boolean } = {}) {
-  mockUseAuth.mockReturnValue({ isSuperAdmin: overrides.isSuperAdmin ?? false });
-  mockUsersApi.list.mockResolvedValue({ users: mockUsers });
-  mockDivisionsApi.getAll.mockResolvedValue(mockDivisions);
-  mockWrestlersApi.getAll.mockResolvedValue(mockWrestlers);
+function setupMocks(overrides: { isSuperAdmin?: boolean; users?: CognitoUser[] } = {}) {
+  mockUseAuth.mockReturnValue({ isSuperAdmin: overrides.isSuperAdmin ?? true });
+  mockUsersApi.list.mockResolvedValue({ users: overrides.users ?? mockUsers });
 }
 
-function renderComponent() {
-  return render(<BrowserRouter><ManageUsers /></BrowserRouter>);
+/** Every bulk request succeeds for every user it names. */
+function bulkSucceeds() {
+  mockUsersApi.bulk.mockImplementation(async (action: BulkUserAction, usernames: string[]) => ({
+    action,
+    results: usernames.map((username) => ({ username, ok: true })),
+    succeeded: usernames.length,
+    failed: 0,
+  }));
 }
+
+async function renderLoaded(waitForText = 'admin@league.com') {
+  render(<BrowserRouter><ManageUsers /></BrowserRouter>);
+  await screen.findByText(waitForText);
+}
+
+const rowOf = (text: string) => screen.getByText(text).closest('tr')!;
 
 /** Opens the Manage dialog from a user's row. */
 async function openManage(user: ReturnType<typeof userEvent.setup>, email: string) {
-  const row = screen.getByText(email).closest('tr')!;
-  await user.click(within(row).getByRole('button', { name: 'Manage' }));
+  await user.click(within(rowOf(email)).getByRole('button', { name: 'Manage' }));
   return screen.findByRole('dialog');
+}
+
+async function select(user: ReturnType<typeof userEvent.setup>, ...emails: string[]) {
+  for (const email of emails) await user.click(screen.getByRole('checkbox', { name: `Select ${email}` }));
 }
 
 describe('ManageUsers', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it('renders user list with role badges after loading', async () => {
+  it('shows user, roles, status and joined, and no wrestler or division columns', async () => {
     setupMocks();
-    renderComponent();
+    await renderLoaded();
 
-    await waitFor(() => {
-      expect(screen.getByText('User Management')).toBeInTheDocument();
-    });
+    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+    expect(headers).toEqual(['Select', 'User', 'Roles', 'Status', 'Joined', 'Actions']);
 
-    // All users visible in default "All" tab
-    expect(screen.getByText('admin@league.com')).toBeInTheDocument();
-    expect(screen.getByText('wrestler@league.com')).toBeInTheDocument();
-    expect(screen.getByText('request@league.com')).toBeInTheDocument();
-    expect(screen.getByText('disabled@league.com')).toBeInTheDocument();
-
-    // Role badges
-    expect(screen.getByText('Admin')).toBeInTheDocument();
-    expect(screen.getAllByText('Wrestler').length).toBeGreaterThan(0);
-    expect(screen.getByText('Moderator')).toBeInTheDocument();
-
-    // Wrestler request banner (request-user has wrestlerName but no Wrestler group)
-    expect(screen.getByText(/1 wrestler request/)).toBeInTheDocument();
+    const row = rowOf('wrestler@league.com');
+    expect(within(row).getByText('Rocky')).toBeInTheDocument();
+    expect(within(row).getByText('PSN: rocky_psn')).toBeInTheDocument();
+    expect(within(row).getByText('Wrestler')).toBeInTheDocument();
+    expect(within(row).queryByRole('combobox')).not.toBeInTheDocument();
   });
 
   it('syncs wrestler roles and reports the result', async () => {
     const user = userEvent.setup();
     setupMocks();
-    mockUsersApi.syncRoles.mockResolvedValue({
-      message: 'ok', totalPlayers: 12, granted: 9, revoked: 3, unchanged: 0,
-    });
-
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('admin@league.com')).toBeInTheDocument(); });
+    mockUsersApi.syncRoles.mockResolvedValue({ message: 'ok', totalPlayers: 12, granted: 9, revoked: 3, unchanged: 0 });
+    await renderLoaded();
 
     await user.click(screen.getByRole('button', { name: 'Sync Wrestler Roles' }));
 
     await waitFor(() => {
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'Synced 12 players — 9 shown, 3 hidden, 0 unchanged',
-      );
+      expect(screen.getByRole('status')).toHaveTextContent('Synced 12 players — 9 shown, 3 hidden, 0 unchanged');
     });
-    // The list is reloaded so the screen reflects the new flags.
     await waitFor(() => { expect(mockUsersApi.list).toHaveBeenCalledTimes(2); });
   });
 
@@ -168,292 +119,254 @@ describe('ManageUsers', () => {
     const user = userEvent.setup();
     setupMocks();
     mockUsersApi.syncRoles.mockRejectedValue(new Error('Cognito unavailable'));
-
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('admin@league.com')).toBeInTheDocument(); });
+    await renderLoaded();
 
     await user.click(screen.getByRole('button', { name: 'Sync Wrestler Roles' }));
 
-    await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent('Cognito unavailable');
-    });
+    await waitFor(() => { expect(screen.getByRole('alert')).toHaveTextContent('Cognito unavailable'); });
   });
 
-  it('filters users by tab selection', async () => {
+  it('filters by tab with counts', async () => {
     const user = userEvent.setup();
     setupMocks();
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('admin@league.com')).toBeInTheDocument(); });
+    await renderLoaded();
 
-    // Wrestler Requests tab
-    await user.click(screen.getByRole('tab', { name: /Wrestler Requests/i }));
-    expect(screen.getByText('request@league.com')).toBeInTheDocument();
-    expect(screen.queryByText('admin@league.com')).not.toBeInTheDocument();
-
-    // Wrestlers tab
-    await user.click(screen.getByRole('tab', { name: /^Wrestlers$/i }));
+    await user.click(screen.getByRole('tab', { name: 'Wrestlers (1)' }));
     expect(screen.getByText('wrestler@league.com')).toBeInTheDocument();
     expect(screen.queryByText('admin@league.com')).not.toBeInTheDocument();
 
-    // Admins tab (includes Moderators)
-    await user.click(screen.getByRole('tab', { name: /^Admins$/i }));
+    await user.click(screen.getByRole('tab', { name: 'Admins & Moderators (2)' }));
     expect(screen.getByText('admin@league.com')).toBeInTheDocument();
     expect(screen.getByText('mod@league.com')).toBeInTheDocument();
     expect(screen.queryByText('wrestler@league.com')).not.toBeInTheDocument();
 
-    // Disabled tab
-    await user.click(screen.getByRole('tab', { name: /Disabled/i }));
+    await user.click(screen.getByRole('tab', { name: 'No Role (2)' }));
+    expect(screen.getByText('plain@league.com')).toBeInTheDocument();
     expect(screen.getByText('disabled@league.com')).toBeInTheDocument();
-    expect(screen.queryByText('admin@league.com')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'Disabled (1)' }));
+    expect(screen.getByText('disabled@league.com')).toBeInTheDocument();
+    expect(screen.queryByText('plain@league.com')).not.toBeInTheDocument();
   });
 
-  it('approves wrestler request via promote role action', async () => {
+  it('searches email, name, PSN and wrestler name', async () => {
     const user = userEvent.setup();
     setupMocks();
-    mockUsersApi.updateRole.mockResolvedValue({
-      message: 'Role updated', username: 'request-user', groups: ['Wrestler'],
-    });
+    await renderLoaded();
+    const search = screen.getByRole('searchbox', { name: 'Search by name, email or PSN' });
 
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('request@league.com')).toBeInTheDocument(); });
-
-    // Switch to wrestler requests tab and approve
-    await user.click(screen.getByRole('tab', { name: /Wrestler Requests/i }));
-    await user.click(screen.getByRole('button', { name: 'Approve Wrestler' }));
-
-    await waitFor(() => {
-      expect(mockUsersApi.updateRole).toHaveBeenCalledWith('request-user', 'Wrestler', 'promote');
-    });
-    // After promote to Wrestler, users are re-fetched so the newly
-    // auto-created Player link (and its division slot) appears.
-    await waitFor(() => {
-      expect(mockUsersApi.list).toHaveBeenCalledTimes(2);
-    });
+    for (const query of ['ROCKY_PSN', 'the rock', 'wrestler@']) {
+      await user.clear(search);
+      await user.type(search, query);
+      expect(screen.getByText('wrestler@league.com')).toBeInTheDocument();
+      expect(screen.queryByText('admin@league.com')).not.toBeInTheDocument();
+    }
   });
 
-  it('demotes wrestler role', async () => {
+  it(`pages the list ${USERS_PAGE_SIZE} at a time`, async () => {
+    const user = userEvent.setup();
+    const many = Array.from({ length: USERS_PAGE_SIZE + 5 }, (_, index) =>
+      account({ username: `u${String(index).padStart(3, '0')}`, email: `u${String(index).padStart(3, '0')}@league.com` }));
+    setupMocks({ users: many });
+    await renderLoaded('u000@league.com');
+
+    expect(screen.getAllByRole('checkbox')).toHaveLength(USERS_PAGE_SIZE);
+    expect(screen.getByText(`Page 1 of 2 · 1–${USERS_PAGE_SIZE} of ${USERS_PAGE_SIZE + 5}`)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getAllByRole('checkbox')).toHaveLength(5);
+    expect(screen.queryByText('u000@league.com')).not.toBeInTheDocument();
+    expect(screen.getByText(`u${String(USERS_PAGE_SIZE).padStart(3, '0')}@league.com`)).toBeInTheDocument();
+
+    // A new search starts again from the first page.
+    await user.type(screen.getByRole('searchbox'), 'u00');
+    expect(screen.getByText('u000@league.com')).toBeInTheDocument();
+  });
+
+  it('disables the selected users in one bulk request and updates their rows', async () => {
     const user = userEvent.setup();
     setupMocks();
-    mockUsersApi.updateRole.mockResolvedValue({
-      message: 'Role updated', username: 'wrestler-user', groups: [],
-    });
+    bulkSucceeds();
+    await renderLoaded();
 
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('wrestler@league.com')).toBeInTheDocument(); });
+    await select(user, 'plain@league.com', 'mod@league.com');
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Disable login' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Disable login' });
+    expect(dialog).toHaveTextContent('Apply "Disable login" to 2 selected users?');
+    await user.click(within(dialog).getByRole('button', { name: 'Disable login' }));
+
+    await waitFor(() => { expect(screen.getByText('Disable login: 2 of 2 done.')).toBeInTheDocument(); });
+    expect(mockUsersApi.bulk).toHaveBeenCalledWith('disable', ['plain-user', 'mod-user'], undefined);
+    expect(within(rowOf('plain@league.com')).getByText('Disabled')).toBeInTheDocument();
+    expect(screen.getByText('0 selected')).toBeInTheDocument();
+  });
+
+  it('adds the chosen role to the selection', async () => {
+    const user = userEvent.setup();
+    setupMocks();
+    bulkSucceeds();
+    await renderLoaded();
+
+    await select(user, 'plain@league.com');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Role for bulk change' }), 'Moderator');
+    await user.click(screen.getByRole('button', { name: 'Add role' }));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Add Moderator' })).getByRole('button', { name: 'Add Moderator' }));
+
+    await waitFor(() => { expect(mockUsersApi.bulk).toHaveBeenCalledWith('addRole', ['plain-user'], 'Moderator'); });
+    await waitFor(() => { expect(within(rowOf('plain@league.com')).getByText('Moderator')).toBeInTheDocument(); });
+  });
+
+  it('only offers Wrestler for bulk role changes to a non-super admin', async () => {
+    setupMocks({ isSuperAdmin: false });
+    await renderLoaded();
+    const roles = within(screen.getByRole('combobox', { name: 'Role for bulk change' })).getAllByRole('option');
+    expect(roles.map((option) => option.textContent)).toEqual(['Wrestler']);
+  });
+
+  it('selects every user the filter shows, across pages, and sends them in chunks of 50', async () => {
+    const user = userEvent.setup();
+    const many = Array.from({ length: 120 }, (_, index) => account({ username: `u${index}`, email: `u${index}@league.com` }));
+    setupMocks({ users: many });
+    bulkSucceeds();
+    await renderLoaded('u0@league.com');
+
+    await user.click(screen.getByRole('button', { name: 'Select all 120 shown' }));
+    expect(screen.getByText('120 selected')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Enable login' }));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Enable login' }));
+
+    await waitFor(() => { expect(screen.getByText('Enable login: 120 of 120 done.')).toBeInTheDocument(); });
+    expect(mockUsersApi.bulk.mock.calls.map(([, usernames]) => (usernames as string[]).length)).toEqual([50, 50, 20]);
+  });
+
+  it('keeps failed users selected and lists why', async () => {
+    const user = userEvent.setup();
+    setupMocks();
+    mockUsersApi.bulk.mockResolvedValue({
+      action: 'enable',
+      results: [
+        { username: 'disabled-user', ok: false, code: 'PLAYER_DEACTIVATED', message: 'This player is deactivated.' },
+        { username: 'plain-user', ok: true },
+      ],
+      succeeded: 1,
+      failed: 1,
+    });
+    await renderLoaded();
+
+    await select(user, 'disabled@league.com', 'plain@league.com');
+    await user.click(screen.getByRole('button', { name: 'Enable login' }));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Enable login' }));
+
+    await waitFor(() => { expect(screen.getByText(/Enable login: 1 of 2 done/)).toBeInTheDocument(); });
+    expect(screen.getByText('disabled@league.com: This player is deactivated.')).toBeInTheDocument();
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Select disabled@league.com' })).toBeChecked();
+  });
+
+  it('reports a failed request against every user in that chunk', async () => {
+    const user = userEvent.setup();
+    setupMocks();
+    mockUsersApi.bulk.mockRejectedValue(new Error('Network down'));
+    await renderLoaded();
+
+    await select(user, 'plain@league.com');
+    await user.click(screen.getByRole('button', { name: 'Disable login' }));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Disable login' }));
+
+    await waitFor(() => { expect(screen.getByText('plain@league.com: Network down')).toBeInTheDocument(); });
+    expect(within(rowOf('plain@league.com')).queryByText('Disabled')).not.toBeInTheDocument();
+  });
+
+  it('asks for the typed word before a bulk delete and drops deleted rows', async () => {
+    const user = userEvent.setup();
+    setupMocks();
+    bulkSucceeds();
+    await renderLoaded();
+
+    await select(user, 'disabled@league.com', 'plain@league.com');
+    await user.click(screen.getByRole('button', { name: 'Delete accounts' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Delete accounts' });
+    expect(dialog).toHaveTextContent('1 of the selected accounts are still enabled and will be skipped.');
+
+    const confirm = within(dialog).getByRole('button', { name: 'Delete accounts' });
+    expect(confirm).toBeDisabled();
+    await user.type(within(dialog).getByLabelText('Type DELETE to confirm'), 'delete');
+    expect(confirm).toBeDisabled();
+    await user.clear(within(dialog).getByLabelText('Type DELETE to confirm'));
+    await user.type(within(dialog).getByLabelText('Type DELETE to confirm'), 'DELETE');
+    await user.click(confirm);
+
+    await waitFor(() => { expect(screen.queryByText('disabled@league.com')).not.toBeInTheDocument(); });
+    expect(mockUsersApi.bulk).toHaveBeenCalledWith('delete', ['disabled-user', 'plain-user'], undefined);
+  });
+
+  it('demotes a wrestler from the Manage dialog', async () => {
+    const user = userEvent.setup();
+    setupMocks();
+    mockUsersApi.updateRole.mockResolvedValue({ message: 'Role updated', username: 'wrestler-user', groups: [] });
+    await renderLoaded();
 
     const dialog = await openManage(user, 'wrestler@league.com');
     await user.click(within(dialog).getByRole('button', { name: 'Remove Wrestler' }));
 
-    await waitFor(() => {
-      expect(mockUsersApi.updateRole).toHaveBeenCalledWith('wrestler-user', 'Wrestler', 'demote');
-    });
+    await waitFor(() => { expect(mockUsersApi.updateRole).toHaveBeenCalledWith('wrestler-user', 'Wrestler', 'demote'); });
   });
 
-  it('enables and disables users', async () => {
+  it('disables one user from the Manage dialog', async () => {
     const user = userEvent.setup();
     setupMocks();
-    mockUsersApi.toggleEnabled.mockResolvedValue({
-      message: 'User updated', username: 'wrestler-user', enabled: false,
-    });
-
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('wrestler@league.com')).toBeInTheDocument(); });
+    mockUsersApi.toggleEnabled.mockResolvedValue({ message: 'User updated', username: 'wrestler-user', enabled: false });
+    await renderLoaded();
 
     const dialog = await openManage(user, 'wrestler@league.com');
     await user.click(within(dialog).getByRole('button', { name: 'Disable' }));
 
-    await waitFor(() => {
-      expect(mockUsersApi.toggleEnabled).toHaveBeenCalledWith('wrestler-user', false);
-    });
+    await waitFor(() => { expect(mockUsersApi.toggleEnabled).toHaveBeenCalledWith('wrestler-user', false); });
   });
 
-  it('assigns division to linked wrestler player', async () => {
-    const user = userEvent.setup();
-    setupMocks();
-    mockPlayersApi.update.mockResolvedValue({ playerId: 'pl-1', divisionId: 'div-2' });
-
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('wrestler@league.com')).toBeInTheDocument(); });
-
-    const wrestlerRow = screen.getByText('wrestler@league.com').closest('tr')!;
-    const divisionSelect = within(wrestlerRow).getByLabelText('Division for wrestler@league.com');
-    expect(divisionSelect).toHaveValue('div-1');
-
-    await user.selectOptions(divisionSelect, 'div-2');
-
-    await waitFor(() => {
-      expect(mockPlayersApi.update).toHaveBeenCalledWith('pl-1', { divisionId: 'div-2' });
-    });
-    await waitFor(() => { expect(divisionSelect).toHaveValue('div-2'); });
-  });
-
-  it('sends an empty division so the API clears it', async () => {
-    const user = userEvent.setup();
-    setupMocks();
-    mockPlayersApi.update.mockResolvedValue({ playerId: 'pl-1' });
-
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('wrestler@league.com')).toBeInTheDocument(); });
-
-    const wrestlerRow = screen.getByText('wrestler@league.com').closest('tr')!;
-    const divisionSelect = within(wrestlerRow).getByLabelText('Division for wrestler@league.com');
-
-    await user.selectOptions(divisionSelect, '');
-
-    await waitFor(() => {
-      expect(mockPlayersApi.update).toHaveBeenCalledWith('pl-1', { divisionId: '' });
-    });
-  });
-
-  it('offers a division slot to a Wrestler whose player has no wrestler assigned', async () => {
-    const user = userEvent.setup();
-    setupMocks();
-    mockPlayersApi.update.mockResolvedValue({ playerId: 'pl-2', divisionId: 'div-1' });
-
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('nowrestler@league.com')).toBeInTheDocument(); });
-
-    const row = screen.getByText('nowrestler@league.com').closest('tr')!;
-    const divisionSelect = within(row).getByLabelText('Division for nowrestler@league.com');
-    expect(divisionSelect).toHaveValue('');
-
-    await user.selectOptions(divisionSelect, 'div-1');
-
-    await waitFor(() => {
-      expect(mockPlayersApi.update).toHaveBeenCalledWith('pl-2', { divisionId: 'div-1' });
-    });
-  });
-
-  it('assigns a wrestler to a linked player with no wrestler yet', async () => {
-    const user = userEvent.setup();
-    setupMocks();
-    mockPlayersApi.update.mockResolvedValue({
-      playerId: 'pl-2', currentWrestlerId: 'w-austin', currentWrestler: 'Stone Cold',
-    });
-
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('nowrestler@league.com')).toBeInTheDocument(); });
-
-    const select = screen.getByLabelText('Assigned wrestler for nowrestler@league.com');
-    expect(select).toHaveValue('');
-
-    // The in-use wrestler is hidden; free ones are offered.
-    expect(within(select).queryByRole('option', { name: 'The Rock' })).not.toBeInTheDocument();
-    expect(within(select).getByRole('option', { name: 'Stone Cold' })).toBeInTheDocument();
-
-    await user.selectOptions(select, 'w-austin');
-
-    await waitFor(() => {
-      expect(mockPlayersApi.update).toHaveBeenCalledWith('pl-2', { currentWrestlerId: 'w-austin' });
-    });
-    // Roster is re-read so the now-used wrestler leaves the other dropdowns.
-    await waitFor(() => { expect(mockWrestlersApi.getAll).toHaveBeenCalledTimes(2); });
-    await waitFor(() => { expect(select).toHaveValue('w-austin'); });
-  });
-
-  it('keeps the current pick selectable even though it is in use', async () => {
-    setupMocks();
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('wrestler@league.com')).toBeInTheDocument(); });
-
-    const select = screen.getByLabelText('Assigned wrestler for wrestler@league.com');
-    expect(select).toHaveValue('w-rock');
-    expect(within(select).getByRole('option', { name: 'The Rock' })).toBeInTheDocument();
-  });
-
-  it('surfaces an error when wrestler assignment fails', async () => {
-    const user = userEvent.setup();
-    setupMocks();
-    mockPlayersApi.update.mockRejectedValue(new Error('Wrestler already assigned'));
-
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('nowrestler@league.com')).toBeInTheDocument(); });
-
-    await user.selectOptions(
-      screen.getByLabelText('Assigned wrestler for nowrestler@league.com'),
-      'w-omega',
-    );
-
-    await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent('Wrestler already assigned');
-    });
-  });
-
-  it('shows no wrestler or division control for a user with no linked player', async () => {
-    setupMocks();
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('admin@league.com')).toBeInTheDocument(); });
-
-    const adminRow = screen.getByText('admin@league.com').closest('tr')!;
-    expect(within(adminRow).queryByRole('combobox')).not.toBeInTheDocument();
-  });
-
-  it('shows SuperAdmin-only actions when isSuperAdmin is true', async () => {
+  it('shows SuperAdmin-only role actions when isSuperAdmin is true', async () => {
     const user = userEvent.setup();
     setupMocks({ isSuperAdmin: true });
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('admin@league.com')).toBeInTheDocument(); });
+    await renderLoaded();
 
-    // request-user (no groups) -- should see Make Moderator and Make Admin
-    let dialog = await openManage(user, 'request@league.com');
+    let dialog = await openManage(user, 'plain@league.com');
     expect(within(dialog).getByRole('button', { name: 'Make Moderator' })).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Make Admin' })).toBeInTheDocument();
     await user.keyboard('{Escape}');
 
-    // mod-user -- should see Remove Moderator and Make Admin
     dialog = await openManage(user, 'mod@league.com');
     expect(within(dialog).getByRole('button', { name: 'Remove Moderator' })).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: 'Make Admin' })).toBeInTheDocument();
     await user.keyboard('{Escape}');
 
-    // admin-user -- should see Remove Admin
     dialog = await openManage(user, 'admin@league.com');
     expect(within(dialog).getByRole('button', { name: 'Remove Admin' })).toBeInTheDocument();
   });
 
-  it('hides Admin/Moderator management buttons when not SuperAdmin', async () => {
+  it('hides Admin/Moderator role actions when not SuperAdmin', async () => {
     const user = userEvent.setup();
     setupMocks({ isSuperAdmin: false });
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('admin@league.com')).toBeInTheDocument(); });
+    await renderLoaded();
 
-    const dialog = await openManage(user, 'request@league.com');
-
-    // Non-SuperAdmin should NOT see admin/moderator management buttons
+    const dialog = await openManage(user, 'plain@league.com');
     expect(within(dialog).queryByRole('button', { name: 'Make Moderator' })).not.toBeInTheDocument();
     expect(within(dialog).queryByRole('button', { name: 'Make Admin' })).not.toBeInTheDocument();
-    expect(within(dialog).queryByRole('button', { name: 'Remove Admin' })).not.toBeInTheDocument();
-    expect(within(dialog).queryByRole('button', { name: 'Remove Moderator' })).not.toBeInTheDocument();
-
-    // But still sees the account action
+    expect(within(dialog).getByRole('button', { name: 'Make Wrestler' })).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Disable' })).toBeInTheDocument();
   });
 
-  it('deletes a disabled user after confirming', async () => {
+  it('deletes one disabled user after confirming', async () => {
     const user = userEvent.setup();
     setupMocks();
     mockUsersApi.deleteUser.mockResolvedValue(undefined);
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('disabled@league.com')).toBeInTheDocument(); });
+    await renderLoaded();
 
     const manageDialog = await openManage(user, 'disabled@league.com');
     await user.click(within(manageDialog).getByRole('button', { name: 'Delete' }));
-
     const confirmDialog = await screen.findByRole('dialog', { name: 'Delete user' });
     await user.click(within(confirmDialog).getByRole('button', { name: 'Delete' }));
 
-    await waitFor(() => { expect(mockUsersApi.deleteUser).toHaveBeenCalledTimes(1); });
+    await waitFor(() => { expect(mockUsersApi.deleteUser).toHaveBeenCalledWith('disabled-user'); });
     await waitFor(() => { expect(screen.queryByText('disabled@league.com')).not.toBeInTheDocument(); });
-  });
-
-  it('marks a linked player with no wrestler as hidden', async () => {
-    setupMocks();
-    renderComponent();
-    await waitFor(() => { expect(screen.getByText('nowrestler@league.com')).toBeInTheDocument(); });
-
-    const row = screen.getByText('nowrestler@league.com').closest('tr')!;
-    expect(within(row).getByText('Hidden')).toBeInTheDocument();
-    const assigned = screen.getByText('wrestler@league.com').closest('tr')!;
-    expect(within(assigned).queryByText('Hidden')).not.toBeInTheDocument();
   });
 });

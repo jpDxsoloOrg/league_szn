@@ -11,12 +11,14 @@ export interface ConfirmModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   busy?: boolean;
+  /** Keeps the confirm button off, e.g. until a typed confirmation matches. */
+  confirmDisabled?: boolean;
   /** Detail shown under the message. */
   children?: ReactNode;
 }
 
 /** Yes or no question before a destructive action. */
-export default function ConfirmModal({ open, title, message, confirmLabel, onConfirm, onCancel, busy = false, children }: ConfirmModalProps) {
+export default function ConfirmModal({ open, title, message, confirmLabel, onConfirm, onCancel, busy = false, confirmDisabled = false, children }: ConfirmModalProps) {
   const { t } = useTranslation();
 
   return (
@@ -28,7 +30,7 @@ export default function ConfirmModal({ open, title, message, confirmLabel, onCon
       footer={(
         <>
           <Button variant="ghost" onClick={onCancel} disabled={busy}>{t('common.cancel', 'Cancel')}</Button>
-          <Button variant="danger" onClick={onConfirm} loading={busy}>{confirmLabel}</Button>
+          <Button variant="danger" onClick={onConfirm} loading={busy} disabled={confirmDisabled}>{confirmLabel}</Button>
         </>
       )}
     >

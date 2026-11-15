@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import Button from './Button';
 import Select from './Select';
 import Skeleton from './Skeleton';
 import './DataTable.css';
@@ -16,6 +17,13 @@ export interface DataTableColumn<Row> {
   sortValue?: (row: Row) => string | number;
   /** Leaves the column out of the phone card layout. */
   hideOnMobile?: boolean;
+}
+
+export interface DataTablePagination {
+  /** Zero-based page shown. Clamped to the last page. */
+  page: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
 }
 
 export interface DataTableProps<Row> {
@@ -32,6 +40,8 @@ export interface DataTableProps<Row> {
   /** Shown in place of the table when there are no rows. */
   empty?: ReactNode;
   className?: string;
+  /** Shows one page at a time, after sorting, with a pager under the table. */
+  pagination?: DataTablePagination;
 }
 
 interface SortState {
@@ -49,7 +59,7 @@ function compareValues(first: string | number, second: string | number): number 
  * column headers as labels, so keep public tables to about six columns. The
  * header row is not on screen there, so a Select takes over sorting.
  */
-export default function DataTable<Row>({ columns, rows, rowLimit, rowKey, caption, density = 'default', loading = false, empty, className = '' }: DataTableProps<Row>) {
+export default function DataTable<Row>({ columns, rows, rowLimit, rowKey, caption, density = 'default', loading = false, empty, className = '', pagination }: DataTableProps<Row>) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [sort, setSort] = useState<SortState | null>(null);
@@ -64,9 +74,15 @@ export default function DataTable<Row>({ columns, rows, rowLimit, rowKey, captio
   if (loading) return <Skeleton variant="table" className={className} />;
   if (rows.length === 0 && empty) return <>{empty}</>;
 
-  const shownRows = rowLimit === undefined ? sortedRows : sortedRows.slice(0, rowLimit);
+  const pageCount = pagination ? Math.max(1, Math.ceil(sortedRows.length / pagination.pageSize)) : 1;
+  const page = pagination ? Math.min(Math.max(pagination.page, 0), pageCount - 1) : 0;
+  const pageStart = pagination ? page * pagination.pageSize : 0;
+  const limitedRows = rowLimit === undefined ? sortedRows : sortedRows.slice(0, rowLimit);
+  const shownRows = pagination ? limitedRows.slice(pageStart, pageStart + pagination.pageSize) : limitedRows;
 
   const toggleSort = (key: string) => {
+    // A new order starts from its first page.
+    pagination?.onPageChange(0);
     setSort((previous) => ({
       key,
       direction: previous?.key === key && previous.direction === 'ascending' ? 'descending' : 'ascending',
@@ -81,6 +97,7 @@ export default function DataTable<Row>({ columns, rows, rowLimit, rowKey, captio
   ]);
 
   const applySort = (value: string) => {
+    pagination?.onPageChange(0);
     const separator = value.lastIndexOf(':');
     if (separator < 0) {
       setSort(null);
@@ -143,6 +160,26 @@ export default function DataTable<Row>({ columns, rows, rowLimit, rowKey, captio
           ))}
         </tbody>
       </table>
+      {pagination && pageCount > 1 && (
+        <nav className="ui-table__pager" aria-label={t('common.pagination', 'Pages')}>
+          <Button variant="ghost" size="sm" disabled={page === 0} onClick={() => pagination.onPageChange(page - 1)}>
+            {t('common.previous', 'Previous')}
+          </Button>
+          <span className="ui-table__pager-status" aria-live="polite">
+            {t('common.pageStatus', {
+              defaultValue: 'Page {{page}} of {{pages}} · {{from}}–{{to}} of {{total}}',
+              page: page + 1,
+              pages: pageCount,
+              from: pageStart + 1,
+              to: pageStart + shownRows.length,
+              total: limitedRows.length,
+            })}
+          </span>
+          <Button variant="ghost" size="sm" disabled={page >= pageCount - 1} onClick={() => pagination.onPageChange(page + 1)}>
+            {t('common.next', 'Next')}
+          </Button>
+        </nav>
+      )}
     </div>
   );
 }
