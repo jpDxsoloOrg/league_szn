@@ -57,7 +57,6 @@ export const usersApi = {
     granted: number;
     revoked: number;
     unchanged: number;
-    skipped: number;
   }> => {
     return fetchWithAuth(`${API_BASE_URL}/admin/users/sync-roles`, {
       method: 'POST',

@@ -147,7 +147,7 @@ describe('ManageUsers', () => {
     const user = userEvent.setup();
     setupMocks();
     mockUsersApi.syncRoles.mockResolvedValue({
-      message: 'ok', totalPlayers: 12, granted: 9, revoked: 3, unchanged: 0, skipped: 0,
+      message: 'ok', totalPlayers: 12, granted: 9, revoked: 3, unchanged: 0,
     });
 
     renderComponent();

@@ -2831,7 +2831,6 @@
       "divisionError": "Failed to update division",
       "wrestlerError": "Failed to assign wrestler",
       "syncResult": "Synced {{total}} players — {{granted}} shown, {{revoked}} hidden, {{unchanged}} unchanged",
-      "syncSkipped": "{{count}} skipped",
       "syncError": "Failed to sync wrestler roles",
       "roleError": "Failed to update role",
       "statusError": "Failed to update user status",

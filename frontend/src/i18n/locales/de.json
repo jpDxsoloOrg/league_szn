@@ -2785,7 +2785,6 @@
       "divisionError": "Division konnte nicht aktualisiert werden",
       "wrestlerError": "Wrestler konnte nicht zugewiesen werden",
       "syncResult": "{{total}} Spieler synchronisiert: {{granted}} sichtbar, {{revoked}} ausgeblendet, {{unchanged}} unverändert",
-      "syncSkipped": "{{count}} übersprungen",
       "syncError": "Wrestler-Rollen konnten nicht synchronisiert werden",
       "roleError": "Rolle konnte nicht aktualisiert werden",
       "statusError": "Benutzerstatus konnte nicht aktualisiert werden",

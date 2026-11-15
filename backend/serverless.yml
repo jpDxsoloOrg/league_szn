@@ -273,6 +273,8 @@ functions:
   # User Management (Phase 3 consolidated: listUsers, updateUserRole, toggleUserEnabled)
   users:
     handler: functions/users/handler.handler
+    # Lists the whole Cognito pool (hundreds of users); the 6s default is too tight.
+    timeout: 29
     events:
       - http:
           path: admin/users
