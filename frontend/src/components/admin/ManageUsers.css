@@ -4,8 +4,37 @@
   gap: 0.5rem;
 }
 
-.users-table .ar-input {
-  min-width: 10rem;
+/* Bulk bar: what is selected on the left, what to do with it on the right. */
+.users-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+}
+
+.users-bulk__selection,
+.users-bulk__actions,
+.users-bulk__role {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.users-bulk__role .ar-input {
+  width: auto;
+  min-width: 8.5rem;
+}
+
+.users-select {
+  width: 1.125rem;
+  height: 1.125rem;
+  cursor: pointer;
 }
 
 @media (max-width: 768px) {
@@ -13,19 +42,18 @@
     flex: 1 1 100%;
   }
 
-  /* Selects need the card's full width, so their label sits above them. */
-  .users-table .ui-table td:has(select) {
-    flex-wrap: wrap;
-    gap: 0.25rem;
+  .users-bulk,
+  .users-bulk__actions {
+    align-items: stretch;
   }
 
-  .users-table .ar-stack:has(select) {
+  .users-bulk__actions > .ui-btn,
+  .users-bulk__role {
     flex: 1 1 100%;
   }
 
-  .users-table .ar-input {
+  .users-bulk__role .ar-input {
     flex: 1 1 100%;
-    min-width: 0;
   }
 }
 

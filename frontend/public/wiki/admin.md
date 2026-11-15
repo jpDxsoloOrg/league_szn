@@ -12,7 +12,7 @@ Use the links below to open each part of the admin guide.
 
 - [Quickstart](admin-quickstart) — Get your league running from scratch
 - [Match Config](admin-match-config) — Manage match types and stipulations used in scheduling
-- [User Management](admin-user-management) — Roles, Moderator versus Admin, wrestlers and divisions per account
+- [User Management](admin-user-management) — Roles, Moderator versus Admin, and bulk changes to accounts
 - [Divisions](admin-divisions) — Create and manage divisions, assign players
 - [Manage Players](admin-manage-players) — Edit players, find hidden players, remove players
 - [Seasons](admin-seasons) — Create, end, and delete seasons; season standings

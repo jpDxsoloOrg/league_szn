@@ -13,7 +13,7 @@ Hidden players stay out of this table too. When there are any, a **Show hidden**
 To bring a hidden player back:
 
 - The player enters a wrestler name themselves. The site prompts them to do this when they sign in, and they appear as soon as they save.
-- Or staff assign a wrestler, either here under **Edit** or in the **Assigned Wrestler** column of [User Management](admin-user-management).
+- Or staff assign a wrestler here under **Edit**.
 
 ## Strikes
 

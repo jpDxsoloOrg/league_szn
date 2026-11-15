@@ -27,10 +27,7 @@ Auf der Seite **Divisionen** gruppierst du Spieler nach Gewichtsklasse, Position
 
 ## Spieler Divisionen zuweisen
 
-Wechsel zwischen Divisionen nimmt das Team vor. Dafür gibt es zwei Stellen:
-
-- Klicke unter **Spieler verwalten** bei einem Spieler auf **Bearbeiten**, wähle eine **Division** oder **Keine Division** und klicke auf **Spieler aktualisieren**
-- Nutze in der **Benutzerverwaltung** die Auswahl **Division** in der Zeile; sie speichert sofort
+Wechsel zwischen Divisionen nimmt das Team vor. Klicke unter **Spieler verwalten** bei einem Spieler auf **Bearbeiten**, wähle eine **Division** oder **Keine Division** und klicke auf **Spieler aktualisieren**.
 
 Neue Registrierungen landen in einer Division namens „Young Boys“, falls deine Liga eine hat. Sonst starten sie ohne Division.
 

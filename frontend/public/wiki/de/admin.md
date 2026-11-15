@@ -12,7 +12,7 @@ Zwei Aufgaben liegen außerhalb des Admin-Bereichs. Events werden im Bereich **E
 
 - [Schnellstart](admin-quickstart) — Deine Liga von Grund auf einrichten
 - [Match-Konfiguration](admin-match-config) — Match-Typen und Stipulationen für die Planung verwalten
-- [Benutzerverwaltung](admin-user-management) — Rollen, Moderator und Admin im Vergleich, Wrestler und Divisionen pro Konto
+- [Benutzerverwaltung](admin-user-management) — Rollen, Moderator und Admin im Vergleich und Massenänderungen an Konten
 - [Divisionen](admin-divisions) — Divisionen erstellen und verwalten, Spieler zuweisen
 - [Spieler verwalten](admin-manage-players) — Spieler bearbeiten, ausgeblendete Spieler finden, Spieler entfernen
 - [Saisons](admin-seasons) — Saisons erstellen, beenden und löschen; Saisontabellen

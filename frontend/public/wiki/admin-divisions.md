@@ -27,10 +27,7 @@ The **Divisions** page lets you group players by weight class, card position, or
 
 ## Assigning Players to Divisions
 
-Division moves are made by staff. There are two places to do it:
-
-- In **Manage Players**, click **Edit** on a player, choose a **Division** or **No Division**, and click **Update Player**
-- In **User Management**, use the **Division** dropdown on a row, which saves straight away
+Division moves are made by staff. In **Manage Players**, click **Edit** on a player, choose a **Division** or **No Division**, and click **Update Player**.
 
 New sign-ups go into a division named "Young Boys" if your league has one. Otherwise they start with no division.
 

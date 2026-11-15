@@ -13,7 +13,7 @@ Ausgeblendete Spieler fehlen auch in dieser Tabelle. Gibt es welche, erscheint d
 So holst du einen ausgeblendeten Spieler zurück:
 
 - Der Spieler gibt selbst einen Wrestler-Namen ein. Die Seite fordert ihn nach der Anmeldung dazu auf, und er erscheint, sobald er speichert.
-- Oder das Team weist einen Wrestler zu, hier über **Bearbeiten** oder in der Spalte **Zugewiesener Wrestler** der [Benutzerverwaltung](admin-user-management).
+- Oder das Team weist einen Wrestler hier über **Bearbeiten** zu.
 
 ## Strikes
 
