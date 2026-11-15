@@ -16,7 +16,7 @@ Die Divisionen bekommen eine Leiter. Zeit, nach oben zu klettern.
 
 Das Laufband unten am Bildschirm wird schlauer.
 
-- **Mehr Live-Segmente.** Mögliche Call-Ups, Spieler auf Promotion watch, neue Champions, die Shows von heute Abend, der Countdown zum nächsten PPV und die heißesten Rivalitäten.
+- **Mehr Live-Segmente.** Spieler auf Promotion watch, neue Champions, die Shows von heute Abend, der Countdown zum nächsten PPV und die heißesten Rivalitäten.
 - **Nachrichten von den GMs.** GMs können kurze Ticker-Meldungen posten, etwa „Draft Night diesen Freitag!“, die bis zu ihrem Ablauf laufen. Breaking-News-Ankündigungen können auch direkt in den Ticker.
 - **Leichter zu lesen.** Er pausiert, wenn du mit der Maus darüberfährst, blendet sanft über statt zu scrollen, wenn dein Gerät auf reduzierte Bewegung eingestellt ist, und du kannst ihn für den Rest deines Besuchs ausblenden.
 - **Liga-Einstellungen.** Die GMs können auswählen, welche Segmente laufen, und den Ticker ein- oder ausschalten.
