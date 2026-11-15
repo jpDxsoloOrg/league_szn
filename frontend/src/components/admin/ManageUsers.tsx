@@ -173,11 +173,7 @@ export default function ManageUsers() {
         revoked: result.revoked,
         unchanged: result.unchanged,
       });
-      setSyncResult(
-        result.skipped > 0
-          ? `${summary}, ${t('adminRoster.users.syncSkipped', { defaultValue: '{{count}} skipped', count: result.skipped })}`
-          : summary,
-      );
+      setSyncResult(summary);
       await fetchData();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('adminRoster.users.syncError', 'Failed to sync wrestler roles'));

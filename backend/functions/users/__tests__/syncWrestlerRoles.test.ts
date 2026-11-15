@@ -18,7 +18,8 @@ vi.mock('../../../lib/repositories', () => ({
 vi.mock('@aws-sdk/client-cognito-identity-provider', () => ({
   CognitoIdentityProviderClient: vi.fn(() => ({ send: mockSend })),
   ListUsersCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'ListUsers', ...p })),
-  AdminListGroupsForUserCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'AdminListGroups', ...p })),
+  ListGroupsCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'ListGroups', ...p })),
+  ListUsersInGroupCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'ListUsersInGroup', ...p })),
 }));
 
 import { handler as syncWrestlerRoles } from '../syncWrestlerRoles';
@@ -46,26 +47,33 @@ function makeEvent(groups = 'Admin'): APIGatewayProxyEvent {
 const body = (r: Awaited<ReturnType<typeof syncWrestlerRoles>>) =>
   JSON.parse((r as { body: string }).body);
 
-/** One ListUsers page, then one AdminListGroups reply per user, in order. */
+/** Answers Cognito by command type: the pool's users, then each group's members. */
 function mockCognito(
   users: Array<{ username: string; sub: string; groups: string[] }>,
 ) {
-  mockSend.mockResolvedValueOnce({
-    Users: users.map((u) => ({
-      Username: u.username,
-      Attributes: [{ Name: 'sub', Value: u.sub }],
-    })),
+  const groupNames = [...new Set(users.flatMap((u) => u.groups))];
+  mockSend.mockImplementation(async (command: { _type: string; GroupName?: string }) => {
+    switch (command._type) {
+      case 'ListUsers':
+        return {
+          Users: users.map((u) => ({ Username: u.username, Attributes: [{ Name: 'sub', Value: u.sub }] })),
+        };
+      case 'ListGroups':
+        return { Groups: groupNames.map((GroupName) => ({ GroupName })) };
+      case 'ListUsersInGroup':
+        return {
+          Users: users.filter((u) => u.groups.includes(command.GroupName ?? '')).map((u) => ({ Username: u.username })),
+        };
+      default:
+        throw new Error(`unexpected command ${command._type}`);
+    }
   });
-  for (const u of users) {
-    mockSend.mockResolvedValueOnce({
-      Groups: u.groups.map((g) => ({ GroupName: g })),
-    });
-  }
 }
 
 describe('syncWrestlerRoles', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSend.mockReset();
     mockPlayersUpdate.mockResolvedValue({});
   });
 
@@ -116,31 +124,38 @@ describe('syncWrestlerRoles', () => {
     expect(body(result)).toMatchObject({ unchanged: 1, granted: 0, revoked: 0 });
   });
 
-  it('skips a player whose group lookup failed rather than demoting them', async () => {
-    mockSend.mockResolvedValueOnce({
-      Users: [{ Username: 'wrestler', Attributes: [{ Name: 'sub', Value: 'sub-w' }] }],
+  it('writes nothing when a group listing fails, so nobody is demoted on a partial read', async () => {
+    mockCognito([{ username: 'wrestler', sub: 'sub-w', groups: ['Wrestler'] }]);
+    mockSend.mockImplementation(async (command: { _type: string }) => {
+      if (command._type === 'ListUsersInGroup') throw new Error('throttled');
+      if (command._type === 'ListGroups') return { Groups: [{ GroupName: 'Wrestler' }] };
+      return { Users: [{ Username: 'wrestler', Attributes: [{ Name: 'sub', Value: 'sub-w' }] }] };
     });
-    mockSend.mockRejectedValueOnce(new Error('throttled'));
     mockPlayersList.mockResolvedValue([
       { playerId: 'p-w', userId: 'sub-w', hasWrestlerRole: true },
     ]);
 
     const result = await syncWrestlerRoles(makeEvent(), ctx, cb);
 
-    expect(result!.statusCode).toBe(200);
+    expect(result!.statusCode).toBe(500);
     expect(mockPlayersUpdate).not.toHaveBeenCalled();
-    expect(body(result)).toMatchObject({ skipped: 1 });
   });
 
-  it('follows Cognito pagination', async () => {
-    mockSend.mockResolvedValueOnce({
-      Users: [{ Username: 'a', Attributes: [{ Name: 'sub', Value: 'sub-a' }] }],
-      PaginationToken: 'next',
+  it('follows Cognito pagination for users and group members', async () => {
+    mockSend.mockImplementation(async (command: { _type: string; PaginationToken?: string; NextToken?: string }) => {
+      switch (command._type) {
+        case 'ListUsers':
+          return command.PaginationToken
+            ? { Users: [{ Username: 'b', Attributes: [{ Name: 'sub', Value: 'sub-b' }] }] }
+            : { Users: [{ Username: 'a', Attributes: [{ Name: 'sub', Value: 'sub-a' }] }], PaginationToken: 'next' };
+        case 'ListGroups':
+          return { Groups: [{ GroupName: 'Wrestler' }] };
+        case 'ListUsersInGroup':
+          return command.NextToken ? { Users: [{ Username: 'b' }] } : { Users: [{ Username: 'a' }], NextToken: 'more' };
+        default:
+          throw new Error(`unexpected command ${command._type}`);
+      }
     });
-    mockSend.mockResolvedValueOnce({
-      Users: [{ Username: 'b', Attributes: [{ Name: 'sub', Value: 'sub-b' }] }],
-    });
-    mockSend.mockResolvedValue({ Groups: [{ GroupName: 'Wrestler' }] });
     mockPlayersList.mockResolvedValue([
       { playerId: 'p-a', userId: 'sub-a' },
       { playerId: 'p-b', userId: 'sub-b' },
@@ -150,10 +165,11 @@ describe('syncWrestlerRoles', () => {
 
     expect(result!.statusCode).toBe(200);
     expect(body(result)).toMatchObject({ granted: 2 });
+    expect(body(result)).not.toHaveProperty('skipped');
   });
 
   it('returns 500 when Cognito fails', async () => {
-    mockSend.mockRejectedValueOnce(new Error('Cognito down'));
+    mockSend.mockRejectedValue(new Error('Cognito down'));
 
     const result = await syncWrestlerRoles(makeEvent(), ctx, cb);
 

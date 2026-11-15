@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Hoisted mocks ──────────────────────────────────────────────────
@@ -35,6 +35,8 @@ vi.mock('uuid', () => ({ v4: () => 'test-uuid-1234' }));
 vi.mock('@aws-sdk/client-cognito-identity-provider', () => ({
   CognitoIdentityProviderClient: vi.fn(() => ({ send: mockSend })),
   ListUsersCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'ListUsers', ...p })),
+  ListGroupsCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'ListGroups', ...p })),
+  ListUsersInGroupCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'ListUsersInGroup', ...p })),
   AdminListGroupsForUserCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'AdminListGroups', ...p })),
   AdminEnableUserCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'AdminEnable', ...p })),
   AdminDisableUserCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'AdminDisable', ...p })),
@@ -76,11 +78,42 @@ const body = (r: unknown) => JSON.parse((r as { body: string })!.body);
 
 // ─── listUsers ──────────────────────────────────────────────────────
 
+interface DirectoryUser {
+  Username: string;
+  Attributes?: Array<{ Name: string; Value: string }>;
+  Enabled?: boolean;
+  UserStatus?: string;
+  UserCreateDate?: Date;
+}
+
+/**
+ * Answers Cognito by command type: the pool's users for ListUsers, the group
+ * names for ListGroups, and each group's members for ListUsersInGroup.
+ */
+function mockDirectory(users: DirectoryUser[], members: Record<string, string[]>) {
+  mockSend.mockImplementation(async (command: { _type: string; GroupName?: string }) => {
+    switch (command._type) {
+      case 'ListUsers':
+        return { Users: users };
+      case 'ListGroups':
+        return { Groups: Object.keys(members).map((GroupName) => ({ GroupName })) };
+      case 'ListUsersInGroup':
+        return { Users: (members[command.GroupName ?? ''] ?? []).map((Username) => ({ Username })) };
+      default:
+        throw new Error(`unexpected command ${command._type}`);
+    }
+  });
+}
+
+const sentTypes = () => mockSend.mock.calls.map(([command]) => (command as { _type: string })._type);
+
 describe('listUsers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSend.mockReset();
     mockPlayersList.mockResolvedValue([]);
   });
+  afterEach(() => mockSend.mockReset());
 
   it('returns 403 if caller is not Admin', async () => {
     const result = await listUsers(withAuth(makeEvent(), 'Wrestler'), ctx, cb);
@@ -89,20 +122,16 @@ describe('listUsers', () => {
 
   it('returns formatted user list with groups for Admin', async () => {
     const created = new Date('2024-01-15T00:00:00Z');
-    mockSend
-      .mockResolvedValueOnce({
-        Users: [{
-          Username: 'john',
-          Attributes: [
-            { Name: 'sub', Value: 'sub-1' },
-            { Name: 'email', Value: 'john@test.com' },
-            { Name: 'name', Value: 'John Doe' },
-            { Name: 'custom:wrestler_name', Value: 'The Rock' },
-          ],
-          UserStatus: 'CONFIRMED', Enabled: true, UserCreateDate: created,
-        }],
-      })
-      .mockResolvedValueOnce({ Groups: [{ GroupName: 'Wrestler' }] });
+    mockDirectory([{
+      Username: 'john',
+      Attributes: [
+        { Name: 'sub', Value: 'sub-1' },
+        { Name: 'email', Value: 'john@test.com' },
+        { Name: 'name', Value: 'John Doe' },
+        { Name: 'custom:wrestler_name', Value: 'The Rock' },
+      ],
+      UserStatus: 'CONFIRMED', Enabled: true, UserCreateDate: created,
+    }], { Wrestler: ['john'] });
 
     const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
 
@@ -117,11 +146,65 @@ describe('listUsers', () => {
     expect(b.users[0].created).toBe(created.toISOString());
   });
 
+  it('reads groups from each group member list, never one call per user', async () => {
+    const users = Array.from({ length: 50 }, (_, index) => ({ Username: `user-${index}`, Enabled: true }));
+    mockDirectory(users, { Admin: ['user-0'], Moderator: ['user-0', 'user-1'], Wrestler: ['user-0', 'user-2'] });
+
+    const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const groupsOf = (username: string) =>
+      body(result).users.find((user: { username: string }) => user.username === username).groups;
+    expect(groupsOf('user-0')).toEqual(['Admin', 'Moderator', 'Wrestler']);
+    expect(groupsOf('user-1')).toEqual(['Moderator']);
+    expect(groupsOf('user-3')).toEqual([]);
+    expect(sentTypes()).not.toContain('AdminListGroups');
+    expect(sentTypes().filter((type) => type === 'ListUsersInGroup')).toHaveLength(3);
+  });
+
+  it('follows pagination for users and for group members', async () => {
+    mockSend.mockImplementation(async (command: { _type: string; PaginationToken?: string; NextToken?: string }) => {
+      switch (command._type) {
+        case 'ListUsers':
+          return command.PaginationToken
+            ? { Users: [{ Username: 'b' }] }
+            : { Users: [{ Username: 'a' }], PaginationToken: 'users-2' };
+        case 'ListGroups':
+          return { Groups: [{ GroupName: 'Wrestler' }] };
+        case 'ListUsersInGroup':
+          return command.NextToken
+            ? { Users: [{ Username: 'b' }] }
+            : { Users: [{ Username: 'a' }], NextToken: 'members-2' };
+        default:
+          throw new Error(`unexpected command ${command._type}`);
+      }
+    });
+
+    const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
+
+    expect(body(result).users.map((user: { username: string; groups: string[] }) => [user.username, user.groups])).toEqual([
+      ['a', ['Wrestler']],
+      ['b', ['Wrestler']],
+    ]);
+  });
+
   it('returns 500 on Cognito error', async () => {
-    mockSend.mockRejectedValueOnce(new Error('Cognito down'));
+    mockSend.mockRejectedValue(new Error('Cognito down'));
     const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
     expect(result!.statusCode).toBe(500);
     expect(body(result).message).toBe('Failed to list users');
+  });
+
+  it('returns 500 rather than users with missing roles when a group listing fails', async () => {
+    mockDirectory([{ Username: 'jane', Enabled: true }], { Wrestler: ['jane'] });
+    const directory = mockSend.getMockImplementation()!;
+    mockSend.mockImplementation(async (command: { _type: string }) => {
+      if (command._type === 'ListUsersInGroup') throw new Error('throttled');
+      return directory(command);
+    });
+
+    const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
+    expect(result!.statusCode).toBe(500);
   });
 
   it('links the player record even when it has no wrestler assigned', async () => {
@@ -129,15 +212,7 @@ describe('listUsers', () => {
       { playerId: 'pl-1', userId: 'sub-1', currentWrestler: '', currentWrestlerId: undefined, divisionId: undefined },
       { playerId: 'pl-2', userId: 'other-sub', currentWrestler: 'The Rock' },
     ]);
-    mockSend
-      .mockResolvedValueOnce({
-        Users: [{
-          Username: 'john',
-          Attributes: [{ Name: 'sub', Value: 'sub-1' }],
-          Enabled: true,
-        }],
-      })
-      .mockResolvedValueOnce({ Groups: [{ GroupName: 'Wrestler' }] });
+    mockDirectory([{ Username: 'john', Attributes: [{ Name: 'sub', Value: 'sub-1' }], Enabled: true }], { Wrestler: ['john'] });
 
     const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
 
@@ -151,15 +226,7 @@ describe('listUsers', () => {
     mockPlayersList.mockResolvedValue([
       { playerId: 'pl-2', userId: 'other-sub', currentWrestler: 'The Rock' },
     ]);
-    mockSend
-      .mockResolvedValueOnce({
-        Users: [{
-          Username: 'john',
-          Attributes: [{ Name: 'sub', Value: 'sub-1' }],
-          Enabled: true,
-        }],
-      })
-      .mockResolvedValueOnce({ Groups: [] });
+    mockDirectory([{ Username: 'john', Attributes: [{ Name: 'sub', Value: 'sub-1' }], Enabled: true }], {});
 
     const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
 
@@ -169,26 +236,12 @@ describe('listUsers', () => {
 
   it('still returns users when the player lookup fails', async () => {
     mockPlayersList.mockRejectedValue(new Error('dynamo down'));
-    mockSend
-      .mockResolvedValueOnce({
-        Users: [{ Username: 'john', Attributes: [{ Name: 'sub', Value: 'sub-1' }], Enabled: true }],
-      })
-      .mockResolvedValueOnce({ Groups: [] });
+    mockDirectory([{ Username: 'john', Attributes: [{ Name: 'sub', Value: 'sub-1' }], Enabled: true }], {});
 
     const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     expect(body(result).users[0].player).toBeNull();
-  });
-
-  it('handles group fetch failure per user gracefully', async () => {
-    mockSend
-      .mockResolvedValueOnce({ Users: [{ Username: 'jane', Attributes: [], Enabled: true }] })
-      .mockRejectedValueOnce(new Error('group fetch failed'));
-
-    const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
-    expect(result!.statusCode).toBe(200);
-    expect(body(result).users[0].groups).toEqual([]);
   });
 });
 

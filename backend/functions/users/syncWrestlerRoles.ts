@@ -1,13 +1,9 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import {
-  CognitoIdentityProviderClient,
-  ListUsersCommand,
-  AdminListGroupsForUserCommand,
-} from '@aws-sdk/client-cognito-identity-provider';
-import type { UserType } from '@aws-sdk/client-cognito-identity-provider';
+import { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
 import { success, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 import { getRepositories } from '../../lib/repositories';
+import { listAllUsers, listGroupsByUsername } from '../../lib/cognitoDirectory';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
@@ -25,6 +21,8 @@ const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
  *   - linked user not in the group       -> false
  *   - no linked Cognito account at all   -> false
  *
+ * Group membership comes from each group's member list, and a Cognito error
+ * fails the whole run before any write, so nobody is demoted on a partial read.
  * Safe to re-run; only players whose flag actually changes are written.
  */
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -32,40 +30,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   if (denied) return denied;
 
   try {
-    const allCognitoUsers: UserType[] = [];
-    let paginationToken: string | undefined;
-
-    do {
-      const result = await cognitoClient.send(
-        new ListUsersCommand({
-          UserPoolId: USER_POOL_ID,
-          Limit: 60,
-          ...(paginationToken ? { PaginationToken: paginationToken } : {}),
-        })
-      );
-      allCognitoUsers.push(...(result.Users || []));
-      paginationToken = result.PaginationToken;
-    } while (paginationToken);
+    const [allCognitoUsers, groupsByUsername] = await Promise.all([
+      listAllUsers(cognitoClient, USER_POOL_ID),
+      listGroupsByUsername(cognitoClient, USER_POOL_ID),
+    ]);
 
     // sub -> is in the Wrestler group
     const wrestlerBySub = new Map<string, boolean>();
     for (const user of allCognitoUsers) {
       const sub = (user.Attributes || []).find((a) => a.Name === 'sub')?.Value;
-      if (!sub) continue;
-      try {
-        const groupsResult = await cognitoClient.send(
-          new AdminListGroupsForUserCommand({
-            UserPoolId: USER_POOL_ID,
-            Username: user.Username!,
-          })
-        );
-        const groups = (groupsResult.Groups || []).map((g) => g.GroupName);
-        wrestlerBySub.set(sub, groups.includes('Wrestler'));
-      } catch (err) {
-        // A group lookup failure must not demote a real wrestler, so skip the
-        // user entirely and leave their existing flag alone.
-        console.error(`Failed to read groups for ${user.Username}:`, err);
-      }
+      if (!sub || !user.Username) continue;
+      wrestlerBySub.set(sub, (groupsByUsername.get(user.Username) ?? []).includes('Wrestler'));
     }
 
     const { roster: { players } } = getRepositories();
@@ -74,23 +49,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     let granted = 0;
     let revoked = 0;
     let unchanged = 0;
-    let skipped = 0;
 
     for (const player of allPlayers) {
-      // Linked to a user whose groups we could not read — leave as-is rather
-      // than guessing.
-      if (player.userId && !wrestlerBySub.has(player.userId)) {
-        const known = allCognitoUsers.some((u) =>
-          (u.Attributes || []).some(
-            (a) => a.Name === 'sub' && a.Value === player.userId
-          )
-        );
-        if (known) {
-          skipped++;
-          continue;
-        }
-      }
-
       // No linked account, or a linked account without the group -> false.
       const shouldBeWrestler = player.userId
         ? wrestlerBySub.get(player.userId) === true
@@ -115,7 +75,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       granted,
       revoked,
       unchanged,
-      skipped,
     });
   } catch (error) {
     console.error('Sync wrestler roles error:', error);
