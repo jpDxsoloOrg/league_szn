@@ -136,17 +136,19 @@ describe('search index', () => {
 
     const moderator = toPageEntries({ ...visitor, isAuthenticated: true, isAdminOrModerator: true }, t).map((entry) => entry.to);
     expect(moderator).toContain('/admin/players');
-    expect(moderator).not.toContain('/admin/users');
+    expect(moderator).not.toContain('/admin/features');
 
     const admin = toPageEntries({ ...visitor, isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: true }, t).map((entry) => entry.to);
-    expect(admin).toContain('/admin/users');
+    expect(admin).toContain('/admin/features');
     expect(admin).toContain('/admin/transfers');
+    // Hidden from the menu, so not offered in search either.
+    expect(admin).not.toContain('/admin/users');
 
     const noTransfers = toPageEntries(
       { ...visitor, features: { ...FEATURES, transfers: false }, isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: true },
       t,
     ).map((entry) => entry.to);
-    expect(noTransfers).toContain('/admin/users');
+    expect(noTransfers).toContain('/admin/features');
     expect(noTransfers).not.toContain('/admin/transfers');
   });
 });

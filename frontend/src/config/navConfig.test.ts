@@ -15,6 +15,7 @@ import {
   getSectionLandingPath,
   isAdminTab,
   getVisibleAdminGroups,
+  findAdminEntry,
   getVisibleSections,
   getVisibleTabs,
   type NavContext,
@@ -134,8 +135,18 @@ describe('admin registry', () => {
   it('drops the Transfers page while its feature is off', () => {
     const features = { ...ALL_ON, transfers: false };
     const tabs = getVisibleAdminGroups(true, features).flatMap((group) => group.entries.map((entry) => entry.tab));
-    expect(tabs).toHaveLength(ADMIN_TABS.length - 1);
+    // Transfers is off and User Management is hidden.
+    expect(tabs).toHaveLength(ADMIN_TABS.length - 2);
     expect(tabs).not.toContain('transfers');
+  });
+
+  it('keeps User Management out of the menu but still routed and Admin-only', () => {
+    const tabs = getVisibleAdminGroups(true, ALL_ON).flatMap((group) => group.entries.map((entry) => entry.tab));
+    expect(tabs).not.toContain('users');
+    expect(isAdminTab('users')).toBe(true);
+    const entry = findAdminEntry('users');
+    expect(entry && canAccessAdminEntry(entry, true)).toBe(true);
+    expect(entry && canAccessAdminEntry(entry, false)).toBe(false);
   });
 
   it('no longer registers the Match Card Builder', () => {

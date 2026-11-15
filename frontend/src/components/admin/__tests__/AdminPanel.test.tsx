@@ -197,6 +197,13 @@ describe('AdminPanel', () => {
     expect(screen.getByText('Full Admin Access Required')).toBeInTheDocument();
   });
 
+  it('still opens hidden User Management for an Admin who follows a direct link', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: true });
+
+    renderAdminPanel('/admin/users');
+    expect(await screen.findByTestId('manage-users')).toBeInTheDocument();
+  });
+
   it('keeps Admin-only entries out of a Moderator desktop nav', async () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: false });
 
@@ -210,14 +217,16 @@ describe('AdminPanel', () => {
     expect(hrefs).not.toContain('/admin/danger');
   });
 
-  it('shows every registry entry to an Admin', async () => {
+  it('shows every listed registry entry to an Admin, leaving hidden User Management out', async () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: true });
 
     mockUseSiteConfig.mockReturnValue({ features: { transfers: true }, isLoading: false });
 
     renderAdminPanel('/admin/players');
     const nav = await screen.findByRole('navigation');
-    expect(within(nav).getAllByRole('link')).toHaveLength(ADMIN_TABS.length);
+    const hrefs = within(nav).getAllByRole('link').map((link) => link.getAttribute('href'));
+    expect(hrefs).toHaveLength(ADMIN_TABS.length - 1);
+    expect(hrefs).not.toContain('/admin/users');
   });
 
   it('leaves Transfers out of the nav while the feature is off', async () => {
@@ -226,7 +235,7 @@ describe('AdminPanel', () => {
     renderAdminPanel('/admin/players');
     const nav = await screen.findByRole('navigation');
     const hrefs = within(nav).getAllByRole('link').map((link) => link.getAttribute('href'));
-    expect(hrefs).toHaveLength(ADMIN_TABS.length - 1);
+    expect(hrefs).toHaveLength(ADMIN_TABS.length - 2);
     expect(hrefs).not.toContain('/admin/transfers');
   });
 

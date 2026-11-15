@@ -8,8 +8,7 @@ import { formatCalendarDate } from '../../utils/dateUtils';
 import {
   ADMIN_GROUPS,
   NAV_SECTIONS,
-  canAccessAdminEntry,
-  isAdminEntryEnabled,
+  isAdminEntryListed,
   getAdminPath,
   getVisibleSections,
   getVisibleTabs,
@@ -141,7 +140,7 @@ export function toPageEntries(context: NavContext, t: TranslateFn): SearchEntry[
   if (!context.isAdminOrModerator) return dedupeByPath(pages);
 
   const adminPages = ADMIN_GROUPS.flatMap((group) => group.entries
-    .filter((entry) => canAccessAdminEntry(entry, context.isSuperAdmin) && isAdminEntryEnabled(entry, context.features))
+    .filter((entry) => isAdminEntryListed(entry, context.isSuperAdmin, context.features))
     .map((entry) => ({
       id: `page-${entry.tab}`,
       kind: 'page' as const,
