@@ -176,6 +176,7 @@ provider:
             - cognito-idp:AdminEnableUser
             - cognito-idp:ListUsers
             - cognito-idp:ListUsersInGroup
+            - cognito-idp:ListGroups
           Resource:
             - !GetAtt LeagueUserPool.Arn
         - Effect: Allow
