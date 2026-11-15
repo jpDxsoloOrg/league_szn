@@ -16,7 +16,7 @@ Divisions are getting a ladder. Climb it.
 
 The ticker at the bottom of the screen is getting smarter.
 
-- **More live segments.** Potential call-ups, players on promotion watch, new champions, tonight's shows, the countdown to the next PPV, and the hottest rivalries.
+- **More live segments.** Players on promotion watch, new champions, tonight's shows, the countdown to the next PPV, and the hottest rivalries.
 - **Messages from the GMs.** GMs can post short ticker messages, like "Draft night this Friday!", that run until they expire. Breaking News announcements can go straight to the ticker too.
 - **Easier to read.** It pauses when you hover over it, uses a gentle fade instead of scrolling if your device is set to reduce motion, and you can hide it for the rest of your visit.
 - **League settings.** The GMs can choose which segments run and turn the ticker on or off.

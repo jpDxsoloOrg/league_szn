@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.1.1",
+      "date": "2026-11-15",
+      "title": "Call-Up Watch & League Wire Fixes",
+      "titleDe": "Call-up-Kandidaten & Liga-Ticker: Korrekturen",
+      "file": "v1.1.1.md",
+      "summary": "The Call-up watch badge now shows on the standings podium, players up for a call-up run on the League Wire, and the ticker's results cover only the latest show.",
+      "summaryDe": "Das Abzeichen „Call-up-Kandidat“ erscheint jetzt auch auf dem Podest der Tabelle, Call-up-Kandidaten laufen im Liga-Ticker, und die Ergebnisse im Ticker zeigen nur noch die letzte Show."
+    },
+    {
       "version": "1.1.0",
       "date": "2026-11-12",
       "title": "Tag Team Contenders & Young Boys Call-Ups",
