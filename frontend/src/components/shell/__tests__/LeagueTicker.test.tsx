@@ -51,7 +51,7 @@ const STORY: Announcement = {
   announcementId: 'a1', title: 'Strike system', body: '<p>Body</p>', isActive: true, priority: 3, createdAt: '2026-11-07', updatedAt: '2026-11-07',
 };
 
-const EMPTY: LeaguePulse = { dashboard: null, news: [], upcomingShows: [], recentShows: [] };
+const EMPTY: LeaguePulse = { dashboard: null, news: [], upcomingShows: [], recentShows: [], callUps: [] };
 
 const OLDER_SHOW = {
   eventId: 'e-1',
@@ -106,6 +106,20 @@ describe('buildTickerItems', () => {
       'Warzone Wednesday · Nov 4',
       'Mayhem Monday · Nov 2',
     ]);
+  });
+
+  it('names each player up for a call-up before the champions and results, linking to their profile', () => {
+    const callUps = [
+      { playerId: 'p1', name: 'Kilian', wrestlerName: 'Phoenix Jax', trackId: 't1', markedAt: '2026-11-15T18:46:20Z' },
+      { playerId: 'p2', name: 'DonnieMarco', wrestlerName: '', trackId: 't1', markedAt: '2026-11-15T18:46:06Z' },
+    ];
+    const tWithName = ((key: string, options?: { name?: string }) => (options?.name ? `${key}:${options.name}` : key)) as unknown as TFunction;
+    const items = buildTickerItems({ ...EMPTY, callUps, recentShows: [SHOW] }, tWithName, 'en');
+    expect(items.slice(0, 2)).toEqual([
+      { id: 'callup-p1', tag: 'ticker.tags.callup', tagTone: 'action', text: 'ticker.callupText:Phoenix Jax', to: '/player/p1' },
+      { id: 'callup-p2', tag: 'ticker.tags.callup', tagTone: 'action', text: 'ticker.callupText:DonnieMarco', to: '/player/p2' },
+    ]);
+    expect(items[2]?.id).toBe('results-e0');
   });
 
   it('has no headlines without data', () => {

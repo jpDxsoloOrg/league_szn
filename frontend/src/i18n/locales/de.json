@@ -3644,8 +3644,10 @@
       "upcoming": "Demnächst",
       "news": "News",
       "results": "Ergebnisse",
-      "champion": "Champion"
-    }
+      "champion": "Champion",
+      "callup": "Call-up-Kandidat"
+    },
+    "callupText": "{{name}} ist Kandidat für eine Beförderung in den Hauptkader"
   },
   "shell": {
     "status": {

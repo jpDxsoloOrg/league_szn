@@ -60,8 +60,8 @@ function showResultItems(show: EventWithMatches, t: TFunction, locale?: string):
 
 /**
  * Headlines for the crawl, built only from what the API returned: shows still
- * to come, news, the current champions, then the latest shows' results. Results run newest show
- * first, each show named once and followed by its matches in card order.
+ * to come, news, players up for a call-up, the current champions, then the
+ * last finished show's results: the show named once, then its matches in card order.
  */
 export function buildTickerItems(pulse: LeaguePulse, t: TFunction, locale?: string): TickerItem[] {
   const items: TickerItem[] = [];
@@ -79,6 +79,16 @@ export function buildTickerItems(pulse: LeaguePulse, t: TFunction, locale?: stri
 
   for (const article of pulse.news.slice(0, NEWS_SHOWN)) {
     items.push({ id: `news-${article.announcementId}`, tag: t('ticker.tags.news'), tagTone: 'prestige', text: article.title, to: `/news/${article.announcementId}` });
+  }
+
+  for (const callUp of pulse.callUps) {
+    items.push({
+      id: `callup-${callUp.playerId}`,
+      tag: t('ticker.tags.callup'),
+      tagTone: 'action',
+      text: t('ticker.callupText', { name: callUp.wrestlerName || callUp.name }),
+      to: `/player/${callUp.playerId}`,
+    });
   }
 
   // Before the results, so a long run of results cannot push them past the crawl's limit.

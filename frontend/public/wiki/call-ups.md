@@ -37,7 +37,7 @@ Each milestone is announced once. If your average rating dips and then recovers,
 
 ## Under consideration
 
-When a GM thinks you're getting close, they can mark you as **under consideration** for a call-up. A banner then appears on your profile and a small badge shows next to your name in the standings, so the whole league knows you're one to watch. You'll get a notification, and it shows up in the activity feed.
+When a GM thinks you're getting close, they can mark you as **under consideration** for a call-up. A banner then appears on your profile and a small badge shows next to your name in the standings, and your name runs on the League Wire, so the whole league knows you're one to watch. You'll get a notification, and it shows up in the activity feed.
 
 Being under consideration is a compliment, not a promise. It means the GMs are watching you closely.
 

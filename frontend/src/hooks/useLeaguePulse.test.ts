@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 
-const { mockDashboard, mockNews, mockEvents, mockEvent } = vi.hoisted(() => ({
+const { mockDashboard, mockNews, mockEvents, mockEvent, mockCallUps } = vi.hoisted(() => ({
+  mockCallUps: vi.fn(),
   mockDashboard: vi.fn(),
   mockNews: vi.fn(),
   mockEvents: vi.fn(),
@@ -12,6 +13,7 @@ vi.mock('../services/api', () => ({
   dashboardApi: { get: mockDashboard },
   announcementsApi: { getActive: mockNews },
   eventsApi: { getAll: mockEvents, getById: mockEvent },
+  progressionApi: { getConsiderations: mockCallUps },
 }));
 vi.mock('../utils/deferShellRequest', () => ({ waitForPageRequests: () => Promise.resolve() }));
 
@@ -24,6 +26,7 @@ function show(eventId: string, date: string, status: string) {
 beforeEach(() => {
   resetLeaguePulse();
   mockDashboard.mockReset().mockResolvedValue({ seasonInfo: null });
+  mockCallUps.mockReset().mockResolvedValue([{ playerId: 'p1', name: 'Kilian', wrestlerName: 'Phoenix Jax', trackId: 't1', markedAt: '2026-11-15' }]);
   mockNews.mockReset().mockResolvedValue([{ announcementId: 'a1' }]);
   mockEvents.mockReset().mockResolvedValue([
     show('oldest', '2026-09-01', 'completed'),
@@ -39,32 +42,36 @@ beforeEach(() => {
 });
 
 describe('useLeaguePulse', () => {
-  it('lists upcoming shows soonest first and loads the four latest finished shows, newest first', async () => {
+  it('lists upcoming shows soonest first and loads only the latest finished show', async () => {
     const { result } = renderHook(() => useLeaguePulse());
-    await waitFor(() => expect(result.current.recentShows).toHaveLength(4));
+    await waitFor(() => expect(result.current.recentShows).toHaveLength(1));
 
     expect(result.current.upcomingShows.map((event) => event.eventId)).toEqual(['next', 'later']);
-    expect(result.current.recentShows.map((event) => event.eventId)).toEqual(['newest', 'newer', 'older', 'old']);
+    expect(result.current.recentShows.map((event) => event.eventId)).toEqual(['newest']);
     expect(result.current.news).toHaveLength(1);
-    expect(mockEvent).toHaveBeenCalledTimes(4);
+    expect(result.current.callUps.map((entry) => entry.playerId)).toEqual(['p1']);
+    expect(mockCallUps).toHaveBeenCalledWith('callup');
+    expect(mockEvent).toHaveBeenCalledTimes(1);
   });
 
   it('shares one answer between callers', async () => {
     const first = renderHook(() => useLeaguePulse());
     const second = renderHook(() => useLeaguePulse());
-    await waitFor(() => expect(first.result.current.recentShows).toHaveLength(4));
-    await waitFor(() => expect(second.result.current.recentShows).toHaveLength(4));
+    await waitFor(() => expect(first.result.current.recentShows).toHaveLength(1));
+    await waitFor(() => expect(second.result.current.recentShows).toHaveLength(1));
     expect(mockEvents).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps what loaded when a request fails', async () => {
+  it('keeps what loaded when a request fails, falling back to the show before the latest', async () => {
     mockDashboard.mockRejectedValue(new Error('down'));
+    mockCallUps.mockRejectedValue(new Error('down'));
     mockEvent.mockImplementation((eventId: string) =>
       eventId === 'newest' ? Promise.reject(new Error('down')) : Promise.resolve({ ...show(eventId, '', 'completed'), enrichedMatches: [] }));
     const { result } = renderHook(() => useLeaguePulse());
-    await waitFor(() => expect(result.current.recentShows).toHaveLength(3));
+    await waitFor(() => expect(result.current.recentShows).toHaveLength(1));
 
     expect(result.current.dashboard).toBeNull();
+    expect(result.current.callUps).toEqual([]);
     expect(result.current.recentShows[0]?.eventId).toBe('newer');
     expect(result.current.upcomingShows).toHaveLength(2);
   });

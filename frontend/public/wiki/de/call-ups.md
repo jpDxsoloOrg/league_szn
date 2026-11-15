@@ -37,7 +37,7 @@ Jeder Meilenstein wird nur einmal gemeldet. Wenn dein Bewertungsschnitt kurz sin
 
 ## In Betracht gezogen
 
-Wenn ein GM findet, dass du nah dran bist, kann er dich als **in Betracht gezogen** für einen Call-up markieren. Dann erscheint ein Banner auf deinem Profil und ein kleines Abzeichen neben deinem Namen in der Tabelle, damit die ganze Liga sieht, dass man dich im Auge behalten sollte. Du bekommst eine Benachrichtigung, und es erscheint im Aktivitäts-Feed.
+Wenn ein GM findet, dass du nah dran bist, kann er dich als **in Betracht gezogen** für einen Call-up markieren. Dann erscheint ein Banner auf deinem Profil und ein kleines Abzeichen neben deinem Namen in der Tabelle, und dein Name läuft im Liga-Ticker, damit die ganze Liga sieht, dass man dich im Auge behalten sollte. Du bekommst eine Benachrichtigung, und es erscheint im Aktivitäts-Feed.
 
 In Betracht gezogen zu werden ist ein Kompliment, kein Versprechen. Es heißt, dass die GMs dich genau beobachten.
 
