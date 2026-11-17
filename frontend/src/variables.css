@@ -126,8 +126,10 @@
   --shell-bottom-bar-height: 64px;
   /* Installed in landscape, a side notch pushes the rail's content in. */
   --shell-sidebar-width: calc(248px + env(safe-area-inset-left, 0px));
-  /* The league ticker under the header; 28px on phones (LeagueTicker.css). */
+  /* The league ticker docked at the bottom; 28px on phones (LeagueTicker.css). */
   --shell-ticker-height: 36px;
+  /* Room pages leave for the ticker: its height while it shows, else 0 (LeagueTicker.css). */
+  --shell-ticker-space: 0px;
   --section-tabs-height: 46px;
   --focus-ring: 2px solid var(--color-cyan);
 

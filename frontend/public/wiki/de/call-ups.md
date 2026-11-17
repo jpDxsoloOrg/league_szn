@@ -43,7 +43,7 @@ In Betracht gezogen zu werden ist ein Kompliment, kein Versprechen. Es heißt, d
 
 ## Call-up-Kandidaten im Liga-Ticker
 
-Der Liga-Ticker ist das laufende Nachrichtenband unter der oberen Leiste. Solange du in Betracht gezogen wirst, läuft dein Name dort unter der Markierung **Call-up-Kandidaten**, neben allen anderen, die die GMs im Auge haben. Jeder kann deinen Namen wählen, um dein Profil zu öffnen.
+Der Liga-Ticker ist das laufende Nachrichtenband am unteren Bildschirmrand. Solange du in Betracht gezogen wirst, läuft dein Name dort unter der Markierung **Call-up-Kandidaten**, neben allen anderen, die die GMs im Auge haben. Jeder kann deinen Namen wählen, um dein Profil zu öffnen.
 
 - Es erscheint nur dein Name. Dein Fortschrittsbalken und deine Ziele bleiben auf deinem Profil.
 - Dein Name verschwindet, sobald du in den Hauptkader berufen wirst oder der GM die Markierung entfernt.

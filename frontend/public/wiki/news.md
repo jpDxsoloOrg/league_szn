@@ -1,6 +1,6 @@
 # News and the League Wire
 
-The league office posts articles and announcements on the **News** page. The **League Wire** is the moving strip under the top bar that keeps tonight's shows, new champions, headlines and the latest results in view.
+The league office posts articles and announcements on the **News** page. The **League Wire** is the moving strip along the bottom of the screen that keeps tonight's shows, new champions, headlines and the latest results in view.
 
 ## News
 
@@ -17,7 +17,7 @@ Some stories also appear as a pop-up when signed-in members open the site. The l
 
 ## The League Wire
 
-The League Wire runs just under the top bar on every page except Admin and the sign-in pages. On a phone it sits under the header and stays in place while you scroll.
+The League Wire runs along the bottom of the screen on every page except Admin and the sign-in pages. On a phone it sits just above the tab bar and stays in place while you scroll.
 
 It shows these, in this order. A part with nothing to report is skipped, and the GMs choose which parts run, so you won't always see all of them.
 

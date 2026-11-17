@@ -1,11 +1,21 @@
 /*
- * The ticker sits in the sticky shell top, under the top bar (desktop) or the
- * mobile header. It keeps a fixed height, and holds it while the feed loads,
- * so pages do not jump when it fills in.
+ * Docked to the bottom of the viewport; on phones it sits on top of the bottom
+ * tab bar. It keeps a fixed height, and holds it while the feed loads, so the
+ * page does not jump when it fills in.
  */
 .league-ticker {
-  position: relative;
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: var(--shell-sidebar-width);
+  z-index: var(--z-shell);
   height: var(--shell-ticker-height);
+}
+
+/* Installed on a tablet, the strip stays above the home indicator. */
+.app-layout--desktop .league-ticker {
+  box-sizing: content-box;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .league-ticker--pending {
@@ -13,9 +23,9 @@
   background-color: var(--color-surface);
 }
 
-/* While the ticker shows, sticky page parts clear it as part of the header. */
-.App:has(.shell-top .league-ticker) {
-  --shell-header-offset: calc(var(--shell-header-height) + env(safe-area-inset-top, 0px) + var(--shell-ticker-height));
+/* While the ticker shows, pages leave room for it at the bottom. */
+.App:has(.league-ticker) {
+  --shell-ticker-space: var(--shell-ticker-height);
 }
 
 /* Phones: a compact strip. A sideways swipe on it is ignored, so it neither
@@ -26,6 +36,8 @@
 }
 
 .app-layout--mobile .league-ticker {
+  left: 0;
+  bottom: calc(var(--shell-bottom-bar-height) + env(safe-area-inset-bottom));
   font-size: 0.8125rem;
   touch-action: pan-y;
   overscroll-behavior-x: contain;
