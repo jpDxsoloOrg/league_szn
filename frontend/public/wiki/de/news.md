@@ -25,12 +25,13 @@ Er zeigt Folgendes in dieser Reihenfolge. Ein Teil ohne Meldung wird übersprung
 2. **Heute Abend** — Shows von heute oder Shows, die gerade laufen, und wie viele Tage es noch bis zum nächsten PPV sind.
 3. **Neuer Champion** — Titel, die in der letzten Woche den Besitzer gewechselt haben.
 4. **Call-up-Kandidaten** — Wrestler, die die GMs für einen Call-up in Betracht ziehen. Siehe [Call-Ups](call-ups).
-5. **Heiße Rivalität** — Die heißesten Rivalitäten der Liga.
-6. **GM-Meldung** — Weitere Nachrichten der GMs.
-7. **News** — Die neuesten Schlagzeilen von der News-Seite.
-8. **Demnächst** — Die nächsten Shows mit Datum.
-9. **Champions** — Jeder aktuelle Champion mit seinem Titel.
-10. **Ergebnisse** — Die zuletzt abgeschlossene Show, gefolgt von ihren Matches in der Reihenfolge der Card.
+5. **Aufstiegskandidaten** — Wrestler, die die GMs für einen Aufstieg in eine höhere Division im Blick haben. Siehe [Auf- und Abstieg](division-movement).
+6. **Heiße Rivalität** — Die heißesten Rivalitäten der Liga.
+7. **GM-Meldung** — Weitere Nachrichten der GMs.
+8. **News** — Die neuesten Schlagzeilen von der News-Seite, die neueste zuerst.
+9. **Demnächst** — Die nächsten Shows mit Datum.
+10. **Champions** — Jeder aktuelle Champion mit seinem Titel.
+11. **Ergebnisse** — Die zuletzt abgeschlossene Show, gefolgt von ihren Matches in der Reihenfolge der Card.
 
 Wähle eine Schlagzeile, um sie zu öffnen: die Show, die Meldung, den Spieler, die Rivalität oder die Championships. Eine GM-Nachricht kann auch auf eine andere Website verlinken. Die öffnet sich in einem neuen Tab.
 

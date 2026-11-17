@@ -25,12 +25,13 @@ It shows these, in this order. A part with nothing to report is skipped, and the
 2. **Tonight** — Shows on today or running now, and how many days until the next PPV.
 3. **New champion** — Titles that changed hands in the last week.
 4. **Call-up watch** — Wrestlers the GMs are considering for a call-up. See [Call-Ups](call-ups).
-5. **Hot rivalry** — The league's hottest rivalries.
-6. **GM update** — Other messages from the GMs.
-7. **News** — The latest headlines from the News page.
-8. **Upcoming** — The next shows with their dates.
-9. **Champions** — Each current champion with the title they hold.
-10. **Results** — The last completed show, followed by its matches in card order.
+5. **Promotion watch** — Wrestlers the GMs are watching for a promotion to a higher division. See [Promotion and Relegation](division-movement).
+6. **Hot rivalry** — The league's hottest rivalries.
+7. **GM update** — Other messages from the GMs.
+8. **News** — The latest headlines from the News page, newest first.
+9. **Upcoming** — The next shows with their dates.
+10. **Champions** — Each current champion with the title they hold.
+11. **Results** — The last completed show, followed by its matches in card order.
 
 Choose a headline to open it: the show, the story, the player, the rivalry or the championships. A GM message can also link to another website, which opens in a new tab.
 
