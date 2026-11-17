@@ -125,6 +125,11 @@ const EXECUTE_ERROR_CODES: ReadonlySet<string> = new Set([
   'CONCURRENT_UPDATE',
   'TARGET_IS_DEVELOPMENTAL',
   'TRACK_INACTIVE',
+  'NO_DIVISION_ABOVE',
+  'NO_DIVISION_BELOW',
+  'TARGET_NOT_ABOVE',
+  'TARGET_NOT_BELOW',
+  'AMBIGUOUS_TARGET',
 ]);
 
 /** The coded refusal behind a failed `progressionApi.execute`, or null for any other error. */

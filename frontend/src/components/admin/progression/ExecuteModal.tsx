@@ -13,6 +13,7 @@ import Button from '../../ui/Button';
 import AdminFormModal from '../AdminFormModal';
 import AdminNotice from '../AdminNotice';
 import SearchableSelect from '../SearchableSelect';
+import { getAdjacentDivisions, getDivisionRank } from '../../../utils/divisionTiers';
 import type { SearchableSelectOption } from '../SearchableSelect';
 
 export interface ExecuteModalProps {
@@ -24,33 +25,62 @@ export interface ExecuteModalProps {
   onExecuted: (candidate: ProgressionBoardEntry, result: ExecuteProgressionResult) => void;
 }
 
-/** Confirm a call-up (or promotion / relegation): pick the target division and whether to post News. */
+/**
+ * The preselected target: the track's, else (promotion / relegation) the only
+ * division one tier up / down. Empty when the admin has to choose.
+ */
+function defaultTarget(track: ProgressionTrack, divisions: Division[]): string {
+  if (track.toDivisionId) return track.toDivisionId;
+  if (track.kind === 'callup') return '';
+  const adjacent = getAdjacentDivisions(divisions, track.fromDivisionId, track.kind === 'promotion' ? 'above' : 'below');
+  return adjacent.length === 1 ? adjacent[0]?.divisionId ?? '' : '';
+}
+
+/** True when a promotion / relegation would move the wrong way on the tier ladder. */
+function isWrongDirection(track: ProgressionTrack, source: Division | undefined, target: Division): boolean {
+  if (track.kind === 'callup' || !source) return false;
+  const sourceRank = getDivisionRank(source);
+  const targetRank = getDivisionRank(target);
+  if (sourceRank === undefined || targetRank === undefined) return false;
+  return track.kind === 'promotion' ? !(targetRank < sourceRank) : !(targetRank > sourceRank);
+}
+
+/**
+ * Confirm a call-up, promotion or relegation: pick the target division and
+ * whether to post News (on by default for call-ups only; opt-in otherwise).
+ */
 export default function ExecuteModal({ candidate, track, divisions, onClose, onExecuted }: ExecuteModalProps) {
   const { t } = useTranslation();
   const baseId = useId();
-  const [toDivisionId, setToDivisionId] = useState(track.toDivisionId ?? '');
-  const [announce, setAnnounce] = useState(true);
+  const [toDivisionId, setToDivisionId] = useState(() => defaultTarget(track, divisions));
+  const [announce, setAnnounce] = useState(track.kind === 'callup');
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<ExecuteProgressionError | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!candidate) return;
-    setToDivisionId(track.toDivisionId ?? '');
-    setAnnounce(true);
+    setToDivisionId(defaultTarget(track, divisions));
+    setAnnounce(track.kind === 'callup');
     setRefusal(null);
     setError(null);
-  }, [candidate, track]);
+  }, [candidate, track, divisions]);
+
+  const source = divisions.find((division) => division.divisionId === track.fromDivisionId);
 
   const options: SearchableSelectOption[] = divisions
     .filter((division) => division.divisionId !== track.fromDivisionId)
     .map((division) => {
-      const blocked = track.kind === 'callup' && division.isDevelopmental === true;
+      const developmental = track.kind === 'callup' && division.isDevelopmental === true;
+      const wrongDirection = isWrongDirection(track, source, division);
+      let hint: string | undefined;
+      if (developmental) hint = t('progression.admin.editor.developmentalHint');
+      else if (wrongDirection) hint = t('progression.admin.execute.wrongDirection');
       return {
         value: division.divisionId,
         label: division.name,
-        disabled: blocked,
-        hint: blocked ? t('progression.admin.editor.developmentalHint') : undefined,
+        disabled: developmental || wrongDirection,
+        hint,
       };
     });
 

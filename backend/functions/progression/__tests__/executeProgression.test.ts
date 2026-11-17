@@ -18,6 +18,7 @@ vi.mock('../../../lib/asyncLambda', () => ({ invokeAsync: mockInvokeAsync }));
 
 import { buildInMemoryRepositories } from '../../../lib/repositories/inMemory';
 import { handler } from '../executeProgression';
+import { resolveMoveTarget } from '../../../lib/progression/executeMove';
 
 const ctx = {} as Context;
 const cb: Callback = () => {};
@@ -208,13 +209,13 @@ describe('executeProgression', () => {
     expect(JSON.parse(res.body).code).toBe('TARGET_IS_DEVELOPMENTAL');
   });
 
-  it('allows a developmental target for other kinds', async () => {
+  it('refuses a sideways relegation between developmental divisions', async () => {
     await state.repos.progression.putTrack({ ...fx.track, trackId: 't-rel', kind: 'relegation', toDivisionId: fx.ncId });
 
     const res = await call(fx.playerId, { trackId: 't-rel' });
 
-    expect(res.statusCode).toBe(200);
-    expect(JSON.parse(res.body).kind).toBe('relegation');
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body).code).toBe('TARGET_NOT_BELOW');
   });
 
   it('requires toDivisionId when the track has none', async () => {
@@ -276,5 +277,182 @@ describe('executeProgression', () => {
     expect(JSON.parse(res.body).code).toBe('TRACK_INACTIVE');
     expect((await state.repos.roster.players.findById(fx.playerId))?.divisionId).toBe(fx.youngBoysId);
     expect(await state.repos.progression.listEvents(fx.playerId)).toEqual([]);
+  });
+});
+
+describe('executeProgression: promotion and relegation (DMV-05)', () => {
+  interface Ladder {
+    rawId: string;
+    smackdownId: string;
+    nxtId: string;
+    youngBoysId: string;
+    playerId: string;
+  }
+  let ladder: Ladder;
+
+  function track(trackId: string, kind: ProgressionTrack['kind'], fromDivisionId: string, toDivisionId?: string): ProgressionTrack {
+    return {
+      trackId,
+      kind,
+      name: trackId,
+      fromDivisionId,
+      ...(toDivisionId ? { toDivisionId } : {}),
+      goals: [],
+      windowMode: 'allTime',
+      isActive: true,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+  }
+
+  async function row(playerId: string, trackId: string): Promise<void> {
+    await state.repos.progression.upsertPlayerProgression({
+      playerId, trackId, progressPct: 80, goals: [], computedAt: '2026-11-01T00:00:00.000Z',
+    });
+  }
+
+  async function placePlayer(divisionId: string): Promise<void> {
+    await state.repos.roster.players.update(ladder.playerId, { divisionId });
+  }
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    mockInvokeAsync.mockResolvedValue(undefined);
+    mockCreateNotification.mockResolvedValue(undefined);
+    state.repos = buildInMemoryRepositories();
+    const { divisions } = state.repos.leagueOps;
+    const raw = await divisions.create({ name: 'Raw', tier: 1 });
+    const smackdown = await divisions.create({ name: 'SmackDown', tier: 1 });
+    const nxt = await divisions.create({ name: 'NXT', tier: 2 });
+    const youngBoys = await divisions.create({ name: 'Young Boys', isDevelopmental: true });
+    const player = await state.repos.roster.players.create({
+      name: 'Bron', currentWrestler: 'Bron', divisionId: nxt.divisionId, divisionJoinedAt: '2026-01-01T00:00:00.000Z',
+    });
+    await state.repos.roster.players.update(player.playerId, { userId: 'user-bron' });
+    ladder = {
+      rawId: raw.divisionId,
+      smackdownId: smackdown.divisionId,
+      nxtId: nxt.divisionId,
+      youngBoysId: youngBoys.divisionId,
+      playerId: player.playerId,
+    };
+    await state.repos.progression.putTrack(track('t-promo', 'promotion', ladder.nxtId));
+    await state.repos.progression.putTrack(track('t-rel', 'relegation', ladder.nxtId));
+    await state.repos.progression.putTrack(track('t-raw-rel', 'relegation', ladder.rawId));
+    await state.repos.progression.putTrack(track('t-raw-promo', 'promotion', ladder.rawId));
+  });
+
+  it('promotes to an explicit sibling, resets the old division rows and announces', async () => {
+    await row(ladder.playerId, 't-promo');
+    await row(ladder.playerId, 't-rel');
+    await state.repos.progression.setConsideration(ladder.playerId, 't-rel', {
+      status: 'considering', markedBy: 'sub-gm', markedAt: '2026-11-10T00:00:00.000Z',
+    });
+    await row(ladder.playerId, 't-raw-rel'); // stale row on another division: left to the recompute
+
+    const res = await call(ladder.playerId, { trackId: 't-promo', toDivisionId: ladder.rawId, announce: true });
+
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body)).toMatchObject({ kind: 'promotion', fromDivisionId: ladder.nxtId, toDivisionId: ladder.rawId });
+    expect((await state.repos.roster.players.findById(ladder.playerId))?.divisionId).toBe(ladder.rawId);
+
+    const remaining = await state.repos.progression.listByPlayer(ladder.playerId);
+    expect(remaining.map((r) => r.trackId)).toEqual(['t-raw-rel']);
+    const events = await state.repos.progression.listEvents(ladder.playerId);
+    expect(events.map((e) => [e.type, e.trackId]).sort()).toEqual([
+      ['consideration_removed', 't-rel'],
+      ['executed', 't-promo'],
+    ]);
+
+    const [announcement] = await state.repos.content.announcements.list();
+    expect(announcement.title).toBe('Bron promoted to Raw');
+    expect(mockCreateNotification).toHaveBeenCalledWith(expect.objectContaining({ message: 'You have been promoted to Raw!' }));
+    expect(mockInvokeAsync).toHaveBeenCalledWith('progression', { playerIds: [ladder.playerId] });
+    expect(mockInvokeAsync).toHaveBeenCalledWith('contenders', { source: 'progressionExecute' });
+  });
+
+  it('refuses an ambiguous promotion when several siblings sit one tier up', async () => {
+    const res = await call(ladder.playerId, { trackId: 't-promo' });
+
+    expect(res.statusCode).toBe(400);
+    const body = JSON.parse(res.body);
+    expect(body.code).toBe('AMBIGUOUS_TARGET');
+    expect(body.candidates.map((c: { name: string }) => c.name)).toEqual(['Raw', 'SmackDown']);
+    expect((await state.repos.roster.players.findById(ladder.playerId))?.divisionId).toBe(ladder.nxtId);
+  });
+
+  it('relegates to the single division below with neutral copy, without announcing by default', async () => {
+    await placePlayer(ladder.rawId);
+
+    const res = await call(ladder.playerId, { trackId: 't-raw-rel' });
+
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body)).toMatchObject({ kind: 'relegation', toDivisionId: ladder.nxtId });
+    expect(JSON.parse(res.body).announcementId).toBeUndefined();
+    expect(await state.repos.content.announcements.list()).toEqual([]);
+    expect(mockCreateNotification).toHaveBeenCalledWith(expect.objectContaining({ message: 'You move to NXT.' }));
+    expect(mockInvokeAsync).toHaveBeenCalledWith('contenders', { source: 'progressionExecute' });
+  });
+
+  it('uses neutral relegation copy when announced', async () => {
+    await placePlayer(ladder.rawId);
+
+    const res = await call(ladder.playerId, { trackId: 't-raw-rel', announce: true });
+
+    expect(res.statusCode).toBe(200);
+    const [announcement] = await state.repos.content.announcements.list();
+    expect(announcement.title).toBe('Bron moves to NXT');
+    expect(announcement.body).toContain('moves from <em>Raw</em> to <strong>NXT</strong>');
+  });
+
+  it('relegates the lowest tier into developmental', async () => {
+    const res = await call(ladder.playerId, { trackId: 't-rel' });
+
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body).toDivisionId).toBe(ladder.youngBoysId);
+  });
+
+  it('cannot promote the top tier', async () => {
+    await placePlayer(ladder.rawId);
+
+    const auto = await call(ladder.playerId, { trackId: 't-raw-promo' });
+    expect(auto.statusCode).toBe(400);
+    expect(JSON.parse(auto.body).code).toBe('NO_DIVISION_ABOVE');
+
+    const sideways = await call(ladder.playerId, { trackId: 't-raw-promo', toDivisionId: ladder.smackdownId });
+    expect(sideways.statusCode).toBe(400);
+    expect(JSON.parse(sideways.body).code).toBe('TARGET_NOT_ABOVE');
+    expect((await state.repos.roster.players.findById(ladder.playerId))?.divisionId).toBe(ladder.rawId);
+  });
+
+  it('refuses a relegation that targets a higher division', async () => {
+    const res = await call(ladder.playerId, { trackId: 't-rel', toDivisionId: ladder.rawId });
+
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body).code).toBe('TARGET_NOT_BELOW');
+  });
+
+  it('applies the title check to promotions', async () => {
+    await state.repos.competition.championships.create({
+      name: 'NXT Title', type: 'singles', divisionId: ladder.nxtId, currentChampion: ladder.playerId,
+    });
+
+    const blocked = await call(ladder.playerId, { trackId: 't-promo', toDivisionId: ladder.rawId });
+    expect(blocked.statusCode).toBe(409);
+    expect(JSON.parse(blocked.body).code).toBe('HOLDS_DIVISION_TITLE');
+
+    const forced = await call(ladder.playerId, { trackId: 't-promo', toDivisionId: ladder.rawId, force: true });
+    expect(forced.statusCode).toBe(200);
+  });
+
+  it('skips the ladder check for untiered divisions', async () => {
+    const divisions = [
+      { divisionId: 'a', name: 'A', createdAt: '', updatedAt: '' },
+      { divisionId: 'b', name: 'B', tier: 1, createdAt: '', updatedAt: '' },
+    ];
+    expect(resolveMoveTarget({ kind: 'relegation', divisions, fromDivisionId: 'a', requestedToDivisionId: 'b' }))
+      .toEqual({ ok: true, toDivisionId: 'b' });
+    expect(resolveMoveTarget({ kind: 'promotion', divisions, fromDivisionId: 'a' }))
+      .toMatchObject({ ok: false, refusal: { details: { code: 'NO_DIVISION_ABOVE' } } });
   });
 });

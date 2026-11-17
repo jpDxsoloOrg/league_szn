@@ -269,6 +269,17 @@ export interface TrackInactiveError {
   code: 'TRACK_INACTIVE';
 }
 
+/** 400 (DMV-05): the target is on the wrong side of the tier ladder, or there is no rung to move to. */
+export interface TierTargetError {
+  code: 'NO_DIVISION_ABOVE' | 'NO_DIVISION_BELOW' | 'TARGET_NOT_ABOVE' | 'TARGET_NOT_BELOW';
+}
+
+/** 400 (DMV-05): several sibling divisions qualify. Retry with one of `candidates` as `toDivisionId`. */
+export interface AmbiguousTargetError {
+  code: 'AMBIGUOUS_TARGET';
+  candidates: { divisionId: string; name: string }[];
+}
+
 /** Coded error bodies of POST /progression/players/{playerId}/execute (all also carry `message`). */
 export type ExecuteProgressionError = (
   | NotInSourceDivisionError
@@ -276,6 +287,8 @@ export type ExecuteProgressionError = (
   | ConcurrentUpdateError
   | TargetIsDevelopmentalError
   | TrackInactiveError
+  | TierTargetError
+  | AmbiguousTargetError
 ) & { message: string };
 
 /** POST /admin/progression/recompute body. Omit `playerIds` to recompute every player. */

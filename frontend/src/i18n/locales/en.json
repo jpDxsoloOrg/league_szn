@@ -4034,6 +4034,7 @@
         "announce": "Announce on News",
         "proceedAnyway": "Proceed anyway",
         "heldTitles": "Titles held",
+        "wrongDirection": "Wrong direction",
         "done": "{{name}} moved to {{division}}.",
         "doneAnnounced": "{{name}} moved to {{division}} and announced on News.",
         "errors": {
@@ -4041,7 +4042,12 @@
           "NOT_IN_SOURCE_DIVISION": "{{name}} is no longer in this track's division. Reload the board.",
           "CONCURRENT_UPDATE": "Someone else moved {{name}} first. Reload the board and try again.",
           "TARGET_IS_DEVELOPMENTAL": "A call-up cannot target a developmental division.",
-          "TRACK_INACTIVE": "This track is inactive. Activate it before calling anyone up."
+          "TRACK_INACTIVE": "This track is inactive. Activate it before calling anyone up.",
+          "NO_DIVISION_ABOVE": "{{name}} is already in the top tier. There is no division above.",
+          "NO_DIVISION_BELOW": "There is no division below {{name}}'s current one.",
+          "TARGET_NOT_ABOVE": "A promotion must target a division in a higher tier.",
+          "TARGET_NOT_BELOW": "A relegation must target a division in a lower tier.",
+          "AMBIGUOUS_TARGET": "Several divisions share the next tier. Pick a target division."
         }
       },
       "history": {

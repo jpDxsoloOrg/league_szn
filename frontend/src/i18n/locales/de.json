@@ -4034,6 +4034,7 @@
         "announce": "In den News ankündigen",
         "proceedAnyway": "Trotzdem fortfahren",
         "heldTitles": "Gehaltene Titel",
+        "wrongDirection": "Falsche Richtung",
         "done": "{{name}} wurde nach {{division}} verschoben.",
         "doneAnnounced": "{{name}} wurde nach {{division}} verschoben und in den News angekündigt.",
         "errors": {
@@ -4041,7 +4042,12 @@
           "NOT_IN_SOURCE_DIVISION": "{{name}} ist nicht mehr in der Division dieses Tracks. Lade die Liste neu.",
           "CONCURRENT_UPDATE": "Jemand anderes hat {{name}} zuerst verschoben. Lade neu und versuche es erneut.",
           "TARGET_IS_DEVELOPMENTAL": "Ein Call-Up kann keine Entwicklungsdivision als Ziel haben.",
-          "TRACK_INACTIVE": "Dieser Track ist inaktiv. Aktiviere ihn, bevor du jemanden hochholst."
+          "TRACK_INACTIVE": "Dieser Track ist inaktiv. Aktiviere ihn, bevor du jemanden hochholst.",
+          "NO_DIVISION_ABOVE": "{{name}} ist bereits in der obersten Stufe. Darüber gibt es keine Division.",
+          "NO_DIVISION_BELOW": "Unter der aktuellen Division von {{name}} gibt es keine Division.",
+          "TARGET_NOT_ABOVE": "Ein Aufstieg muss eine Division in einer höheren Stufe als Ziel haben.",
+          "TARGET_NOT_BELOW": "Ein Abstieg muss eine Division in einer niedrigeren Stufe als Ziel haben.",
+          "AMBIGUOUS_TARGET": "Mehrere Divisionen teilen sich die nächste Stufe. Wähle eine Zieldivision."
         }
       },
       "history": {

@@ -4155,10 +4155,14 @@ paths:
         Moves the player from the track's source division to \`toDivisionId\`
         (defaults to the track's target), deletes their progression row for the
         track and records an \`executed\` event (plus \`consideration_removed\` if
-        they were under consideration) in one transaction. Then, best-effort:
-        notifies the wrestler, optionally publishes a News announcement,
-        recomputes their progression and recalculates contenders. A call-up
-        cannot target a developmental division.
+        they were under consideration) in one transaction. The same transaction
+        resets the player's rows on every other track out of the old division.
+        Then, best-effort: notifies the wrestler, optionally publishes a News
+        announcement (opt-in), recomputes their progression and recalculates
+        contenders. A call-up cannot target a developmental division. Without a
+        target, a promotion / relegation moves one tier up / down (DMV-05); an
+        explicit promotion / relegation target must rank above / below the
+        source when both divisions are on the tier ladder.
       security: [{ BearerAuth: [] }]
       parameters:
         - name: playerId
@@ -4174,7 +4178,7 @@ paths:
               required: [trackId]
               properties:
                 trackId: { type: string }
-                toDivisionId: { type: string, description: Required when the track has no toDivisionId }
+                toDivisionId: { type: string, description: 'Defaults to the track target. Required for a call-up whose track has none; a promotion or relegation without one uses the division one tier up or down' }
                 announce: { type: boolean, description: Publish a News announcement }
                 force: { type: boolean, description: Proceed even if the player holds a title restricted to the old division }
       responses:
@@ -4193,7 +4197,26 @@ paths:
                   divisionJoinedAt: { type: string, format: date-time }
                   event: { type: object, description: The executed ProgressionEvent }
                   announcementId: { type: string }
-        '400': { description: 'Bad request, or code TARGET_IS_DEVELOPMENTAL or TRACK_INACTIVE', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '400':
+          description: >-
+            Bad request, or code TARGET_IS_DEVELOPMENTAL, TRACK_INACTIVE,
+            NO_DIVISION_ABOVE (top tier), NO_DIVISION_BELOW, TARGET_NOT_ABOVE,
+            TARGET_NOT_BELOW, or AMBIGUOUS_TARGET (several sibling divisions
+            qualify; \`candidates\` lists them, retry with toDivisionId)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  code: { type: string, enum: [TARGET_IS_DEVELOPMENTAL, TRACK_INACTIVE, NO_DIVISION_ABOVE, NO_DIVISION_BELOW, TARGET_NOT_ABOVE, TARGET_NOT_BELOW, AMBIGUOUS_TARGET] }
+                  candidates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        divisionId: { type: string }
+                        name: { type: string }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Track, player or target division not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
