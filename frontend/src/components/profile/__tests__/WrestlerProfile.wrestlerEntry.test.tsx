@@ -38,7 +38,7 @@ vi.mock('../../../contexts/AuthContext', () => ({
 }));
 
 vi.mock('../../../contexts/SiteConfigContext', () => ({
-  useSiteConfig: () => ({ features: {}, isLoading: false, refreshConfig: vi.fn() }),
+  useSiteConfig: () => ({ features: {}, tickerSettings: { publicRelegationWatch: false }, isLoading: false, refreshConfig: vi.fn() }),
 }));
 
 vi.mock('react-i18next', () => ({

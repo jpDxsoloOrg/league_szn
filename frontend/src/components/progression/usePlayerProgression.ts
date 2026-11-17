@@ -8,33 +8,37 @@ export interface PlayerProgressionState {
 }
 
 /**
- * The player's active progression tracks of one kind. A failed request
- * leaves the list empty, so callers simply render nothing.
+ * The player's active progression tracks of one kind, or of several kinds in
+ * one request. A failed request leaves the list empty, so callers simply
+ * render nothing.
  */
 export function usePlayerProgression(
   playerId: string | null | undefined,
-  kind: ProgressionKind = 'callup',
+  kind: ProgressionKind | readonly ProgressionKind[] = 'callup',
 ): PlayerProgressionState {
   const [state, setState] = useState<PlayerProgressionState>({ tracks: [], loaded: false });
+  // A string key keeps an inline array from refetching on every render.
+  const kindKey = (typeof kind === 'string' ? [kind] : [...kind]).join(',');
 
   useEffect(() => {
     if (!playerId) {
       setState({ tracks: [], loaded: true });
       return;
     }
+    const kinds = new Set(kindKey.split(','));
     const controller = new AbortController();
     const load = async () => {
       try {
         const rows = await progressionApi.getForPlayer(playerId, controller.signal);
         if (controller.signal.aborted) return;
-        setState({ tracks: rows.filter((row) => row.kind === kind), loaded: true });
+        setState({ tracks: rows.filter((row) => kinds.has(row.kind)), loaded: true });
       } catch {
         if (!controller.signal.aborted) setState({ tracks: [], loaded: true });
       }
     };
     void load();
     return () => controller.abort();
-  }, [playerId, kind]);
+  }, [playerId, kindKey]);
 
   return state;
 }

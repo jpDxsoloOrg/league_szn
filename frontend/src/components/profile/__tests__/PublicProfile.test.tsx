@@ -29,7 +29,7 @@ vi.mock('../../../services/api', () => ({
 }));
 
 vi.mock('../../../contexts/AuthContext', () => ({ useAuth: () => authState }));
-vi.mock('../../../contexts/SiteConfigContext', () => ({ useSiteConfig: () => ({ features }) }));
+vi.mock('../../../contexts/SiteConfigContext', () => ({ useSiteConfig: () => ({ features, tickerSettings: { publicRelegationWatch: false } }) }));
 
 const stableT = (key: string, options?: Record<string, unknown>) =>
   (options ? `${key} ${Object.values(options).join(' ')}` : key);

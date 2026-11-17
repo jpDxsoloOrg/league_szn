@@ -3875,7 +3875,11 @@
       "daysSinceLastMatch_other": "Go {{threshold}} days without a match",
       "avgStarRatingBelow": "Average {{threshold}} or less in rated matches",
       "avgStarRatingBelowMin": "Average {{threshold}} or less over at least {{minRatedMatches}} rated matches",
-      "contenderRankBest": "Rank in the top {{threshold}} contenders for a division title"
+      "contenderRankBest": "Rank in the top {{threshold}} contenders for a division title",
+      "titleKind": {
+        "promotion": "Promotion goals",
+        "relegation": "Relegation criteria"
+      }
     },
     "consideration": {
       "banner": {
@@ -4117,6 +4121,21 @@
         "promotion": "Promoted",
         "relegation": "Moved",
         "transfer": "Transferred"
+      }
+    },
+    "division": {
+      "title": "Division Movement",
+      "gmNote": "GM note: {{note}}"
+    },
+    "staySharp": {
+      "title": "Stay sharp",
+      "intro": "A few friendly pointers to keep your momentum going:",
+      "tips": {
+        "wins": "Chase a few more wins in your upcoming matches.",
+        "winColumn": "Your next win is a great reset. Go get it!",
+        "active": "Stay active: request a match or answer a challenge.",
+        "quality": "Aim to steal the show with your next match.",
+        "momentum": "Keep building momentum. The GMs notice the effort."
       }
     }
   },

@@ -11,6 +11,8 @@ import DisciplineNotice from '../discipline/DisciplineNotice';
 import CallUpProgress from '../progression/CallUpProgress';
 import ConsiderationBanner from '../progression/ConsiderationBanner';
 import DivisionHistory from '../progression/DivisionHistory';
+import DivisionProgress from '../progression/DivisionProgress';
+import DivisionWatchBanners from '../progression/DivisionWatchBanners';
 import EmbeddedPlayerStats from '../statistics/EmbeddedPlayerStats';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
@@ -172,6 +174,7 @@ export default function WrestlerProfile() {
         )}
       />
       <ConsiderationBanner playerId={player.playerId} />
+      <DivisionWatchBanners playerId={player.playerId} viewer="owner" />
 
       {editing ? (
         <ProfileEditForm
@@ -196,6 +199,7 @@ export default function WrestlerProfile() {
           <div hidden={tab !== 'overview'}>
             <RecordSummary record={player} />
             <CallUpProgress playerId={player.playerId} />
+            <DivisionProgress playerId={player.playerId} viewer="owner" />
             <DivisionHistory playerId={player.playerId} />
             <MovesetSection player={player} showEmpty />
             {overall && (

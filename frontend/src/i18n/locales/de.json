@@ -3875,7 +3875,11 @@
       "daysSinceLastMatch_other": "Bestreite {{threshold}} Tage kein Match",
       "avgStarRatingBelow": "Durchschnitt von {{threshold}} oder weniger in bewerteten Matches",
       "avgStarRatingBelowMin": "Durchschnitt von {{threshold}} oder weniger über mindestens {{minRatedMatches}} bewertete Matches",
-      "contenderRankBest": "Gehöre zu den Top {{threshold}} Herausforderern auf einen Divisionstitel"
+      "contenderRankBest": "Gehöre zu den Top {{threshold}} Herausforderern auf einen Divisionstitel",
+      "titleKind": {
+        "promotion": "Aufstiegsziele",
+        "relegation": "Abstiegskriterien"
+      }
     },
     "consideration": {
       "banner": {
@@ -4117,6 +4121,21 @@
         "promotion": "Aufgestiegen",
         "relegation": "Gewechselt",
         "transfer": "Transfer"
+      }
+    },
+    "division": {
+      "title": "Divisionswechsel",
+      "gmNote": "GM-Notiz: {{note}}"
+    },
+    "staySharp": {
+      "title": "Bleib am Ball",
+      "intro": "Ein paar freundliche Tipps, damit du in Schwung bleibst:",
+      "tips": {
+        "wins": "Hol dir in deinen nächsten Matches ein paar Siege mehr.",
+        "winColumn": "Dein nächster Sieg ist ein toller Neustart. Hol ihn dir!",
+        "active": "Bleib aktiv: Fordere ein Match an oder nimm eine Herausforderung an.",
+        "quality": "Versuch, mit deinem nächsten Match die Show zu stehlen.",
+        "momentum": "Bau weiter Schwung auf. Die GMs sehen deinen Einsatz."
       }
     }
   },

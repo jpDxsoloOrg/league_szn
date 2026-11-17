@@ -28,6 +28,9 @@ import { getTitleAccent } from '../titleAccent';
 import CallUpProgress from '../progression/CallUpProgress';
 import ConsiderationBanner from '../progression/ConsiderationBanner';
 import DivisionHistory from '../progression/DivisionHistory';
+import DivisionProgress from '../progression/DivisionProgress';
+import DivisionWatchBanners from '../progression/DivisionWatchBanners';
+import { profileViewer } from '../progression/divisionProgressVisibility';
 import MovesetSection from './MovesetSection';
 import ProfileHero from './ProfileHero';
 import ProfileRivalries from './ProfileRivalries';
@@ -186,6 +189,11 @@ export default function PublicProfile() {
     Boolean(player.bio) || (player.signatures?.length ?? 0) > 0 || (player.finishers?.length ?? 0) > 0;
   const canChallenge =
     features.challenges && isAuthenticated && isWrestler && currentPlayerId && currentPlayerId !== playerId;
+  const viewer = profileViewer({
+    isStaff: isAdminOrModerator,
+    viewerPlayerId: currentPlayerId,
+    profilePlayerId: player.playerId,
+  });
   const headToHeadPath = `/stats/head-to-head?${currentPlayerId ? `player1=${currentPlayerId}&` : ''}player2=${playerId}`;
 
   return (
@@ -216,8 +224,10 @@ export default function PublicProfile() {
       />
 
       <ConsiderationBanner playerId={player.playerId} />
+      <DivisionWatchBanners playerId={player.playerId} viewer={viewer} />
       <RecordSummary record={player} titlesHeld={titles.length} />
       <CallUpProgress playerId={player.playerId} showGoals={isAdminOrModerator} />
+      <DivisionProgress playerId={player.playerId} viewer={viewer} />
       <DivisionHistory playerId={player.playerId} />
 
       <div className="profile-columns">
