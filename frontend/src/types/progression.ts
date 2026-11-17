@@ -13,7 +13,12 @@ export type ProgressionMetric =
   | 'totalPromoReactions'
   | 'matchOfTheNight'
   | 'challengesIssued'
-  | 'currentWinStreak';
+  | 'currentWinStreak'
+  | 'lossPct'
+  | 'currentLossStreak'
+  | 'daysSinceLastMatch'
+  | 'avgStarRatingBelow'
+  | 'contenderRankBest';
 
 export type ProgressionWindowMode = 'allTime' | 'season' | 'sinceJoinedDivision';
 
@@ -24,6 +29,8 @@ export interface ProgressionGoalParams {
   minRatedMatches?: number;
   /** promosWithReactions: minimum reactions (from other users) a promo needs to count. */
   minReactions?: number;
+  /** winPct / lossPct: measure over the most recent N matches only. */
+  lastMatches?: number;
 }
 
 export interface ProgressionGoal {

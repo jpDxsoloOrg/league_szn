@@ -3806,7 +3806,12 @@
       "totalPromoReactions": "Promo-Reaktionen",
       "matchOfTheNight": "Match-of-the-Night-Auszeichnungen",
       "challengesIssued": "Ausgesprochene Herausforderungen",
-      "currentWinStreak": "Siegesserie"
+      "currentWinStreak": "Siegesserie",
+      "lossPct": "Niederlagenquote",
+      "currentLossStreak": "Niederlagenserie",
+      "daysSinceLastMatch": "Tage seit dem letzten Match",
+      "avgStarRatingBelow": "Niedrige Sternebewertung",
+      "contenderRankBest": "Bester Herausfordererrang"
     },
     "goals": {
       "title": "Call-Up-Ziele",
@@ -3837,7 +3842,17 @@
       "currentOf": "{{current}} / {{threshold}}",
       "noValue": "— / {{threshold}}",
       "needsRated_one": "Benötigt {{count}} bewertetes Match",
-      "needsRated_other": "Benötigt {{count}} bewertete Matches"
+      "needsRated_other": "Benötigt {{count}} bewertete Matches",
+      "winPctLast": "Halte eine Siegquote von {{threshold}} oder besser über die letzten {{lastMatches}} Matches",
+      "lossPct": "Verliere {{threshold}} oder mehr der Matches",
+      "lossPctLast": "Verliere {{threshold}} oder mehr der letzten {{lastMatches}} Matches",
+      "currentLossStreak_one": "Verliere {{threshold}} Match in Folge",
+      "currentLossStreak_other": "Verliere {{threshold}} Matches in Folge",
+      "daysSinceLastMatch_one": "Bestreite {{threshold}} Tag kein Match",
+      "daysSinceLastMatch_other": "Bestreite {{threshold}} Tage kein Match",
+      "avgStarRatingBelow": "Durchschnitt von {{threshold}} oder weniger in bewerteten Matches",
+      "avgStarRatingBelowMin": "Durchschnitt von {{threshold}} oder weniger über mindestens {{minRatedMatches}} bewertete Matches",
+      "contenderRankBest": "Gehöre zu den Top {{threshold}} Herausforderern auf einen Divisionstitel"
     },
     "consideration": {
       "banner": {
@@ -3940,8 +3955,12 @@
           "weightInvalid": "Gib eine Gewichtung über 0 ein.",
           "paramInvalid": "Gib eine ganze Zahl ab 1 ein.",
           "invalid": "Der Track wurde nicht gespeichert: {{message}}",
-          "conflict": "Hier ist bereits ein anderer Track aktiv: {{message}}"
-        }
+          "conflict": "Hier ist bereits ein anderer Track aktiv: {{message}}",
+          "fromNeedsTier": "Auf- und Abstiegs-Tracks brauchen eine Hauptkader-Division mit Stufe.",
+          "toNotAbove": "Ein Aufstieg muss eine höher eingestufte Division als Ziel haben.",
+          "toNotBelow": "Ein Abstieg muss eine niedriger eingestufte Division als Ziel haben."
+        },
+        "lastMatches": "Über die letzten N Matches"
       },
       "board": {
         "caption": "Kandidaten auf {{track}}",

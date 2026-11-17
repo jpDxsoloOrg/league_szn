@@ -51,6 +51,29 @@ describe('GoalChecklist', () => {
     expect(within(screen.getByTestId('goal-promos')).getByText(/Cut 3 promos with at least 3 reactions/)).toBeInTheDocument();
   });
 
+  it('labels the promotion and relegation (DMV-02) goals', () => {
+    render(
+      <GoalChecklist
+        goals={[
+          goal({ goalId: 'loss', metric: 'lossPct', threshold: 70, current: 75, met: true, params: { lastMatches: 8 } }),
+          goal({ goalId: 'idle', metric: 'daysSinceLastMatch', threshold: 30, current: 12 }),
+          goal({ goalId: 'low', metric: 'avgStarRatingBelow', threshold: 3, current: 2.5, params: { minRatedMatches: 5 } }),
+          goal({ goalId: 'rank', metric: 'contenderRankBest', threshold: 3, current: 2, met: true, direction: 'atMost' }),
+          goal({ goalId: 'streak', metric: 'currentLossStreak', threshold: 4, current: 1 }),
+        ]}
+      />,
+    );
+
+    expect(within(screen.getByTestId('goal-loss')).getByText(/Lose 70% or more of the last 8 matches/)).toBeInTheDocument();
+    expect(within(screen.getByTestId('goal-loss')).getByText('75% / 70%')).toBeInTheDocument();
+    expect(within(screen.getByTestId('goal-idle')).getByText(/Go 30 days without a match/)).toBeInTheDocument();
+    const low = screen.getByTestId('goal-low');
+    expect(within(low).getByText(/Average 2\.0★ or less over at least 5 rated matches/)).toBeInTheDocument();
+    expect(within(low).getByText('2.5★ / 2.0★')).toBeInTheDocument();
+    expect(within(screen.getByTestId('goal-rank')).getByText(/top 3 contenders for a division title/)).toBeInTheDocument();
+    expect(within(screen.getByTestId('goal-streak')).getByText(/Lose 4 matches in a row/)).toBeInTheDocument();
+  });
+
   it('explains a null metric instead of showing a number', () => {
     render(
       <GoalChecklist

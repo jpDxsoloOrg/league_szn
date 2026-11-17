@@ -73,6 +73,7 @@ async function call(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult>
 
 let youngBoysId: string;
 let rawId: string;
+let mainEventId: string;
 let ownerPlayerId: string;
 let otherPlayerId: string;
 let track: ProgressionTrack;
@@ -86,7 +87,8 @@ beforeEach(async () => {
 
   const { divisions } = repos.leagueOps;
   youngBoysId = (await divisions.create({ name: 'Young Boys', isDevelopmental: true })).divisionId;
-  rawId = (await divisions.create({ name: 'Raw' })).divisionId;
+  rawId = (await divisions.create({ name: 'Raw', tier: 2 })).divisionId;
+  mainEventId = (await divisions.create({ name: 'Main Event', tier: 1 })).divisionId;
 
   const { players } = repos.roster;
   const owner = await players.create({ name: 'Owen', currentWrestler: 'Cena', divisionId: youngBoysId, imageUrl: 'img.png' });
@@ -337,6 +339,36 @@ describe('POST /progression/tracks', () => {
     const result = await post('mod', body);
     expect(result.statusCode).toBe(400);
     expect(mockInvokeAsync).not.toHaveBeenCalled();
+  });
+
+  describe('ladder direction (DMV-02)', () => {
+    it('accepts a promotion to a higher division or with no target', async () => {
+      expect((await post('mod', { ...validBody(), toDivisionId: mainEventId })).statusCode).toBe(201);
+      expect((await post('mod', { ...validBody(), isActive: false })).statusCode).toBe(201);
+    });
+
+    it('rejects a promotion to a lower division', async () => {
+      const result = await post('mod', { ...validBody(), toDivisionId: youngBoysId });
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body).message ?? result.body).toMatch(/ranks above/);
+    });
+
+    it('rejects a promotion from the top tier', async () => {
+      const result = await post('mod', { ...validBody(), fromDivisionId: mainEventId });
+      expect(result.statusCode).toBe(400);
+    });
+
+    it('accepts a relegation to a lower division and rejects one upwards', async () => {
+      const relegation = { ...validBody(), kind: 'relegation', name: 'Raw Relegation' };
+      expect((await post('mod', { ...relegation, toDivisionId: mainEventId })).statusCode).toBe(400);
+      expect((await post('mod', { ...relegation, toDivisionId: youngBoysId })).statusCode).toBe(201);
+    });
+
+    it('rejects promotion and relegation tracks on an untiered division', async () => {
+      const untiered = (await repos.leagueOps.divisions.create({ name: 'Legends' })).divisionId;
+      const result = await post('mod', { ...validBody(), fromDivisionId: untiered });
+      expect(result.statusCode).toBe(400);
+    });
   });
 
   it('allows only one active track per kind and source division', async () => {

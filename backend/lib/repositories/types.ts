@@ -797,7 +797,13 @@ export type ProgressionMetric =
   | 'totalPromoReactions'
   | 'matchOfTheNight'
   | 'challengesIssued'
-  | 'currentWinStreak';
+  | 'currentWinStreak'
+  // DMV-02: division movement metrics. Relegation ones skip hot-angle losses.
+  | 'lossPct'
+  | 'currentLossStreak'
+  | 'daysSinceLastMatch'
+  | 'avgStarRatingBelow'
+  | 'contenderRankBest';
 
 export type ProgressionWindowMode = 'allTime' | 'season' | 'sinceJoinedDivision';
 
@@ -808,6 +814,11 @@ export interface ProgressionGoalParams {
   minRatedMatches?: number;
   /** promosWithReactions: minimum reactions (from other users) a promo needs to count. */
   minReactions?: number;
+  /**
+   * winPct / lossPct: measure over the player's most recent N matches only,
+   * and stay uncomputable (null) until N matches exist.
+   */
+  lastMatches?: number;
 }
 
 export interface ProgressionGoal {

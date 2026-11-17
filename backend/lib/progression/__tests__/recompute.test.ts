@@ -278,8 +278,11 @@ describe('loadProgressionForPlayers', () => {
     await repos.user.challenges.update(cancelled.challengeId, { status: 'cancelled' });
 
     const ids = [alice.playerId, bob.playerId, 'missing'];
+    // Both loaders stamp the load time as asOf: pin the clock so they agree.
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(NOW) });
     const perPlayer = await loadInputs.loadProgressionForPlayers(ids);
     const batch = await loadInputs.loadProgressionBatch(ids);
+    vi.useRealTimers();
 
     expect(perPlayer.inputs).toEqual(batch.inputs);
     expect([...perPlayer.players.keys()].sort()).toEqual([...batch.players.keys()].sort());

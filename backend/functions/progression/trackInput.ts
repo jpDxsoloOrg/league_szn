@@ -1,6 +1,13 @@
 import { v4 as uuidv4 } from 'uuid';
 import { ProgressionPolicyError, validateGoal } from '../../lib/policies/progression';
+import {
+  getDivisionAbove,
+  getDivisionBelow,
+  getDivisionTier,
+  isDivisionAbove,
+} from '../../lib/divisionTiers';
 import type {
+  Division,
   ProgressionGoal,
   ProgressionGoalDirection,
   ProgressionGoalParams,
@@ -23,6 +30,11 @@ const METRICS: Record<ProgressionMetric, true> = {
   matchOfTheNight: true,
   challengesIssued: true,
   currentWinStreak: true,
+  lossPct: true,
+  currentLossStreak: true,
+  daysSinceLastMatch: true,
+  avgStarRatingBelow: true,
+  contenderRankBest: true,
 };
 
 const WINDOW_MODES: Record<ProgressionWindowMode, true> = {
@@ -69,9 +81,12 @@ function parseParams(value: unknown, label: string): ParseResult<ProgressionGoal
   if (minRatedMatches.error) return { error: minRatedMatches.error };
   const minReactions = parsePositiveInteger(value.minReactions, `${label}.params.minReactions`);
   if (minReactions.error) return { error: minReactions.error };
+  const lastMatches = parsePositiveInteger(value.lastMatches, `${label}.params.lastMatches`);
+  if (lastMatches.error) return { error: lastMatches.error };
   const params: ProgressionGoalParams = {};
   if (minRatedMatches.value !== undefined) params.minRatedMatches = minRatedMatches.value;
   if (minReactions.value !== undefined) params.minReactions = minReactions.value;
+  if (lastMatches.value !== undefined) params.lastMatches = lastMatches.value;
   return { value: Object.keys(params).length > 0 ? params : undefined };
 }
 
@@ -197,4 +212,45 @@ export function parseTrackInput(body: unknown, existing?: ProgressionTrack): Par
   };
   if (toDivisionId !== undefined) fields.toDivisionId = toDivisionId;
   return { value: fields };
+}
+
+/**
+ * DMV-02 ladder checks for promotion and relegation tracks (call-ups are not
+ * checked here). The source division must be a tiered main-roster division.
+ *   - promotion: `toDivisionId` must rank above the source, or be unset (the
+ *     destination is picked at execution) as long as something sits above;
+ *   - relegation: `toDivisionId` must rank below the source, or be unset as
+ *     long as something sits below.
+ * Returns an error message, or null when the track fits the ladder.
+ */
+export function validateTrackLadder(
+  fields: Pick<TrackFields, 'kind' | 'fromDivisionId' | 'toDivisionId'>,
+  divisions: readonly Division[],
+): string | null {
+  if (fields.kind === 'callup') return null;
+  const from = divisions.find((division) => division.divisionId === fields.fromDivisionId);
+  if (!from) return 'fromDivisionId does not match a division';
+  if (from.isDevelopmental === true || getDivisionTier(from) === undefined) {
+    return `A ${fields.kind} track needs a fromDivisionId with a tier`;
+  }
+
+  if (fields.kind === 'promotion') {
+    if (fields.toDivisionId === undefined) {
+      return getDivisionAbove(divisions, from.divisionId).length > 0
+        ? null
+        : 'No division ranks above fromDivisionId, so it has nothing to promote to';
+    }
+    return isDivisionAbove(divisions, fields.toDivisionId, from.divisionId)
+      ? null
+      : 'A promotion track needs a toDivisionId that ranks above fromDivisionId';
+  }
+
+  if (fields.toDivisionId === undefined) {
+    return getDivisionBelow(divisions, from.divisionId).length > 0
+      ? null
+      : 'No division ranks below fromDivisionId, so it has nothing to relegate to';
+  }
+  return isDivisionAbove(divisions, from.divisionId, fields.toDivisionId)
+    ? null
+    : 'A relegation track needs a toDivisionId that ranks below fromDivisionId';
 }

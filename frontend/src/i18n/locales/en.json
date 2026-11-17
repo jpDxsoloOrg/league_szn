@@ -3806,7 +3806,12 @@
       "totalPromoReactions": "Promo reactions",
       "matchOfTheNight": "Match of the Night awards",
       "challengesIssued": "Challenges issued",
-      "currentWinStreak": "Win streak"
+      "currentWinStreak": "Win streak",
+      "lossPct": "Loss percentage",
+      "currentLossStreak": "Losing streak",
+      "daysSinceLastMatch": "Days since last match",
+      "avgStarRatingBelow": "Low star rating",
+      "contenderRankBest": "Best contender rank"
     },
     "goals": {
       "title": "Call-up goals",
@@ -3837,7 +3842,17 @@
       "currentOf": "{{current}} / {{threshold}}",
       "noValue": "— / {{threshold}}",
       "needsRated_one": "Needs {{count}} rated match",
-      "needsRated_other": "Needs {{count}} rated matches"
+      "needsRated_other": "Needs {{count}} rated matches",
+      "winPctLast": "Keep a win percentage of {{threshold}} or better over the last {{lastMatches}} matches",
+      "lossPct": "Lose {{threshold}} or more of matches",
+      "lossPctLast": "Lose {{threshold}} or more of the last {{lastMatches}} matches",
+      "currentLossStreak_one": "Lose {{threshold}} match in a row",
+      "currentLossStreak_other": "Lose {{threshold}} matches in a row",
+      "daysSinceLastMatch_one": "Go {{threshold}} day without a match",
+      "daysSinceLastMatch_other": "Go {{threshold}} days without a match",
+      "avgStarRatingBelow": "Average {{threshold}} or less in rated matches",
+      "avgStarRatingBelowMin": "Average {{threshold}} or less over at least {{minRatedMatches}} rated matches",
+      "contenderRankBest": "Rank in the top {{threshold}} contenders for a division title"
     },
     "consideration": {
       "banner": {
@@ -3940,8 +3955,12 @@
           "weightInvalid": "Enter a weight above 0.",
           "paramInvalid": "Enter a whole number of 1 or more.",
           "invalid": "The track was not saved: {{message}}",
-          "conflict": "Another track is already active here: {{message}}"
-        }
+          "conflict": "Another track is already active here: {{message}}",
+          "fromNeedsTier": "Promotion and relegation tracks need a main-roster division with a tier.",
+          "toNotAbove": "A promotion must target a division ranked above the source.",
+          "toNotBelow": "A relegation must target a division ranked below the source."
+        },
+        "lastMatches": "Over the last N matches"
       },
       "board": {
         "caption": "Candidates on {{track}}",

@@ -1110,7 +1110,12 @@ components:
         goalId: { type: string, description: Generated when omitted on create. }
         metric:
           type: string
-          enum: [matchesCompeted, wins, winPct, avgStarRating, promosCut, promosWithReactions, totalPromoReactions, matchOfTheNight, challengesIssued, currentWinStreak]
+          enum: [matchesCompeted, wins, winPct, avgStarRating, promosCut, promosWithReactions, totalPromoReactions, matchOfTheNight, challengesIssued, currentWinStreak, lossPct, currentLossStreak, daysSinceLastMatch, avgStarRatingBelow, contenderRankBest]
+          description: >-
+            lossPct and currentLossStreak skip losses in hot-angle matches (linked to an active rivalry
+            at hot heat or above). daysSinceLastMatch counts whole days since the latest match.
+            avgStarRatingBelow is 5 minus the average star rating. contenderRankBest is the best
+            contender rank on the titles of the player's division (lower is better; use direction atMost).
         threshold: { type: number, description: Must be greater than 0. }
         weight: { type: number, default: 1, description: Must be greater than 0. Weights are normalised by their total. }
         direction: { type: string, enum: [atLeast, atMost], default: atLeast }
@@ -1119,6 +1124,7 @@ components:
           properties:
             minRatedMatches: { type: integer, minimum: 1, description: avgStarRating only. }
             minReactions: { type: integer, minimum: 1, description: promosWithReactions only. }
+            lastMatches: { type: integer, minimum: 1, description: 'winPct and lossPct only: measure over the most recent N matches; no value until N exist.' }
         labelKey: { type: string }
 
     ProgressionTrack:
@@ -1141,7 +1147,10 @@ components:
         On POST, kind, name, fromDivisionId and goals are required; windowMode defaults to
         sinceJoinedDivision and isActive to true. On PUT every field is optional, goals replaces
         the whole list, and toDivisionId null clears the destination. Only one active track may
-        exist per (kind, fromDivisionId).
+        exist per (kind, fromDivisionId). An active promotion or relegation track needs a tiered
+        main-roster fromDivisionId; a promotion toDivisionId must rank above it and a relegation
+        toDivisionId below it. Left unset, the destination is resolved at execution, and a division
+        must exist on that side of the ladder.
       properties:
         kind: { type: string, enum: [callup, promotion, relegation] }
         name: { type: string, maxLength: 100 }
@@ -1637,6 +1646,7 @@ paths:
     post:
       tags: [Divisions]
       summary: Create division
+      description: Creating a division with a tier also creates any missing default promotion and relegation tracks across the ladder.
       security: [{ BearerAuth: [] }]
       requestBody:
         content:
@@ -1652,6 +1662,7 @@ paths:
     put:
       tags: [Divisions]
       summary: Update division
+      description: Setting a tier also creates any missing default promotion and relegation tracks across the ladder. Existing tracks are never replaced.
       security: [{ BearerAuth: [] }]
       parameters:
         - name: divisionId

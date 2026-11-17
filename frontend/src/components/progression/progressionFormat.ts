@@ -4,6 +4,8 @@ import type { ProgressionGoalDetail, ProgressionMetric } from '../../types/progr
 /** Mirrors DEFAULT_MIN_RATED_MATCHES / DEFAULT_MIN_REACTIONS in backend/lib/policies/progression.ts. */
 const DEFAULT_MIN_RATED_MATCHES = 1;
 const DEFAULT_MIN_REACTIONS = 1;
+/** Mirrors MAX_STAR_RATING: avgStarRatingBelow is MAX_STAR_RATING minus the average. */
+const MAX_STAR_RATING = 5;
 
 export function clampPct(pct: number): number {
   if (!Number.isFinite(pct)) return 0;
@@ -25,9 +27,13 @@ export function goalFill(goal: Pick<ProgressionGoalDetail, 'direction' | 'thresh
 export function formatMetricValue(t: TFunction, metric: ProgressionMetric, value: number): string {
   switch (metric) {
     case 'winPct':
+    case 'lossPct':
       return t('progression.meter.percent', { pct: Math.round(value) });
     case 'avgStarRating':
       return t('progression.goals.stars', { value: value.toFixed(1) });
+    case 'avgStarRatingBelow':
+      // Stored as 5 - average; shown as the average it stands for.
+      return t('progression.goals.stars', { value: (MAX_STAR_RATING - value).toFixed(1) });
     default:
       return String(Math.round(value * 10) / 10);
   }
@@ -42,16 +48,26 @@ export function goalLabel(t: TFunction, goal: ProgressionGoalDetail): string {
     threshold: formatMetricValue(t, goal.metric, goal.threshold),
     minRatedMatches,
     minReactions,
+    lastMatches: goal.params?.lastMatches,
   };
   if (goal.labelKey) {
     const custom = t(goal.labelKey, { ...values, defaultValue: '' });
     if (custom) return custom;
+  }
+  if (goal.metric === 'contenderRankBest' && goal.direction === 'atMost') {
+    return t('progression.goals.contenderRankBest', values);
   }
   if (goal.direction === 'atMost') {
     return t('progression.goals.atMost', { ...values, metric: t(`progression.metrics.${goal.metric}`) });
   }
   if (goal.metric === 'avgStarRating' && minRatedMatches > 1) {
     return t('progression.goals.avgStarRatingMin', values);
+  }
+  if (goal.metric === 'avgStarRatingBelow') {
+    return t(minRatedMatches > 1 ? 'progression.goals.avgStarRatingBelowMin' : 'progression.goals.avgStarRatingBelow', values);
+  }
+  if ((goal.metric === 'winPct' || goal.metric === 'lossPct') && goal.params?.lastMatches) {
+    return t(`progression.goals.${goal.metric}Last`, values);
   }
   return t(`progression.goals.${goal.metric}`, values);
 }
@@ -61,7 +77,7 @@ export function goalProgressText(t: TFunction, goal: ProgressionGoalDetail): str
   const threshold = formatMetricValue(t, goal.metric, goal.threshold);
   if (goal.current === null) {
     const minRatedMatches = goal.params?.minRatedMatches ?? DEFAULT_MIN_RATED_MATCHES;
-    if (goal.metric === 'avgStarRating') {
+    if (goal.metric === 'avgStarRating' || goal.metric === 'avgStarRatingBelow') {
       return t('progression.goals.needsRated', { count: minRatedMatches });
     }
     return t('progression.goals.noValue', { threshold });

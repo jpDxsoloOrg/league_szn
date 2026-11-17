@@ -5,6 +5,7 @@ import { NotFoundError } from './repositories/errors';
 import type { DivisionCreateInput, DivisionPatch } from './repositories/LeagueOpsRepository';
 import type { Division } from './repositories/types';
 import { validateDivisionTier } from './divisionTiers';
+import { ensureDefaultLadderTracks } from './progression/ladderTemplates';
 
 /**
  * Name the signup lookup used before divisions carried an explicit flag.
@@ -82,12 +83,33 @@ export function validateDivisionFlags(body: Record<string, unknown>): APIGateway
 }
 
 /**
+ * DMV-02: when a division gains a tier, create any missing default
+ * promotion/relegation tracks across the ladder. Best effort: the division
+ * write has already succeeded, so a failure here is logged, not thrown.
+ */
+export async function ensureLadderTracksAfterTierChange(tier: unknown): Promise<void> {
+  if (typeof tier !== 'number') return;
+  try {
+    await ensureDefaultLadderTracks();
+  } catch (err) {
+    console.warn('Failed to create default promotion/relegation tracks:', err);
+  }
+}
+
+/**
  * Update a division. Setting `isDefaultForNewWrestlers: true` clears the
  * flag on the previous default in the same transaction. Each cleared row is
  * guarded on still being the default, so a concurrent change fails the
  * whole write with `ConcurrencyError` instead of leaving two defaults.
+ * Setting a tier creates the default ladder tracks (DMV-02).
  */
 export async function updateDivision(divisionId: string, patch: DivisionPatch): Promise<Division> {
+  const updated = await writeDivisionUpdate(divisionId, patch);
+  await ensureLadderTracksAfterTierChange(patch.tier);
+  return updated;
+}
+
+async function writeDivisionUpdate(divisionId: string, patch: DivisionPatch): Promise<Division> {
   const { leagueOps, runInTransaction } = getRepositories();
   const { divisions } = leagueOps;
 
@@ -127,6 +149,9 @@ export async function createDivision(input: DivisionCreateInput): Promise<Divisi
   const { divisions } = getRepositories().leagueOps;
   const { isDefaultForNewWrestlers, ...rest } = input;
   const created = await divisions.create(rest);
-  if (isDefaultForNewWrestlers !== true) return created;
-  return updateDivision(created.divisionId, { isDefaultForNewWrestlers: true });
+  const result = isDefaultForNewWrestlers === true
+    ? await writeDivisionUpdate(created.divisionId, { isDefaultForNewWrestlers: true })
+    : created;
+  await ensureLadderTracksAfterTierChange(rest.tier);
+  return result;
 }

@@ -58,3 +58,95 @@ export function buildDefaultCallupTrack(input: DefaultCallupTrackInput): Progres
     updatedAt: input.now,
   };
 }
+
+// ─── Promotion / relegation templates (DMV-02) ──────────────────────
+
+export const DEFAULT_PROMOTION_TRACK_SUFFIX = 'Promotion';
+export const DEFAULT_RELEGATION_TRACK_SUFFIX = 'Relegation';
+
+/** Matches the win/loss rate goals look back over. */
+export const DEFAULT_LADDER_FORM_MATCHES = 8;
+
+/**
+ * Default promotion goals, equally weighted:
+ *   - 60% win rate over the last 8 matches
+ *   - average of at least 3.25 stars
+ *   - top-3 contender for any title of the division (best rank <= 3)
+ *   - 1 Match of the Night
+ */
+export const DEFAULT_PROMOTION_GOALS: readonly ProgressionGoal[] = [
+  {
+    goalId: 'win-pct',
+    metric: 'winPct',
+    threshold: 60,
+    weight: 1,
+    params: { lastMatches: DEFAULT_LADDER_FORM_MATCHES },
+  },
+  { goalId: 'avg-star-rating', metric: 'avgStarRating', threshold: 3.25, weight: 1 },
+  { goalId: 'contender-rank', metric: 'contenderRankBest', threshold: 3, weight: 1, direction: 'atMost' },
+  { goalId: 'match-of-the-night', metric: 'matchOfTheNight', threshold: 1, weight: 1 },
+];
+
+/**
+ * Default relegation ("danger") goals, equally weighted. Progress on this
+ * track is how close the player is to relegation.
+ *   - loss rate of 70% or more over the last 8 matches (hot-angle losses skipped)
+ *   - 30+ days without a match
+ *   - average of 2.0 stars or less over at least 5 rated matches, expressed
+ *     as `avgStarRatingBelow` (5 - average) >= 3
+ */
+export const DEFAULT_RELEGATION_GOALS: readonly ProgressionGoal[] = [
+  {
+    goalId: 'loss-pct',
+    metric: 'lossPct',
+    threshold: 70,
+    weight: 1,
+    params: { lastMatches: DEFAULT_LADDER_FORM_MATCHES },
+  },
+  { goalId: 'inactivity', metric: 'daysSinceLastMatch', threshold: 30, weight: 1 },
+  {
+    goalId: 'low-star-rating',
+    metric: 'avgStarRatingBelow',
+    threshold: 3,
+    weight: 1,
+    params: { minRatedMatches: 5 },
+  },
+];
+
+export type LadderKind = 'promotion' | 'relegation';
+
+export interface DefaultLadderTrackInput {
+  trackId: string;
+  kind: LadderKind;
+  fromDivisionId: string;
+  /** Used in the track name, e.g. "Raw Promotion". */
+  divisionName: string;
+  /** ISO timestamp used for createdAt and updatedAt. */
+  now: string;
+}
+
+/**
+ * A default promotion or relegation track for a tiered division, editable
+ * by the GM like any other track. `toDivisionId` is left unset: the
+ * destination is resolved from the tiers when the move is executed.
+ */
+export function buildDefaultLadderTrack(input: DefaultLadderTrackInput): ProgressionTrack {
+  const isPromotion = input.kind === 'promotion';
+  const goals = isPromotion ? DEFAULT_PROMOTION_GOALS : DEFAULT_RELEGATION_GOALS;
+  const suffix = isPromotion ? DEFAULT_PROMOTION_TRACK_SUFFIX : DEFAULT_RELEGATION_TRACK_SUFFIX;
+  return {
+    trackId: input.trackId,
+    kind: input.kind,
+    // 100 = MAX_TRACK_NAME_LENGTH in functions/progression/trackInput.ts.
+    name: `${input.divisionName} ${suffix}`.trim().slice(0, 100),
+    fromDivisionId: input.fromDivisionId,
+    goals: goals.map((goal) => ({
+      ...goal,
+      ...(goal.params ? { params: { ...goal.params } } : {}),
+    })),
+    windowMode: 'sinceJoinedDivision',
+    isActive: true,
+    createdAt: input.now,
+    updatedAt: input.now,
+  };
+}
