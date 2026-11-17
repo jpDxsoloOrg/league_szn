@@ -544,13 +544,17 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Dashboard (aggregated league overview)
+  # Dashboard (aggregated league overview) and the league ticker feed
   getDashboard:
-    handler: functions/dashboard/getDashboard.handler
+    handler: functions/dashboard/handler.handler
     timeout: 15
     events:
       - http:
           path: dashboard
+          method: get
+          cors: *corsConfig
+      - http:
+          path: ticker
           method: get
           cors: *corsConfig
 

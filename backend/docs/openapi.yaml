@@ -2218,6 +2218,43 @@ paths:
       responses:
         '200': { description: Dashboard data with current champions, upcoming events, recent results, season info, quick stats }
 
+  /ticker:
+    get:
+      tags: [Dashboard]
+      summary: Get the league ticker feed (public)
+      description: >
+        Ordered ticker segments built from league data. Empty segments are left out;
+        segments are sorted by `priority` ascending, with pinned GM messages first.
+        Keys: pinned, tonight, newChampions, potentialCallups, promotionWatch,
+        hotRivalries, custom, news, upcomingShows, champions, latestResults.
+        Sent with `Cache-Control: public, max-age=60`.
+      responses:
+        '200':
+          description: Ticker segments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  generatedAt: { type: string, format: date-time }
+                  segments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key: { type: string }
+                        labelKey: { type: string, description: 'i18n key, e.g. ticker.segments.tonight' }
+                        priority: { type: integer, description: Lower comes first }
+                        items:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              text: { type: string, description: Display text (English fallback when textKey is set) }
+                              href: { type: string, description: In-app path }
+                              textKey: { type: string, description: Optional i18n key for templated text }
+                              textParams: { type: object, additionalProperties: true }
+
   /activity:
     get:
       tags: [Activity]
