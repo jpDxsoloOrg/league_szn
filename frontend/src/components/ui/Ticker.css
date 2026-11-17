@@ -2,7 +2,8 @@
  * The news crawl: a label badge, the moving headlines and the pause and
  * dismiss buttons on one strip. The track holds the list twice and slides left
  * by half its width, so the loop has no seam. Its run time is one step per few
- * characters of headline (see `crawlSteps`), so every crawl moves at one speed.
+ * characters of headline (see `crawlSteps`), so every crawl moves at one speed;
+ * the speed modifiers below change the time per step.
  */
 .ui-ticker {
   --ticker-seconds-per-step: 9s;
@@ -154,6 +155,15 @@
 /* The strip is only as tall as the button, so its focus ring is drawn inside it. */
 .ui-ticker__control:focus-visible {
   outline-offset: -2px;
+}
+
+/* The GM's scroll speed setting: time per step of headline. Normal is the default above. */
+.ui-ticker--speed-slow {
+  --ticker-seconds-per-step: 13s;
+}
+
+.ui-ticker--speed-fast {
+  --ticker-seconds-per-step: 6s;
 }
 
 /* The crawl takes longer the more headlines it carries. */

@@ -41,6 +41,16 @@ When a GM thinks you're getting close, they can mark you as **under consideratio
 
 Being under consideration is a compliment, not a promise. It means the GMs are watching you closely.
 
+## Call-up watch on the League Wire
+
+The League Wire is the moving news strip under the top bar. While you're under consideration, your name runs there under the **Call-up watch** tag, next to anyone else the GMs are watching. Anyone can choose your name to open your profile.
+
+- Only your name shows. Your progress bar and goals stay on your profile.
+- Your name comes off once you're called up or the GM takes the mark away.
+- The GMs can switch the Call-up watch part off, so it won't always be there.
+
+See [News and the League Wire](news) for everything else the strip shows.
+
 ## The GM makes the final call
 
 Hitting 100% does **not** move you automatically, and you don't need to be at 100% to be called up. The bar is a guide. A GM always makes the final decision and picks which main-roster division you join. Storylines, roster balance and how you carry yourself in the locker room matter too.

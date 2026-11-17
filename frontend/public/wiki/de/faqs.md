@@ -7,8 +7,8 @@ Häufige Fragen zur WWE-2K-Liga-Website.
 **Wo ist das Basis-/Erweitert-Menü geblieben?**  
 Das gibt es nicht mehr, genau wie das Mehr-Menü. Die Seite hat jetzt fünf Bereiche: Start, Events, Ranglisten, Storylines und Ich. Am Computer listet die Seitenleiste jeden Bereich mit seinen Seiten auf. Das Liga-Team sieht zusätzlich Admin. Siehe [Erste Schritte](getting-started).
 
-**Was ist das Laufband am unteren Rand?**  
-Das ist der Liga-Ticker: kommende Shows, Schlagzeilen und die neuesten Ergebnisse. Du kannst ihn anhalten. Siehe [News und der Liga-Ticker](news).
+**Was ist das Laufband unter der oberen Leiste?**  
+Das ist der Liga-Ticker: die Shows des Tages, neue Champions, Schlagzeilen und die neuesten Ergebnisse. Du kannst ihn anhalten oder ausblenden. Siehe [News und der Liga-Ticker](news).
 
 **Wo finde ich die Hilfe am Handy?**  
 Öffne **Ich**. Dort findest du Hilfe, Liga-Regeln und die Sprachauswahl.
