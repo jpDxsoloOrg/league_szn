@@ -4,10 +4,10 @@ Der Call-up aus den Young Boys ist erst der Anfang. Der Hauptkader ist eine Leit
 
 ## Die Divisionsleiter
 
-Jede Hauptkader-Division kann eine **Stufe** haben. Stufe 1 ist die oberste. Divisionen auf derselben Stufe sind gleichrangig: In dieser Liga könnten zum Beispiel **Raw** und **SmackDown** beide auf Stufe 1 stehen und **NXT** auf Stufe 2 darunter. **Young Boys** und andere Entwicklungsdivisionen stehen immer unter allen Stufen.
+Jede Hauptkader-Division kann eine **Stufe** haben. Stufe 1 ist die oberste. In dieser Liga reicht die Leiter von **Heavyweight** (Stufe 1) über **Mid Card** (Stufe 2) bis **Jobber** (Stufe 3). Divisionen auf derselben Stufe sind gleichrangig. **Young Boys** und andere Entwicklungsdivisionen stehen immer unter allen Stufen.
 
-- Ein **Aufstieg** bringt dich eine Sprosse nach oben, zum Beispiel von NXT zu Raw.
-- Ein **Abstieg** bringt dich eine Sprosse nach unten, zum Beispiel von SmackDown zu NXT.
+- Ein **Aufstieg** bringt dich eine Sprosse nach oben, zum Beispiel von Mid Card zu Heavyweight.
+- Ein **Abstieg** bringt dich eine Sprosse nach unten, zum Beispiel von Mid Card zu Jobber.
 - Eine Division ohne Stufe gehört nicht zur Leiter. Aus ihr steigt also niemand auf oder ab.
 
 ## Deine Aufstiegsanzeige
@@ -67,7 +67,7 @@ Wenn du wechselst:
 - erscheint ein Aufstieg im Aktivitäts-Feed, und der GM kann ihn auf der News-Seite ankündigen
 - wird ein Abstieg neutral angezeigt, als „*Name* wechselt zu *Division*“, und erscheint nur im Aktivitäts-Feed, wenn der GM ihn angekündigt hat
 
-Dein Profil führt einen **Divisionsverlauf** mit jedem Wechsel, zum Beispiel *Young Boys → NXT → Raw*.
+Dein Profil führt einen **Divisionsverlauf** mit jedem Wechsel, zum Beispiel *Young Boys → Jobber → Mid Card*.
 
 ## Für das Liga-Team
 

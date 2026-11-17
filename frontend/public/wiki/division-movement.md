@@ -4,10 +4,10 @@ Getting called up out of Young Boys is only the start. The main roster is a ladd
 
 ## The division ladder
 
-Every main-roster division can have a **tier**. Tier 1 is the top. Divisions on the same tier are equals: in this league, for example, **Raw** and **SmackDown** might both be tier 1 with **NXT** on tier 2 below them. **Young Boys** and any other developmental division always sit below every tier.
+Every main-roster division can have a **tier**. Tier 1 is the top. In this league the ladder runs **Heavyweight** (tier 1), **Mid Card** (tier 2) and **Jobber** (tier 3). Divisions on the same tier are equals. **Young Boys** and any other developmental division always sit below every tier.
 
-- A **promotion** moves you up one rung, for example from NXT to Raw.
-- A **relegation** moves you down one rung, for example from SmackDown to NXT.
+- A **promotion** moves you up one rung, for example from Mid Card to Heavyweight.
+- A **relegation** moves you down one rung, for example from Mid Card to Jobber.
 - A division without a tier isn't part of the ladder, so nobody gets promoted or relegated out of it.
 
 ## Your promotion meter
@@ -67,7 +67,7 @@ When you move:
 - a promotion appears in the activity feed, and the GM may announce it on the News page
 - a relegation is shown neutrally, as "*name* moves to *division*", and only appears in the activity feed if the GM chose to announce it
 
-Your profile keeps a **Division History** of every move, for example *Young Boys → NXT → Raw*.
+Your profile keeps a **Division History** of every move, for example *Young Boys → Jobber → Mid Card*.
 
 ## For league staff
 
