@@ -14,6 +14,8 @@ const {
   mockListByTrack,
   mockListEventsByType,
   mockDivisionsList,
+  mockGetTickerSettings,
+  mockGetVerifiedCaller,
 } = vi.hoisted(() => ({
   mockMatchesListCompleted: vi.fn(),
   mockChampionshipsListAllHistory: vi.fn(),
@@ -27,6 +29,13 @@ const {
   mockListByTrack: vi.fn(),
   mockListEventsByType: vi.fn(),
   mockDivisionsList: vi.fn(),
+  mockGetTickerSettings: vi.fn(),
+  mockGetVerifiedCaller: vi.fn(),
+}));
+
+vi.mock('../../../lib/optionalCaller', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../lib/optionalCaller')>()),
+  getVerifiedCaller: mockGetVerifiedCaller,
 }));
 
 vi.mock('../../../lib/repositories', () => ({
@@ -41,6 +50,7 @@ vi.mock('../../../lib/repositories', () => ({
     },
     user: {
       challenges: { list: mockChallengesList },
+      siteConfig: { getTickerSettings: mockGetTickerSettings },
     },
     content: {
       promos: { list: mockPromosList },
@@ -89,6 +99,8 @@ function mockAllEmpty() {
   mockListByTrack.mockResolvedValue([]);
   mockListEventsByType.mockResolvedValue([]);
   mockDivisionsList.mockResolvedValue([]);
+  mockGetTickerSettings.mockResolvedValue({ enabledSegments: [], scrollSpeed: 'normal', publicRelegationWatch: false });
+  mockGetVerifiedCaller.mockResolvedValue(null);
 }
 
 describe('getActivity', () => {
@@ -401,6 +413,71 @@ describe('getActivity', () => {
     });
   });
 
+  describe('division_promotion / division_relegation (DMV-09)', () => {
+    const executed = (eventId: string, kind: string, extra: Record<string, unknown> = {}) => ({
+      eventId,
+      playerId: 'p1',
+      trackId: `t-${kind}`,
+      kind,
+      type: 'executed',
+      fromDivisionId: 'd-nxt',
+      toDivisionId: kind === 'promotion' ? 'd-raw' : 'd-yb',
+      actorUserId: 'a',
+      createdAt: `2026-11-1${eventId.slice(-1)}T00:00:00.000Z`,
+      ...extra,
+    });
+
+    beforeEach(() => {
+      mockListTracks.mockResolvedValue([]);
+      mockListByTrack.mockResolvedValue([]);
+      mockDivisionsList.mockResolvedValue([
+        { divisionId: 'd-yb', name: 'Young Boys' },
+        { divisionId: 'd-nxt', name: 'NXT' },
+        { divisionId: 'd-raw', name: 'Raw' },
+      ]);
+      mockPlayersList.mockResolvedValue([{ playerId: 'p1', name: 'Kenta', currentWrestler: 'W' }]);
+    });
+
+    it('lists promotions, and relegations only when announced, with neutral copy', async () => {
+      mockListEventsByType.mockResolvedValue([
+        executed('e1', 'promotion'),
+        executed('e2', 'relegation'),
+        executed('e3', 'relegation', { announced: true }),
+        executed('e4', 'callup', { toDivisionId: 'd-raw' }),
+      ]);
+
+      const result = await getActivity(makeEvent({ queryStringParameters: { type: 'division' } }), ctx, cb);
+      const body = JSON.parse(result!.body);
+
+      expect(mockMatchesListCompleted).not.toHaveBeenCalled();
+      expect(body.items.map((item: { id: string }) => item.id)).toEqual(['division-e3', 'division-e1']);
+      expect(body.items[0]).toMatchObject({
+        type: 'division_relegation',
+        summary: 'Kenta moves to Young Boys',
+        metadata: { playerId: 'p1', playerName: 'Kenta', fromDivisionName: 'NXT', toDivisionName: 'Young Boys' },
+      });
+      expect(body.items[1]).toMatchObject({ type: 'division_promotion', summary: 'Kenta was promoted to Raw' });
+    });
+
+    it('keeps division moves out of the call-up filter and in the unfiltered feed', async () => {
+      mockListEventsByType.mockResolvedValue([executed('e1', 'promotion'), executed('e4', 'callup')]);
+
+      const callups = JSON.parse((await getActivity(makeEvent({ queryStringParameters: { type: 'callup' } }), ctx, cb))!.body);
+      expect(callups.items.map((item: { type: string }) => item.type)).toEqual(['callup_executed']);
+
+      const all = JSON.parse((await getActivity(makeEvent(), ctx, cb))!.body);
+      expect(all.items.map((item: { type: string }) => item.type)).toEqual(['callup_executed', 'division_promotion']);
+    });
+
+    it('drops division moves for hidden players', async () => {
+      mockListEventsByType.mockResolvedValue([executed('e1', 'promotion')]);
+      mockPlayersList.mockResolvedValue([{ playerId: 'p1', name: 'Kenta', currentWrestler: 'Needs Wrestler' }]);
+
+      const result = await getActivity(makeEvent({ queryStringParameters: { type: 'division' } }), ctx, cb);
+      expect(JSON.parse(result!.body).items).toEqual([]);
+    });
+  });
+
   it('returns 500 when a repository method throws', async () => {
     mockMatchesListCompleted.mockRejectedValue(new Error('DynamoDB failure'));
 
@@ -463,6 +540,74 @@ describe('getActivity', () => {
       ]);
 
       expect(await summaries()).toEqual(['Former member def. Kept']);
+    });
+  });
+
+  describe('promotion and relegation watch (DMV-04)', () => {
+    const mark = (playerId: string, trackId: string, markedAt: string) => ({
+      playerId,
+      trackId,
+      progressPct: 0,
+      goals: [],
+      computedAt: markedAt,
+      consideration: { status: 'considering', markedBy: 'gm', markedAt },
+    });
+
+    beforeEach(() => {
+      mockListTracks.mockImplementation(async ({ kind }: { kind: string }) => [{ trackId: `t-${kind}`, kind, isActive: true }]);
+      mockListByTrack.mockImplementation(async (trackId: string) => {
+        if (trackId === 't-promotion') return [mark('p1', trackId, '2026-11-10T00:00:00.000Z')];
+        if (trackId === 't-relegation') return [mark('p2', trackId, '2026-11-11T00:00:00.000Z')];
+        return [];
+      });
+      mockPlayersList.mockResolvedValue([
+        { playerId: 'p1', name: 'Riser', currentWrestler: 'W1' },
+        { playerId: 'p2', name: 'Faller', currentWrestler: 'W2' },
+      ]);
+    });
+
+    async function feed(query: Record<string, string> | null, headers: Record<string, string> = {}) {
+      const result = await getActivity(makeEvent({ queryStringParameters: query, headers }), ctx, cb);
+      return JSON.parse(result!.body).items as Array<{ type: string; summary: string; id: string }>;
+    }
+
+    it('lists promotion watch publicly and leaves relegation watch out of the public feed', async () => {
+      const items = await feed(null);
+
+      expect(items).toHaveLength(1);
+      expect(items[0]).toMatchObject({
+        id: 'promotion-watch-p1-t-promotion',
+        type: 'promotion_watch',
+        summary: "Riser is on the GMs' promotion watch",
+      });
+      expect(mockListTracks).not.toHaveBeenCalledWith({ kind: 'relegation', isActive: true });
+    });
+
+    it('returns nothing for a public type=relegation request', async () => {
+      expect(await feed({ type: 'relegation' })).toEqual([]);
+      expect(mockListByTrack).not.toHaveBeenCalled();
+    });
+
+    it('shows relegation watch to Moderator+', async () => {
+      mockGetVerifiedCaller.mockResolvedValue({ username: 'gm', groups: ['Moderator'] });
+
+      const items = await feed({ type: 'relegation' }, { Authorization: 'Bearer gm' });
+
+      expect(items).toHaveLength(1);
+      expect(items[0]).toMatchObject({ type: 'relegation_watch', summary: "Faller is on the GMs' relegation watch" });
+    });
+
+    it('keeps relegation watch from a signed-in wrestler', async () => {
+      mockGetVerifiedCaller.mockResolvedValue({ username: 'w', groups: ['Wrestler'] });
+      expect(await feed({ type: 'relegation' }, { Authorization: 'Bearer w' })).toEqual([]);
+    });
+
+    it('shows relegation watch to everyone once publicRelegationWatch is on', async () => {
+      mockGetTickerSettings.mockResolvedValue({ enabledSegments: [], scrollSpeed: 'normal', publicRelegationWatch: true });
+
+      const items = await feed(null);
+
+      expect(items.map((item) => item.type)).toEqual(['relegation_watch', 'promotion_watch']);
     });
   });
 });

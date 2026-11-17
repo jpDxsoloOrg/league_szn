@@ -263,6 +263,33 @@ describe('updateDivision tier', () => {
   });
 });
 
+describe('updateDivision zone sizes', () => {
+  function put(divisionId: string, body: Record<string, unknown>) {
+    return updateDivision(makeEvent({ pathParameters: { divisionId }, body: JSON.stringify(body) }), ctx, cb);
+  }
+
+  it('sets and resets zone sizes', async () => {
+    const created = await repos.leagueOps.divisions.create({ name: 'NXT' });
+
+    expect((await put(created.divisionId, { promotionZoneSize: 4, relegationZoneSize: 0 }))!.statusCode).toBe(200);
+    const stored = await repos.leagueOps.divisions.findById(created.divisionId);
+    expect(stored?.promotionZoneSize).toBe(4);
+    expect(stored?.relegationZoneSize).toBe(0);
+
+    expect((await put(created.divisionId, { promotionZoneSize: null }))!.statusCode).toBe(200);
+    expect((await repos.leagueOps.divisions.findById(created.divisionId))?.promotionZoneSize ?? undefined).toBeUndefined();
+  });
+
+  it.each([-1, 1.5, '2', 21])('returns 400 for relegationZoneSize %s', async (size) => {
+    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
+
+    const result = await put(created.divisionId, { relegationZoneSize: size });
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toMatch(/^relegationZoneSize must be an integer/);
+  });
+});
+
 describe('deleteDivision', () => {
   it('deletes division and returns 204', async () => {
     const created = await repos.leagueOps.divisions.create({ name: 'Raw' });

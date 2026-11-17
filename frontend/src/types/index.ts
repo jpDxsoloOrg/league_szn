@@ -425,6 +425,10 @@ export interface Division {
   isDefaultForNewWrestlers?: boolean;
   /** Ladder position, 1 = top. Same tier = siblings; developmental ranks below all tiers. */
   tier?: number;
+  /** Top N of the division's standings form the promotion zone. Unset = 2, 0 disables. */
+  promotionZoneSize?: number;
+  /** Bottom N of the division's standings form the relegation zone. Unset = 2, 0 disables. */
+  relegationZoneSize?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -505,7 +509,12 @@ export type ActivityItemType =
   | 'challenge_event'
   | 'promo_posted'
   | 'callup_consideration'
-  | 'callup_executed';
+  | 'callup_executed'
+  | 'promotion_watch'
+  /** Only returned to Moderator+, or to everyone when publicRelegationWatch is on. */
+  | 'relegation_watch'
+  | 'division_promotion'
+  | 'division_relegation';
 
 export interface ActivityItem {
   id: string;

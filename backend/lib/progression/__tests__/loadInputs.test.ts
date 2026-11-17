@@ -109,7 +109,7 @@ describe('loadProgressionBatch', () => {
     expect(bobInputs.promos[0].reactionCounts).toEqual({ trash: 1 });
     expect(bobInputs.challenges).toHaveLength(1);
 
-    expect(batch.inputs.get('ghost')).toEqual({ playerId: 'ghost', matches: [], promos: [], challenges: [] });
+    expect(batch.inputs.get('ghost')).toMatchObject({ playerId: 'ghost', matches: [], promos: [], challenges: [] });
     expect(batch.inputs.has(carol.playerId)).toBe(false);
     expect([...batch.players.keys()].sort()).toEqual([alice.playerId, bob.playerId].sort());
     expect(batch.activeSeason).toBeNull();

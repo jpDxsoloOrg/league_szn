@@ -38,3 +38,19 @@ export async function listActiveConsiderations(kind: ProgressionKind): Promise<A
   return Array.from(byPlayer.values()).sort((a, b) =>
     b.consideration.markedAt.localeCompare(a.consideration.markedAt) || a.playerId.localeCompare(b.playerId));
 }
+
+/**
+ * Whether the league has opted in to showing relegation watch to everyone
+ * (the `publicRelegationWatch` ticker setting). Off by default, and an
+ * unreadable setting counts as off: labelling someone "relegation danger"
+ * in public must be a deliberate GM choice.
+ */
+export async function isRelegationWatchPublic(): Promise<boolean> {
+  try {
+    const settings = await getRepositories().user.siteConfig.getTickerSettings();
+    return settings.publicRelegationWatch === true;
+  } catch (err) {
+    console.error('Reading publicRelegationWatch failed; keeping relegation watch private:', err);
+    return false;
+  }
+}

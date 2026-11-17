@@ -3,11 +3,16 @@ import { act, render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Ticker, { TICKER_FADE_INTERVAL_MS } from '../../ui/Ticker';
-import type { TickerFeed } from '../../../services/api';
+import type { TickerFeed, TickerScrollSpeed } from '../../../services/api';
 
 const { mockGetTicker } = vi.hoisted(() => ({ mockGetTicker: vi.fn() }));
 
 vi.mock('../../../services/api', () => ({ tickerApi: { get: mockGetTicker } }));
+
+const siteConfig = vi.hoisted(() => ({ scrollSpeed: 'normal' as TickerScrollSpeed }));
+vi.mock('../../../contexts/SiteConfigContext', () => ({
+  useSiteConfig: () => ({ tickerSettings: { scrollSpeed: siteConfig.scrollSpeed } }),
+}));
 
 /** Echoes keys, appends params, and knows only the ticker's own keys. */
 const i18nStub = {
@@ -53,6 +58,7 @@ function renderTickerAt(path: string) {
 }
 
 beforeEach(() => {
+  siteConfig.scrollSpeed = 'normal';
   resetTickerFeed();
   window.sessionStorage.clear();
   mockGetTicker.mockReset().mockResolvedValue(FEED);
@@ -127,6 +133,15 @@ describe('LeagueTicker', () => {
     expect(mockGetTicker).not.toHaveBeenCalled();
   });
 
+  it.each<TickerScrollSpeed>(['slow', 'normal', 'fast'])('crawls at the %s scroll speed from the ticker settings', async (speed) => {
+    siteConfig.scrollSpeed = speed;
+    renderTickerAt('/');
+    const region = await screen.findByRole('region', { name: 'ticker.ariaLabel' });
+    expect(region).toHaveClass(`ui-ticker--speed-${speed}`);
+    const others = (['slow', 'normal', 'fast'] as const).filter((other) => other !== speed);
+    for (const other of others) expect(region).not.toHaveClass(`ui-ticker--speed-${other}`);
+  });
+
   it('closes for the visit with the dismiss button', async () => {
     const first = renderTickerAt('/');
     await userEvent.click(await screen.findByRole('button', { name: 'ticker.dismiss' }));
@@ -170,6 +185,14 @@ describe('Ticker', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.useRealTimers();
+  });
+
+  it('crawls at normal speed by default and at the speed it is given', () => {
+    const items = [{ id: 'one', text: 'Big news' }];
+    const { container, rerender } = render(<MemoryRouter><Ticker {...props} items={items} /></MemoryRouter>);
+    expect(container.querySelector('.ui-ticker')).toHaveClass('ui-ticker--speed-normal');
+    rerender(<MemoryRouter><Ticker {...props} items={items} speed="fast" /></MemoryRouter>);
+    expect(container.querySelector('.ui-ticker')).toHaveClass('ui-ticker--speed-fast');
   });
 
   it('renders nothing with no headlines', () => {
@@ -232,12 +255,15 @@ describe('Ticker', () => {
       <MemoryRouter>
         <Ticker
           {...props}
+          speed="fast"
           items={[{ id: 'one', text: 'First', tag: 'Tonight' }, { id: 'two', text: 'Second', tag: 'Tonight' }]}
         />
       </MemoryRouter>,
     );
     const strip = container.querySelector('.ui-ticker');
     expect(strip).toHaveClass('ui-ticker--fading');
+    // The scroll speed only applies to the crawl; the fade keeps its own pace.
+    expect(strip).not.toHaveClass('ui-ticker--speed-fast');
     expect(container.querySelector('.ui-ticker__track')).not.toBeInTheDocument();
     expect(screen.getByTestId('ticker-fade-item')).toHaveTextContent('TonightFirst');
     expect(screen.queryByText('Second')).not.toBeInTheDocument();

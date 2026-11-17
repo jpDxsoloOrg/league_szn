@@ -414,6 +414,18 @@ components:
           minimum: 1
           maximum: 99
           description: Ladder position, 1 = top. Divisions with the same tier are siblings. Developmental divisions rank below every tiered division. Send null on update to clear it.
+        promotionZoneSize:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 20
+          description: Top N of this division's standings shown as the promotion zone. Unset means 2; 0 disables. The top tier never shows one. Send null on update to reset to the default.
+        relegationZoneSize:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 20
+          description: Bottom N of this division's standings shown as the relegation zone. Unset means 2; 0 disables. Only shown when a division sits below, and only to GMs unless the publicRelegationWatch ticker setting is on. Send null on update to reset to the default.
         createdAt: { type: string }
         updatedAt: { type: string }
 
@@ -1108,7 +1120,12 @@ components:
         goalId: { type: string, description: Generated when omitted on create. }
         metric:
           type: string
-          enum: [matchesCompeted, wins, winPct, avgStarRating, promosCut, promosWithReactions, totalPromoReactions, matchOfTheNight, challengesIssued, currentWinStreak]
+          enum: [matchesCompeted, wins, winPct, avgStarRating, promosCut, promosWithReactions, totalPromoReactions, matchOfTheNight, challengesIssued, currentWinStreak, lossPct, currentLossStreak, daysSinceLastMatch, avgStarRatingBelow, contenderRankBest]
+          description: >-
+            lossPct and currentLossStreak skip losses in hot-angle matches (linked to an active rivalry
+            at hot heat or above). daysSinceLastMatch counts whole days since the latest match.
+            avgStarRatingBelow is 5 minus the average star rating. contenderRankBest is the best
+            contender rank on the titles of the player's division (lower is better; use direction atMost).
         threshold: { type: number, description: Must be greater than 0. }
         weight: { type: number, default: 1, description: Must be greater than 0. Weights are normalised by their total. }
         direction: { type: string, enum: [atLeast, atMost], default: atLeast }
@@ -1117,6 +1134,7 @@ components:
           properties:
             minRatedMatches: { type: integer, minimum: 1, description: avgStarRating only. }
             minReactions: { type: integer, minimum: 1, description: promosWithReactions only. }
+            lastMatches: { type: integer, minimum: 1, description: 'winPct and lossPct only: measure over the most recent N matches; no value until N exist.' }
         labelKey: { type: string }
 
     ProgressionTrack:
@@ -1139,7 +1157,10 @@ components:
         On POST, kind, name, fromDivisionId and goals are required; windowMode defaults to
         sinceJoinedDivision and isActive to true. On PUT every field is optional, goals replaces
         the whole list, and toDivisionId null clears the destination. Only one active track may
-        exist per (kind, fromDivisionId).
+        exist per (kind, fromDivisionId). An active promotion or relegation track needs a tiered
+        main-roster fromDivisionId; a promotion toDivisionId must rank above it and a relegation
+        toDivisionId below it. Left unset, the destination is resolved at execution, and a division
+        must exist on that side of the ladder.
       properties:
         kind: { type: string, enum: [callup, promotion, relegation] }
         name: { type: string, maxLength: 100 }
@@ -1635,6 +1656,7 @@ paths:
     post:
       tags: [Divisions]
       summary: Create division
+      description: Creating a division with a tier also creates any missing default promotion and relegation tracks across the ladder.
       security: [{ BearerAuth: [] }]
       requestBody:
         content:
@@ -1650,6 +1672,7 @@ paths:
     put:
       tags: [Divisions]
       summary: Update division
+      description: Setting a tier also creates any missing default promotion and relegation tracks across the ladder. Existing tracks are never replaced.
       security: [{ BearerAuth: [] }]
       parameters:
         - name: divisionId
@@ -2312,8 +2335,14 @@ paths:
           description: Pagination cursor (timestamp|id)
         - name: type
           in: query
-          schema: { type: string, enum: [match, championship, challenge, promo, tournament, season, callup] }
-          description: '`callup` returns both item types: `callup_consideration` (current marks) and `callup_executed`. Unknown values are ignored.'
+          schema: { type: string, enum: [match, championship, challenge, promo, tournament, season, callup, promotion, relegation, division] }
+          description: >
+            `callup` returns both item types: `callup_consideration` (current marks) and `callup_executed`.
+            `promotion` returns `promotion_watch` (current GM marks, public). `relegation` returns
+            `relegation_watch`, which only Moderator+ get (send a bearer token) unless the
+            `publicRelegationWatch` ticker setting is on; it is never in the public feed otherwise.
+            `division` returns `division_promotion` and `division_relegation`; a relegation is listed
+            only when its announcement was opted in. Unknown values are ignored.
       responses:
         '200':
           description: Paginated activity items
@@ -4142,10 +4171,14 @@ paths:
         Moves the player from the track's source division to `toDivisionId`
         (defaults to the track's target), deletes their progression row for the
         track and records an `executed` event (plus `consideration_removed` if
-        they were under consideration) in one transaction. Then, best-effort:
-        notifies the wrestler, optionally publishes a News announcement,
-        recomputes their progression and recalculates contenders. A call-up
-        cannot target a developmental division.
+        they were under consideration) in one transaction. The same transaction
+        resets the player's rows on every other track out of the old division.
+        Then, best-effort: notifies the wrestler, optionally publishes a News
+        announcement (opt-in), recomputes their progression and recalculates
+        contenders. A call-up cannot target a developmental division. Without a
+        target, a promotion / relegation moves one tier up / down (DMV-05); an
+        explicit promotion / relegation target must rank above / below the
+        source when both divisions are on the tier ladder.
       security: [{ BearerAuth: [] }]
       parameters:
         - name: playerId
@@ -4161,7 +4194,7 @@ paths:
               required: [trackId]
               properties:
                 trackId: { type: string }
-                toDivisionId: { type: string, description: Required when the track has no toDivisionId }
+                toDivisionId: { type: string, description: 'Defaults to the track target. Required for a call-up whose track has none; a promotion or relegation without one uses the division one tier up or down' }
                 announce: { type: boolean, description: Publish a News announcement }
                 force: { type: boolean, description: Proceed even if the player holds a title restricted to the old division }
       responses:
@@ -4180,7 +4213,26 @@ paths:
                   divisionJoinedAt: { type: string, format: date-time }
                   event: { type: object, description: The executed ProgressionEvent }
                   announcementId: { type: string }
-        '400': { description: 'Bad request, or code TARGET_IS_DEVELOPMENTAL or TRACK_INACTIVE', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '400':
+          description: >-
+            Bad request, or code TARGET_IS_DEVELOPMENTAL, TRACK_INACTIVE,
+            NO_DIVISION_ABOVE (top tier), NO_DIVISION_BELOW, TARGET_NOT_ABOVE,
+            TARGET_NOT_BELOW, or AMBIGUOUS_TARGET (several sibling divisions
+            qualify; `candidates` lists them, retry with toDivisionId)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  code: { type: string, enum: [TARGET_IS_DEVELOPMENTAL, TRACK_INACTIVE, NO_DIVISION_ABOVE, NO_DIVISION_BELOW, TARGET_NOT_ABOVE, TARGET_NOT_BELOW, AMBIGUOUS_TARGET] }
+                  candidates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        divisionId: { type: string }
+                        name: { type: string }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Track, player or target division not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
@@ -4321,6 +4373,8 @@ paths:
         Public. Anonymous callers and other wrestlers get the summary. The player themselves
         also gets goal detail; Moderator+ also gets considerationDetail (the GM note). Send a
         Bearer token to be identified. Hidden players return 404 except to themselves and staff.
+        Relegation rows are left out for everyone but the player and Moderator+, and the player
+        sees `consideration: false` on them, unless the publicRelegationWatch ticker setting is on.
       parameters:
         - { name: playerId, in: path, required: true, schema: { type: string } }
       responses:
@@ -4329,6 +4383,37 @@ paths:
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/PlayerProgressionSummary' } }
+        '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /progression/players/{playerId}/history:
+    get:
+      tags: [Progression]
+      summary: A player's division history
+      description: >-
+        Public (DMV-09). Executed call-ups, promotions and relegations merged with approved
+        division transfers, oldest first. A transfer's `movedAt` is its review time. Division
+        names are null when the division has since been deleted. Hidden players return 404
+        except to themselves and staff.
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Division moves, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id, kind, fromDivisionId, fromDivisionName, toDivisionId, toDivisionName, movedAt]
+                  properties:
+                    id: { type: string, description: 'Progression eventId or transfer requestId' }
+                    kind: { type: string, enum: [callup, promotion, relegation, transfer] }
+                    fromDivisionId: { type: string }
+                    fromDivisionName: { type: string, nullable: true }
+                    toDivisionId: { type: string }
+                    toDivisionName: { type: string, nullable: true }
+                    movedAt: { type: string, format: date-time }
         '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /progression/tracks:
@@ -4488,7 +4573,8 @@ paths:
         no-op (`changed: false`, no event, no notification). A mark creates the row,
         scored from current data, if no recompute has run yet. Marking needs an active
         track and a player in its from-division. The wrestler is notified on a
-        call-up or promotion mark only, never on removal.
+        call-up or promotion mark only ("You're on the GMs' promotion watch!"), never on removal.
+        A relegation mark sends no notification; it is logged as a ProgressionEvent for GMs.
       security: [{ BearerAuth: [] }]
       parameters:
         - name: playerId
@@ -4540,6 +4626,8 @@ paths:
         One entry per player on an active track of `kind`, newest mark first. Deleted,
         deactivated and wrestler-less players are left out. Backed by an eventually
         consistent index, so a new mark can take a moment to appear.
+        `kind=relegation` (relegation watch) is Moderator+ only unless the
+        `publicRelegationWatch` ticker setting is on; send a bearer token to read it.
       parameters:
         - name: kind
           in: query
@@ -4560,3 +4648,138 @@ paths:
                     trackId: { type: string }
                     markedAt: { type: string, format: date-time }
         '400': { description: 'Unknown kind', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'kind=relegation from a caller below Moderator while publicRelegationWatch is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /progression/reviews/{seasonId}:
+    get:
+      tags: [Progression]
+      summary: End-of-season movement review (Moderator+)
+      description: >-
+        The snapshot taken when the season was completed (DMV-03): one row per
+        player in a division with an active promotion or relegation track. Each
+        row has the player's best promotion and relegation progress, their rank
+        in the division's season standings, whether a GM flagged them (under
+        consideration), the recommendation and any decision already applied.
+        Recommendation: promote at 100% promotion progress or for the top of
+        the division's season standings; relegate at 100% relegation progress
+        (losses in hot or scorching rivalries never count); otherwise stay.
+        `targets` previews where a promote / relegate would go.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: seasonId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The season's reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  seasonId: { type: string }
+                  seasonStatus: { type: string, enum: [active, completed] }
+                  reviews:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        seasonId: { type: string }
+                        playerId: { type: string }
+                        playerName: { type: string }
+                        currentWrestler: { type: string }
+                        divisionId: { type: string, description: Division at snapshot time }
+                        currentDivisionId: { type: string, description: Division now }
+                        promotionTrackId: { type: string }
+                        promotionPct: { type: number }
+                        relegationTrackId: { type: string }
+                        relegationPct: { type: number }
+                        seasonRank: { type: integer, description: "1-based rank in the division's season standings" }
+                        flagged: { type: boolean }
+                        recommendation: { type: string, enum: [promote, relegate, stay] }
+                        decision: { type: string, enum: [promote, relegate, stay] }
+                        decidedBy: { type: string }
+                        decidedAt: { type: string, format: date-time }
+                        toDivisionId: { type: string, description: Set once a promote or relegate moved the player }
+                        createdAt: { type: string, format: date-time }
+                        targets:
+                          type: object
+                          description: 'Per move, `{ ok: true, toDivisionId }` or `{ ok: false, code, message }` (e.g. AMBIGUOUS_TARGET, NO_DIVISION_ABOVE)'
+                          properties:
+                            promote: { type: object }
+                            relegate: { type: object }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Season not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /progression/reviews/{seasonId}/apply:
+    post:
+      tags: [Progression]
+      summary: Apply end-of-season movement decisions (Moderator+)
+      description: >-
+        Applies up to 50 decisions in order. Each promote / relegate runs the
+        same move as POST /progression/players/{playerId}/execute on the
+        review's promotion / relegation track; stay only records the decision.
+        A failure for one player does not stop the others: every player gets a
+        result, with the refusal (status, message and code such as
+        HOLDS_DIVISION_TITLE, AMBIGUOUS_TARGET, REVIEW_NOT_FOUND, ALREADY_APPLIED
+        or NO_TRACK) when it failed. Contenders are recalculated once for the
+        batch.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: seasonId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decisions]
+              properties:
+                decisions:
+                  type: array
+                  minItems: 1
+                  maxItems: 50
+                  items:
+                    type: object
+                    required: [playerId, decision]
+                    properties:
+                      playerId: { type: string }
+                      decision: { type: string, enum: [promote, relegate, stay] }
+                      toDivisionId: { type: string, description: Overrides the default target (needed when several sibling divisions qualify) }
+                      force: { type: boolean, description: Proceed even if the player holds a title restricted to the old division }
+                      announce: { type: boolean, description: Publish a News announcement for the move }
+      responses:
+        '200':
+          description: Per-player results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  seasonId: { type: string }
+                  applied: { type: integer }
+                  failed: { type: integer }
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        playerId: { type: string }
+                        decision: { type: string, enum: [promote, relegate, stay] }
+                        ok: { type: boolean }
+                        move: { type: object, description: 'The executed move, as returned by POST /progression/players/{playerId}/execute' }
+                        refusal:
+                          type: object
+                          properties:
+                            status: { type: integer }
+                            message: { type: string }
+                            details: { type: object, properties: { code: { type: string } } }
+        '400': { description: 'Invalid decisions', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Season not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

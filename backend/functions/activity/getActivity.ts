@@ -1,13 +1,14 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import type { Player, Championship } from '../../lib/repositories';
+import type { Player, Championship, ProgressionEvent } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { FORMER_MEMBER, isHiddenLivePlayer, realWrestlerName } from '../../lib/needsWrestler';
 import { isChallengeLapsed } from '../../lib/challengeExpiry';
 import { isPromoArchived } from '../../lib/promoArchive';
-import { listActiveConsiderations } from '../../lib/progression/considerations';
+import { isRelegationWatchPublic, listActiveConsiderations, type ActiveConsideration } from '../../lib/progression/considerations';
+import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
 
-const ACTIVITY_TYPES = ['match', 'championship', 'challenge', 'promo', 'tournament', 'season', 'callup'] as const;
+const ACTIVITY_TYPES = ['match', 'championship', 'challenge', 'promo', 'tournament', 'season', 'callup', 'promotion', 'relegation', 'division'] as const;
 type ActivityTypeFilter = (typeof ACTIVITY_TYPES)[number];
 
 // Summaries are shown as written, so an id must never stand in for a name.
@@ -21,7 +22,24 @@ export type ActivityItemType =
   | 'challenge_event'
   | 'promo_posted'
   | 'callup_consideration'
-  | 'callup_executed';
+  | 'callup_executed'
+  | 'promotion_watch'
+  | 'relegation_watch'
+  | 'division_promotion'
+  | 'division_relegation';
+
+/** Current GM marks, one item per marked player. */
+type WatchItemType = 'callup_consideration' | 'promotion_watch' | 'relegation_watch';
+
+const WATCH_SUMMARIES: Record<WatchItemType, string> = {
+  callup_consideration: 'is being considered for a call-up',
+  promotion_watch: "is on the GMs' promotion watch",
+  relegation_watch: "is on the GMs' relegation watch",
+};
+
+function isWatchItem(type: ActivityItemType): type is WatchItemType {
+  return type in WATCH_SUMMARIES;
+}
 
 export interface ActivityItem {
   id: string;
@@ -82,6 +100,28 @@ function buildChampionshipNameMap(allChampionships: Championship[]): Record<stri
   return names;
 }
 
+/**
+ * DMV-09: a promotion is always news. A relegation reaches the public feed
+ * only when the GM opted in to announcing it.
+ */
+export function isPublicDivisionMove(event: Pick<ProgressionEvent, 'kind' | 'announced'>): boolean {
+  if (event.kind === 'promotion') return true;
+  if (event.kind === 'relegation') return event.announced === true;
+  return false;
+}
+
+/** Relegation copy stays neutral: "X moves to NXT", never "X was relegated". */
+export function buildDivisionMoveSummary(
+  type: 'division_promotion' | 'division_relegation',
+  playerName: string,
+  toDivisionName: string | undefined,
+): string {
+  if (type === 'division_promotion') {
+    return toDivisionName ? `${playerName} was promoted to ${toDivisionName}` : `${playerName} was promoted`;
+  }
+  return toDivisionName ? `${playerName} moves to ${toDivisionName}` : `${playerName} moves to a new division`;
+}
+
 function loadIf<TItem>(enabled: boolean, load: () => Promise<TItem[]>): Promise<TItem[]> {
   return enabled ? load() : Promise.resolve([]);
 }
@@ -98,6 +138,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const includeChallenge = !typeFilter || typeFilter === 'challenge';
     const includePromo = !typeFilter || typeFilter === 'promo';
     const includeCallup = !typeFilter || typeFilter === 'callup';
+    const includePromotion = !typeFilter || typeFilter === 'promotion';
+    // Relegation marks are GM-only (DMV-04): Moderator+ see them, everyone
+    // else only once the league turns on public relegation watch.
+    const includeRelegation = (!typeFilter || typeFilter === 'relegation')
+      && ((await isRelegationWatchPublic()) || isStaff(await getVerifiedCaller(event)));
+    const includeDivision = !typeFilter || typeFilter === 'division';
 
     const rawItems: { type: ActivityItemType; timestamp: string; id: string; summary: string; metadata: Record<string, unknown> }[] = [];
     const playerIds = new Set<string>();
@@ -114,6 +160,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       allPlayers,
       allChampionships,
       callupConsiderations,
+      promotionConsiderations,
+      relegationConsiderations,
       executedEvents,
       allDivisions,
     ] = await Promise.all([
@@ -127,8 +175,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       loadIf(includeChampionship, () => championships.list()),
       // Current marks only: an unmark removes the item, and is never news.
       loadIf(includeCallup, () => listActiveConsiderations('callup')),
-      loadIf(includeCallup, () => progression.listEventsByType('executed')),
-      loadIf(includeCallup, () => divisions.list()),
+      loadIf(includePromotion, () => listActiveConsiderations('promotion')),
+      loadIf(includeRelegation, () => listActiveConsiderations('relegation')),
+      loadIf(includeCallup || includeDivision, () => progression.listEventsByType('executed')),
+      loadIf(includeCallup || includeDivision, () => divisions.list()),
     ]);
 
     for (const m of completedMatches) {
@@ -280,26 +330,38 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       });
     }
 
-    for (const c of callupConsiderations) {
-      playerIds.add(c.playerId);
-      rawItems.push({
-        type: 'callup_consideration',
-        timestamp: c.consideration.markedAt,
-        id: `callup-${c.playerId}-${c.trackId}`,
-        summary: '',
-        metadata: { playerId: c.playerId, trackId: c.trackId },
-      });
+    const watchSources: Array<[WatchItemType, string, ActiveConsideration[]]> = [
+      ['callup_consideration', 'callup', callupConsiderations],
+      ['promotion_watch', 'promotion-watch', promotionConsiderations],
+      ['relegation_watch', 'relegation-watch', relegationConsiderations],
+    ];
+    for (const [type, idPrefix, considerations] of watchSources) {
+      for (const c of considerations) {
+        playerIds.add(c.playerId);
+        rawItems.push({
+          type,
+          timestamp: c.consideration.markedAt,
+          id: `${idPrefix}-${c.playerId}-${c.trackId}`,
+          summary: '',
+          metadata: { playerId: c.playerId, trackId: c.trackId },
+        });
+      }
     }
 
     for (const e of executedEvents) {
-      if (e.kind !== 'callup') continue;
-      rawItems.push({
-        type: 'callup_executed',
-        timestamp: e.createdAt,
-        id: `callup-${e.eventId}`,
-        summary: '',
-        metadata: { playerId: e.playerId, trackId: e.trackId, fromDivisionId: e.fromDivisionId, toDivisionId: e.toDivisionId },
-      });
+      const metadata = { playerId: e.playerId, trackId: e.trackId, fromDivisionId: e.fromDivisionId, toDivisionId: e.toDivisionId };
+      if (e.kind === 'callup') {
+        if (!includeCallup) continue;
+        rawItems.push({ type: 'callup_executed', timestamp: e.createdAt, id: `callup-${e.eventId}`, summary: '', metadata });
+      } else if (includeDivision && isPublicDivisionMove(e)) {
+        rawItems.push({
+          type: e.kind === 'promotion' ? 'division_promotion' : 'division_relegation',
+          timestamp: e.createdAt,
+          id: `division-${e.eventId}`,
+          summary: '',
+          metadata,
+        });
+      }
     }
 
     const playerNames = buildPlayerNameMap(allPlayers);
@@ -349,10 +411,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const meta = item.metadata;
         meta.playerName = nameOf(meta.playerId);
         item.summary = `${meta.playerName} posted a promo`;
-      } else if (item.type === 'callup_consideration') {
+      } else if (isWatchItem(item.type)) {
         const meta = item.metadata;
         meta.playerName = nameOf(meta.playerId);
-        item.summary = `${meta.playerName} is being considered for a call-up`;
+        item.summary = `${meta.playerName} ${WATCH_SUMMARIES[item.type]}`;
+      } else if (item.type === 'division_promotion' || item.type === 'division_relegation') {
+        const meta = item.metadata;
+        meta.playerName = nameOf(meta.playerId);
+        meta.fromDivisionName = allDivisions.find((d) => d.divisionId === meta.fromDivisionId)?.name;
+        meta.toDivisionName = allDivisions.find((d) => d.divisionId === meta.toDivisionId)?.name;
+        item.summary = buildDivisionMoveSummary(item.type, meta.playerName as string, meta.toDivisionName as string | undefined);
       } else if (item.type === 'callup_executed') {
         const meta = item.metadata;
         meta.playerName = nameOf(meta.playerId);
@@ -368,11 +436,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // and the name map above still covers everyone. A deleted player's items
     // stay as they did before the row was kept, now with the real name.
     const hiddenPlayerIds = new Set(allPlayers.filter(isHiddenLivePlayer).map((p) => p.playerId));
-    // A call-up mark is about the player's future, so a deleted player's mark goes too.
+    // A GM mark (call-up, promotion or relegation watch) is about the player's future, so a deleted player's mark goes too.
     const livePlayerIds = new Set(allPlayers.filter((p) => !p.deletedAt).map((p) => p.playerId));
     const visibleItems = rawItems.filter((item) => {
-      if (item.type === 'promo_posted' || item.type === 'callup_executed') return !hiddenPlayerIds.has(item.metadata.playerId as string);
-      if (item.type === 'callup_consideration') return livePlayerIds.has(item.metadata.playerId as string)
+      if (item.type === 'promo_posted' || item.type === 'callup_executed' || item.type === 'division_promotion'
+        || item.type === 'division_relegation') return !hiddenPlayerIds.has(item.metadata.playerId as string);
+      if (isWatchItem(item.type)) return livePlayerIds.has(item.metadata.playerId as string)
         && !hiddenPlayerIds.has(item.metadata.playerId as string);
       if (item.type === 'challenge_event') {
         return !hiddenPlayerIds.has(item.metadata.challengerId as string)

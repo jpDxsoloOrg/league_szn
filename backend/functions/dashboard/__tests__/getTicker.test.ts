@@ -108,7 +108,7 @@ describe('getTicker', () => {
       ],
     });
     mocks.announcementsListActive.mockResolvedValue([{ announcementId: 'a1', title: 'Big news' }]);
-    mocks.listTracks.mockResolvedValue([{ trackId: 't1' }]);
+    mocks.listTracks.mockImplementation(async ({ kind }: { kind: string }) => (kind === 'callup' ? [{ trackId: 't1' }] : []));
     mocks.listByTrack.mockResolvedValue([
       { playerId: 'p2', trackId: 't1', consideration: { markedAt: '2026-11-15T00:00:00.000Z' } },
       { playerId: 'hidden', trackId: 't1', consideration: { markedAt: '2026-11-14T00:00:00.000Z' } },
@@ -125,6 +125,48 @@ describe('getTicker', () => {
     expect(byKey.hotRivalries.items).toEqual([{ text: 'Cena vs Rock', href: '/rivalries/r1' }]);
     expect(byKey.newChampions.items[0].text).toBe('Cena · World');
     expect(byKey.latestResults.items.map((item: { text: string }) => item.text)).toEqual(['Mania', 'Cena def. Rock']);
+  });
+
+  it('fills promotion watch from active promotion marks and never reads relegation marks', async () => {
+    mocks.playersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Pat', currentWrestler: 'Cena' },
+      { playerId: 'p2', name: 'Sam', currentWrestler: 'Rock' },
+      { playerId: 'gone', name: 'Gone', currentWrestler: 'Ghost', deletedAt: '2026-11-01T00:00:00.000Z' },
+    ]);
+    mocks.listTracks.mockImplementation(async ({ kind }: { kind: string }) => [{ trackId: `t-${kind}`, kind }]);
+    mocks.listByTrack.mockImplementation(async (trackId: string) => {
+      if (trackId === 't-promotion') {
+        return [
+          { playerId: 'p1', trackId, consideration: { markedAt: '2026-11-15T00:00:00.000Z' } },
+          { playerId: 'gone', trackId, consideration: { markedAt: '2026-11-14T00:00:00.000Z' } },
+          { playerId: 'p2', trackId },
+        ];
+      }
+      if (trackId === 't-relegation') {
+        return [{ playerId: 'p2', trackId, consideration: { markedAt: '2026-11-15T00:00:00.000Z' } }];
+      }
+      return [];
+    });
+    mocks.getTickerSettings.mockResolvedValue({ ...DEFAULT_TICKER_SETTINGS, publicRelegationWatch: true });
+
+    const body = JSON.parse((await callTicker()).body);
+
+    expect(body.segments.map((segment: { key: string }) => segment.key)).toEqual(['promotionWatch']);
+    expect(body.segments[0].items).toEqual([{ text: 'Cena', href: '/player/p1' }]);
+    expect(mocks.listTracks).toHaveBeenCalledWith({ kind: 'promotion', isActive: true });
+    expect(mocks.listTracks).not.toHaveBeenCalledWith({ kind: 'relegation', isActive: true });
+  });
+
+  it('leaves promotion watch out when the admin turned that segment off', async () => {
+    mocks.playersList.mockResolvedValue([{ playerId: 'p1', name: 'Pat', currentWrestler: 'Cena' }]);
+    mocks.listTracks.mockImplementation(async ({ kind }: { kind: string }) => (kind === 'promotion' ? [{ trackId: 't-p' }] : []));
+    mocks.listByTrack.mockResolvedValue([{ playerId: 'p1', trackId: 't-p', consideration: { markedAt: '2026-11-15T00:00:00.000Z' } }]);
+    mocks.getTickerSettings.mockResolvedValue({
+      ...DEFAULT_TICKER_SETTINGS,
+      enabledSegments: DEFAULT_TICKER_SETTINGS.enabledSegments.filter((key) => key !== 'promotionWatch'),
+    });
+
+    expect(JSON.parse((await callTicker()).body).segments).toEqual([]);
   });
 
   it('still answers when one source fails', async () => {

@@ -1,14 +1,26 @@
 /**
- * Progression data loader (CUP-02).
+ * Progression data loader (CUP-02, extended by DMV-02).
  *
  * Collects the raw activity the progression policy scores. Built for the
  * recompute-all case: completed matches, promos, challenges and players are
  * each listed ONCE, then grouped by player, however many players are asked for.
+ *
+ * DMV-02 adds:
+ *   - `isHotAngle` on each match input: the match's `rivalryId` points to an
+ *     ACTIVE rivalry whose heat tier is hot or above. Relegation metrics skip
+ *     losses in those matches (house rule: no punishment for losing a hot angle).
+ *   - `contenderRanks`: the player's ranks on the active titles of their own
+ *     division, for `contenderRankBest`.
+ *   - `asOf`: load time, for `daysSinceLastMatch`.
  */
 
 import { getRepositories } from '../repositories';
+import type { Rivalry } from '../repositories';
+import type { HeatTier } from '../policies/rivalryHeat';
 import type {
   Challenge,
+  Championship,
+  ContenderRanking,
   Match,
   Player,
   Promo,
@@ -39,8 +51,25 @@ function matchResult(match: Match, playerId: string): ProgressionMatchResult {
   return match.winners?.includes(playerId) ? 'win' : 'loss';
 }
 
-function toMatchInput(match: Match, playerId: string): ProgressionMatchInput {
-  return {
+/** Heat tiers that make a rivalry match a "hot angle". */
+export const HOT_ANGLE_HEAT_TIERS: ReadonlySet<HeatTier> = new Set<HeatTier>(['hot', 'scorching']);
+
+/** Ids of rivalries whose matches are hot angles: active, with heat hot or above. */
+export function hotAngleRivalryIds(rivalries: readonly Rivalry[]): Set<string> {
+  const ids = new Set<string>();
+  for (const rivalry of rivalries) {
+    if (rivalry.status === 'active' && HOT_ANGLE_HEAT_TIERS.has(rivalry.heat)) ids.add(rivalry.rivalryId);
+  }
+  return ids;
+}
+
+/** True when the match is part of a hot angle (see `hotAngleRivalryIds`). */
+export function isHotAngleMatch(match: Pick<Match, 'rivalryId'>, hotRivalryIds: ReadonlySet<string>): boolean {
+  return match.rivalryId !== undefined && hotRivalryIds.has(match.rivalryId);
+}
+
+function toMatchInput(match: Match, playerId: string, hotRivalryIds: ReadonlySet<string>): ProgressionMatchInput {
+  const input: ProgressionMatchInput = {
     matchId: match.matchId,
     date: match.date,
     seasonId: match.seasonId,
@@ -50,6 +79,91 @@ function toMatchInput(match: Match, playerId: string): ProgressionMatchInput {
     ratingsCount: match.ratingsCount,
     matchOfTheNight: match.matchOfTheNight,
   };
+  if (isHotAngleMatch(match, hotRivalryIds)) input.isHotAngle = true;
+  return input;
+}
+
+/**
+ * The player's contender ranks on the active titles of their own division.
+ * Tag-team rows are skipped: their `playerId` is a tag team id.
+ */
+export function contenderRanksForPlayer(
+  player: Pick<Player, 'playerId' | 'divisionId'>,
+  championships: readonly Championship[],
+  rankings: readonly ContenderRanking[],
+): number[] {
+  if (!player.divisionId) return [];
+  const divisionTitles = new Set(
+    championships
+      .filter((title) => title.divisionId === player.divisionId && title.isActive !== false)
+      .map((title) => title.championshipId),
+  );
+  return rankings
+    .filter((row) =>
+      row.playerId === player.playerId &&
+      row.entityType !== 'tagTeam' &&
+      divisionTitles.has(row.championshipId))
+    .map((row) => row.rank);
+}
+
+/** Rivalry and contender data the DMV-02 metrics need. */
+export interface LadderSourceData {
+  /** Active rivalries (any others are ignored anyway). */
+  rivalries: readonly Rivalry[];
+  championships: readonly Championship[];
+  /** Contender rows for the division titles in `championships`. */
+  contenderRankings: readonly ContenderRanking[];
+}
+
+async function listActiveRivalries(): Promise<Rivalry[]> {
+  const { rivalries } = getRepositories();
+  const all: Rivalry[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await rivalries.listByStatus('active', cursor ? { cursor } : {});
+    all.push(...page.items);
+    cursor = page.nextCursor ?? undefined;
+  } while (cursor);
+  return all;
+}
+
+/** Loads active rivalries plus the contender rankings of every active division title. */
+export async function loadLadderSourceData(): Promise<LadderSourceData> {
+  const { competition } = getRepositories();
+  const [rivalries, championships] = await Promise.all([
+    listActiveRivalries(),
+    competition.championships.list(),
+  ]);
+  const divisionTitles = championships.filter((title) => title.divisionId && title.isActive !== false);
+  const perTitle = await Promise.all(
+    divisionTitles.map((title) => competition.contenders.listByChampionship(title.championshipId)),
+  );
+  return { rivalries, championships: divisionTitles, contenderRankings: perTitle.flat() };
+}
+
+function emptyInputs(playerId: string, asOf: string | undefined): ProgressionInputs {
+  return { playerId, matches: [], promos: [], challenges: [], ...(asOf ? { asOf } : {}) };
+}
+
+function addMatchesAndRanks(
+  inputs: Map<string, ProgressionInputs>,
+  playersById: ReadonlyMap<string, Player>,
+  matches: readonly Match[],
+  ladder: LadderSourceData | undefined,
+): void {
+  const hotRivalryIds = hotAngleRivalryIds(ladder?.rivalries ?? []);
+  for (const match of matches) {
+    for (const playerId of new Set(match.participants)) {
+      inputs.get(playerId)?.matches.push(toMatchInput(match, playerId, hotRivalryIds));
+    }
+  }
+  if (!ladder) return;
+  for (const [playerId, target] of inputs) {
+    const player = playersById.get(playerId);
+    if (!player) continue;
+    const ranks = contenderRanksForPlayer(player, ladder.championships, ladder.contenderRankings);
+    if (ranks.length > 0) target.contenderRanks = ranks;
+  }
 }
 
 /**
@@ -91,15 +205,26 @@ function toChallengeInput(challenge: Challenge): ProgressionChallengeInput {
  */
 export async function loadProgressionBatch(playerIds: readonly string[]): Promise<ProgressionBatch> {
   const repos = getRepositories();
-  const [players, matches, promos, challenges, activeSeason] = await Promise.all([
+  const [players, matches, promos, challenges, activeSeason, ladder] = await Promise.all([
     repos.roster.players.list(),
     repos.competition.matches.listCompleted(),
     repos.content.promos.list(),
     repos.user.challenges.list(),
     repos.season.seasons.findActive(),
+    loadLadderSourceData(),
   ]);
 
-  return { ...buildProgressionInputs(playerIds, { players, matches, promos, challenges }), activeSeason };
+  return {
+    ...buildProgressionInputs(playerIds, {
+      players,
+      matches,
+      promos,
+      challenges,
+      ladder,
+      asOf: new Date().toISOString(),
+    }),
+    activeSeason,
+  };
 }
 
 export interface ProgressionSourceData {
@@ -108,6 +233,10 @@ export interface ProgressionSourceData {
   matches: readonly Match[];
   promos: readonly Promo[];
   challenges: readonly Challenge[];
+  /** DMV-02 rivalry/contender data. Without it no match is a hot angle and no ranks are set. */
+  ladder?: LadderSourceData;
+  /** Stamped on every input as `asOf` (for `daysSinceLastMatch`). */
+  asOf?: string;
 }
 
 /**
@@ -121,7 +250,7 @@ export function buildProgressionInputs(
 ): Pick<ProgressionBatch, 'inputs' | 'players'> {
   const inputs = new Map<string, ProgressionInputs>();
   for (const playerId of playerIds) {
-    inputs.set(playerId, { playerId, matches: [], promos: [], challenges: [] });
+    inputs.set(playerId, emptyInputs(playerId, source.asOf));
   }
 
   const playersById = new Map<string, Player>();
@@ -129,11 +258,7 @@ export function buildProgressionInputs(
     if (inputs.has(player.playerId)) playersById.set(player.playerId, player);
   }
 
-  for (const match of source.matches) {
-    for (const playerId of new Set(match.participants)) {
-      inputs.get(playerId)?.matches.push(toMatchInput(match, playerId));
-    }
-  }
+  addMatchesAndRanks(inputs, playersById, source.matches, source.ladder);
 
   for (const promo of source.promos) {
     if (promo.isHidden) continue;
@@ -163,10 +288,11 @@ export function buildProgressionInputs(
 export async function loadProgressionForPlayers(playerIds: readonly string[]): Promise<ProgressionBatch> {
   const repos = getRepositories();
   const uniqueIds = [...new Set(playerIds)];
-  const [players, matches, activeSeason, perPlayer] = await Promise.all([
+  const [players, matches, activeSeason, ladder, perPlayer] = await Promise.all([
     Promise.all(uniqueIds.map((playerId) => repos.roster.players.findById(playerId))),
     repos.competition.matches.listCompleted(),
     repos.season.seasons.findActive(),
+    loadLadderSourceData(),
     Promise.all(uniqueIds.map(async (playerId) => {
       const [promos, challenges] = await Promise.all([
         repos.content.promos.listByPlayer(playerId),
@@ -176,9 +302,10 @@ export async function loadProgressionForPlayers(playerIds: readonly string[]): P
     })),
   ]);
 
+  const asOf = new Date().toISOString();
   const inputs = new Map<string, ProgressionInputs>();
   for (const playerId of uniqueIds) {
-    inputs.set(playerId, { playerId, matches: [], promos: [], challenges: [] });
+    inputs.set(playerId, emptyInputs(playerId, asOf));
   }
 
   const playersById = new Map<string, Player>();
@@ -186,11 +313,7 @@ export async function loadProgressionForPlayers(playerIds: readonly string[]): P
     if (player) playersById.set(player.playerId, player);
   }
 
-  for (const match of matches) {
-    for (const playerId of new Set(match.participants)) {
-      inputs.get(playerId)?.matches.push(toMatchInput(match, playerId));
-    }
-  }
+  addMatchesAndRanks(inputs, playersById, matches, ladder);
 
   for (const { playerId, promos, challenges } of perPlayer) {
     const target = inputs.get(playerId);

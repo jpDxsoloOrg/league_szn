@@ -38,6 +38,11 @@ const METRIC_LABELS: Record<ProgressionMetric, (count: number) => string> = {
   matchOfTheNight: (count) => plural(count, 'Match of the Night award', 'Match of the Night awards'),
   challengesIssued: (count) => `${plural(count, 'challenge', 'challenges')} issued`,
   currentWinStreak: (count) => `${count}-match win streak`,
+  lossPct: (count) => `${count}% loss rate`,
+  currentLossStreak: (count) => `${count}-match losing streak`,
+  daysSinceLastMatch: (count) => `${plural(count, 'day', 'days')} without a match`,
+  avgStarRatingBelow: (count) => `${count} stars below a 5-star average`,
+  contenderRankBest: (count) => `top ${count} contender ranking`,
 };
 
 const KIND_LABELS: Record<ProgressionKind, string> = {

@@ -6,7 +6,7 @@ import type { ProgressionKind, ProgressionTrack } from '../../lib/repositories/t
 import { invokeAsync } from '../../lib/asyncLambda';
 import { parseBody } from '../../lib/parseBody';
 import { badRequest, conflict, created, notFound, serverError, success } from '../../lib/response';
-import { parseTrackInput, type TrackFields } from './trackInput';
+import { parseTrackInput, validateTrackLadder, type TrackFields } from './trackInput';
 
 const TRACK_KINDS: readonly ProgressionKind[] = ['callup', 'promotion', 'relegation'];
 
@@ -34,7 +34,8 @@ export async function queueDivisionRecompute(divisionIds: readonly string[]): Pr
 }
 
 /**
- * Check the parts of a track that need the database: both divisions exist
+ * Check the parts of a track that need the database: both divisions exist,
+ * promotion/relegation tracks point the right way up or down the ladder,
  * and no other active track shares its (kind, fromDivisionId).
  * Returns an error response, or null when the track can be saved.
  */
@@ -46,6 +47,12 @@ async function checkTrackRefs(fields: TrackFields, trackId: string) {
   }
   if (fields.toDivisionId !== undefined && !(await divisions.findById(fields.toDivisionId))) {
     return badRequest('toDivisionId does not match a division');
+  }
+  // Only live tracks must fit the ladder: a GM can still pause a track whose
+  // divisions were re-tiered since it was made.
+  if (fields.kind !== 'callup' && fields.isActive) {
+    const ladderError = validateTrackLadder(fields, await divisions.list());
+    if (ladderError) return badRequest(ladderError);
   }
   if (fields.isActive) {
     const active = await progression.listTracks({

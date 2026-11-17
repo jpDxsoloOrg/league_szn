@@ -124,6 +124,8 @@ export interface HotRivalryInput {
 export interface NewsInput {
   announcementId: string;
   title: string;
+  /** ISO date; newer stories lead. */
+  createdAt?: string;
 }
 
 export interface CustomTickerMessageInput {
@@ -238,9 +240,14 @@ export function buildCustomSegments(messages: CustomTickerMessageInput[]): Ticke
   return [pinned, rest].filter((built): built is TickerSegment => built !== null);
 }
 
-/** The first `NEWS_SHOWN` active announcements, in the order given. */
+/**
+ * The newest `NEWS_SHOWN` active announcements, newest first like the News
+ * page. The repository lists by priority, so an old Breaking post would
+ * otherwise lead.
+ */
 export function buildNewsSegment(news: NewsInput[]): TickerSegment | null {
-  return segment('news', news.slice(0, NEWS_SHOWN).map((article) => ({ text: article.title, href: `/news/${article.announcementId}` })));
+  const newestFirst = [...news].sort((first, second) => (second.createdAt ?? '').localeCompare(first.createdAt ?? ''));
+  return segment('news', newestFirst.slice(0, NEWS_SHOWN).map((article) => ({ text: article.title, href: `/news/${article.announcementId}` })));
 }
 
 export function buildChampionsSegment(champions: CurrentChampionInput[]): TickerSegment | null {

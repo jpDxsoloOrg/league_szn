@@ -152,3 +152,18 @@ export function validateDivisionTier(value: unknown): string | null {
   }
   return null;
 }
+
+// ─── Standings zones (DMV-07) ───────────────────────────────────────
+
+/** Zone size used when a division has none stored. */
+export const DEFAULT_ZONE_SIZE = 2;
+export const MAX_ZONE_SIZE = 20;
+
+/** Validate a promotion/relegation zone size from a request body. Null resets to the default. */
+export function validateZoneSize(field: string, value: unknown): string | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > MAX_ZONE_SIZE) {
+    return `${field} must be an integer from 0 to ${MAX_ZONE_SIZE}, or null`;
+  }
+  return null;
+}

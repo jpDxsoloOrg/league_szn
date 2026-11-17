@@ -390,12 +390,22 @@
       "challenge_event": "Herausforderungen",
       "promo_posted": "Promos",
       "callup_consideration": "Call-ups",
-      "callup_executed": "Call-ups"
+      "callup_executed": "Call-ups",
+      "promotion_watch": "Aufstiegsbeobachtung",
+      "relegation_watch": "Abstiegsbeobachtung",
+      "division_promotion": "Divisionswechsel",
+      "division_relegation": "Divisionswechsel"
     },
     "summaries": {
       "callup_consideration": "{{name}} wird für einen Call-up in Betracht gezogen",
       "callup_executed": "{{name}} hat einen Call-up erhalten",
-      "callup_executed_to": "{{name}} hat einen Call-up zu {{division}} erhalten"
+      "callup_executed_to": "{{name}} hat einen Call-up zu {{division}} erhalten",
+      "promotion_watch": "{{name}} steht auf der Aufstiegsbeobachtung der GMs",
+      "relegation_watch": "{{name}} steht auf der Abstiegsbeobachtung der GMs",
+      "division_promotion": "{{name}} ist aufgestiegen",
+      "division_promotion_to": "{{name}} ist zu {{division}} aufgestiegen",
+      "division_relegation": "{{name}} wechselt in eine neue Division",
+      "division_relegation_to": "{{name}} wechselt zu {{division}}"
     },
     "timeAgo": {
       "justNow": "Gerade eben",
@@ -466,6 +476,7 @@
       "rateMatches": "Kämpfe bewerten",
       "rivalryHeatExplained": "Wie Rivalitäts-Hitze funktioniert",
       "callUps": "Call-Ups: Von den Young Boys in den Hauptkader",
+      "divisionMovement": "Auf- und Abstieg",
       "strikesAndSuspensions": "Strikes und Sperren",
       "adminStrikes": "Admin: Strikes",
       "installApp": "App installieren",
@@ -545,6 +556,15 @@
       "face": "Face",
       "neutral": "Neutral",
       "heel": "Heel"
+    },
+    "zones": {
+      "promotion": "Aufstiegszone",
+      "relegation": "Abstiegszone",
+      "legend": "Tabellenzonen",
+      "promotionLegend_one": "Aufstiegszone: der oberste Platz",
+      "promotionLegend_other": "Aufstiegszone: die obersten {{count}} Plätze",
+      "relegationLegend_one": "Abstiegszone: der unterste Platz",
+      "relegationLegend_other": "Abstiegszone: die untersten {{count}} Plätze"
     }
   },
   "championships": {
@@ -3033,7 +3053,11 @@
       "tierLabel": "Stufe (optional)",
       "tierHint": "1 ist die oberste Stufe. Divisionen auf derselben Stufe sind gleichrangig. Leer lassen für keine Stufe. Entwicklungsdivisionen stehen immer unter allen Stufen.",
       "tierBadge": "Stufe {{tier}}",
-      "tierInvalid": "Die Stufe muss eine ganze Zahl von {{min}} bis {{max}} sein oder leer bleiben."
+      "tierInvalid": "Die Stufe muss eine ganze Zahl von {{min}} bis {{max}} sein oder leer bleiben.",
+      "promotionZoneLabel": "Größe der Aufstiegszone",
+      "relegationZoneLabel": "Größe der Abstiegszone",
+      "zoneHint": "Plätze, die als Aufstiegszone (oben) und Abstiegszone (unten) markiert werden, wenn die Tabelle nach dieser Division gefiltert ist. 0 schaltet eine Zone ab. Die oberste Stufe zeigt nie eine Aufstiegszone, die unterste Division nie eine Abstiegszone.",
+      "zoneInvalid": "Zonengrößen müssen ganze Zahlen von 0 bis {{max}} sein."
     },
     "transfers": {
       "loadError": "Wechselanfragen konnten nicht geladen werden",
@@ -3806,7 +3830,12 @@
       "totalPromoReactions": "Promo-Reaktionen",
       "matchOfTheNight": "Match-of-the-Night-Auszeichnungen",
       "challengesIssued": "Ausgesprochene Herausforderungen",
-      "currentWinStreak": "Siegesserie"
+      "currentWinStreak": "Siegesserie",
+      "lossPct": "Niederlagenquote",
+      "currentLossStreak": "Niederlagenserie",
+      "daysSinceLastMatch": "Tage seit dem letzten Match",
+      "avgStarRatingBelow": "Niedrige Sternebewertung",
+      "contenderRankBest": "Bester Herausfordererrang"
     },
     "goals": {
       "title": "Call-Up-Ziele",
@@ -3837,7 +3866,21 @@
       "currentOf": "{{current}} / {{threshold}}",
       "noValue": "— / {{threshold}}",
       "needsRated_one": "Benötigt {{count}} bewertetes Match",
-      "needsRated_other": "Benötigt {{count}} bewertete Matches"
+      "needsRated_other": "Benötigt {{count}} bewertete Matches",
+      "winPctLast": "Halte eine Siegquote von {{threshold}} oder besser über die letzten {{lastMatches}} Matches",
+      "lossPct": "Verliere {{threshold}} oder mehr der Matches",
+      "lossPctLast": "Verliere {{threshold}} oder mehr der letzten {{lastMatches}} Matches",
+      "currentLossStreak_one": "Verliere {{threshold}} Match in Folge",
+      "currentLossStreak_other": "Verliere {{threshold}} Matches in Folge",
+      "daysSinceLastMatch_one": "Bestreite {{threshold}} Tag lang kein Match",
+      "daysSinceLastMatch_other": "Bestreite {{threshold}} Tage lang kein Match",
+      "avgStarRatingBelow": "Durchschnitt von {{threshold}} oder weniger in bewerteten Matches",
+      "avgStarRatingBelowMin": "Durchschnitt von {{threshold}} oder weniger über mindestens {{minRatedMatches}} bewertete Matches",
+      "contenderRankBest": "Gehöre zu den Top {{threshold}} Herausforderern auf einen Divisionstitel",
+      "titleKind": {
+        "promotion": "Aufstiegsziele",
+        "relegation": "Abstiegskriterien"
+      }
     },
     "consideration": {
       "banner": {
@@ -3857,7 +3900,9 @@
       "tabs": {
         "board": "Kandidaten",
         "tracks": "Tracks & Ziele",
-        "history": "Verlauf"
+        "history": "Verlauf",
+        "movement": "Divisionswechsel",
+        "review": "Saisonbilanz"
       },
       "selectTrack": "Track",
       "trackRoute": "{{from}} → {{to}}",
@@ -3940,8 +3985,12 @@
           "weightInvalid": "Gib eine Gewichtung über 0 ein.",
           "paramInvalid": "Gib eine ganze Zahl ab 1 ein.",
           "invalid": "Der Track wurde nicht gespeichert: {{message}}",
-          "conflict": "Hier ist bereits ein anderer Track aktiv: {{message}}"
-        }
+          "conflict": "Hier ist bereits ein anderer Track aktiv: {{message}}",
+          "fromNeedsTier": "Auf- und Abstiegs-Tracks brauchen eine Hauptkader-Division mit Stufe.",
+          "toNotAbove": "Ein Aufstieg muss eine höher eingestufte Division als Ziel haben.",
+          "toNotBelow": "Ein Abstieg muss eine niedriger eingestufte Division als Ziel haben."
+        },
+        "lastMatches": "Über die letzten N Matches"
       },
       "board": {
         "caption": "Kandidaten auf {{track}}",
@@ -4015,6 +4064,7 @@
         "announce": "In den News ankündigen",
         "proceedAnyway": "Trotzdem fortfahren",
         "heldTitles": "Gehaltene Titel",
+        "wrongDirection": "Falsche Richtung",
         "done": "{{name}} wurde nach {{division}} verschoben.",
         "doneAnnounced": "{{name}} wurde nach {{division}} verschoben und in den News angekündigt.",
         "errors": {
@@ -4022,7 +4072,12 @@
           "NOT_IN_SOURCE_DIVISION": "{{name}} ist nicht mehr in der Division dieses Tracks. Lade die Liste neu.",
           "CONCURRENT_UPDATE": "Jemand anderes hat {{name}} zuerst verschoben. Lade neu und versuche es erneut.",
           "TARGET_IS_DEVELOPMENTAL": "Ein Call-Up kann keine Entwicklungsdivision als Ziel haben.",
-          "TRACK_INACTIVE": "Dieser Track ist inaktiv. Aktiviere ihn, bevor du jemanden hochholst."
+          "TRACK_INACTIVE": "Dieser Track ist inaktiv. Aktiviere ihn, bevor du jemanden hochholst.",
+          "NO_DIVISION_ABOVE": "{{name}} ist bereits in der obersten Stufe. Darüber gibt es keine Division.",
+          "NO_DIVISION_BELOW": "Unter der aktuellen Division von {{name}} gibt es keine Division.",
+          "TARGET_NOT_ABOVE": "Ein Aufstieg muss eine Division in einer höheren Stufe als Ziel haben.",
+          "TARGET_NOT_BELOW": "Ein Abstieg muss eine Division in einer niedrigeren Stufe als Ziel haben.",
+          "AMBIGUOUS_TARGET": "Mehrere Divisionen teilen sich die nächste Stufe. Wähle eine Zieldivision."
         }
       },
       "history": {
@@ -4059,6 +4114,133 @@
             "relegation": "Abgestiegen"
           }
         }
+      },
+      "movement": {
+        "noTracks": "Noch keine Auf- oder Abstiegs-Tracks",
+        "noTracksText": "Lege für eine Division einen Auf- oder Abstiegs-Track an, um ihre Kandidaten hier zu sehen.",
+        "noTrackForKind": {
+          "promotion": "{{division}} hat keinen Aufstiegs-Track.",
+          "relegation": "{{division}} hat keinen Abstiegs-Track."
+        },
+        "noTrack": "Kein Track",
+        "editGoals": "Ziele bearbeiten",
+        "overviewTitle": "Markierte Spieler nach Division",
+        "countsFailed": "Die Markierungen konnten nicht geladen werden: {{message}}",
+        "selectDivision": "Division",
+        "kindTabs": "Wechsel in {{division}}",
+        "columns": {
+          "division": "Division",
+          "promotion": "Aufstiegsbeobachtung",
+          "relegation": "Abstiegsbeobachtung"
+        },
+        "openCount": {
+          "promotion": "Aufstiegskandidaten in {{division}} öffnen ({{count}} markiert)",
+          "relegation": "Abstiegskandidaten in {{division}} öffnen ({{count}} markiert)"
+        }
+      },
+      "review": {
+        "season": "Saison",
+        "division": "Division",
+        "activeSeason": "{{name}} (läuft)",
+        "allDivisions": "Alle Divisionen",
+        "intro": "Jede Zeile startet mit der Empfehlung. Ändere beliebige Entscheidungen und wende sie dann an. Auf- und Abstiege werden nur angekündigt, wenn du Ankündigen anhakst.",
+        "caption": "Saisonbilanz Divisionswechsel",
+        "noSeasons": "Noch keine Saisons",
+        "empty": "Für diese Saison gibt es keine Bilanz.",
+        "emptyActive": "Diese Saison läuft noch. Die Bilanz wird zum Saisonende erstellt.",
+        "loadFailed": "Die Saisonbilanz konnte nicht geladen werden: {{message}}",
+        "applyCount_one": "{{count}} Entscheidung anwenden",
+        "applyCount_other": "{{count}} Entscheidungen anwenden",
+        "apply": "Entscheidungen anwenden",
+        "confirmTitle_one": "{{count}} Entscheidung anwenden?",
+        "confirmTitle_other": "{{count}} Entscheidungen anwenden?",
+        "confirmText": "{{promote}} steigen auf, {{relegate}} steigen ab, {{stay}} bleiben. Wechsel gelten sofort.",
+        "forceTitle": "{{name}} trotzdem verschieben?",
+        "forceText": "{{name}} hält Titel, die auf die aktuelle Division beschränkt sind: {{titles}}. Nach dem Wechsel hat der Titel einen Champion außerhalb der Division.",
+        "summary": "{{applied}} angewendet. {{failed}} nicht angewendet; siehe Spalte Ergebnis.",
+        "missingTargets_one": "Wähle vor dem Anwenden eine Zieldivision für {{count}} Spieler.",
+        "missingTargets_other": "Wähle vor dem Anwenden eine Zieldivision für {{count}} Spieler.",
+        "decisionFor": "Entscheidung für {{name}}",
+        "targetFor": "Zieldivision für {{name}}",
+        "noDecision": "Keine Entscheidung",
+        "pickTarget": "Division wählen",
+        "choiceUnavailable": "{{choice}} ({{reason}})",
+        "choices": {
+          "promote": "Aufsteigen",
+          "relegate": "Absteigen",
+          "stay": "Bleiben"
+        },
+        "decided": {
+          "promote": "Aufgestiegen",
+          "relegate": "Abgestiegen",
+          "stay": "Geblieben"
+        },
+        "reasons": {
+          "NO_TRACK": "kein Track",
+          "NO_DIVISION_ABOVE": "oberste Stufe",
+          "NO_DIVISION_BELOW": "unterste Stufe",
+          "TARGET_NOT_ABOVE": "Ziel nicht höher",
+          "TARGET_NOT_BELOW": "Ziel nicht tiefer"
+        },
+        "announce": "Ankündigen",
+        "applied": "Angewendet",
+        "notApplied": "Nicht angewendet",
+        "alreadyApplied": "Bereits angewendet",
+        "movedTo": "Nach {{division}} verschoben",
+        "nowIn": "Jetzt in {{division}}",
+        "rank": "#{{rank}}",
+        "unranked": "Ohne Platzierung",
+        "progress": "Aufstieg {{promotion}} % · Abstieg {{relegation}} %",
+        "columns": {
+          "player": "Spieler",
+          "division": "Division",
+          "standing": "Platzierung",
+          "recommendation": "Empfehlung",
+          "decision": "Entscheidung",
+          "target": "Ziel",
+          "result": "Ergebnis"
+        },
+        "refusals": {
+          "AMBIGUOUS_TARGET": "Mehrere Divisionen teilen sich die nächste Stufe. Wähle ein Ziel und wende erneut an.",
+          "HOLDS_DIVISION_TITLE": "{{name}} hält Titel, die auf die aktuelle Division beschränkt sind:",
+          "ALREADY_APPLIED": "Diese Entscheidung wurde bereits angewendet.",
+          "REVIEW_NOT_FOUND": "{{name}} hat in dieser Saison keine Bilanz.",
+          "NO_TRACK": "Die Division hat keinen aktiven Track für diesen Wechsel.",
+          "NO_DIVISION_ABOVE": "{{name}} ist bereits in der obersten Stufe.",
+          "NO_DIVISION_BELOW": "Unter der aktuellen Division von {{name}} gibt es keine weitere.",
+          "TARGET_NOT_ABOVE": "Ein Aufstieg muss eine höhere Stufe als Ziel haben.",
+          "TARGET_NOT_BELOW": "Ein Abstieg muss eine tiefere Stufe als Ziel haben.",
+          "NOT_IN_SOURCE_DIVISION": "{{name}} ist nicht mehr in der bewerteten Division.",
+          "CONCURRENT_UPDATE": "Jemand anderes hat {{name}} zuerst verschoben. Neu laden und erneut versuchen.",
+          "TRACK_INACTIVE": "Der Track für diesen Wechsel ist inaktiv.",
+          "UNEXPECTED_ERROR": "Beim Anwenden dieser Entscheidung ist etwas schiefgelaufen.",
+          "REQUEST_FAILED": "Die Anfrage ist fehlgeschlagen. Versuche es erneut."
+        }
+      }
+    },
+    "history": {
+      "title": "Divisionsverlauf",
+      "unknownDivision": "Ehemalige Division",
+      "kind": {
+        "callup": "Call-up",
+        "promotion": "Aufgestiegen",
+        "relegation": "Gewechselt",
+        "transfer": "Transfer"
+      }
+    },
+    "division": {
+      "title": "Divisionswechsel",
+      "gmNote": "GM-Notiz: {{note}}"
+    },
+    "staySharp": {
+      "title": "Bleib am Ball",
+      "intro": "Ein paar freundliche Tipps, damit du in Schwung bleibst:",
+      "tips": {
+        "wins": "Hol dir in deinen nächsten Matches ein paar Siege mehr.",
+        "winColumn": "Dein nächster Sieg ist ein toller Neustart. Hol ihn dir!",
+        "active": "Bleib aktiv: Fordere ein Match an oder nimm eine Herausforderung an.",
+        "quality": "Versuch, mit deinem nächsten Match die Show zu stehlen.",
+        "momentum": "Bau weiter Schwung auf. Die GMs sehen deinen Einsatz."
       }
     }
   },

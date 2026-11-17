@@ -31,6 +31,9 @@ vi.mock('../../../lib/dynamodb', () => ({
   },
 }));
 
+const { mockInvokeAsync } = vi.hoisted(() => ({ mockInvokeAsync: vi.fn() }));
+vi.mock('../../../lib/asyncLambda', () => ({ invokeAsync: mockInvokeAsync }));
+
 import { handler as updateSeason } from '../updateSeason';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
@@ -112,6 +115,47 @@ describe('updateSeason', () => {
     expect(updateCall.UpdateExpression).toContain('endDate = :autoEndDate');
     expect(updateCall.ExpressionAttributeValues[':status']).toBe('completed');
     expect(updateCall.ExpressionAttributeValues[':autoEndDate']).toBeDefined();
+  });
+
+  it('requests the season movement snapshot when a season completes (DMV-03)', async () => {
+    mockGet.mockResolvedValue({ Item: { seasonId: 's1', status: 'active' } });
+    mockUpdate.mockResolvedValue({ Attributes: { seasonId: 's1', status: 'completed' } });
+
+    const result = await updateSeason(
+      makeEvent({ pathParameters: { seasonId: 's1' }, body: JSON.stringify({ status: 'completed' }) }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(200);
+    expect(mockInvokeAsync).toHaveBeenCalledWith('progression', { action: 'seasonSnapshot', seasonId: 's1' });
+  });
+
+  it('still ends the season when the snapshot request fails', async () => {
+    mockGet.mockResolvedValue({ Item: { seasonId: 's1', status: 'active' } });
+    mockUpdate.mockResolvedValue({ Attributes: { seasonId: 's1', status: 'completed' } });
+    mockInvokeAsync.mockRejectedValueOnce(new Error('lambda down'));
+
+    const result = await updateSeason(
+      makeEvent({ pathParameters: { seasonId: 's1' }, body: JSON.stringify({ status: 'completed' }) }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(200);
+  });
+
+  it('does not request a snapshot for other updates or an already completed season', async () => {
+    mockGet.mockResolvedValue({ Item: { seasonId: 's1', status: 'completed' } });
+    mockUpdate.mockResolvedValue({ Attributes: { seasonId: 's1', status: 'completed', name: 'X' } });
+
+    await updateSeason(
+      makeEvent({ pathParameters: { seasonId: 's1' }, body: JSON.stringify({ status: 'completed', name: 'X' }) }),
+      ctx,
+      cb,
+    );
+
+    expect(mockInvokeAsync).not.toHaveBeenCalled();
   });
 
   it('does not auto-set endDate when endDate is provided in body', async () => {

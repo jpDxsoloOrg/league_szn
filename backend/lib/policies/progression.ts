@@ -17,6 +17,12 @@
  *
  * Overall progress is the weighted mean of goal fills, scaled to 0–100.
  * Weights do not need to sum to 1: they are normalised by their total.
+ * On a relegation track that number is the player's "danger".
+ *
+ * House rule (DMV-02): a wrestler is never punished for losing a match that
+ * is part of a hot angle. Matches tagged `isHotAngle` that the player LOST
+ * are skipped by the loss metrics (`lossPct`, `currentLossStreak`): they are
+ * not counted, and they neither extend nor break a loss streak.
  */
 
 import type {
@@ -43,6 +49,11 @@ export const DEFAULT_MIN_REACTIONS = 1;
 /** `progressPct` is rounded to this many decimal places. */
 export const PROGRESS_PCT_DECIMALS = 1;
 
+/** Top of the star scale; `avgStarRatingBelow` is measured down from here. */
+export const MAX_STAR_RATING = 5;
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 // ─── Inputs ─────────────────────────────────────────────────────────
 
 export type ProgressionMatchResult = 'win' | 'loss' | 'draw';
@@ -58,6 +69,11 @@ export interface ProgressionMatchInput {
   ratingAverage?: number;
   ratingsCount?: number;
   matchOfTheNight?: boolean;
+  /**
+   * Linked to an active rivalry whose heat tier is hot or above (set by the
+   * loader). A LOSS in such a match is ignored by relegation metrics.
+   */
+  isHotAngle?: boolean;
 }
 
 /** One promo the player authored. */
@@ -79,6 +95,13 @@ export interface ProgressionInputs {
   matches: ProgressionMatchInput[];
   promos: ProgressionPromoInput[];
   challenges: ProgressionChallengeInput[];
+  /**
+   * The player's current contender ranks (1 = top) on the titles of their own
+   * division. Not windowed: rankings are a snapshot. Absent = none.
+   */
+  contenderRanks?: number[];
+  /** "Now" for `daysSinceLastMatch`; defaults to the current time. */
+  asOf?: string;
 }
 
 /**
@@ -135,10 +158,10 @@ export function applyWindow(inputs: ProgressionInputs, window: ProgressionWindow
   if (window.mode === 'season') {
     const { seasonId } = window;
     if (seasonId === undefined) {
-      return { playerId: inputs.playerId, matches: [], promos: [], challenges: [] };
+      return { ...inputs, matches: [], promos: [], challenges: [] };
     }
     return {
-      playerId: inputs.playerId,
+      ...inputs,
       matches: inputs.matches.filter((match) => match.seasonId === seasonId),
       promos: inputs.promos.filter((promo) => withinBounds(promo.createdAt, window)),
       challenges: inputs.challenges.filter((challenge) => withinBounds(challenge.createdAt, window)),
@@ -146,7 +169,7 @@ export function applyWindow(inputs: ProgressionInputs, window: ProgressionWindow
   }
 
   return {
-    playerId: inputs.playerId,
+    ...inputs,
     matches: inputs.matches.filter((match) => withinBounds(match.date, window)),
     promos: inputs.promos.filter((promo) => withinBounds(promo.createdAt, window)),
     challenges: inputs.challenges.filter((challenge) => withinBounds(challenge.createdAt, window)),
@@ -170,23 +193,102 @@ function averageStarRating(matches: ProgressionMatchInput[], minRatedMatches: nu
   return ratings.reduce((total, rating) => total + rating, 0) / ratings.length;
 }
 
+function newestFirst(matches: readonly ProgressionMatchInput[]): ProgressionMatchInput[] {
+  return [...matches].sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+}
+
 function currentWinStreak(matches: ProgressionMatchInput[]): number {
-  const newestFirst = [...matches].sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
   let streak = 0;
-  for (const match of newestFirst) {
+  for (const match of newestFirst(matches)) {
     if (match.result !== 'win') break;
     streak += 1;
   }
   return streak;
 }
 
+/** A loss in a hot-angle match: relegation metrics act as if it never happened. */
+export function isProtectedLoss(match: ProgressionMatchInput): boolean {
+  return match.result === 'loss' && match.isHotAngle === true;
+}
+
+/** Matches the relegation (loss) metrics look at: hot-angle losses removed. */
+export function relegationMatches(matches: readonly ProgressionMatchInput[]): ProgressionMatchInput[] {
+  return matches.filter((match) => !isProtectedLoss(match));
+}
+
+/**
+ * The matches a rate is measured over: all of them, or with `lastMatches`
+ * the most recent N (null until N exist).
+ */
+function rateSample(
+  matches: readonly ProgressionMatchInput[],
+  lastMatches: number | undefined,
+): ProgressionMatchInput[] | null {
+  if (lastMatches === undefined) return matches.length === 0 ? null : [...matches];
+  if (matches.length < lastMatches) return null;
+  return newestFirst(matches).slice(0, lastMatches);
+}
+
+function resultPct(sample: ProgressionMatchInput[] | null, result: ProgressionMatchResult): number | null {
+  if (sample === null || sample.length === 0) return null;
+  return (sample.filter((match) => match.result === result).length / sample.length) * 100;
+}
+
+/** Consecutive losses from the newest match back. Hot-angle losses are skipped. */
+function currentLossStreak(matches: ProgressionMatchInput[]): number {
+  let streak = 0;
+  for (const match of newestFirst(relegationMatches(matches))) {
+    if (match.result !== 'loss') break;
+    streak += 1;
+  }
+  return streak;
+}
+
+/**
+ * Whole days from the latest match (or, with none, from `fallbackSince`)
+ * to `asOf`. Null when there is nothing to measure from.
+ */
+function daysSinceLastMatch(
+  matches: ProgressionMatchInput[],
+  asOf: string | undefined,
+  fallbackSince: string | undefined,
+): number | null {
+  let latest = Number.NEGATIVE_INFINITY;
+  for (const match of matches) {
+    const time = Date.parse(match.date);
+    if (!Number.isNaN(time) && time > latest) latest = time;
+  }
+  if (latest === Number.NEGATIVE_INFINITY && fallbackSince !== undefined) {
+    const since = Date.parse(fallbackSince);
+    if (!Number.isNaN(since)) latest = since;
+  }
+  if (latest === Number.NEGATIVE_INFINITY) return null;
+  const now = asOf === undefined ? Date.now() : Date.parse(asOf);
+  if (Number.isNaN(now)) return null;
+  return Math.max(0, Math.floor((now - latest) / MS_PER_DAY));
+}
+
+function bestContenderRank(ranks: readonly number[] | undefined): number | null {
+  const valid = (ranks ?? []).filter((rank) => Number.isFinite(rank) && rank >= 1);
+  return valid.length === 0 ? null : Math.min(...valid);
+}
+
 /**
  * Computes one metric over `inputs` restricted to `window`.
  *
  * Returns `null` when the metric is not yet computable:
- *   - `avgStarRating` with fewer than `params.minRatedMatches` rated matches;
- *   - `winPct` with no matches.
- * `winPct` is on a 0–100 scale; `avgStarRating` on the 0.5–5 star scale.
+ *   - `avgStarRating` / `avgStarRatingBelow` with fewer than
+ *     `params.minRatedMatches` rated matches;
+ *   - `winPct` / `lossPct` with no matches, or fewer than `params.lastMatches`;
+ *   - `daysSinceLastMatch` with no match and no window start to count from;
+ *   - `contenderRankBest` when the player is ranked on no division title.
+ * `winPct` / `lossPct` are on a 0–100 scale; `avgStarRating` on the 0.5–5
+ * star scale. `avgStarRatingBelow` is `MAX_STAR_RATING - avgStarRating`
+ * (higher = worse), so a relegation goal can use the default 'atLeast'
+ * direction. `contenderRankBest` is a rank (lower = better), so promotion
+ * goals pair it with 'atMost'.
+ *
+ * `lossPct` and `currentLossStreak` skip hot-angle losses (house rule).
  */
 export function computeMetric(
   metric: ProgressionMetric,
@@ -201,11 +303,20 @@ export function computeMetric(
       return matches.length;
     case 'wins':
       return matches.filter((match) => match.result === 'win').length;
-    case 'winPct': {
-      if (matches.length === 0) return null;
-      const wins = matches.filter((match) => match.result === 'win').length;
-      return (wins / matches.length) * 100;
+    case 'winPct':
+      return resultPct(rateSample(matches, params.lastMatches), 'win');
+    case 'lossPct':
+      return resultPct(rateSample(relegationMatches(matches), params.lastMatches), 'loss');
+    case 'currentLossStreak':
+      return currentLossStreak(matches);
+    case 'daysSinceLastMatch':
+      return daysSinceLastMatch(matches, inputs.asOf, window.since);
+    case 'avgStarRatingBelow': {
+      const average = averageStarRating(matches, params.minRatedMatches ?? DEFAULT_MIN_RATED_MATCHES);
+      return average === null ? null : MAX_STAR_RATING - average;
     }
+    case 'contenderRankBest':
+      return bestContenderRank(inputs.contenderRanks);
     case 'avgStarRating':
       return averageStarRating(matches, params.minRatedMatches ?? DEFAULT_MIN_RATED_MATCHES);
     case 'promosCut':
@@ -273,12 +384,14 @@ export function computeProgress(
 ): ProgressionResult {
   track.goals.forEach(validateGoal);
 
-  const windowed = applyWindow(inputs, { ...context, mode: track.windowMode });
+  const window: ProgressionWindow = { ...context, mode: track.windowMode };
+  const windowed = applyWindow(inputs, window);
 
   let weightedFill = 0;
   let totalWeight = 0;
   const goals = track.goals.map((goal): PlayerProgressionGoalStatus => {
-    const current = computeMetric(goal.metric, windowed, goal.params);
+    // Filtering is idempotent, so passing the window again only supplies `since`.
+    const current = computeMetric(goal.metric, windowed, goal.params, window);
     weightedFill += goalFill(goal, current) * goal.weight;
     totalWeight += goal.weight;
     return { goalId: goal.goalId, current, threshold: goal.threshold, met: goalMet(goal, current) };

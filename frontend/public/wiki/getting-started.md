@@ -22,7 +22,7 @@ The bar across the top shows which section and page you're on. On a computer it 
 
 The search box in the top bar finds wrestlers, events, titles and pages. Signed-in members also get a notification bell there.
 
-The moving strip along the bottom is the **League Wire**: upcoming shows, news headlines and the latest results. See [News and the League Wire](news).
+The moving strip under the top bar is the **League Wire**: tonight's shows, new champions, news headlines and the latest results. See [News and the League Wire](news).
 
 ## Joining the league
 

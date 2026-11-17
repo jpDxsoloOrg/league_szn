@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Ticker from '../ui/Ticker';
 import { useTickerFeed } from '../../hooks/useTickerFeed';
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { feedToTickerItems, isTickerHiddenPath } from './tickerItems';
 import './LeagueTicker.css';
 
@@ -29,11 +30,13 @@ function saveDismissed(): void {
  * The league's news crawl from `GET /ticker`, under the top bar. It holds its
  * height while the first answer loads so the page does not jump, renders
  * nothing when there is no headline, and stays off admin and sign-in pages.
- * The "×" closes it for the rest of the visit.
+ * The "×" closes it for the rest of the visit. The crawl runs at the GM's
+ * chosen scroll speed.
  */
 export default function LeagueTicker() {
   const { t, i18n } = useTranslation();
   const { pathname } = useLocation();
+  const { tickerSettings } = useSiteConfig();
   const [dismissed, setDismissed] = useState(readDismissed);
   const hiddenHere = isTickerHiddenPath(pathname);
   const { segments, loaded } = useTickerFeed(!hiddenHere && !dismissed);
@@ -56,6 +59,7 @@ export default function LeagueTicker() {
         setDismissed(true);
       }}
       items={items}
+      speed={tickerSettings.scrollSpeed}
     />
   );
 }

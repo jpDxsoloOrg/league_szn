@@ -390,12 +390,22 @@
       "challenge_event": "Challenges",
       "promo_posted": "Promos",
       "callup_consideration": "Call-ups",
-      "callup_executed": "Call-ups"
+      "callup_executed": "Call-ups",
+      "promotion_watch": "Promotion watch",
+      "relegation_watch": "Relegation watch",
+      "division_promotion": "Division moves",
+      "division_relegation": "Division moves"
     },
     "summaries": {
       "callup_consideration": "{{name}} is being considered for a call-up",
       "callup_executed": "{{name}} was called up",
-      "callup_executed_to": "{{name}} was called up to {{division}}"
+      "callup_executed_to": "{{name}} was called up to {{division}}",
+      "promotion_watch": "{{name}} is on the GMs' promotion watch",
+      "relegation_watch": "{{name}} is on the GMs' relegation watch",
+      "division_promotion": "{{name}} was promoted",
+      "division_promotion_to": "{{name}} was promoted to {{division}}",
+      "division_relegation": "{{name}} moves to a new division",
+      "division_relegation_to": "{{name}} moves to {{division}}"
     },
     "timeAgo": {
       "justNow": "Just now",
@@ -466,6 +476,7 @@
       "rateMatches": "Rate Matches",
       "rivalryHeatExplained": "How Rivalry Heat Works",
       "callUps": "Call-Ups: Young Boys to the Main Roster",
+      "divisionMovement": "Promotion and Relegation",
       "strikesAndSuspensions": "Strikes and suspensions",
       "adminStrikes": "Admin: Strikes",
       "installApp": "Install the App",
@@ -545,6 +556,15 @@
       "face": "Face",
       "neutral": "Neutral",
       "heel": "Heel"
+    },
+    "zones": {
+      "promotion": "Promotion zone",
+      "relegation": "Relegation zone",
+      "legend": "Standings zones",
+      "promotionLegend_one": "Promotion zone: top {{count}} place",
+      "promotionLegend_other": "Promotion zone: top {{count}} places",
+      "relegationLegend_one": "Relegation zone: bottom {{count}} place",
+      "relegationLegend_other": "Relegation zone: bottom {{count}} places"
     }
   },
   "championships": {
@@ -3029,7 +3049,11 @@
       "tierLabel": "Tier (Optional)",
       "tierHint": "1 is the top. Divisions on the same tier are siblings. Leave empty for no tier. Developmental divisions always rank below every tier.",
       "tierBadge": "Tier {{tier}}",
-      "tierInvalid": "Tier must be a whole number from {{min}} to {{max}}, or empty."
+      "tierInvalid": "Tier must be a whole number from {{min}} to {{max}}, or empty.",
+      "promotionZoneLabel": "Promotion zone size",
+      "relegationZoneLabel": "Relegation zone size",
+      "zoneHint": "Places shown as the promotion (top) and relegation (bottom) zones when standings are filtered to this division. 0 turns a zone off. The top tier never shows a promotion zone, and the lowest division never shows a relegation zone.",
+      "zoneInvalid": "Zone sizes must be whole numbers from 0 to {{max}}."
     },
     "transfers": {
       "loadError": "Failed to load transfer requests",
@@ -3806,7 +3830,12 @@
       "totalPromoReactions": "Promo reactions",
       "matchOfTheNight": "Match of the Night awards",
       "challengesIssued": "Challenges issued",
-      "currentWinStreak": "Win streak"
+      "currentWinStreak": "Win streak",
+      "lossPct": "Loss percentage",
+      "currentLossStreak": "Losing streak",
+      "daysSinceLastMatch": "Days since last match",
+      "avgStarRatingBelow": "Low star rating",
+      "contenderRankBest": "Best contender rank"
     },
     "goals": {
       "title": "Call-up goals",
@@ -3837,7 +3866,21 @@
       "currentOf": "{{current}} / {{threshold}}",
       "noValue": "— / {{threshold}}",
       "needsRated_one": "Needs {{count}} rated match",
-      "needsRated_other": "Needs {{count}} rated matches"
+      "needsRated_other": "Needs {{count}} rated matches",
+      "winPctLast": "Keep a win percentage of {{threshold}} or better over the last {{lastMatches}} matches",
+      "lossPct": "Lose {{threshold}} or more of matches",
+      "lossPctLast": "Lose {{threshold}} or more of the last {{lastMatches}} matches",
+      "currentLossStreak_one": "Lose {{threshold}} match in a row",
+      "currentLossStreak_other": "Lose {{threshold}} matches in a row",
+      "daysSinceLastMatch_one": "Go {{threshold}} day without a match",
+      "daysSinceLastMatch_other": "Go {{threshold}} days without a match",
+      "avgStarRatingBelow": "Average {{threshold}} or less in rated matches",
+      "avgStarRatingBelowMin": "Average {{threshold}} or less over at least {{minRatedMatches}} rated matches",
+      "contenderRankBest": "Rank in the top {{threshold}} contenders for a division title",
+      "titleKind": {
+        "promotion": "Promotion goals",
+        "relegation": "Relegation criteria"
+      }
     },
     "consideration": {
       "banner": {
@@ -3857,7 +3900,9 @@
       "tabs": {
         "board": "Candidates",
         "tracks": "Tracks & goals",
-        "history": "History"
+        "history": "History",
+        "movement": "Division movement",
+        "review": "Season review"
       },
       "selectTrack": "Track",
       "trackRoute": "{{from}} → {{to}}",
@@ -3940,8 +3985,12 @@
           "weightInvalid": "Enter a weight above 0.",
           "paramInvalid": "Enter a whole number of 1 or more.",
           "invalid": "The track was not saved: {{message}}",
-          "conflict": "Another track is already active here: {{message}}"
-        }
+          "conflict": "Another track is already active here: {{message}}",
+          "fromNeedsTier": "Promotion and relegation tracks need a main-roster division with a tier.",
+          "toNotAbove": "A promotion must target a division ranked above the source.",
+          "toNotBelow": "A relegation must target a division ranked below the source."
+        },
+        "lastMatches": "Over the last N matches"
       },
       "board": {
         "caption": "Candidates on {{track}}",
@@ -4015,6 +4064,7 @@
         "announce": "Announce on News",
         "proceedAnyway": "Proceed anyway",
         "heldTitles": "Titles held",
+        "wrongDirection": "Wrong direction",
         "done": "{{name}} moved to {{division}}.",
         "doneAnnounced": "{{name}} moved to {{division}} and announced on News.",
         "errors": {
@@ -4022,7 +4072,12 @@
           "NOT_IN_SOURCE_DIVISION": "{{name}} is no longer in this track's division. Reload the board.",
           "CONCURRENT_UPDATE": "Someone else moved {{name}} first. Reload the board and try again.",
           "TARGET_IS_DEVELOPMENTAL": "A call-up cannot target a developmental division.",
-          "TRACK_INACTIVE": "This track is inactive. Activate it before calling anyone up."
+          "TRACK_INACTIVE": "This track is inactive. Activate it before calling anyone up.",
+          "NO_DIVISION_ABOVE": "{{name}} is already in the top tier. There is no division above.",
+          "NO_DIVISION_BELOW": "There is no division below {{name}}'s current one.",
+          "TARGET_NOT_ABOVE": "A promotion must target a division in a higher tier.",
+          "TARGET_NOT_BELOW": "A relegation must target a division in a lower tier.",
+          "AMBIGUOUS_TARGET": "Several divisions share the next tier. Pick a target division."
         }
       },
       "history": {
@@ -4059,6 +4114,133 @@
             "relegation": "Relegated"
           }
         }
+      },
+      "movement": {
+        "noTracks": "No promotion or relegation tracks yet",
+        "noTracksText": "Create a promotion or relegation track for a division to rank its movement candidates here.",
+        "noTrackForKind": {
+          "promotion": "{{division}} has no promotion track.",
+          "relegation": "{{division}} has no relegation track."
+        },
+        "noTrack": "No track",
+        "editGoals": "Edit goals",
+        "overviewTitle": "Flagged players by division",
+        "countsFailed": "Could not load the flagged counts: {{message}}",
+        "selectDivision": "Division",
+        "kindTabs": "Movement in {{division}}",
+        "columns": {
+          "division": "Division",
+          "promotion": "Promotion watch",
+          "relegation": "Relegation watch"
+        },
+        "openCount": {
+          "promotion": "Open promotion candidates in {{division}} ({{count}} flagged)",
+          "relegation": "Open relegation candidates in {{division}} ({{count}} flagged)"
+        }
+      },
+      "review": {
+        "season": "Season",
+        "division": "Division",
+        "activeSeason": "{{name}} (in progress)",
+        "allDivisions": "All divisions",
+        "intro": "Each row starts on the recommendation. Change any decision, then apply. Promotions and relegations are not announced unless you tick Announce.",
+        "caption": "Season movement review",
+        "noSeasons": "No seasons yet",
+        "empty": "No review for this season.",
+        "emptyActive": "This season is still running. The review is taken when the season ends.",
+        "loadFailed": "Could not load the season review: {{message}}",
+        "applyCount_one": "Apply {{count}} decision",
+        "applyCount_other": "Apply {{count}} decisions",
+        "apply": "Apply decisions",
+        "confirmTitle_one": "Apply {{count}} decision?",
+        "confirmTitle_other": "Apply {{count}} decisions?",
+        "confirmText": "{{promote}} promoted, {{relegate}} relegated, {{stay}} staying. Moves take effect now.",
+        "forceTitle": "Move {{name}} anyway?",
+        "forceText": "{{name}} holds titles restricted to their current division: {{titles}}. Moving them leaves those titles with a champion outside the division.",
+        "summary": "Applied {{applied}}. {{failed}} not applied; see the Result column.",
+        "missingTargets_one": "Pick a target division for {{count}} player before applying.",
+        "missingTargets_other": "Pick a target division for {{count}} players before applying.",
+        "decisionFor": "Decision for {{name}}",
+        "targetFor": "Target division for {{name}}",
+        "noDecision": "No decision",
+        "pickTarget": "Pick a division",
+        "choiceUnavailable": "{{choice}} ({{reason}})",
+        "choices": {
+          "promote": "Promote",
+          "relegate": "Relegate",
+          "stay": "Stay"
+        },
+        "decided": {
+          "promote": "Promoted",
+          "relegate": "Relegated",
+          "stay": "Stayed"
+        },
+        "reasons": {
+          "NO_TRACK": "no track",
+          "NO_DIVISION_ABOVE": "top tier",
+          "NO_DIVISION_BELOW": "bottom tier",
+          "TARGET_NOT_ABOVE": "target not above",
+          "TARGET_NOT_BELOW": "target not below"
+        },
+        "announce": "Announce",
+        "applied": "Applied",
+        "notApplied": "Not applied",
+        "alreadyApplied": "Already applied",
+        "movedTo": "Moved to {{division}}",
+        "nowIn": "Now in {{division}}",
+        "rank": "#{{rank}}",
+        "unranked": "Unranked",
+        "progress": "Promotion {{promotion}}% · Relegation {{relegation}}%",
+        "columns": {
+          "player": "Player",
+          "division": "Division",
+          "standing": "Standing",
+          "recommendation": "Recommendation",
+          "decision": "Decision",
+          "target": "Target",
+          "result": "Result"
+        },
+        "refusals": {
+          "AMBIGUOUS_TARGET": "Several divisions share the next tier. Pick a target and apply again.",
+          "HOLDS_DIVISION_TITLE": "{{name}} holds titles restricted to their current division:",
+          "ALREADY_APPLIED": "This decision was already applied.",
+          "REVIEW_NOT_FOUND": "{{name}} has no review in this season.",
+          "NO_TRACK": "The division has no active track for this move.",
+          "NO_DIVISION_ABOVE": "{{name}} is already in the top tier.",
+          "NO_DIVISION_BELOW": "There is no division below {{name}}'s current one.",
+          "TARGET_NOT_ABOVE": "A promotion must target a division in a higher tier.",
+          "TARGET_NOT_BELOW": "A relegation must target a division in a lower tier.",
+          "NOT_IN_SOURCE_DIVISION": "{{name}} is no longer in the reviewed division.",
+          "CONCURRENT_UPDATE": "Someone else moved {{name}} first. Reload and try again.",
+          "TRACK_INACTIVE": "The track for this move is inactive.",
+          "UNEXPECTED_ERROR": "Something went wrong applying this decision.",
+          "REQUEST_FAILED": "The request failed. Try again."
+        }
+      }
+    },
+    "history": {
+      "title": "Division History",
+      "unknownDivision": "Former division",
+      "kind": {
+        "callup": "Called up",
+        "promotion": "Promoted",
+        "relegation": "Moved",
+        "transfer": "Transferred"
+      }
+    },
+    "division": {
+      "title": "Division Movement",
+      "gmNote": "GM note: {{note}}"
+    },
+    "staySharp": {
+      "title": "Stay sharp",
+      "intro": "A few friendly pointers to keep your momentum going:",
+      "tips": {
+        "wins": "Chase a few more wins in your upcoming matches.",
+        "winColumn": "Your next win is a great reset. Go get it!",
+        "active": "Stay active: request a match or answer a challenge.",
+        "quality": "Aim to steal the show with your next match.",
+        "momentum": "Keep building momentum. The GMs notice the effort."
       }
     }
   },

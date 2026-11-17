@@ -53,6 +53,19 @@ describe('ActivityFeed', () => {
       .toHaveAttribute('href', '/player/p1');
   });
 
+  it.each(['promotion_watch', 'relegation_watch'])('renders a %s item with a translated summary linking to the profile', async (type) => {
+    mockGetAll.mockResolvedValue(page([{
+      id: `${type}-p1-t1`,
+      type,
+      timestamp: '2026-11-01T10:00:00.000Z',
+      summary: "Edge is on the GMs' watch",
+      metadata: { playerId: 'p1', trackId: 't1', playerName: 'Edge' },
+    }]));
+    renderFeed();
+    expect(await screen.findByRole('link', { name: new RegExp(`activity\\.summaries\\.${type}`) }))
+      .toHaveAttribute('href', '/player/p1');
+  });
+
   it('links a call-up to the player profile and filters call-ups by the callup param', async () => {
     mockGetAll.mockResolvedValue(page([{
       id: 'callup-e1', type: 'callup_executed', timestamp: '2026-11-01T10:00:00.000Z',
@@ -79,6 +92,25 @@ describe('ActivityFeed', () => {
     renderFeed();
     expect(await screen.findByRole('link', { name: /activity\.summaries\.callup_executed_to/ }))
       .toHaveAttribute('href', '/player/p1');
+  });
+
+  it('links division moves to the profile and filters them by the division param', async () => {
+    mockGetAll.mockResolvedValue(page([{
+      id: 'division-e3', type: 'division_relegation', timestamp: '2026-11-01T10:00:00.000Z',
+      summary: 'Kenta moves to NXT',
+      metadata: { playerId: 'p1', playerName: 'Kenta', toDivisionName: 'NXT' },
+    }]));
+    renderFeed();
+    expect(await screen.findByRole('link', { name: /activity\.summaries\.division_relegation_to/ }))
+      .toHaveAttribute('href', '/player/p1');
+
+    await userEvent.click(screen.getByRole('tab', { name: 'activity.types.division_promotion' }));
+    await waitFor(() => {
+      expect(mockGetAll).toHaveBeenLastCalledWith(
+        expect.objectContaining({ type: 'division' }),
+        expect.any(AbortSignal),
+      );
+    });
   });
 
   it('shows the empty state', async () => {

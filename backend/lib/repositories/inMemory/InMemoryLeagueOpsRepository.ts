@@ -288,6 +288,8 @@ export class InMemoryLeagueOpsRepository implements LeagueOpsRepository {
           ? { isDefaultForNewWrestlers: input.isDefaultForNewWrestlers }
           : {}),
         ...(typeof input.tier === 'number' ? { tier: input.tier } : {}),
+        ...(typeof input.promotionZoneSize === 'number' ? { promotionZoneSize: input.promotionZoneSize } : {}),
+        ...(typeof input.relegationZoneSize === 'number' ? { relegationZoneSize: input.relegationZoneSize } : {}),
         createdAt: now,
         updatedAt: now,
       }),

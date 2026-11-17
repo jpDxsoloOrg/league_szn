@@ -1,5 +1,6 @@
 import type {
   CreateProgressionTrackInput,
+  DivisionHistoryEntry,
   ExecuteProgressionError,
   ExecuteProgressionInput,
   ExecuteProgressionResult,
@@ -13,6 +14,9 @@ import type {
   ProgressionTrackFilter,
   RecomputeProgressionInput,
   RecomputeProgressionResult,
+  SeasonReviewApplyResponse,
+  SeasonReviewDecisionInput,
+  SeasonReviewList,
   SetConsiderationInput,
   SetConsiderationResult,
   UpdateProgressionTrackInput,
@@ -20,6 +24,9 @@ import type {
 import { API_BASE_URL, ApiError, fetchWithAuth } from './apiClient';
 
 const enc = encodeURIComponent;
+
+/** Max decisions per season-review apply call, matching the API. */
+export const SEASON_REVIEW_BATCH_MAX = 50;
 
 function toQuery(params: Record<string, string | undefined>): string {
   const search = new URLSearchParams();
@@ -39,6 +46,11 @@ export const progressionApi = {
   /** Public. Goal detail for the owner and Moderator+; GM note for Moderator+. */
   getForPlayer: async (playerId: string, signal?: AbortSignal): Promise<PlayerProgressionSummary[]> => {
     return fetchWithAuth(`${API_BASE_URL}/progression/players/${enc(playerId)}`, {}, signal);
+  },
+
+  /** Public (DMV-09). Division moves and approved transfers, oldest first. */
+  getDivisionHistory: async (playerId: string, signal?: AbortSignal): Promise<DivisionHistoryEntry[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/progression/players/${enc(playerId)}/history`, {}, signal);
   },
 
   /** Public. */
@@ -110,6 +122,25 @@ export const progressionApi = {
     return fetchWithAuth(`${API_BASE_URL}/progression/events${query}`, {}, signal);
   },
 
+  /** Moderator+ (DMV-03). The season-end movement snapshot, with a target preview per player. */
+  getSeasonReviews: async (seasonId: string, signal?: AbortSignal): Promise<SeasonReviewList> => {
+    return fetchWithAuth(`${API_BASE_URL}/progression/reviews/${enc(seasonId)}`, {}, signal);
+  },
+
+  /**
+   * Moderator+ (DMV-03). Apply up to SEASON_REVIEW_BATCH_MAX decisions.
+   * Refusals come back per row in `results`, not as a thrown error.
+   */
+  applySeasonReviews: async (
+    seasonId: string,
+    decisions: SeasonReviewDecisionInput[],
+  ): Promise<SeasonReviewApplyResponse> => {
+    return fetchWithAuth(`${API_BASE_URL}/progression/reviews/${enc(seasonId)}/apply`, {
+      method: 'POST',
+      body: JSON.stringify({ decisions }),
+    });
+  },
+
   /** Moderator+ (CUP-03). Recompute the given players, or every player when `playerIds` is omitted. */
   recompute: async (input: RecomputeProgressionInput = {}): Promise<RecomputeProgressionResult> => {
     return fetchWithAuth(`${API_BASE_URL}/admin/progression/recompute`, {
@@ -125,6 +156,11 @@ const EXECUTE_ERROR_CODES: ReadonlySet<string> = new Set([
   'CONCURRENT_UPDATE',
   'TARGET_IS_DEVELOPMENTAL',
   'TRACK_INACTIVE',
+  'NO_DIVISION_ABOVE',
+  'NO_DIVISION_BELOW',
+  'TARGET_NOT_ABOVE',
+  'TARGET_NOT_BELOW',
+  'AMBIGUOUS_TARGET',
 ]);
 
 /** The coded refusal behind a failed `progressionApi.execute`, or null for any other error. */

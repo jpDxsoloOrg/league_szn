@@ -11,6 +11,10 @@ export interface Division {
    * rank below every tiered one. See lib/divisionTiers.ts.
    */
   tier?: number;
+  /** DMV-07: top N of this division's standings form the promotion zone. Unset = 2, 0 disables. */
+  promotionZoneSize?: number;
+  /** DMV-07: bottom N of this division's standings form the relegation zone. Unset = 2, 0 disables. */
+  relegationZoneSize?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -797,7 +801,13 @@ export type ProgressionMetric =
   | 'totalPromoReactions'
   | 'matchOfTheNight'
   | 'challengesIssued'
-  | 'currentWinStreak';
+  | 'currentWinStreak'
+  // DMV-02: division movement metrics. Relegation ones skip hot-angle losses.
+  | 'lossPct'
+  | 'currentLossStreak'
+  | 'daysSinceLastMatch'
+  | 'avgStarRatingBelow'
+  | 'contenderRankBest';
 
 export type ProgressionWindowMode = 'allTime' | 'season' | 'sinceJoinedDivision';
 
@@ -808,6 +818,11 @@ export interface ProgressionGoalParams {
   minRatedMatches?: number;
   /** promosWithReactions: minimum reactions (from other users) a promo needs to count. */
   minReactions?: number;
+  /**
+   * winPct / lossPct: measure over the player's most recent N matches only,
+   * and stay uncomputable (null) until N matches exist.
+   */
+  lastMatches?: number;
 }
 
 export interface ProgressionGoal {
@@ -877,5 +892,44 @@ export interface ProgressionEvent {
   fromDivisionId: string;
   toDivisionId?: string;
   actorUserId: string;
+  createdAt: string;
+  /**
+   * DMV-09: set on `executed` events when the GM opted in to a News
+   * announcement. A relegation reaches the public activity feed only then.
+   */
+  announced?: boolean;
+}
+
+/** DMV-03: what a GM can do with a player at the end of a season. */
+export type SeasonMovementChoice = 'promote' | 'relegate' | 'stay';
+
+/**
+ * DMV-03: one player's promotion / relegation standing, snapshotted when a
+ * season ends. Stored in ProgressionEvents under the partition
+ * `seasonReview#<seasonId>` with the playerId as sort key.
+ */
+export interface SeasonMovementReview {
+  seasonId: string;
+  playerId: string;
+  /** The player's division when the snapshot was taken. */
+  divisionId: string;
+  /** Best active promotion track out of the division (highest progress). */
+  promotionTrackId?: string;
+  /** 0-100; 0 when the player has no row on a promotion track. */
+  promotionPct: number;
+  /** Best active relegation track out of the division (highest progress). */
+  relegationTrackId?: string;
+  /** 0-100. Protected (hot-angle) losses are already excluded by the recompute. */
+  relegationPct: number;
+  /** 1-based rank in the division's season standings; absent without a season match. */
+  seasonRank?: number;
+  /** A GM marked the player under consideration on one of the tracks. */
+  flagged: boolean;
+  recommendation: SeasonMovementChoice;
+  decision?: SeasonMovementChoice;
+  decidedBy?: string;
+  decidedAt?: string;
+  /** Set when an applied promote / relegate moved the player. */
+  toDivisionId?: string;
   createdAt: string;
 }

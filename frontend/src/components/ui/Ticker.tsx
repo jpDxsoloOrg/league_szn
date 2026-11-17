@@ -6,6 +6,9 @@ import './Ticker.css';
 
 export type TickerTagTone = 'action' | 'data' | 'prestige' | 'heat' | 'neutral';
 
+/** How fast the crawl moves. It has no effect with reduced motion. */
+export type TickerSpeed = 'slow' | 'normal' | 'fast';
+
 /** One headline in the crawl. */
 export interface TickerItem {
   id: string;
@@ -35,6 +38,8 @@ export interface TickerProps {
   /** With both, a "×" at the end hides the strip. */
   dismissLabel?: string;
   onDismiss?: () => void;
+  /** Crawl speed; `normal` when left out. */
+  speed?: TickerSpeed;
   className?: string;
 }
 
@@ -117,7 +122,7 @@ function TickerItems({ items, focusable }: { items: TickerItem[]; focusable: boo
  * screen, and a click on it has to open the headline like the first.
  */
 export default function Ticker({
-  label, items: allItems, ariaLabel, pauseLabel, resumeLabel, dismissLabel, onDismiss, className = '',
+  label, items: allItems, ariaLabel, pauseLabel, resumeLabel, dismissLabel, onDismiss, speed = 'normal', className = '',
 }: TickerProps) {
   const items = allItems.slice(0, TICKER_MAX_ITEM_COUNT);
   const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY);
@@ -141,7 +146,13 @@ export default function Ticker({
 
   if (items.length === 0) return null;
 
-  const classes = ['ui-ticker', crawling ? 'ui-ticker--crawling' : 'ui-ticker--fading', paused ? 'ui-ticker--paused' : '', className]
+  const classes = [
+    'ui-ticker',
+    crawling ? 'ui-ticker--crawling' : 'ui-ticker--fading',
+    crawling ? `ui-ticker--speed-${speed}` : '',
+    paused ? 'ui-ticker--paused' : '',
+    className,
+  ]
     .filter(Boolean)
     .join(' ');
   const activeItem = items[activeIndex % items.length];

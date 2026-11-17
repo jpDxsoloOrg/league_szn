@@ -1,4 +1,5 @@
 import type { Division } from '../../../types';
+import { getDivisionTier } from '../../../utils/divisionTiers';
 import type {
   CreateProgressionTrackInput,
   ProgressionGoalDirection,
@@ -27,13 +28,31 @@ export const PROGRESSION_METRICS: ProgressionMetric[] = [
   'matchOfTheNight',
   'challengesIssued',
   'currentWinStreak',
+  'lossPct',
+  'currentLossStreak',
+  'daysSinceLastMatch',
+  'avgStarRatingBelow',
+  'contenderRankBest',
 ];
 
+export type MetricParam = 'minRatedMatches' | 'minReactions' | 'lastMatches';
+
 /** The goal param a metric takes, if any. */
-export function metricParam(metric: ProgressionMetric): 'minRatedMatches' | 'minReactions' | null {
-  if (metric === 'avgStarRating') return 'minRatedMatches';
+export function metricParam(metric: ProgressionMetric): MetricParam | null {
+  if (metric === 'avgStarRating' || metric === 'avgStarRatingBelow') return 'minRatedMatches';
   if (metric === 'promosWithReactions') return 'minReactions';
+  if (metric === 'winPct' || metric === 'lossPct') return 'lastMatches';
   return null;
+}
+
+/**
+ * Ladder position, mirroring getDivisionRank in backend/lib/divisionTiers.ts:
+ * the tier, Infinity for developmental, undefined for an untiered main-roster division.
+ */
+function divisionRank(division: Division | undefined): number | undefined {
+  if (!division) return undefined;
+  if (division.isDevelopmental === true) return Number.POSITIVE_INFINITY;
+  return getDivisionTier(division);
 }
 
 /** A goal as typed into the form: numbers stay strings until save. */
@@ -147,6 +166,22 @@ export function validateTrackDraft(draft: TrackDraft, divisions: Division[]): Tr
       errors.toDivisionId = 'progression.admin.editor.errors.toSameAsFrom';
     } else if (draft.kind === 'callup' && target?.isDevelopmental) {
       errors.toDivisionId = 'progression.admin.editor.errors.toDevelopmental';
+    }
+  }
+
+  // DMV-02: promotion goes up the ladder, relegation down. Live tracks only, as in the API.
+  if (draft.kind !== 'callup' && draft.isActive && draft.fromDivisionId && !errors.toDivisionId) {
+    const source = divisions.find((division) => division.divisionId === draft.fromDivisionId);
+    const fromRank = divisionRank(source);
+    if (source && (source.isDevelopmental === true || fromRank === undefined)) {
+      errors.fromDivisionId = 'progression.admin.editor.errors.fromNeedsTier';
+    } else if (fromRank !== undefined && draft.toDivisionId) {
+      const toRank = divisionRank(divisions.find((division) => division.divisionId === draft.toDivisionId));
+      if (draft.kind === 'promotion' && !(toRank !== undefined && toRank < fromRank)) {
+        errors.toDivisionId = 'progression.admin.editor.errors.toNotAbove';
+      } else if (draft.kind === 'relegation' && !(toRank !== undefined && toRank > fromRank)) {
+        errors.toDivisionId = 'progression.admin.editor.errors.toNotBelow';
+      }
     }
   }
 

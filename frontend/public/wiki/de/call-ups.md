@@ -41,11 +41,23 @@ Wenn ein GM findet, dass du nah dran bist, kann er dich als **in Betracht gezoge
 
 In Betracht gezogen zu werden ist ein Kompliment, kein Versprechen. Es heißt, dass die GMs dich genau beobachten.
 
+## Call-up-Kandidaten im Liga-Ticker
+
+Der Liga-Ticker ist das laufende Nachrichtenband unter der oberen Leiste. Solange du in Betracht gezogen wirst, läuft dein Name dort unter der Markierung **Call-up-Kandidaten**, neben allen anderen, die die GMs im Auge haben. Jeder kann deinen Namen wählen, um dein Profil zu öffnen.
+
+- Es erscheint nur dein Name. Dein Fortschrittsbalken und deine Ziele bleiben auf deinem Profil.
+- Dein Name verschwindet, sobald du in den Hauptkader berufen wirst oder der GM die Markierung entfernt.
+- Die GMs können den Teil Call-up-Kandidaten abschalten. Er ist also nicht immer zu sehen.
+
+Siehe [News und der Liga-Ticker](news) für alles andere, was das Laufband zeigt.
+
 ## Der GM entscheidet
 
 100 % zu erreichen verschiebt dich **nicht** automatisch, und du musst nicht bei 100 % sein, um einen Call-up zu bekommen. Der Balken ist ein Wegweiser. Die endgültige Entscheidung trifft immer ein GM, und er wählt auch, in welche Hauptkader-Division du kommst. Storylines, die Ausgewogenheit des Kaders und dein Auftreten in der Kabine spielen ebenfalls eine Rolle.
 
 Bei einem Call-up ändert sich deine Division, du bekommst eine Benachrichtigung, und der Wechsel erscheint im Aktivitäts-Feed. Der GM kann ihn auch auf der News-Seite ankündigen.
+
+Der Hauptkader hat seine eigene Leiter, mit Auf- und Abstiegen zwischen den Divisionen. Was nach deinem Call-up passiert, steht unter [Auf- und Abstieg](division-movement).
 
 ## Tipps
 
@@ -54,4 +66,4 @@ Bei einem Call-up ändert sich deine Division, du bekommst eine Benachrichtigung
 - Bitte deine Gegner und Freunde, deine Kämpfe zu bewerten.
 - Hab Spaß dabei. Jeder im Hauptkader hat dort angefangen, wo du jetzt stehst.
 
-Siehe auch: [Kämpfe bewerten](rate-matches), [Promos](promos), [Divisionen](divisions).
+Siehe auch: [Auf- und Abstieg](division-movement), [Kämpfe bewerten](rate-matches), [Promos](promos), [Divisionen](divisions).

@@ -42,6 +42,8 @@ export interface DataTableProps<Row> {
   className?: string;
   /** Shows one page at a time, after sorting, with a pager under the table. */
   pagination?: DataTablePagination;
+  /** Extra class for a row, such as a standings zone. */
+  rowClassName?: (row: Row) => string | undefined;
 }
 
 interface SortState {
@@ -59,7 +61,7 @@ function compareValues(first: string | number, second: string | number): number 
  * column headers as labels, so keep public tables to about six columns. The
  * header row is not on screen there, so a Select takes over sorting.
  */
-export default function DataTable<Row>({ columns, rows, rowLimit, rowKey, caption, density = 'default', loading = false, empty, className = '', pagination }: DataTableProps<Row>) {
+export default function DataTable<Row>({ columns, rows, rowLimit, rowKey, caption, density = 'default', loading = false, empty, className = '', pagination, rowClassName }: DataTableProps<Row>) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [sort, setSort] = useState<SortState | null>(null);
@@ -143,7 +145,7 @@ export default function DataTable<Row>({ columns, rows, rowLimit, rowKey, captio
         </thead>
         <tbody>
           {shownRows.map((row) => (
-            <tr key={rowKey(row)}>
+            <tr key={rowKey(row)} className={rowClassName?.(row) || undefined}>
               {columns.map((column) => (
                 <td
                   key={column.key}

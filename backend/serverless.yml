@@ -859,12 +859,24 @@ functions:
           method: post
           cors: *corsConfig
       - http:
+          path: progression/players/{playerId}/history
+          method: get
+          cors: *corsConfig
+      - http:
           path: progression/considerations
           method: get
           cors: *corsConfig
       - http:
           path: progression/events
           method: get
+          cors: *corsConfig
+      - http:
+          path: progression/reviews/{seasonId}
+          method: get
+          cors: *corsConfig
+      - http:
+          path: progression/reviews/{seasonId}/apply
+          method: post
           cors: *corsConfig
 
   # Images

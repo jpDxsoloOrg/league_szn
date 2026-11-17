@@ -6,6 +6,10 @@ import { logger } from '../utils/logger';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useShowMore } from '../hooks/useShowMore';
+import { useAuth } from '../contexts/AuthContext';
+import { useSiteConfig } from '../contexts/SiteConfigContext';
+import { getStandingsZone, getStandingsZoneSizes } from '../utils/divisionTiers';
+import type { StandingsZone, StandingsZoneSizes } from '../utils/divisionTiers';
 import type { Standings as StandingsType, Season, Division, Player } from '../types';
 import PlayerHoverCard from './PlayerHoverCard';
 import ConsiderationBadge from './progression/ConsiderationBadge';
@@ -28,7 +32,16 @@ interface RankedPlayer extends Player {
   rank: number;
   matchesPlayed: number;
   winRate: number;
+  /** DMV-07: promotion or relegation zone, only when filtered to one division. */
+  zone?: StandingsZone;
 }
+
+const NO_ZONES: StandingsZoneSizes = { promotion: 0, relegation: 0 };
+
+const ZONE_ICONS: Record<StandingsZone, string> = {
+  promotion: '▲',
+  relegation: '▼',
+};
 
 const PODIUM_SIZE = 3;
 const ROWS_PER_PAGE = 50;
@@ -67,10 +80,49 @@ function Streak({ streak }: { streak: Player['currentStreak'] }) {
   );
 }
 
+/** The ▲ / ▼ marker beside a zoned rank. The label is for screen readers. */
+function ZoneIcon({ zone }: { zone: StandingsZone }) {
+  const { t } = useTranslation();
+  const label = t(`standings.zones.${zone}`);
+  return (
+    <span className={`standings-zone-icon standings-zone-icon--${zone}`} role="img" aria-label={label} title={label}>
+      {ZONE_ICONS[zone]}
+    </span>
+  );
+}
+
+function ZoneLegend({ sizes }: { sizes: StandingsZoneSizes }) {
+  const { t } = useTranslation();
+  return (
+    <ul className="standings-zone-legend" aria-label={t('standings.zones.legend')}>
+      {sizes.promotion > 0 && (
+        <li className="standings-zone-legend__item standings-zone-legend__item--promotion">
+          <span className="standings-zone-icon standings-zone-icon--promotion" aria-hidden="true">{ZONE_ICONS.promotion}</span>
+          {t('standings.zones.promotionLegend', { count: sizes.promotion })}
+        </li>
+      )}
+      {sizes.relegation > 0 && (
+        <li className="standings-zone-legend__item standings-zone-legend__item--relegation">
+          <span className="standings-zone-icon standings-zone-icon--relegation" aria-hidden="true">{ZONE_ICONS.relegation}</span>
+          {t('standings.zones.relegationLegend', { count: sizes.relegation })}
+        </li>
+      )}
+    </ul>
+  );
+}
+
+function zoneClass(player: RankedPlayer): string | undefined {
+  return player.zone ? `standings-zone standings-zone--${player.zone}` : undefined;
+}
+
 export default function Standings() {
   const { t } = useTranslation();
   useDocumentTitle(t('standings.title'));
   const isMobile = useIsMobile();
+  const { isAdminOrModerator } = useAuth();
+  const { tickerSettings } = useSiteConfig();
+  // Relegation is GM-only unless the league opts in (TKR-04). Promotion is always public.
+  const showRelegation = isAdminOrModerator || tickerSettings.publicRelegationWatch;
   const [standings, setStandings] = useState<StandingsType | null>(null);
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [selectedDivision, setSelectedDivision] = useState('all');
@@ -138,6 +190,12 @@ export default function Standings() {
     return () => abortController.abort();
   }, [selectedSeasonId, defaultsResolved, reloadCount]);
 
+  // League-table zones only make sense for one division's full table.
+  const zoneSizes = useMemo((): StandingsZoneSizes => {
+    if (selectedDivision === 'all' || selectedDivision === 'none' || selectedAlignment !== 'all') return NO_ZONES;
+    return getStandingsZoneSizes(divisions, selectedDivision, showRelegation);
+  }, [divisions, selectedDivision, selectedAlignment, showRelegation]);
+
   const rankedPlayers = useMemo((): RankedPlayer[] => {
     const matchesDivision = (player: Player) => {
       if (selectedDivision === 'all') return true;
@@ -151,11 +209,14 @@ export default function Standings() {
 
     // The API sorts on wins, which puts 0-0-0 above 0-2-0. Players who have
     // wrestled rank first, so the podium is always the top of the table.
-    return [...shown.filter(hasPlayed), ...shown.filter((player) => !hasPlayed(player))].map((player, index) => {
+    const played = shown.filter(hasPlayed);
+    // Zones cover only players who have wrestled; an unbooked 0-0-0 is in no zone.
+    return [...played, ...shown.filter((player) => !hasPlayed(player))].map((player, index) => {
       const matchesPlayed = player.wins + player.losses + player.draws;
       return {
         ...player,
         rank: index + 1,
+        zone: matchesPlayed > 0 ? getStandingsZone(index + 1, played.length, zoneSizes) : undefined,
         matchesPlayed,
         winRate: matchesPlayed > 0 ? (player.wins / matchesPlayed) * 100 : 0,
         // No record in this scope means nothing to show form for, whatever happened elsewhere.
@@ -163,7 +224,7 @@ export default function Standings() {
         currentStreak: matchesPlayed > 0 ? player.currentStreak : undefined,
       };
     });
-  }, [standings, selectedDivision, selectedAlignment]);
+  }, [standings, selectedDivision, selectedAlignment, zoneSizes]);
 
   // Only players who have wrestled earn a medal position.
   const playedPlayers = rankedPlayers.filter((player) => player.matchesPlayed > 0);
@@ -178,7 +239,16 @@ export default function Standings() {
     record: formatRecord(player),
     subtitle: player.currentWrestler,
     to: `/player/${player.playerId}`,
-    badge: <ConsiderationBadge playerId={player.playerId} />,
+    badge: (
+      <>
+        {player.zone && (
+          <span className={`standings-zone-pill standings-zone-pill--${player.zone}`}>
+            <span aria-hidden="true">{ZONE_ICONS[player.zone]}</span> {t(`standings.zones.${player.zone}`)}
+          </span>
+        )}
+        <ConsiderationBadge playerId={player.playerId} />
+      </>
+    ),
     stats: [
       { label: t('standings.table.winPercent'), value: formatWinRate(player) },
       { label: t('standings.table.streak'), value: <Streak streak={player.currentStreak} /> },
@@ -190,7 +260,11 @@ export default function Standings() {
     {
       key: 'rank',
       header: t('standings.table.rank'),
-      render: (player) => <span className="standings-rank">#{player.rank}</span>,
+      render: (player) => (
+        <span className="standings-rank">
+          {player.zone && <ZoneIcon zone={player.zone} />}#{player.rank}
+        </span>
+      ),
       sortValue: (player) => player.rank,
     },
     {
@@ -297,8 +371,13 @@ export default function Standings() {
               <ol className="standings-list">
                 {listedPlayers.slice(0, visibleCount).map((player) => (
                   <li key={player.playerId}>
-                    <Link to={`/player/${player.playerId}`} className="standings-row">
-                      <span className="standings-rank">#{player.rank}</span>
+                    <Link
+                      to={`/player/${player.playerId}`}
+                      className={['standings-row', zoneClass(player)].filter(Boolean).join(' ')}
+                    >
+                      <span className="standings-rank">
+                        {player.zone && <ZoneIcon zone={player.zone} />}#{player.rank}
+                      </span>
                       <Avatar src={player.imageUrl} name={player.name} />
                       <span className="standings-row__names">
                         <span className="standings-row__name">{player.name}<ConsiderationBadge playerId={player.playerId} /></span>
@@ -327,6 +406,7 @@ export default function Standings() {
                 rows={listedPlayers}
                 rowLimit={visibleCount}
                 rowKey={(player) => player.playerId}
+                rowClassName={zoneClass}
               />
             )}
 
@@ -337,6 +417,8 @@ export default function Standings() {
             />
           </section>
         )}
+
+        {rankedPlayers.some((player) => player.zone) && <ZoneLegend sizes={zoneSizes} />}
       </>
     );
   };

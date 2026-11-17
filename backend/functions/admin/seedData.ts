@@ -17,15 +17,22 @@ import { buildDefaultCallupTrack } from '../../lib/progression/defaultTracks';
 import { buildProgressionInputs, resolveProgressionWindow } from '../../lib/progression/loadInputs';
 import { PROGRESS_MILESTONE_THRESHOLDS } from '../../lib/progression/milestones';
 import { computeProgress } from '../../lib/policies/progression';
+import { planDefaultLadderTracks } from '../../lib/progression/ladderTemplates';
+import { toProgressionEventItem, toSeasonReviewItem } from '../../lib/repositories/dynamo/progressionRows';
+import { rankBySeasonRecord, recommendMovement } from '../progression/seasonSnapshot';
+import type { Rivalry, RivalryHeat, RivalryStatus } from '../../lib/repositories';
 import type {
   Match,
   Player,
   PlayerProgression,
   ProgressionEvent,
+  ProgressionKind,
   ProgressionTrack,
   Promo,
   ReactionType,
   Season,
+  SeasonMovementReview,
+  SeasonStanding,
 } from '../../lib/repositories/types';
 
 /** Valid seed module IDs for pick-and-choose (issue 118). When modular seed exists, only these will be run when requested. */
@@ -252,6 +259,20 @@ function daysAgo(days: number): Date {
   return d;
 }
 
+function hoursAgo(hours: number): Date {
+  return new Date(Date.now() - hours * 60 * 60 * 1000);
+}
+
+/** A completed match row, as the progression loader reads it. */
+function isCompletedMatch(row: unknown): row is Match {
+  if (typeof row !== 'object' || row === null) return false;
+  const candidate = row as Record<string, unknown>;
+  return candidate.status === 'completed' &&
+    typeof candidate.matchId === 'string' &&
+    typeof candidate.date === 'string' &&
+    Array.isArray(candidate.participants);
+}
+
 function daysFromNow(days: number): Date {
   const d = new Date();
   d.setDate(d.getDate() + days);
@@ -335,6 +356,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         divisionId: uuidv4(),
         name: 'Raw',
         tier: 1,
+        // Three-player tables in the seed, so zones of 1 keep them apart (DMV-07).
+        relegationZoneSize: 1,
         description: 'The flagship Monday Night Raw roster',
         createdAt: now,
         updatedAt: now,
@@ -343,6 +366,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         divisionId: uuidv4(),
         name: 'SmackDown',
         tier: 1,
+        relegationZoneSize: 1,
         description: 'The Friday Night SmackDown roster',
         createdAt: now,
         updatedAt: now,
@@ -351,6 +375,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         divisionId: uuidv4(),
         name: 'NXT',
         tier: 2,
+        promotionZoneSize: 2,
+        relegationZoneSize: 1,
         description: 'The developmental brand for rising stars',
         createdAt: now,
         updatedAt: now,
@@ -1646,17 +1672,328 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       }
     }
 
+    // ── Division ladder: promotion / relegation (DMV-10) ─────────
+    // Makes the promotion & relegation epic demonstrable straight after a
+    // seed. The tiered divisions get their default tracks, and the
+    // main-roster players are set up so each feature has someone to show:
+    //   Undertaker, John Cena (NXT) → promotion watch, strong recent form
+    //   CM Punk (SmackDown)         → relegation watch (GM-only), a real slump
+    //   The Rock (SmackDown)        → losing streak, but every loss is in the
+    //                                 scorching rivalry with Stone Cold, so his
+    //                                 relegation danger stays near 0 (house rule)
+    //   Edge (Raw)                  → history Young Boys → NXT → Raw, promoted
+    //                                 at the end of the Pilot Season
+    // Rows are computed with the same policy and inputs as the recompute,
+    // so the first real recompute agrees with them.
+    console.log('Creating the division ladder: tracks, watch flags and history...');
+    const [rawDivision, smackDownDivision, nxtDivision] = divisions;
+    const [stoneCold, theRock, undertaker, , shawn, bret, cena, , edge, punk, roman] = players;
+    const tieredPlayers = players.filter((player) => player.divisionId !== youngBoysDivision?.divisionId);
+
+    // Fixed records so the standings zones land on the right players.
+    // [wins, losses] all-time, in Season 1, and in the Pilot Season.
+    const ladderRecords = new Map<string, { allTime: [number, number]; season: [number, number]; pilot: [number, number] }>([
+      [stoneCold.playerId, { allTime: [16, 4], season: [8, 1], pilot: [10, 2] }],
+      [edge.playerId, { allTime: [13, 5], season: [6, 2], pilot: [11, 1] }],
+      [shawn.playerId, { allTime: [9, 10], season: [3, 5], pilot: [6, 6] }],
+      [theRock.playerId, { allTime: [12, 9], season: [5, 6], pilot: [8, 4] }],
+      [bret.playerId, { allTime: [11, 8], season: [4, 3], pilot: [7, 5] }],
+      [punk.playerId, { allTime: [4, 15], season: [1, 9], pilot: [2, 10] }],
+      [undertaker.playerId, { allTime: [15, 3], season: [9, 1], pilot: [9, 3] }],
+      [cena.playerId, { allTime: [13, 5], season: [7, 3], pilot: [7, 5] }],
+      [roman.playerId, { allTime: [7, 11], season: [3, 5], pilot: [4, 8] }],
+    ]);
+    for (const player of tieredPlayers) {
+      const record = ladderRecords.get(player.playerId);
+      if (!record) continue;
+      [player.wins, player.losses] = record.allTime;
+      player.draws = 0;
+      // Joined when the season started, so the `sinceJoinedDivision` window sees it.
+      player.divisionJoinedAt = season.startDate;
+      const standing = seasonStandingsItems.find((row) => row.playerId === player.playerId);
+      if (standing) {
+        [standing.wins, standing.losses] = record.season;
+        standing.draws = 0;
+      }
+    }
+
+    // A completed season before Season 1, with its end-of-season review (DMV-03).
+    const pilotSeason: Season = {
+      seasonId: uuidv4(),
+      name: 'Pilot Season',
+      startDate: daysAgo(120).toISOString(),
+      endDate: daysAgo(31).toISOString(),
+      status: 'completed',
+      createdAt: daysAgo(120).toISOString(),
+      updatedAt: daysAgo(31).toISOString(),
+    };
+    const promotedAt = daysAgo(30).toISOString();
+    edge.divisionJoinedAt = promotedAt;
+
+    const ladderTracks = planDefaultLadderTracks(divisions, [], now, uuidv4);
+    const ladderTrack = (kind: ProgressionKind, divisionId: string): ProgressionTrack | undefined =>
+      ladderTracks.find((track) => track.kind === kind && track.fromDivisionId === divisionId);
+
+    // Recent bouts, newer than every other seeded match, so a player's
+    // "last 8 matches" are exactly these.
+    const ladderMatches: Match[] = [];
+    const ladderRatings: Record<string, unknown>[] = [];
+    const ladderBout = (
+      winnerId: string,
+      loserId: string,
+      hours: number,
+      options: { stars?: number[]; rivalryId?: string; matchOfTheNight?: boolean } = {},
+    ): void => {
+      const matchId = uuidv4();
+      const date = hoursAgo(hours).toISOString();
+      const stars = options.stars ?? [];
+      const match: Match = {
+        matchId,
+        date,
+        matchFormat: 'singles',
+        participants: [winnerId, loserId],
+        winners: [winnerId],
+        losers: [loserId],
+        isChampionship: false,
+        seasonId: season.seasonId,
+        status: 'completed',
+        ratingsCount: stars.length,
+        createdAt: date,
+      };
+      if (options.rivalryId) match.rivalryId = options.rivalryId;
+      if (options.matchOfTheNight) match.matchOfTheNight = true;
+      if (stars.length > 0) {
+        const ratingAverage = stars.reduce((sum, value) => sum + value, 0) / stars.length;
+        match.ratingAverage = ratingAverage;
+        match.starRating = roundToHalfStar(ratingAverage);
+        stars.forEach((rating, index) => {
+          ladderRatings.push({
+            matchId,
+            userId: `seed-rater-${index + 1}`,
+            rating,
+            createdAt: new Date(Date.parse(date) + (index + 1) * 60_000).toISOString(),
+          });
+        });
+      }
+      ladderMatches.push(match);
+    };
+    // The Young Boys regulars are the opposition: their own window starts `now`.
+    const [jobberA, jobberB, jobberC] = [players[3].playerId, players[7].playerId, players[11].playerId];
+
+    // Undertaker: 7-1, well rated, one Match of the Night.
+    ladderBout(undertaker.playerId, jobberA, 6, { stars: [4, 4.5], matchOfTheNight: true });
+    ladderBout(undertaker.playerId, jobberB, 14, { stars: [3.5, 4] });
+    ladderBout(undertaker.playerId, jobberC, 22, { stars: [4, 3.5] });
+    ladderBout(roman.playerId, undertaker.playerId, 30, { stars: [3.5, 3.5] });
+    ladderBout(undertaker.playerId, jobberA, 38, { stars: [4, 4] });
+    ladderBout(undertaker.playerId, jobberB, 46);
+    ladderBout(undertaker.playerId, jobberC, 54);
+    ladderBout(undertaker.playerId, jobberA, 62);
+    // Cena: 6-2 and well rated (enough to lift his rivalry-2 duds over 3.25).
+    ladderBout(cena.playerId, jobberB, 8, { stars: [4.5, 4.5] });
+    ladderBout(cena.playerId, jobberC, 16, { stars: [4.5, 5] });
+    ladderBout(jobberA, cena.playerId, 24, { stars: [4, 4.5] });
+    ladderBout(cena.playerId, jobberB, 32, { stars: [4.5, 4] });
+    ladderBout(cena.playerId, jobberC, 40, { stars: [5, 4.5] });
+    ladderBout(jobberA, cena.playerId, 48, { stars: [4.5, 4.5] });
+    ladderBout(cena.playerId, jobberB, 56, { stars: [5, 4.5] });
+    ladderBout(cena.playerId, jobberC, 64);
+    // CM Punk: eight straight losses outside any storyline, poorly rated.
+    [jobberA, jobberB, jobberC, jobberA, jobberB, jobberC, jobberA, jobberB].forEach((winnerId, index) => {
+      ladderBout(winnerId, punk.playerId, 10 + index * 8, index < 5 ? { stars: [1.5, 2] } : {});
+    });
+    // The Rock: three more losses to Stone Cold, all in their scorching rivalry.
+    // Relegation metrics skip hot-angle losses, so no danger builds.
+    ladderBout(stoneCold.playerId, theRock.playerId, 4, { rivalryId: rivalry1Id });
+    ladderBout(stoneCold.playerId, theRock.playerId, 28, { rivalryId: rivalry1Id });
+    ladderBout(stoneCold.playerId, theRock.playerId, 52, { rivalryId: rivalry1Id });
+    // Everyone else stays active.
+    ladderBout(edge.playerId, jobberC, 12, { stars: [3.5, 4] });
+    ladderBout(edge.playerId, jobberA, 36);
+    ladderBout(shawn.playerId, jobberB, 20, { stars: [4, 4] });
+    ladderBout(bret.playerId, jobberC, 26, { stars: [3.5, 3.5] });
+    ladderBout(roman.playerId, jobberB, 44);
+
+    const ladderRivalries: Rivalry[] = rivalries
+      .filter((row) => row.recordType === 'META')
+      .map((row) => ({
+        rivalryId: String(row.rivalryId),
+        title: String(row.title),
+        status: row.status as RivalryStatus,
+        heat: row.heat as RivalryHeat,
+        heatScore: Number(row.heatScore ?? 0),
+        participants: [],
+        requestedBy: String(row.requestedBy),
+        createdAt: String(row.createdAt),
+        updatedAt: String(row.updatedAt),
+      }));
+    const { inputs: ladderInputs } = buildProgressionInputs(
+      tieredPlayers.map((player) => player.playerId),
+      {
+        players: tieredPlayers,
+        matches: [...matches, ...tagMatches, ...youngBoysMatches, ...ladderMatches].filter(isCompletedMatch),
+        promos: [],
+        challenges: [],
+        // No seeded title belongs to NXT, the only division with a promotion
+        // track, so contender ranks cannot change any row here.
+        ladder: { rivalries: ladderRivalries, championships: [], contenderRankings: [] },
+        asOf: now,
+      },
+    );
+    const ladderSeason: Season = { ...season, status: 'active' };
+    for (const player of tieredPlayers) {
+      const playerInputs = ladderInputs.get(player.playerId);
+      if (!playerInputs) continue;
+      for (const track of ladderTracks.filter((candidate) => candidate.fromDivisionId === player.divisionId)) {
+        const { progressPct, goals } = computeProgress(
+          track,
+          playerInputs,
+          resolveProgressionWindow(track.windowMode, player, ladderSeason),
+        );
+        const row: PlayerProgression = { playerId: player.playerId, trackId: track.trackId, progressPct, goals, computedAt: now };
+        if (track.kind === 'promotion') {
+          // Relegation tracks never announce milestones, so only promotion rows need these.
+          row.notifiedThresholds = PROGRESS_MILESTONE_THRESHOLDS.filter((threshold) => progressPct >= threshold);
+          row.notifiedGoalIds = goals.filter((goal) => goal.met).map((goal) => goal.goalId);
+        }
+        playerProgressionRows.push(row);
+      }
+    }
+
+    // GM flags: two on promotion watch (public), one on relegation watch (GM-only).
+    const flags: Array<{ playerId: string; kind: ProgressionKind; divisionId: string; ago: number; note: string }> = [
+      { playerId: undertaker.playerId, kind: 'promotion', divisionId: nxtDivision.divisionId, ago: 2, note: 'Dominant run. Main roster ready.' },
+      { playerId: cena.playerId, kind: 'promotion', divisionId: nxtDivision.divisionId, ago: 1, note: 'Crowd loves him. One more big win.' },
+      { playerId: punk.playerId, kind: 'relegation', divisionId: smackDownDivision.divisionId, ago: 1, note: 'Eight straight losses. Talk to him first.' },
+    ];
+    for (const flag of flags) {
+      const track = ladderTrack(flag.kind, flag.divisionId);
+      const row = track && playerProgressionRows.find((candidate) =>
+        candidate.playerId === flag.playerId && candidate.trackId === track.trackId);
+      if (!track || !row) continue;
+      const markedAt = daysAgo(flag.ago).toISOString();
+      row.consideration = { status: 'considering', markedBy: 'seed-script', markedAt, note: flag.note };
+      progressionEventRows.push({
+        eventId: uuidv4(),
+        playerId: flag.playerId,
+        trackId: track.trackId,
+        kind: flag.kind,
+        type: 'consideration_added',
+        fromDivisionId: flag.divisionId,
+        actorUserId: 'seed-script',
+        createdAt: markedAt,
+      });
+    }
+
+    // Edge's division history: called up from Young Boys to NXT, then
+    // promoted to Raw (announced) when the Pilot Season ended.
+    const nxtPromotionTrack = ladderTrack('promotion', nxtDivision.divisionId);
+    if (callupTrack && youngBoysDivision && nxtPromotionTrack) {
+      progressionEventRows.push(
+        {
+          eventId: uuidv4(),
+          playerId: edge.playerId,
+          trackId: callupTrack.trackId,
+          kind: 'callup',
+          type: 'executed',
+          fromDivisionId: youngBoysDivision.divisionId,
+          toDivisionId: nxtDivision.divisionId,
+          actorUserId: 'seed-script',
+          createdAt: daysAgo(150).toISOString(),
+        },
+        {
+          eventId: uuidv4(),
+          playerId: edge.playerId,
+          trackId: nxtPromotionTrack.trackId,
+          kind: 'promotion',
+          type: 'executed',
+          fromDivisionId: nxtDivision.divisionId,
+          toDivisionId: rawDivision.divisionId,
+          actorUserId: 'seed-script',
+          createdAt: promotedAt,
+          announced: true,
+        },
+      );
+    }
+
+    // Pilot Season standings and review. Edge was still in NXT then and his
+    // promotion is applied; CM Punk's recommended relegation is left for a GM.
+    const pilotDivisionOf = (player: (typeof players)[number]): string =>
+      player.playerId === edge.playerId ? nxtDivision.divisionId : player.divisionId;
+    const pilotStandings: SeasonStanding[] = tieredPlayers.flatMap((player) => {
+      const record = ladderRecords.get(player.playerId);
+      return record
+        ? [{ seasonId: pilotSeason.seasonId, playerId: player.playerId, wins: record.pilot[0], losses: record.pilot[1], draws: 0, updatedAt: pilotSeason.updatedAt }]
+        : [];
+    });
+    // Progress (0-100) on each track when the Pilot Season ended.
+    const pilotSnapshot = new Map<string, { promotionPct: number; relegationPct: number; flagged: boolean }>([
+      [stoneCold.playerId, { promotionPct: 0, relegationPct: 0, flagged: false }],
+      [shawn.playerId, { promotionPct: 0, relegationPct: 35, flagged: false }],
+      [theRock.playerId, { promotionPct: 0, relegationPct: 10, flagged: false }],
+      [bret.playerId, { promotionPct: 0, relegationPct: 20, flagged: false }],
+      [punk.playerId, { promotionPct: 0, relegationPct: 100, flagged: true }],
+      [edge.playerId, { promotionPct: 100, relegationPct: 0, flagged: true }],
+      [undertaker.playerId, { promotionPct: 75, relegationPct: 5, flagged: false }],
+      [cena.playerId, { promotionPct: 50, relegationPct: 15, flagged: false }],
+      [roman.playerId, { promotionPct: 25, relegationPct: 45, flagged: false }],
+    ]);
+    const pilotReviews: SeasonMovementReview[] = [];
+    for (const division of [rawDivision, smackDownDivision, nxtDivision]) {
+      const members = tieredPlayers.filter((player) => pilotDivisionOf(player) === division.divisionId);
+      const memberIds = new Set(members.map((member) => member.playerId));
+      const ranks = rankBySeasonRecord(pilotStandings.filter((row) => memberIds.has(row.playerId)));
+      const promotionTrack = ladderTrack('promotion', division.divisionId);
+      const relegationTrack = ladderTrack('relegation', division.divisionId);
+      for (const member of members) {
+        const snapshot = pilotSnapshot.get(member.playerId);
+        if (!snapshot) continue;
+        const seasonRank = ranks.get(member.playerId);
+        const review: SeasonMovementReview = {
+          seasonId: pilotSeason.seasonId,
+          playerId: member.playerId,
+          divisionId: division.divisionId,
+          promotionPct: snapshot.promotionPct,
+          relegationPct: snapshot.relegationPct,
+          flagged: snapshot.flagged,
+          recommendation: recommendMovement({
+            promotionPct: snapshot.promotionPct,
+            relegationPct: snapshot.relegationPct,
+            seasonRank,
+            hasPromotionTrack: promotionTrack !== undefined,
+            hasRelegationTrack: relegationTrack !== undefined,
+          }),
+          createdAt: pilotSeason.updatedAt,
+        };
+        if (promotionTrack) review.promotionTrackId = promotionTrack.trackId;
+        if (relegationTrack) review.relegationTrackId = relegationTrack.trackId;
+        if (seasonRank !== undefined) review.seasonRank = seasonRank;
+        if (member.playerId === edge.playerId) {
+          review.decision = 'promote';
+          review.decidedBy = 'seed-script';
+          review.decidedAt = promotedAt;
+          review.toDivisionId = rawDivision.divisionId;
+        }
+        pilotReviews.push(review);
+      }
+    }
+
     // ── Import all data via repository layer ───────────────────
     console.log('Importing all seed data via repository layer...');
     const { importAllData } = getRepositories();
     const seedData: Required<ExportData> = {
       divisions,
       players: [...players, ...prospects.map((prospect) => ({ ...prospect }))],
-      seasons: [season],
-      seasonStandings: seasonStandingsItems,
+      seasons: [season, pilotSeason],
+      seasonStandings: [...seasonStandingsItems, ...pilotStandings.map((row) => ({ ...row }))],
       championships,
       championshipHistory: championshipHistoryItems,
-      matches: [...matches, ...tagMatches, ...youngBoysMatches.map((match) => ({ ...match }))],
+      matches: [
+        ...matches,
+        ...tagMatches,
+        ...youngBoysMatches.map((match) => ({ ...match })),
+        ...ladderMatches.map((match) => ({ ...match })),
+      ],
       tagTeams,
       tournaments,
       events,
@@ -1672,10 +2009,14 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       rivalries,
       rivalryMessages,
       rivalryNotes,
-      matchRatings: [...matchRatings, ...youngBoysRatings],
-      progressionTracks: progressionTracks.map((track) => ({ ...track })),
+      matchRatings: [...matchRatings, ...youngBoysRatings, ...ladderRatings],
+      progressionTracks: [...progressionTracks, ...ladderTracks].map((track) => ({ ...track })),
       playerProgression: playerProgressionRows.map((row) => ({ ...row })),
-      progressionEvents: progressionEventRows.map((row) => ({ ...row })),
+      // Raw table rows: events need their sort key, reviews their partition.
+      progressionEvents: [
+        ...progressionEventRows.map(toProgressionEventItem),
+        ...pilotReviews.map(toSeasonReviewItem),
+      ],
     };
 
     const createdCounts = await importAllData(seedData);

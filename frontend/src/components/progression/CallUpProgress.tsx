@@ -1,8 +1,6 @@
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
-import Card from '../ui/Card';
-import GoalChecklist from './GoalChecklist';
-import ProgressionMeter from './ProgressionMeter';
+import ProgressionTrackCard from './ProgressionTrackCard';
 import { usePlayerProgression } from './usePlayerProgression';
 import './CallUpProgress.css';
 
@@ -29,25 +27,9 @@ export default function CallUpProgress({ playerId, showGoals = true }: CallUpPro
   return (
     <section className="profile-section callup-progress" aria-labelledby={headingId} data-testid="callup-progress">
       <h2 className="profile-section__title" id={headingId}>{t('progression.profile.title')}</h2>
-      {tracks.map((track) => {
-        const goals = showGoals ? track.goals ?? [] : [];
-        return (
-          <Card key={track.trackId} className="callup-progress__card">
-            <ProgressionMeter pct={track.progressPct} kind={track.kind} caption={track.trackName} />
-            {goals.length > 0 && (
-              <div className="callup-progress__goals">
-                <h3 className="callup-progress__goals-title">
-                  {t('progression.goals.summary', {
-                    met: goals.filter((goal) => goal.met).length,
-                    total: goals.length,
-                  })}
-                </h3>
-                <GoalChecklist goals={goals} kind={track.kind} />
-              </div>
-            )}
-          </Card>
-        );
-      })}
+      {tracks.map((track) => (
+        <ProgressionTrackCard key={track.trackId} track={track} showGoals={showGoals} />
+      ))}
     </section>
   );
 }

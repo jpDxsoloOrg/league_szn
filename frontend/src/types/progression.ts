@@ -13,7 +13,12 @@ export type ProgressionMetric =
   | 'totalPromoReactions'
   | 'matchOfTheNight'
   | 'challengesIssued'
-  | 'currentWinStreak';
+  | 'currentWinStreak'
+  | 'lossPct'
+  | 'currentLossStreak'
+  | 'daysSinceLastMatch'
+  | 'avgStarRatingBelow'
+  | 'contenderRankBest';
 
 export type ProgressionWindowMode = 'allTime' | 'season' | 'sinceJoinedDivision';
 
@@ -24,6 +29,8 @@ export interface ProgressionGoalParams {
   minRatedMatches?: number;
   /** promosWithReactions: minimum reactions (from other users) a promo needs to count. */
   minReactions?: number;
+  /** winPct / lossPct: measure over the most recent N matches only. */
+  lastMatches?: number;
 }
 
 export interface ProgressionGoal {
@@ -262,6 +269,17 @@ export interface TrackInactiveError {
   code: 'TRACK_INACTIVE';
 }
 
+/** 400 (DMV-05): the target is on the wrong side of the tier ladder, or there is no rung to move to. */
+export interface TierTargetError {
+  code: 'NO_DIVISION_ABOVE' | 'NO_DIVISION_BELOW' | 'TARGET_NOT_ABOVE' | 'TARGET_NOT_BELOW';
+}
+
+/** 400 (DMV-05): several sibling divisions qualify. Retry with one of `candidates` as `toDivisionId`. */
+export interface AmbiguousTargetError {
+  code: 'AMBIGUOUS_TARGET';
+  candidates: { divisionId: string; name: string }[];
+}
+
 /** Coded error bodies of POST /progression/players/{playerId}/execute (all also carry `message`). */
 export type ExecuteProgressionError = (
   | NotInSourceDivisionError
@@ -269,6 +287,8 @@ export type ExecuteProgressionError = (
   | ConcurrentUpdateError
   | TargetIsDevelopmentalError
   | TrackInactiveError
+  | TierTargetError
+  | AmbiguousTargetError
 ) & { message: string };
 
 /** POST /admin/progression/recompute body. Omit `playerIds` to recompute every player. */
@@ -289,4 +309,105 @@ export interface RecomputeProgressionResult {
   rowsUpdated: number;
   rowsDropped: number;
   failures: ProgressionRecomputeFailure[];
+}
+
+/** DMV-09: kind of one division move. `transfer` is an approved transfer request. */
+export type DivisionMoveKind = ProgressionKind | 'transfer';
+
+/** One row of GET /progression/players/{playerId}/history (oldest first). */
+export interface DivisionHistoryEntry {
+  /** Progression eventId or transfer requestId. */
+  id: string;
+  kind: DivisionMoveKind;
+  fromDivisionId: string;
+  /** null when the division has since been deleted. */
+  fromDivisionName: string | null;
+  toDivisionId: string;
+  toDivisionName: string | null;
+  movedAt: string;
+}
+
+// ─── End-of-season movement reviews (DMV-03) ─────────────────────────
+
+/** What a GM can do with a player at the end of a season. */
+export type SeasonMovementChoice = 'promote' | 'relegate' | 'stay';
+
+/** Where a promote / relegate would go, without executing it. */
+export type MoveTargetPreview =
+  | { ok: true; toDivisionId: string }
+  | { ok: false; code: string; message: string };
+
+/**
+ * One row of GET /progression/reviews/{seasonId}: the season-end snapshot
+ * joined with the player and a preview of each move target. Relegation
+ * progress already excludes protected (hot-angle) losses.
+ */
+export interface SeasonMovementReviewView {
+  seasonId: string;
+  playerId: string;
+  playerName: string;
+  currentWrestler?: string;
+  /** The player's division when the snapshot was taken. */
+  divisionId: string;
+  /** The player's division now (differs from `divisionId` once moved). */
+  currentDivisionId?: string;
+  promotionTrackId?: string;
+  /** 0-100 */
+  promotionPct: number;
+  relegationTrackId?: string;
+  /** 0-100 */
+  relegationPct: number;
+  /** 1-based rank in the division's season standings. */
+  seasonRank?: number;
+  flagged: boolean;
+  recommendation: SeasonMovementChoice;
+  decision?: SeasonMovementChoice;
+  decidedBy?: string;
+  decidedAt?: string;
+  /** Set once an applied promote / relegate moved the player. */
+  toDivisionId?: string;
+  createdAt: string;
+  targets: { promote?: MoveTargetPreview; relegate?: MoveTargetPreview };
+}
+
+/** GET /progression/reviews/{seasonId} response. */
+export interface SeasonReviewList {
+  seasonId: string;
+  seasonStatus: 'active' | 'completed';
+  reviews: SeasonMovementReviewView[];
+}
+
+/** One decision in POST /progression/reviews/{seasonId}/apply. */
+export interface SeasonReviewDecisionInput {
+  playerId: string;
+  decision: SeasonMovementChoice;
+  /** Overrides the default target (needed when several siblings qualify). */
+  toDivisionId?: string;
+  /** Proceed even if the player holds a title restricted to the old division. */
+  force?: boolean;
+  /** Publish a News announcement for the move. Opt-in. */
+  announce?: boolean;
+}
+
+/** Why one decision was not applied. `details.code` is the refusal code. */
+export interface SeasonReviewRefusal {
+  status: number;
+  message: string;
+  details?: {
+    code: string;
+    candidates?: { divisionId: string; name: string }[];
+    championships?: { championshipId: string; name: string }[];
+  };
+}
+
+export type SeasonReviewApplyResult =
+  | { playerId: string; decision: SeasonMovementChoice; ok: true; move?: ExecuteProgressionResult }
+  | { playerId: string; decision: SeasonMovementChoice; ok: false; refusal: SeasonReviewRefusal };
+
+/** POST /progression/reviews/{seasonId}/apply response. */
+export interface SeasonReviewApplyResponse {
+  seasonId: string;
+  applied: number;
+  failed: number;
+  results: SeasonReviewApplyResult[];
 }

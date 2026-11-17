@@ -11,6 +11,8 @@ import { readRoutes } from './routes/read';
 import { considerationRoutes } from './routes/consideration';
 import { executeRoutes } from './routes/execute';
 import { historyRoutes } from './routes/history';
+import { reviewRoutes, handleSeasonSnapshotInvoke, isSeasonSnapshotPayload } from './routes/reviews';
+import { divisionHistoryRoutes } from './routes/divisionHistory';
 
 const noopCallback = () => {};
 
@@ -25,6 +27,8 @@ export const routes: ReadonlyArray<RouteConfig> = [
   ...considerationRoutes,
   ...executeRoutes,
   ...historyRoutes,
+  ...reviewRoutes,
+  ...divisionHistoryRoutes,
 ];
 
 const router = createRouter(routes);
@@ -37,6 +41,10 @@ export const handler: APIGatewayProxyHandler = async (
   // API Gateway always sets requestContext; its absence means a direct async
   // invocation from another function (a progression recompute request).
   if (event.requestContext == null) {
+    if (isSeasonSnapshotPayload(event)) {
+      await handleSeasonSnapshotInvoke(event);
+      return success({ ok: true });
+    }
     await handleDirectInvoke(event as unknown as ProgressionRecomputePayload);
     return success({ ok: true });
   }

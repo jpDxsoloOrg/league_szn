@@ -35,7 +35,7 @@ import { emptyTrackDraft, validateTrackDraft } from '../progression/trackDraft';
 const divisions: Division[] = [
   { divisionId: 'yb', name: 'Young Boys', isDevelopmental: true, createdAt: '', updatedAt: '' },
   { divisionId: 'nxt', name: 'NXT', isDevelopmental: true, createdAt: '', updatedAt: '' },
-  { divisionId: 'raw', name: 'Raw', createdAt: '', updatedAt: '' },
+  { divisionId: 'raw', name: 'Raw', tier: 1, createdAt: '', updatedAt: '' },
 ];
 
 const track: ProgressionTrack = {
@@ -175,6 +175,25 @@ describe('validateTrackDraft', () => {
     const draft = { ...emptyTrackDraft(), kind: 'relegation' as const, name: 'Drop', fromDivisionId: 'raw', toDivisionId: 'nxt' };
     draft.goals[0] = { ...draft.goals[0], threshold: '2' };
     expect(validateTrackDraft(draft, divisions)).toEqual({ goalErrors: {} });
+  });
+
+  it('checks promotion and relegation targets against the ladder', () => {
+    const ladder: Division[] = [
+      ...divisions,
+      { divisionId: 'sd', name: 'SmackDown', tier: 2, createdAt: '', updatedAt: '' },
+      { divisionId: 'legends', name: 'Legends', createdAt: '', updatedAt: '' },
+    ];
+    const base = { ...emptyTrackDraft(), name: 'Move', fromDivisionId: 'sd' };
+    base.goals[0] = { ...base.goals[0], threshold: '2' };
+
+    expect(validateTrackDraft({ ...base, kind: 'promotion', toDivisionId: 'raw' }, ladder)).toEqual({ goalErrors: {} });
+    expect(validateTrackDraft({ ...base, kind: 'promotion', toDivisionId: '' }, ladder)).toEqual({ goalErrors: {} });
+    expect(validateTrackDraft({ ...base, kind: 'promotion', toDivisionId: 'yb' }, ladder).toDivisionId)
+      .toBe('progression.admin.editor.errors.toNotAbove');
+    expect(validateTrackDraft({ ...base, kind: 'relegation', toDivisionId: 'raw' }, ladder).toDivisionId)
+      .toBe('progression.admin.editor.errors.toNotBelow');
+    expect(validateTrackDraft({ ...base, kind: 'relegation', fromDivisionId: 'legends' }, ladder).fromDivisionId)
+      .toBe('progression.admin.editor.errors.fromNeedsTier');
   });
 
   it('requires at least one goal', () => {

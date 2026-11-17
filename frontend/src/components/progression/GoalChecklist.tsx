@@ -17,7 +17,7 @@ export default function GoalChecklist({ goals, kind = 'callup', className = '' }
   if (goals.length === 0) return null;
 
   return (
-    <ul className={`goal-checklist goal-checklist--${kind} ${className}`.trim()} aria-label={t('progression.goals.title')}>
+    <ul className={`goal-checklist goal-checklist--${kind} ${className}`.trim()} aria-label={kind === 'callup' ? t('progression.goals.title') : t(`progression.goals.titleKind.${kind}`)}>
       {goals.map((goal) => {
         const label = goalLabel(t, goal);
         const progressText = goalProgressText(t, goal);

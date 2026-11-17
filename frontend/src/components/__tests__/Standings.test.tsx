@@ -67,6 +67,14 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+const mockViewer = vi.hoisted(() => ({ isGm: false, publicRelegationWatch: false }));
+vi.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({ isAdminOrModerator: mockViewer.isGm }),
+}));
+vi.mock('../../contexts/SiteConfigContext', () => ({
+  useSiteConfig: () => ({ tickerSettings: { publicRelegationWatch: mockViewer.publicRelegationWatch } }),
+}));
+
 const mockMobile = vi.hoisted(() => ({ value: false }));
 vi.mock('../../hooks/useIsMobile', () => ({ useIsMobile: () => mockMobile.value }));
 
@@ -176,6 +184,8 @@ describe('Standings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockMobile.value = false;
+    mockViewer.isGm = false;
+    mockViewer.publicRelegationWatch = false;
     mockGetAllSeasons.mockResolvedValue(mockSeasons);
     mockGetAllDivisions.mockResolvedValue(mockDivisions);
     mockGetStandings.mockResolvedValue({ players: allPlayers, sortedByWins: true });
@@ -484,5 +494,144 @@ describe('Standings', () => {
       expect(mockGetStandings).toHaveBeenCalledTimes(2);
     });
     expect(await screen.findByRole('list', { name: 'Top three' })).toBeInTheDocument();
+  });
+  describe('promotion and relegation zones', () => {
+    const ladder = [
+      { divisionId: 'raw', name: 'Raw', tier: 1, createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+      { divisionId: 'nxt', name: 'NXT', tier: 2, createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+      { divisionId: 'yb', name: 'Young Boys', isDevelopmental: true, createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+    ];
+
+    function nxtPlayer(index: number, wins: number, losses: number) {
+      return {
+        playerId: `n${index}`,
+        name: `NXT ${index}`,
+        currentWrestler: `Wrestler ${index}`,
+        wins,
+        losses,
+        draws: 0,
+        divisionId: 'nxt',
+        createdAt: '2024-01-01',
+        updatedAt: '2024-06-01',
+      };
+    }
+
+    // Seven NXT players: six have wrestled, one is unbooked (0-0-0).
+    const nxtPlayers = [
+      nxtPlayer(1, 10, 1),
+      nxtPlayer(2, 9, 2),
+      nxtPlayer(3, 8, 3),
+      nxtPlayer(4, 7, 4),
+      nxtPlayer(5, 3, 8),
+      nxtPlayer(6, 2, 9),
+      nxtPlayer(7, 0, 0),
+    ];
+    const rawPlayers = [
+      { ...nxtPlayer(8, 10, 0), divisionId: 'raw' },
+      { ...nxtPlayer(9, 5, 5), divisionId: 'raw' },
+      { ...nxtPlayer(10, 4, 6), divisionId: 'raw' },
+      { ...nxtPlayer(11, 1, 9), divisionId: 'raw' },
+    ];
+
+    beforeEach(() => {
+      mockGetAllDivisions.mockResolvedValue(ladder);
+      mockGetStandings.mockResolvedValue({ players: [...nxtPlayers, ...rawPlayers], sortedByWins: true });
+    });
+
+    async function showDivision(name: string) {
+      const user = userEvent.setup();
+      renderStandings();
+      await user.click(await screen.findByRole('button', { name }));
+      await screen.findByRole('list', { name: 'Top three' });
+      return user;
+    }
+
+    function rowFor(name: string): HTMLElement {
+      const row = screen.getByText(name).closest('tr');
+      if (!row) throw new Error(`No row for ${name}`);
+      return row;
+    }
+
+    it('marks the top two of a lower tier as the promotion zone, on the podium too', async () => {
+      await showDivision('NXT');
+
+      const podium = screen.getByRole('list', { name: 'Top three' });
+      expect(within(podium).getAllByText('standings.zones.promotion')).toHaveLength(2);
+      expect(rowFor('NXT 4')).not.toHaveClass('standings-zone');
+      expect(screen.getByRole('list', { name: 'standings.zones.legend' })).toHaveTextContent('standings.zones.promotionLegend');
+    });
+
+    it('hides the relegation zone from the public while publicRelegationWatch is off', async () => {
+      await showDivision('NXT');
+
+      expect(rowFor('NXT 6')).not.toHaveClass('standings-zone--relegation');
+      expect(screen.queryByRole('img', { name: 'standings.zones.relegation' })).not.toBeInTheDocument();
+      expect(screen.getByRole('list', { name: 'standings.zones.legend' })).not.toHaveTextContent('standings.zones.relegationLegend');
+    });
+
+    it('shows the bottom two who have wrestled as the relegation zone when publicRelegationWatch is on', async () => {
+      mockViewer.publicRelegationWatch = true;
+      await showDivision('NXT');
+
+      expect(rowFor('NXT 5')).toHaveClass('standings-zone--relegation');
+      expect(rowFor('NXT 6')).toHaveClass('standings-zone--relegation');
+      expect(rowFor('NXT 4')).not.toHaveClass('standings-zone');
+      // An unbooked wrestler is in no zone.
+      expect(rowFor('NXT 7')).not.toHaveClass('standings-zone');
+      expect(screen.getAllByRole('img', { name: 'standings.zones.relegation' })).toHaveLength(2);
+      expect(screen.getByRole('list', { name: 'standings.zones.legend' })).toHaveTextContent('standings.zones.relegationLegend');
+    });
+
+    it('shows the relegation zone to a GM even with the setting off', async () => {
+      mockViewer.isGm = true;
+      await showDivision('NXT');
+
+      expect(rowFor('NXT 6')).toHaveClass('standings-zone--relegation');
+    });
+
+    it('gives the top tier no promotion zone', async () => {
+      mockViewer.isGm = true;
+      await showDivision('Raw');
+
+      const podium = screen.getByRole('list', { name: 'Top three' });
+      expect(within(podium).queryByText('standings.zones.promotion')).not.toBeInTheDocument();
+      // Bottom two of Raw's four: #3 on the podium, #4 in the table.
+      expect(within(podium).getAllByText('standings.zones.relegation')).toHaveLength(1);
+      expect(rowFor('NXT 11')).toHaveClass('standings-zone--relegation');
+    });
+
+    it('honours a zone size of 0 and a custom size', async () => {
+      mockViewer.isGm = true;
+      mockGetAllDivisions.mockResolvedValue(
+        ladder.map((division) => (division.divisionId === 'nxt'
+          ? { ...division, promotionZoneSize: 0, relegationZoneSize: 3 }
+          : division)),
+      );
+      await showDivision('NXT');
+
+      expect(screen.queryByText('standings.zones.promotion')).not.toBeInTheDocument();
+      expect(rowFor('NXT 4')).toHaveClass('standings-zone--relegation');
+      expect(rowFor('NXT 5')).toHaveClass('standings-zone--relegation');
+      expect(rowFor('NXT 6')).toHaveClass('standings-zone--relegation');
+    });
+
+    it('shows no zones across all divisions', async () => {
+      mockViewer.isGm = true;
+      await showDivision('All');
+
+      expect(screen.queryByText('standings.zones.promotion')).not.toBeInTheDocument();
+      expect(screen.queryByRole('list', { name: 'standings.zones.legend' })).not.toBeInTheDocument();
+      expect(document.querySelector('.standings-zone')).toBeNull();
+    });
+
+    it('keeps the colour bar and icon on phone rows', async () => {
+      mockMobile.value = true;
+      mockViewer.publicRelegationWatch = true;
+      await showDivision('NXT');
+
+      const row = screen.getByRole('link', { name: /NXT 6/ });
+      expect(row).toHaveClass('standings-zone--relegation');
+      expect(within(row).getByRole('img', { name: 'standings.zones.relegation' })).toBeInTheDocument();
+    });
   });
 });

@@ -19,7 +19,7 @@ export default function ConsiderationBanner({ playerId, kind = 'callup' }: Consi
 
   return (
     <div className={`consideration-banner consideration-banner--${kind}`} role="status" data-testid="consideration-banner">
-      <span className="consideration-banner__icon" aria-hidden="true">⭐</span>
+      <span className="consideration-banner__icon" aria-hidden="true">{kind === 'relegation' ? '⚠️' : '⭐'}</span>
       <span className="consideration-banner__text">{t(`progression.consideration.banner.${kind}`)}</span>
     </div>
   );
