@@ -95,6 +95,8 @@ export interface DivisionCreateInput {
   description?: string;
   isDevelopmental?: boolean;
   isDefaultForNewWrestlers?: boolean;
+  /** Null is treated as "no tier". */
+  tier?: number | null;
 }
 
 export interface DivisionPatch {
@@ -102,6 +104,8 @@ export interface DivisionPatch {
   description?: string;
   isDevelopmental?: boolean;
   isDefaultForNewWrestlers?: boolean;
+  /** Null clears the tier (stored as NULL; readers use getDivisionTier). */
+  tier?: number | null;
 }
 
 // ─── Location input types ───────────────────────────────────────────

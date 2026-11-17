@@ -230,6 +230,39 @@ describe('updateDivision flags', () => {
   });
 });
 
+describe('updateDivision tier', () => {
+  function put(divisionId: string, body: Record<string, unknown>) {
+    return updateDivision(makeEvent({ pathParameters: { divisionId }, body: JSON.stringify(body) }), ctx, cb);
+  }
+
+  it('sets a tier', async () => {
+    const created = await repos.leagueOps.divisions.create({ name: 'NXT' });
+
+    const result = await put(created.divisionId, { tier: 2 });
+
+    expect(result!.statusCode).toBe(200);
+    expect((await repos.leagueOps.divisions.findById(created.divisionId))?.tier).toBe(2);
+  });
+
+  it('clears the tier with null', async () => {
+    const created = await repos.leagueOps.divisions.create({ name: 'NXT', tier: 2 });
+
+    const result = await put(created.divisionId, { tier: null });
+
+    expect(result!.statusCode).toBe(200);
+    expect((await repos.leagueOps.divisions.findById(created.divisionId))?.tier ?? undefined).toBeUndefined();
+  });
+
+  it.each([0, -1, 1.5, '1', 100])('returns 400 for tier %s', async (tier) => {
+    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
+
+    const result = await put(created.divisionId, { tier });
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toMatch(/^tier must be an integer/);
+  });
+});
+
 describe('deleteDivision', () => {
   it('deletes division and returns 204', async () => {
     const created = await repos.leagueOps.divisions.create({ name: 'Raw' });

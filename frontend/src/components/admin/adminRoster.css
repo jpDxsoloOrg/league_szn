@@ -99,6 +99,10 @@
   font-size: var(--text-dense);
 }
 
+.ar-input--tier {
+  max-width: 7rem;
+}
+
 .ar-input--search {
   flex: 1 1 14rem;
   width: auto;

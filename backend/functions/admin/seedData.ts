@@ -334,6 +334,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       {
         divisionId: uuidv4(),
         name: 'Raw',
+        tier: 1,
         description: 'The flagship Monday Night Raw roster',
         createdAt: now,
         updatedAt: now,
@@ -341,6 +342,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       {
         divisionId: uuidv4(),
         name: 'SmackDown',
+        tier: 1,
         description: 'The Friday Night SmackDown roster',
         createdAt: now,
         updatedAt: now,
@@ -348,6 +350,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       {
         divisionId: uuidv4(),
         name: 'NXT',
+        tier: 2,
         description: 'The developmental brand for rising stars',
         createdAt: now,
         updatedAt: now,

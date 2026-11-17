@@ -3024,7 +3024,12 @@
       "defaultLabel": "Default for new wrestlers",
       "defaultHint": "New sign-ups land here. Only one division can be the default; turning this on removes it from the current default.",
       "developmentalBadge": "Developmental",
-      "defaultBadge": "Default"
+      "defaultBadge": "Default",
+      "tierColumn": "Tier",
+      "tierLabel": "Tier (Optional)",
+      "tierHint": "1 is the top. Divisions on the same tier are siblings. Leave empty for no tier. Developmental divisions always rank below every tier.",
+      "tierBadge": "Tier {{tier}}",
+      "tierInvalid": "Tier must be a whole number from {{min}} to {{max}}, or empty."
     },
     "transfers": {
       "loadError": "Failed to load transfer requests",

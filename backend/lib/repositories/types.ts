@@ -6,6 +6,11 @@ export interface Division {
   isDevelopmental?: boolean;
   /** New sign-ups land here. At most one division carries this flag. */
   isDefaultForNewWrestlers?: boolean;
+  /**
+   * Ladder position, 1 = top. Same tier = siblings. Developmental divisions
+   * rank below every tiered one. See lib/divisionTiers.ts.
+   */
+  tier?: number;
   createdAt: string;
   updatedAt: string;
 }

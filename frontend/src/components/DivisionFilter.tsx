@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useScrollFade } from '../hooks/useScrollFade';
 import type { Division } from '../types';
+import { sortDivisionsByTier } from '../utils/divisionTiers';
 import './DivisionFilter.css';
 
 export interface DivisionFilterProps {
@@ -28,7 +29,7 @@ export default function DivisionFilter({
 
   const options = [
     { value: 'all', label: t('common.all') },
-    ...divisions.map((division) => ({ value: division.divisionId, label: division.name })),
+    ...sortDivisionsByTier(divisions).map((division) => ({ value: division.divisionId, label: division.name })),
     ...(showNoDivision ? [{ value: 'none', label: t('standings.noDivision') }] : []),
   ];
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // --- Hoisted mocks ---
@@ -111,6 +111,7 @@ describe('ManageDivisions', () => {
         description: 'Monday Night Raw',
         isDevelopmental: false,
         isDefaultForNewWrestlers: false,
+        tier: null,
       });
     });
     await waitFor(() => {
@@ -201,7 +202,45 @@ describe('ManageDivisions', () => {
         description: undefined,
         isDevelopmental: true,
         isDefaultForNewWrestlers: true,
+        tier: null,
       });
     });
+  });
+
+  it('shows a tier badge and sends the tier entered in the form', async () => {
+    mockDivisionsApi.getAll.mockResolvedValue([
+      { ...mockDivisions[0], tier: 1 },
+      mockDivisions[1],
+    ]);
+    mockDivisionsApi.update.mockResolvedValue({});
+    const user = userEvent.setup();
+
+    render(<ManageDivisions />);
+    await waitFor(() => { expect(screen.getByText('Tier 1')).toBeInTheDocument(); });
+
+    await user.click(screen.getAllByRole('button', { name: 'Edit' })[1]);
+    const tierInput = screen.getByLabelText('Tier (Optional)');
+    expect(tierInput).toHaveValue(null);
+    await user.type(tierInput, '2');
+    await user.click(screen.getByRole('button', { name: 'Update Division' }));
+
+    await waitFor(() => {
+      expect(mockDivisionsApi.update).toHaveBeenCalledWith('div-2', expect.objectContaining({ tier: 2 }));
+    });
+  });
+
+  it('rejects a tier outside the allowed range without calling the API', async () => {
+    const user = userEvent.setup();
+
+    render(<ManageDivisions />);
+    await waitFor(() => { expect(screen.getByText('Raw')).toBeInTheDocument(); });
+
+    await user.click(screen.getAllByRole('button', { name: 'Edit' })[0]);
+    await user.type(screen.getByLabelText('Tier (Optional)'), '0');
+    // Submit the form directly: the input's native min would otherwise block it.
+    fireEvent.submit(screen.getByLabelText('Tier (Optional)').closest('form') as HTMLFormElement);
+
+    expect(await screen.findByText('Tier must be a whole number from 1 to 99, or empty.')).toBeInTheDocument();
+    expect(mockDivisionsApi.update).not.toHaveBeenCalled();
   });
 });

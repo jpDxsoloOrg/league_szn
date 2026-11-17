@@ -287,6 +287,7 @@ export class InMemoryLeagueOpsRepository implements LeagueOpsRepository {
         ...(input.isDefaultForNewWrestlers !== undefined
           ? { isDefaultForNewWrestlers: input.isDefaultForNewWrestlers }
           : {}),
+        ...(typeof input.tier === 'number' ? { tier: input.tier } : {}),
         createdAt: now,
         updatedAt: now,
       }),
