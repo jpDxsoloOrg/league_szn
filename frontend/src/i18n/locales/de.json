@@ -3899,7 +3899,9 @@
       "tabs": {
         "board": "Kandidaten",
         "tracks": "Tracks & Ziele",
-        "history": "Verlauf"
+        "history": "Verlauf",
+        "movement": "Divisionswechsel",
+        "review": "Saisonbilanz"
       },
       "selectTrack": "Track",
       "trackRoute": "{{from}} → {{to}}",
@@ -4110,6 +4112,108 @@
             "promotion": "Aufgestiegen",
             "relegation": "Abgestiegen"
           }
+        }
+      },
+      "movement": {
+        "noTracks": "Noch keine Auf- oder Abstiegs-Tracks",
+        "noTracksText": "Lege für eine Division einen Auf- oder Abstiegs-Track an, um ihre Kandidaten hier zu sehen.",
+        "noTrackForKind": {
+          "promotion": "{{division}} hat keinen Aufstiegs-Track.",
+          "relegation": "{{division}} hat keinen Abstiegs-Track."
+        },
+        "noTrack": "Kein Track",
+        "editGoals": "Ziele bearbeiten",
+        "overviewTitle": "Markierte Spieler nach Division",
+        "countsFailed": "Die Markierungen konnten nicht geladen werden: {{message}}",
+        "selectDivision": "Division",
+        "kindTabs": "Wechsel in {{division}}",
+        "columns": {
+          "division": "Division",
+          "promotion": "Aufstiegsbeobachtung",
+          "relegation": "Abstiegsbeobachtung"
+        },
+        "openCount": {
+          "promotion": "Aufstiegskandidaten in {{division}} öffnen ({{count}} markiert)",
+          "relegation": "Abstiegskandidaten in {{division}} öffnen ({{count}} markiert)"
+        }
+      },
+      "review": {
+        "season": "Saison",
+        "division": "Division",
+        "activeSeason": "{{name}} (läuft)",
+        "allDivisions": "Alle Divisionen",
+        "intro": "Jede Zeile startet mit der Empfehlung. Ändere beliebige Entscheidungen und wende sie dann an. Auf- und Abstiege werden nur angekündigt, wenn du Ankündigen anhakst.",
+        "caption": "Saisonbilanz Divisionswechsel",
+        "noSeasons": "Noch keine Saisons",
+        "empty": "Für diese Saison gibt es keine Bilanz.",
+        "emptyActive": "Diese Saison läuft noch. Die Bilanz wird zum Saisonende erstellt.",
+        "loadFailed": "Die Saisonbilanz konnte nicht geladen werden: {{message}}",
+        "applyCount_one": "{{count}} Entscheidung anwenden",
+        "applyCount_other": "{{count}} Entscheidungen anwenden",
+        "apply": "Entscheidungen anwenden",
+        "confirmTitle_one": "{{count}} Entscheidung anwenden?",
+        "confirmTitle_other": "{{count}} Entscheidungen anwenden?",
+        "confirmText": "{{promote}} steigen auf, {{relegate}} steigen ab, {{stay}} bleiben. Wechsel gelten sofort.",
+        "forceTitle": "{{name}} trotzdem verschieben?",
+        "forceText": "{{name}} hält Titel, die auf die aktuelle Division beschränkt sind: {{titles}}. Nach dem Wechsel hat der Titel einen Champion außerhalb der Division.",
+        "summary": "{{applied}} angewendet. {{failed}} nicht angewendet; siehe Spalte Ergebnis.",
+        "missingTargets_one": "Wähle vor dem Anwenden eine Zieldivision für {{count}} Spieler.",
+        "missingTargets_other": "Wähle vor dem Anwenden eine Zieldivision für {{count}} Spieler.",
+        "decisionFor": "Entscheidung für {{name}}",
+        "targetFor": "Zieldivision für {{name}}",
+        "noDecision": "Keine Entscheidung",
+        "pickTarget": "Division wählen",
+        "choiceUnavailable": "{{choice}} ({{reason}})",
+        "choices": {
+          "promote": "Aufsteigen",
+          "relegate": "Absteigen",
+          "stay": "Bleiben"
+        },
+        "decided": {
+          "promote": "Aufgestiegen",
+          "relegate": "Abgestiegen",
+          "stay": "Geblieben"
+        },
+        "reasons": {
+          "NO_TRACK": "kein Track",
+          "NO_DIVISION_ABOVE": "oberste Stufe",
+          "NO_DIVISION_BELOW": "unterste Stufe",
+          "TARGET_NOT_ABOVE": "Ziel nicht höher",
+          "TARGET_NOT_BELOW": "Ziel nicht tiefer"
+        },
+        "announce": "Ankündigen",
+        "applied": "Angewendet",
+        "notApplied": "Nicht angewendet",
+        "alreadyApplied": "Bereits angewendet",
+        "movedTo": "Nach {{division}} verschoben",
+        "nowIn": "Jetzt in {{division}}",
+        "rank": "#{{rank}}",
+        "unranked": "Ohne Platzierung",
+        "progress": "Aufstieg {{promotion}} % · Abstieg {{relegation}} %",
+        "columns": {
+          "player": "Spieler",
+          "division": "Division",
+          "standing": "Platzierung",
+          "recommendation": "Empfehlung",
+          "decision": "Entscheidung",
+          "target": "Ziel",
+          "result": "Ergebnis"
+        },
+        "refusals": {
+          "AMBIGUOUS_TARGET": "Mehrere Divisionen teilen sich die nächste Stufe. Wähle ein Ziel und wende erneut an.",
+          "HOLDS_DIVISION_TITLE": "{{name}} hält Titel, die auf die aktuelle Division beschränkt sind:",
+          "ALREADY_APPLIED": "Diese Entscheidung wurde bereits angewendet.",
+          "REVIEW_NOT_FOUND": "{{name}} hat in dieser Saison keine Bilanz.",
+          "NO_TRACK": "Die Division hat keinen aktiven Track für diesen Wechsel.",
+          "NO_DIVISION_ABOVE": "{{name}} ist bereits in der obersten Stufe.",
+          "NO_DIVISION_BELOW": "Unter der aktuellen Division von {{name}} gibt es keine weitere.",
+          "TARGET_NOT_ABOVE": "Ein Aufstieg muss eine höhere Stufe als Ziel haben.",
+          "TARGET_NOT_BELOW": "Ein Abstieg muss eine tiefere Stufe als Ziel haben.",
+          "NOT_IN_SOURCE_DIVISION": "{{name}} ist nicht mehr in der bewerteten Division.",
+          "CONCURRENT_UPDATE": "Jemand anderes hat {{name}} zuerst verschoben. Neu laden und erneut versuchen.",
+          "TRACK_INACTIVE": "Der Track für diesen Wechsel ist inaktiv.",
+          "UNEXPECTED_ERROR": "Beim Anwenden dieser Entscheidung ist etwas schiefgelaufen.",
+          "REQUEST_FAILED": "Die Anfrage ist fehlgeschlagen. Versuche es erneut."
         }
       }
     },

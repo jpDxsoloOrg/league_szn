@@ -326,3 +326,88 @@ export interface DivisionHistoryEntry {
   toDivisionName: string | null;
   movedAt: string;
 }
+
+// ─── End-of-season movement reviews (DMV-03) ─────────────────────────
+
+/** What a GM can do with a player at the end of a season. */
+export type SeasonMovementChoice = 'promote' | 'relegate' | 'stay';
+
+/** Where a promote / relegate would go, without executing it. */
+export type MoveTargetPreview =
+  | { ok: true; toDivisionId: string }
+  | { ok: false; code: string; message: string };
+
+/**
+ * One row of GET /progression/reviews/{seasonId}: the season-end snapshot
+ * joined with the player and a preview of each move target. Relegation
+ * progress already excludes protected (hot-angle) losses.
+ */
+export interface SeasonMovementReviewView {
+  seasonId: string;
+  playerId: string;
+  playerName: string;
+  currentWrestler?: string;
+  /** The player's division when the snapshot was taken. */
+  divisionId: string;
+  /** The player's division now (differs from `divisionId` once moved). */
+  currentDivisionId?: string;
+  promotionTrackId?: string;
+  /** 0-100 */
+  promotionPct: number;
+  relegationTrackId?: string;
+  /** 0-100 */
+  relegationPct: number;
+  /** 1-based rank in the division's season standings. */
+  seasonRank?: number;
+  flagged: boolean;
+  recommendation: SeasonMovementChoice;
+  decision?: SeasonMovementChoice;
+  decidedBy?: string;
+  decidedAt?: string;
+  /** Set once an applied promote / relegate moved the player. */
+  toDivisionId?: string;
+  createdAt: string;
+  targets: { promote?: MoveTargetPreview; relegate?: MoveTargetPreview };
+}
+
+/** GET /progression/reviews/{seasonId} response. */
+export interface SeasonReviewList {
+  seasonId: string;
+  seasonStatus: 'active' | 'completed';
+  reviews: SeasonMovementReviewView[];
+}
+
+/** One decision in POST /progression/reviews/{seasonId}/apply. */
+export interface SeasonReviewDecisionInput {
+  playerId: string;
+  decision: SeasonMovementChoice;
+  /** Overrides the default target (needed when several siblings qualify). */
+  toDivisionId?: string;
+  /** Proceed even if the player holds a title restricted to the old division. */
+  force?: boolean;
+  /** Publish a News announcement for the move. Opt-in. */
+  announce?: boolean;
+}
+
+/** Why one decision was not applied. `details.code` is the refusal code. */
+export interface SeasonReviewRefusal {
+  status: number;
+  message: string;
+  details?: {
+    code: string;
+    candidates?: { divisionId: string; name: string }[];
+    championships?: { championshipId: string; name: string }[];
+  };
+}
+
+export type SeasonReviewApplyResult =
+  | { playerId: string; decision: SeasonMovementChoice; ok: true; move?: ExecuteProgressionResult }
+  | { playerId: string; decision: SeasonMovementChoice; ok: false; refusal: SeasonReviewRefusal };
+
+/** POST /progression/reviews/{seasonId}/apply response. */
+export interface SeasonReviewApplyResponse {
+  seasonId: string;
+  applied: number;
+  failed: number;
+  results: SeasonReviewApplyResult[];
+}

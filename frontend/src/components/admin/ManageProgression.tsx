@@ -16,13 +16,15 @@ import { useToast } from '../ui/toastContext';
 import AdminNotice from './AdminNotice';
 import CandidateBoard from './progression/CandidateBoard';
 import EventHistory from './progression/EventHistory';
+import MovementBoard from './progression/MovementBoard';
+import SeasonReview from './progression/SeasonReview';
 import TrackEditor from './progression/TrackEditor';
 import './adminContent.css';
 import './ManageProgression.css';
 
-type View = 'board' | 'tracks' | 'history';
+type View = 'board' | 'movement' | 'review' | 'tracks' | 'history';
 
-const VIEWS: readonly View[] = ['board', 'tracks', 'history'];
+const VIEWS: readonly View[] = ['board', 'movement', 'review', 'tracks', 'history'];
 
 function toView(value: string): View {
   return VIEWS.find((view) => view === value) ?? 'board';
@@ -289,6 +291,20 @@ export default function ManageProgression() {
           onValueChange={(value) => setView(toView(value))}
           items={[
             { value: 'board', label: t('progression.admin.tabs.board'), content: boardContent },
+            {
+              value: 'movement',
+              label: t('progression.admin.tabs.movement'),
+              content: (
+                <MovementBoard
+                  tracks={tracks}
+                  divisions={divisions}
+                  reloadKey={boardReloadKey}
+                  onEditTrack={openEditor}
+                  onNewTrack={() => openEditor(null)}
+                />
+              ),
+            },
+            { value: 'review', label: t('progression.admin.tabs.review'), content: <SeasonReview divisions={divisions} /> },
             { value: 'tracks', label: t('progression.admin.tabs.tracks'), content: tracksContent },
             // Radix unmounts inactive panels, so the history reloads each time it is opened.
             { value: 'history', label: t('progression.admin.tabs.history'), content: <EventHistory tracks={tracks} /> },

@@ -41,7 +41,7 @@ export { overallsApi } from './overalls.api';
 export { transfersApi } from './transfers.api';
 export { storylineRequestsApi } from './storylineRequests.api';
 export { locationsApi } from './locations.api';
-export { progressionApi, executeProgressionError } from './progression.api';
+export { progressionApi, executeProgressionError, SEASON_REVIEW_BATCH_MAX } from './progression.api';
 
 // Type/interface re-exports
 export type { SiteFeatures, SiteConfigResponse, TickerSettings, TickerSegmentKey, TickerScrollSpeed } from './siteConfig.api';
