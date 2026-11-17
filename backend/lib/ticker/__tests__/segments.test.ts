@@ -159,6 +159,14 @@ describe('buildNewsSegment', () => {
     expect(built?.items[0]).toEqual({ text: 'News 1', href: '/news/1' });
     expect(buildNewsSegment([])).toBeNull();
   });
+
+  it('leads with the newest story, whatever the order given', () => {
+    const built = buildNewsSegment([
+      { announcementId: 'breaking-old', title: 'Old breaking', createdAt: '2026-11-15T19:25:54.751Z' },
+      { announcementId: 'new', title: 'New story', createdAt: '2026-11-17T05:00:00.000Z' },
+    ]);
+    expect(built?.items.map((item) => item.href)).toEqual(['/news/new', '/news/breaking-old']);
+  });
 });
 
 describe('buildChampionsSegment', () => {
