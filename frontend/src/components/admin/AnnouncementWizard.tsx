@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ClipboardList, Clapperboard, Zap } from 'lucide-react';
-import { announcementsApi, imagesApi } from '../../services/api';
+import { announcementsApi, imagesApi, tickerMessagesApi } from '../../services/api';
+import { buildBreakingNewsTickerMessage } from './tickerMessageForm';
 import { toMediaUrl } from '../../utils/mediaUrl';
 import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import Modal from '../ui/Modal';
@@ -108,6 +110,7 @@ const MEDIA_PACKAGE_STEPS = ['Media Details', 'Preview & Publish'];
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AnnouncementWizard({ onClose, onPublished }: AnnouncementWizardProps) {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<WizardMode>('select');
   const [step, setStep] = useState(1);
 
@@ -126,6 +129,7 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
 
   const [priority, setPriority] = useState(3);
   const [showAsPopup, setShowAsPopup] = useState(false);
+  const [postToTicker, setPostToTicker] = useState(false);
   const [expiresAt, setExpiresAt] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -298,14 +302,27 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
 
     setSaving(true);
     try {
-      await announcementsApi.create({
+      const announcementExpiresAt = expiresAt ? new Date(expiresAt).toISOString() : undefined;
+      const announcement = await announcementsApi.create({
         title,
         body: generatedHtml,
         priority,
         isActive: true,
-        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
+        expiresAt: announcementExpiresAt,
         showAsPopup,
       });
+      if (mode === 'breaking-news' && postToTicker) {
+        try {
+          await tickerMessagesApi.create(
+            buildBreakingNewsTickerMessage(title, announcement.announcementId, announcementExpiresAt),
+          );
+        } catch (tickerErr) {
+          // The announcement is live; say so, so the GM does not publish it twice.
+          const reason = tickerErr instanceof Error ? tickerErr.message : String(tickerErr);
+          setError(t('announcements.ticker.wizardPostFailed', { reason }));
+          return;
+        }
+      }
       onPublished();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to publish announcement.');
@@ -955,6 +972,16 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
                     onChange={(e) => setShowAsPopup(e.target.checked)}
                   />
                   Also show as a pop-up when members open the site
+                </label>
+
+                <label className="wizard-checkbox-label wizard-popup-option">
+                  <input
+                    id="bn-ticker"
+                    type="checkbox"
+                    checked={postToTicker}
+                    onChange={(e) => setPostToTicker(e.target.checked)}
+                  />
+                  {t('announcements.ticker.wizardPostToTicker')}
                 </label>
 
                 <button

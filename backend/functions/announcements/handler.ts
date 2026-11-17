@@ -3,6 +3,10 @@ import { handler as listAnnouncementsHandler } from './listAnnouncements';
 import { handler as createAnnouncementHandler } from './createAnnouncement';
 import { handler as updateAnnouncementHandler } from './updateAnnouncement';
 import { handler as deleteAnnouncementHandler } from './deleteAnnouncement';
+import { handler as listTickerMessagesHandler } from './listTickerMessages';
+import { handler as createTickerMessageHandler } from './createTickerMessage';
+import { handler as updateTickerMessageHandler } from './updateTickerMessage';
+import { handler as deleteTickerMessageHandler } from './deleteTickerMessage';
 import { createRouter, type RouteConfig, STAFF } from '../../lib/router';
 
 /**
@@ -39,6 +43,31 @@ export const routes: ReadonlyArray<RouteConfig> = [
     resource: '/admin/announcements/{announcementId}',
     method: 'DELETE',
     handler: deleteAnnouncementHandler,
+    access: STAFF,
+  },
+  // GM ticker messages (TKR-02), stored in the Announcements table.
+  {
+    resource: '/admin/ticker-messages',
+    method: 'GET',
+    handler: listTickerMessagesHandler,
+    access: STAFF,
+  },
+  {
+    resource: '/admin/ticker-messages',
+    method: 'POST',
+    handler: createTickerMessageHandler,
+    access: STAFF,
+  },
+  {
+    resource: '/admin/ticker-messages/{messageId}',
+    method: 'PUT',
+    handler: updateTickerMessageHandler,
+    access: STAFF,
+  },
+  {
+    resource: '/admin/ticker-messages/{messageId}',
+    method: 'DELETE',
+    handler: deleteTickerMessageHandler,
     access: STAFF,
   },
 ];

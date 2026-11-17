@@ -2,11 +2,19 @@ import { v4 as uuidv4 } from 'uuid';
 import { dynamoDb, TableNames } from '../../dynamodb';
 import { NotFoundError } from '../errors';
 import { buildUpdateExpression } from './util';
-import { compareActiveAnnouncements } from '../ContentRepository';
+import {
+  compareActiveAnnouncements,
+  compareTickerMessages,
+  isTickerMessageActive,
+  TICKER_KIND,
+} from '../ContentRepository';
 import type {
   ContentRepository,
   AnnouncementCreateInput,
   AnnouncementPatch,
+  TickerMessageCreateInput,
+  TickerMessagePatch,
+  TickerMessagesMethods,
   VideoCreateInput,
   VideoPatch,
   PromoCreateInput,
@@ -17,6 +25,7 @@ import type {
 } from '../ContentRepository';
 import type {
   Announcement,
+  TickerMessage,
   Video,
   Promo,
   PromoType,
@@ -38,7 +47,10 @@ function buildAnnouncementsMethods(): AnnouncementsCrud {
       TableName: TableNames.ANNOUNCEMENTS,
       Key: { announcementId },
     });
-    return (result.Item as Announcement | undefined) ?? null;
+    const item = result.Item as (Announcement & { kind?: string }) | undefined;
+    // Ticker messages share the table; they are not announcements.
+    if (!item || item.kind === TICKER_KIND) return null;
+    return item;
   }
 
   return {
@@ -46,7 +58,8 @@ function buildAnnouncementsMethods(): AnnouncementsCrud {
 
     async list(): Promise<Announcement[]> {
       const items = await dynamoDb.scanAll({ TableName: TableNames.ANNOUNCEMENTS });
-      const announcements = items as unknown as Announcement[];
+      const announcements = (items as unknown as Array<Announcement & { kind?: string }>)
+        .filter((item) => item.kind !== TICKER_KIND);
       announcements.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
       return announcements;
     },
@@ -61,6 +74,7 @@ function buildAnnouncementsMethods(): AnnouncementsCrud {
 
       const now = new Date().toISOString();
       const announcements = ((result.Items || []) as unknown as Announcement[])
+        .filter((item) => (item as Announcement & { kind?: string }).kind !== TICKER_KIND)
         .filter((item) => !item.expiresAt || item.expiresAt > now)
         .sort(compareActiveAnnouncements);
 
@@ -527,11 +541,115 @@ function buildStorylineRequestsMethods(): StorylineRequestsMethods {
   };
 }
 
+// ─── Ticker messages (Announcements table, kind 'ticker') ──────────
+
+type TickerMessageRow = TickerMessage & { announcementId: string; kind: typeof TICKER_KIND };
+
+function toTickerMessage(row: Record<string, unknown>): TickerMessage {
+  const { announcementId, kind, ...message } = row as unknown as TickerMessageRow;
+  void announcementId;
+  void kind;
+  return message;
+}
+
+function buildTickerMessagesMethods(): TickerMessagesMethods {
+  async function findById(messageId: string): Promise<TickerMessage | null> {
+    const result = await dynamoDb.get({
+      TableName: TableNames.ANNOUNCEMENTS,
+      Key: { announcementId: messageId },
+    });
+    const item = result.Item as Record<string, unknown> | undefined;
+    if (!item || item.kind !== TICKER_KIND) return null;
+    return toTickerMessage(item);
+  }
+
+  async function list(): Promise<TickerMessage[]> {
+    const items = await dynamoDb.scanAll({
+      TableName: TableNames.ANNOUNCEMENTS,
+      FilterExpression: '#kind = :ticker',
+      ExpressionAttributeNames: { '#kind': 'kind' },
+      ExpressionAttributeValues: { ':ticker': TICKER_KIND },
+    });
+    return items
+      .filter((item) => item.kind === TICKER_KIND)
+      .map(toTickerMessage)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  return {
+    findById,
+    list,
+
+    async listActive(now: Date = new Date()): Promise<TickerMessage[]> {
+      const nowIso = now.toISOString();
+      return (await list())
+        .filter((message) => isTickerMessageActive(message, nowIso))
+        .sort(compareTickerMessages);
+    },
+
+    async create(input: TickerMessageCreateInput): Promise<TickerMessage> {
+      const now = new Date().toISOString();
+      const message: TickerMessage = {
+        messageId: uuidv4(),
+        text: input.text.trim(),
+        pinned: input.pinned === true,
+        startsAt: input.startsAt,
+        expiresAt: input.expiresAt,
+        createdBy: input.createdBy,
+        createdAt: now,
+        updatedAt: now,
+      };
+      const href = input.href?.trim();
+      if (href) message.href = href;
+
+      const row: TickerMessageRow = { ...message, announcementId: message.messageId, kind: TICKER_KIND };
+      await dynamoDb.put({ TableName: TableNames.ANNOUNCEMENTS, Item: row });
+      return message;
+    },
+
+    async update(messageId: string, patch: TickerMessagePatch): Promise<TickerMessage> {
+      const existing = await findById(messageId);
+      if (!existing) throw new NotFoundError('TickerMessage', messageId);
+
+      const fields: Record<string, unknown> = {};
+      if (patch.text !== undefined) fields.text = patch.text.trim();
+      if (patch.pinned !== undefined) fields.pinned = patch.pinned === true;
+      if (patch.startsAt !== undefined) fields.startsAt = patch.startsAt;
+      if (patch.expiresAt !== undefined) fields.expiresAt = patch.expiresAt;
+      const href = typeof patch.href === 'string' ? patch.href.trim() : patch.href;
+      if (href) fields.href = href;
+      const clearHref = href === null || href === '';
+
+      const now = new Date().toISOString();
+      const expr = buildUpdateExpression(fields, now);
+      await dynamoDb.update({
+        TableName: TableNames.ANNOUNCEMENTS,
+        Key: { announcementId: messageId },
+        UpdateExpression: clearHref ? `${expr.UpdateExpression} REMOVE href` : expr.UpdateExpression,
+        ExpressionAttributeNames: expr.ExpressionAttributeNames,
+        ExpressionAttributeValues: expr.ExpressionAttributeValues,
+      });
+
+      const updated: TickerMessage = { ...existing, ...fields, updatedAt: now } as TickerMessage;
+      if (clearHref) delete updated.href;
+      return updated;
+    },
+
+    async delete(messageId: string): Promise<void> {
+      await dynamoDb.delete({
+        TableName: TableNames.ANNOUNCEMENTS,
+        Key: { announcementId: messageId },
+      });
+    },
+  };
+}
+
 // ─── Aggregate class ───────────────────────────────────────────────
 
 export class DynamoContentRepository implements ContentRepository {
   announcements = buildAnnouncementsMethods();
   videos = buildVideosMethods();
+  tickerMessages = buildTickerMessagesMethods();
   promos = buildPromosMethods();
   storylineRequests = buildStorylineRequestsMethods();
 }

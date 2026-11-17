@@ -2,8 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-const { mockAnnouncementsApi } = vi.hoisted(() => ({
+const { mockAnnouncementsApi, mockTickerApi } = vi.hoisted(() => ({
   mockAnnouncementsApi: {
+    getAll: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
+  mockTickerApi: {
     getAll: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -13,6 +19,7 @@ const { mockAnnouncementsApi } = vi.hoisted(() => ({
 
 vi.mock('../../../services/api', () => ({
   announcementsApi: mockAnnouncementsApi,
+  tickerMessagesApi: mockTickerApi,
   imagesApi: {},
 }));
 
@@ -32,6 +39,7 @@ describe('ManageAnnouncements', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAnnouncementsApi.getAll.mockResolvedValue([announcement]);
+    mockTickerApi.getAll.mockResolvedValue([]);
   });
 
   it('lists announcements', async () => {
@@ -74,5 +82,57 @@ describe('ManageAnnouncements', () => {
     mockAnnouncementsApi.getAll.mockResolvedValue([{ ...announcement, showAsPopup: true }]);
     render(<ManageAnnouncements />);
     expect(await screen.findByText('announcements.popupOn')).toBeInTheDocument();
+  });
+
+  describe('Ticker section', () => {
+    const liveMessage = {
+      messageId: 't1',
+      text: 'Draft night this Friday!',
+      pinned: true,
+      startsAt: '2026-01-01T00:00:00.000Z',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      createdBy: 'gm',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    it('lists ticker messages with their status', async () => {
+      mockTickerApi.getAll.mockResolvedValue([liveMessage]);
+      render(<ManageAnnouncements />);
+
+      expect(await screen.findByText(/Draft night this Friday!/)).toBeInTheDocument();
+      expect(screen.getByText('announcements.ticker.status.live')).toBeInTheDocument();
+      expect(screen.getByText('announcements.ticker.pinned')).toBeInTheDocument();
+    });
+
+    it('expires a live message now', async () => {
+      const user = userEvent.setup();
+      mockTickerApi.getAll.mockResolvedValue([liveMessage]);
+      mockTickerApi.update.mockResolvedValue(liveMessage);
+      render(<ManageAnnouncements />);
+
+      await user.click(await screen.findByRole('button', { name: 'announcements.ticker.expireNow' }));
+
+      expect(mockTickerApi.update).toHaveBeenCalledWith('t1', { expiresAt: expect.any(String) });
+    });
+
+    it('creates a message from the form', async () => {
+      const user = userEvent.setup();
+      mockTickerApi.create.mockResolvedValue(liveMessage);
+      render(<ManageAnnouncements />);
+
+      await screen.findByText('announcements.ticker.empty');
+      await user.click(screen.getAllByRole('button', { name: 'announcements.ticker.create' })[0]);
+      await user.type(await screen.findByLabelText('announcements.ticker.fields.text'), 'Draft night!');
+      await user.type(screen.getByLabelText('announcements.ticker.fields.href'), '/events');
+      const dialogButtons = screen.getAllByRole('button', { name: 'announcements.ticker.create' });
+      await user.click(dialogButtons[dialogButtons.length - 1]);
+
+      expect(mockTickerApi.create).toHaveBeenCalledWith(expect.objectContaining({
+        text: 'Draft night!',
+        href: '/events',
+        pinned: false,
+      }));
+    });
   });
 });

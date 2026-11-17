@@ -63,6 +63,27 @@ export interface Announcement {
   updatedAt: string;
 }
 
+/**
+ * A short GM message for the league ticker (TKR-02). Stored in the
+ * Announcements table as a row with `kind: 'ticker'` and
+ * `announcementId === messageId`, and without `isActive`, so it never
+ * lands in the announcements ActiveIndex.
+ */
+export interface TickerMessage {
+  messageId: string;
+  /** 1-140 characters. */
+  text: string;
+  /** Optional link: a site path ("/events") or an http(s) URL. */
+  href?: string;
+  /** Pinned messages sort ahead of the rest. */
+  pinned: boolean;
+  startsAt: string;
+  expiresAt: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Company {
   companyId: string;
   name: string;

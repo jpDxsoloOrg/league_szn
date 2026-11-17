@@ -34,6 +34,7 @@ export { tagTeamsApi } from './tagTeams.api';
 export { wrestlersApi } from './wrestlers.api';
 export { videosApi } from './videos.api';
 export { announcementsApi } from './announcements.api';
+export { tickerMessagesApi, TICKER_TEXT_MAX_LENGTH } from './tickerMessages.api';
 export { notificationsApi } from './notifications.api';
 export { overallsApi } from './overalls.api';
 export { transfersApi } from './transfers.api';
@@ -61,4 +62,5 @@ export type {
 export type { SeasonAwardsResponse } from './seasonAwards.api';
 export type { CreateVideoInput } from './videos.api';
 export type { CreateAnnouncementInput } from './announcements.api';
+export type { CreateTickerMessageInput, UpdateTickerMessageInput } from './tickerMessages.api';
 export type { NotificationsListResponse, UnreadCountResponse } from './notifications.api';

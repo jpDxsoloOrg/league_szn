@@ -15,6 +15,7 @@ import Skeleton from '../ui/Skeleton';
 import AdminFormModal from './AdminFormModal';
 import AdminNotice from './AdminNotice';
 import AnnouncementWizard from './AnnouncementWizard';
+import TickerMessagesSection from './TickerMessagesSection';
 import useAdminConfirm from './useAdminConfirm';
 import './adminContent.css';
 import '../announcementContent.css';
@@ -60,6 +61,8 @@ export default function ManageAnnouncements() {
   const [showPreview, setShowPreview] = useState(false);
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [showWizard, setShowWizard] = useState(false);
+  // Bumped after the wizard publishes, so the ticker list reloads any message it posted.
+  const [tickerVersion, setTickerVersion] = useState(0);
 
   const loadAnnouncements = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -258,6 +261,8 @@ export default function ManageAnnouncements() {
         />
       </section>
 
+      <TickerMessagesSection key={tickerVersion} />
+
       <AdminFormModal
         open={showForm}
         onClose={closeForm}
@@ -357,6 +362,7 @@ export default function ManageAnnouncements() {
           onClose={() => setShowWizard(false)}
           onPublished={() => {
             setShowWizard(false);
+            setTickerVersion((version) => version + 1);
             void loadAnnouncements();
           }}
         />

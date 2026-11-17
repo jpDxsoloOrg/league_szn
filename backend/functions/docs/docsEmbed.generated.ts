@@ -3840,6 +3840,82 @@ paths:
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  /admin/ticker-messages:
+    get:
+      tags: [Announcements]
+      summary: List GM ticker messages (Admin or Moderator)
+      description: Every ticker message, newest first, including expired and scheduled ones.
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: All ticker messages }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    post:
+      tags: [Announcements]
+      summary: Create a GM ticker message (Admin or Moderator)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text, expiresAt]
+              properties:
+                text: { type: string, maxLength: 140 }
+                href: { type: string, description: 'Site path starting with / or an http(s) URL' }
+                pinned: { type: boolean, default: false }
+                startsAt: { type: string, format: date-time, description: Defaults to now }
+                expiresAt: { type: string, format: date-time, description: Must be after startsAt }
+      responses:
+        '201': { description: Created }
+        '400': { description: 'Invalid text, link or dates', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /admin/ticker-messages/{messageId}:
+    put:
+      tags: [Announcements]
+      summary: Update a GM ticker message (Admin or Moderator)
+      description: Partial update. Send expiresAt as the current time to expire a message now. href null removes the link.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text: { type: string, maxLength: 140 }
+                href: { type: string, nullable: true }
+                pinned: { type: boolean }
+                startsAt: { type: string, format: date-time }
+                expiresAt: { type: string, format: date-time }
+      responses:
+        '200': { description: Updated }
+        '400': { description: 'Invalid text, link or dates', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    delete:
+      tags: [Announcements]
+      summary: Delete a GM ticker message (Admin or Moderator)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   # ── Notifications ──────────────────────────────────────────────────
 
   /notifications:
