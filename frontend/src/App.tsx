@@ -17,7 +17,7 @@ import Skeleton from './components/ui/Skeleton';
 import { ToastProvider } from './components/ui/Toast';
 import { useIsMobile } from './hooks/useIsMobile';
 import { useRouteTitle } from './hooks/useDocumentTitle';
-import { getPageInfo, getSectionTheme, isAdminPath } from './config/navConfig';
+import { getPageInfo, getSectionTheme } from './config/navConfig';
 // Route guards
 import ProtectedRoute from './components/ProtectedRoute';
 import FeatureRoute from './components/FeatureRoute';
@@ -138,9 +138,11 @@ function AppLayout() {
       {!isMobile && <ShellSidebar />}
       <div className="shell-top">
         {isMobile ? <MobileHeader /> : <ShellHeader />}
+        {/* Under the top bar; it hides itself on admin and sign-in pages. */}
+        <LeagueTicker />
         {!isMobile && <SectionNav childTabsOnly />}
       </div>
-      {/* On phones the tab rows scroll away, so only the slim header stays pinned. */}
+      {/* On phones the tab rows scroll away, so only the slim header and the ticker stay pinned. */}
       {isMobile && <SectionNav />}
       <p className="sr-only" role="status">{pageTitle}</p>
       <ProfileCompletionModal />
@@ -352,7 +354,6 @@ function AppLayout() {
           </Suspense>
         </ErrorBoundary>
       </main>
-      {!isAdminPath(pathname) && <LeagueTicker />}
       {isMobile && <BottomTabBar />}
     </div>
   );

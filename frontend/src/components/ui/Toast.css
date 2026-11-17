@@ -1,8 +1,7 @@
 .ui-toasts {
   position: fixed;
   right: 1rem;
-  /* Clear of the docked ticker. */
-  bottom: calc(var(--shell-ticker-height) + 1rem);
+  bottom: 1rem;
   z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
@@ -11,7 +10,7 @@
 }
 
 .app-layout--mobile .ui-toasts {
-  bottom: calc(var(--shell-bottom-bar-height) + var(--shell-ticker-height) + env(safe-area-inset-bottom) + 0.75rem);
+  bottom: calc(var(--shell-bottom-bar-height) + env(safe-area-inset-bottom) + 0.75rem);
 }
 
 .ui-toast {
