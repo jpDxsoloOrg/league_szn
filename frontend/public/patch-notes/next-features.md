@@ -1,29 +1,13 @@
 Here's what we're building next. Plans can change as we go, but this is where we're headed.
 
-## Wrestler Builds & Match Sim
+## A Fresh Start After Every Move
 
-Your wrestler is getting a build: attributes and strengths that shape how they perform, and a match simulator that uses them to play matches out.
-
-## Stamina & Injuries
-
-Wrestling takes it out of you. Wrestlers will have stamina that drops with a busy schedule and comes back with rest, and injuries that can keep someone off the card for a while.
-
-## Contracts & Money
-
-Contracts with terms and pay, and a league economy to go with them, so signings and re-signings start to matter.
+When you're promoted, moved down or the GMs reset your goals, your promotion and relegation goals start counting again from that moment. Your win-loss record and stats stay exactly as they are. Your progress cards will show the date they're counting from, and the GMs get a "reset goals" button for when a wrestler needs a clean slate.
 
 ## League Points in the Standings
 
-The standings are moving to a league points system, so every result counts towards your place in the table.
+The standings are moving from wins alone to league points. Every result counts, with bonus points for things like beating a champion, so your place in the table reflects how well you're really doing. The table gets a Pts column with a breakdown of where your points came from.
 
 ## Tag Team Names on Match Cards
 
-Tag team matches will show the team names on the card, not just the individual wrestlers.
-
-## A New Name: SLW
-
-The league is getting a rebrand. Watch this space.
-
-## French & Spanish
-
-The site is coming in French and Spanish, alongside English and German.
+Tag team matches will show the team name for each side on the card and in the booking forms, not just the individual wrestlers.

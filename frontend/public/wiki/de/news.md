@@ -1,6 +1,6 @@
 # News und der Liga-Ticker
 
-Das Ligabüro veröffentlicht Artikel und Ankündigungen auf der Seite **News**. Der **Liga-Ticker** ist das Laufband unter der oberen Leiste. Er hält die Shows des Tages, neue Champions, Schlagzeilen und die neuesten Ergebnisse im Blick.
+Das Ligabüro veröffentlicht Artikel und Ankündigungen auf der Seite **News**. Der **Liga-Ticker** ist das Laufband am unteren Bildschirmrand. Er hält die Shows des Tages, neue Champions, Schlagzeilen und die neuesten Ergebnisse im Blick.
 
 ## News
 
@@ -17,7 +17,7 @@ Manche Meldungen erscheinen außerdem als Pop-up, wenn angemeldete Mitglieder di
 
 ## Der Liga-Ticker
 
-Der Liga-Ticker läuft direkt unter der oberen Leiste, auf jeder Seite außer im Admin-Bereich und auf den Anmeldeseiten. Am Handy sitzt er unter dem Header und bleibt beim Scrollen stehen.
+Der Liga-Ticker läuft am unteren Bildschirmrand, auf jeder Seite außer im Admin-Bereich und auf den Anmeldeseiten. Am Handy sitzt er direkt über der Tab-Leiste und bleibt beim Scrollen stehen.
 
 Er zeigt Folgendes in dieser Reihenfolge. Ein Teil ohne Meldung wird übersprungen, und die GMs wählen aus, welche Teile laufen. Du siehst also nicht immer alle.
 

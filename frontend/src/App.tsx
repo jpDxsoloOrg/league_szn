@@ -139,11 +139,9 @@ function AppLayout() {
       {!isMobile && <ShellSidebar />}
       <div className="shell-top">
         {isMobile ? <MobileHeader /> : <ShellHeader />}
-        {/* Under the top bar; it hides itself on admin and sign-in pages. */}
-        {features.ticker && <LeagueTicker />}
         {!isMobile && <SectionNav childTabsOnly />}
       </div>
-      {/* On phones the tab rows scroll away, so only the slim header and the ticker stay pinned. */}
+      {/* On phones the tab rows scroll away, so only the slim header stays pinned. */}
       {isMobile && <SectionNav />}
       <p className="sr-only" role="status">{pageTitle}</p>
       <ProfileCompletionModal />
@@ -355,6 +353,8 @@ function AppLayout() {
           </Suspense>
         </ErrorBoundary>
       </main>
+      {/* Docked to the bottom; it hides itself on admin and sign-in pages. */}
+      {features.ticker && <LeagueTicker />}
       {isMobile && <BottomTabBar />}
     </div>
   );

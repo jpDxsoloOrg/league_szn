@@ -100,7 +100,8 @@ describe('RivalryDetail private tabs', () => {
     renderAt(`/rivalries/r1/${tab}`);
 
     await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(/^\/rivalries\/r1$/));
-    expect(mockShowToast).toHaveBeenCalledWith('Only the rivals and the GMs can open this tab.', 'success');
+    // The toast comes from the location state in an effect after the redirect renders.
+    await waitFor(() => expect(mockShowToast).toHaveBeenCalledWith('Only the rivals and the GMs can open this tab.', 'success'));
     expect(mockListMessages).not.toHaveBeenCalled();
     expect(mockListNotes).not.toHaveBeenCalled();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
