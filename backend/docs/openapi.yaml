@@ -2323,8 +2323,13 @@ paths:
           description: Pagination cursor (timestamp|id)
         - name: type
           in: query
-          schema: { type: string, enum: [match, championship, challenge, promo, tournament, season, callup] }
-          description: '`callup` returns both item types: `callup_consideration` (current marks) and `callup_executed`. Unknown values are ignored.'
+          schema: { type: string, enum: [match, championship, challenge, promo, tournament, season, callup, promotion, relegation] }
+          description: >
+            `callup` returns both item types: `callup_consideration` (current marks) and `callup_executed`.
+            `promotion` returns `promotion_watch` (current GM marks, public). `relegation` returns
+            `relegation_watch`, which only Moderator+ get (send a bearer token) unless the
+            `publicRelegationWatch` ticker setting is on; it is never in the public feed otherwise.
+            Unknown values are ignored.
       responses:
         '200':
           description: Paginated activity items
@@ -4355,6 +4360,8 @@ paths:
         Public. Anonymous callers and other wrestlers get the summary. The player themselves
         also gets goal detail; Moderator+ also gets considerationDetail (the GM note). Send a
         Bearer token to be identified. Hidden players return 404 except to themselves and staff.
+        Relegation rows are left out for everyone but the player and Moderator+, and the player
+        sees `consideration: false` on them, unless the publicRelegationWatch ticker setting is on.
       parameters:
         - { name: playerId, in: path, required: true, schema: { type: string } }
       responses:
@@ -4522,7 +4529,8 @@ paths:
         no-op (`changed: false`, no event, no notification). A mark creates the row,
         scored from current data, if no recompute has run yet. Marking needs an active
         track and a player in its from-division. The wrestler is notified on a
-        call-up or promotion mark only, never on removal.
+        call-up or promotion mark only ("You're on the GMs' promotion watch!"), never on removal.
+        A relegation mark sends no notification; it is logged as a ProgressionEvent for GMs.
       security: [{ BearerAuth: [] }]
       parameters:
         - name: playerId
@@ -4574,6 +4582,8 @@ paths:
         One entry per player on an active track of `kind`, newest mark first. Deleted,
         deactivated and wrestler-less players are left out. Backed by an eventually
         consistent index, so a new mark can take a moment to appear.
+        `kind=relegation` (relegation watch) is Moderator+ only unless the
+        `publicRelegationWatch` ticker setting is on; send a bearer token to read it.
       parameters:
         - name: kind
           in: query
@@ -4594,6 +4604,7 @@ paths:
                     trackId: { type: string }
                     markedAt: { type: string, format: date-time }
         '400': { description: 'Unknown kind', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'kind=relegation from a caller below Moderator while publicRelegationWatch is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /progression/reviews/{seasonId}:
     get:

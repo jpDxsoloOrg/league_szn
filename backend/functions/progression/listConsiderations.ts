@@ -1,8 +1,13 @@
 import type { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import { badRequest, serverError, success } from '../../lib/response';
+import { badRequest, forbidden, serverError, success } from '../../lib/response';
 import { isPlayerVisible, realWrestlerName } from '../../lib/needsWrestler';
-import { isProgressionKind, listActiveConsiderations } from '../../lib/progression/considerations';
+import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
+import {
+  isProgressionKind,
+  isRelegationWatchPublic,
+  listActiveConsiderations,
+} from '../../lib/progression/considerations';
 
 export interface ConsiderationListItem {
   playerId: string;
@@ -19,12 +24,20 @@ export interface ConsiderationListItem {
  * `callup`), newest mark first, for the ticker and profile banners. Notes and
  * who marked them stay private. Deleted, deactivated and hidden (no wrestler)
  * players are left out, as on other public lists.
+ *
+ * `kind=relegation` is Moderator+ only (403 otherwise) unless the league
+ * turned on the `publicRelegationWatch` ticker setting (DMV-04).
  */
 export const handler: APIGatewayProxyHandler = async (event) => {
   const kind = event.queryStringParameters?.kind ?? 'callup';
   if (!isProgressionKind(kind)) return badRequest('kind must be one of callup, promotion, relegation');
 
   try {
+    if (kind === 'relegation' && !(await isRelegationWatchPublic())) {
+      const caller = await getVerifiedCaller(event);
+      if (!isStaff(caller)) return forbidden('Relegation watch is visible to GMs only');
+    }
+
     const considerations = await listActiveConsiderations(kind);
     // Few players are flagged at once, so point reads beat scanning Players.
     const { roster: { players } } = getRepositories();

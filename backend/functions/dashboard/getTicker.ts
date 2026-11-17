@@ -4,7 +4,7 @@ import { DEFAULT_FEATURES, DEFAULT_TICKER_SETTINGS } from '../../lib/repositorie
 import type { Championship, ChampionshipHistoryEntry, LeagueEvent, Player, TickerMessage } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { FORMER_MEMBER, isNeedsWrestler, isPlayerVisible } from '../../lib/needsWrestler';
-import { listActiveConsiderations } from '../../lib/progression/considerations';
+import { listActiveConsiderations, type ActiveConsideration } from '../../lib/progression/considerations';
 import {
   assembleTickerSegments,
   buildChampionsSegment,
@@ -14,6 +14,7 @@ import {
   buildNewChampionsSegment,
   buildNewsSegment,
   buildPotentialCallupsSegment,
+  buildPromotionWatchSegment,
   buildTonightSegment,
   buildUpcomingShowsSegment,
   describeMatchResult,
@@ -117,7 +118,7 @@ export const handler: APIGatewayProxyHandler = async () => {
 
     const [
       playerResult, championshipResult, historyResult, upcomingResult, liveResult,
-      completedResult, rivalryResult, newsResult, callupResult, customResult,
+      completedResult, rivalryResult, newsResult, callupResult, promotionResult, customResult,
     ] = await Promise.allSettled([
       players.listWithDeleted(),
       championships.list(),
@@ -128,6 +129,7 @@ export const handler: APIGatewayProxyHandler = async () => {
       rivalries.listByStatus('active', { limit: RIVALRY_PAGE_LIMIT }),
       announcements.listActive(),
       listActiveConsiderations('callup'),
+      listActiveConsiderations('promotion'),
       loadCustomTickerMessages(now),
     ]);
 
@@ -165,9 +167,13 @@ export const handler: APIGatewayProxyHandler = async () => {
       ...settled(upcomingResult, 'upcoming events', []),
     ];
 
-    const callups: ConsideredPlayer[] = settled(callupResult, 'call-up considerations', [])
+    const toConsidered = (considerations: ActiveConsideration[]): ConsideredPlayer[] => considerations
       .filter((consideration) => isPublic(consideration.playerId))
       .map((consideration) => ({ playerId: consideration.playerId, displayName: nameOf(consideration.playerId) }));
+    const callups = toConsidered(settled(callupResult, 'call-up considerations', []));
+    // Relegation watch has no ticker segment: it is GM-only by default, and
+    // this answer is publicly cached, so it cannot vary by caller.
+    const promotions = toConsidered(settled(promotionResult, 'promotion considerations', []));
 
     // Ongoing storylines with a hidden participant stay off public lists.
     const hotRivalries = settled(rivalryResult, 'rivalries', { items: [] }).items
@@ -185,7 +191,7 @@ export const handler: APIGatewayProxyHandler = async () => {
       buildTonightSegment(scheduled, now),
       buildNewChampionsSegment(newChampionChanges, now),
       buildPotentialCallupsSegment(callups),
-      // promotionWatch: buildPromotionWatchSegment is ready; DMV-04 adds the promotion kind it reads.
+      buildPromotionWatchSegment(promotions),
       buildHotRivalriesSegment(hotRivalries),
       buildNewsSegment(settled(newsResult, 'announcements', [])),
       buildUpcomingShowsSegment(scheduled, now),

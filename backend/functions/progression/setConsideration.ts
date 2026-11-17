@@ -23,10 +23,11 @@ export const MAX_CONSIDERATION_NOTE_LENGTH = 500;
 /**
  * The wrestler hears about an add only. Removing a mark sends nothing, and a
  * relegation mark sends nothing either: both would be demoralising pings.
+ * A relegation mark is still logged as a ProgressionEvent for the GMs.
  */
 const ADD_MESSAGES: Partial<Record<ProgressionKind, string>> = {
   callup: 'The GMs are considering you for a call-up!',
-  promotion: 'The GMs are considering you for a promotion!',
+  promotion: "You're on the GMs' promotion watch!",
 };
 
 interface SetConsiderationBody {

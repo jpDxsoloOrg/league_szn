@@ -1,9 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 
-const { mockCreateNotification } = vi.hoisted(() => ({ mockCreateNotification: vi.fn() }));
+const { mockCreateNotification, mockGetVerifiedCaller } = vi.hoisted(() => ({
+  mockCreateNotification: vi.fn(),
+  mockGetVerifiedCaller: vi.fn(),
+}));
 
 vi.mock('../../../lib/notifications', () => ({ createNotification: mockCreateNotification }));
+// Public GETs identify the caller from a bearer token; stand in for Cognito.
+vi.mock('../../../lib/optionalCaller', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../lib/optionalCaller')>()),
+  getVerifiedCaller: mockGetVerifiedCaller,
+}));
 vi.mock('../../../lib/accountStatus', () => ({ isCallerDeactivated: vi.fn().mockResolvedValue(false) }));
 
 import { buildInMemoryRepositories } from '../../../lib/repositories/inMemory';
@@ -115,6 +123,8 @@ describe('progression considerations', () => {
     repos = buildInMemoryRepositories();
     setRepositoriesForTesting(repos);
     mockCreateNotification.mockReset();
+    mockGetVerifiedCaller.mockReset();
+    mockGetVerifiedCaller.mockResolvedValue(null);
     await repos.progression.putTrack(track);
     addPlayer('p1');
   });
@@ -289,11 +299,25 @@ describe('progression considerations', () => {
       expect(mockCreateNotification).not.toHaveBeenCalled();
     });
 
-    it('does not notify on a relegation mark', async () => {
+    it('does not notify on a relegation mark but logs it for the GMs', async () => {
       await repos.progression.putTrack({ ...track, trackId: 't-rel', kind: 'relegation', toDivisionId: undefined });
       const result = await put('p1', { trackId: 't-rel', considering: true });
       expect(result.statusCode).toBe(200);
       expect(mockCreateNotification).not.toHaveBeenCalled();
+      expect(await events('p1')).toEqual([
+        expect.objectContaining({ kind: 'relegation', type: 'consideration_added', trackId: 't-rel', actorUserId: 'gm-sub' }),
+      ]);
+    });
+
+    it('notifies the wrestler when put on promotion watch', async () => {
+      await repos.progression.putTrack({ ...track, trackId: 't-promo', kind: 'promotion' });
+      const result = await put('p1', { trackId: 't-promo', considering: true });
+      expect(result.statusCode).toBe(200);
+      expect(mockCreateNotification).toHaveBeenCalledWith(expect.objectContaining({
+        userId: 'user-p1',
+        message: "You're on the GMs' promotion watch!",
+      }));
+      expect(await events('p1')).toEqual([expect.objectContaining({ kind: 'promotion', type: 'consideration_added' })]);
     });
   });
 
@@ -340,6 +364,49 @@ describe('progression considerations', () => {
 
     it('rejects an unknown kind', async () => {
       expect((await list({ kind: 'sideways' })).statusCode).toBe(400);
+    });
+
+    describe('kind=relegation', () => {
+      beforeEach(async () => {
+        await repos.progression.putTrack({ ...track, trackId: 't-rel', kind: 'relegation', toDivisionId: undefined });
+        await put('p1', { trackId: 't-rel', considering: true });
+      });
+
+      function listAs(groups: string | null) {
+        const event = makeEvent({ method: 'GET', resource: '/progression/considerations', query: { kind: 'relegation' } });
+        if (groups) {
+          event.headers = { Authorization: 'Bearer token' };
+          mockGetVerifiedCaller.mockResolvedValueOnce({ username: 'u', email: '', sub: 'u', groups: [groups] });
+        }
+        return call(event);
+      }
+
+      it('is forbidden to anonymous callers and wrestlers by default', async () => {
+        expect((await listAs(null)).statusCode).toBe(403);
+        expect((await listAs('Wrestler')).statusCode).toBe(403);
+      });
+
+      it('is visible to Moderator+', async () => {
+        const result = await listAs('Moderator');
+        expect(result.statusCode).toBe(200);
+        expect(JSON.parse(result.body).map((item: { playerId: string }) => item.playerId)).toEqual(['p1']);
+      });
+
+      it('is public once publicRelegationWatch is on', async () => {
+        await repos.user.siteConfig.updateTickerSettings({ publicRelegationWatch: true });
+        const result = await listAs(null);
+        expect(result.statusCode).toBe(200);
+        expect(JSON.parse(result.body)).toHaveLength(1);
+      });
+
+      it('keeps promotion watch public regardless of the setting', async () => {
+        await repos.progression.putTrack({ ...track, trackId: 't-promo', kind: 'promotion' });
+        addPlayer('p2');
+        await put('p2', { trackId: 't-promo', considering: true });
+        const result = await list({ kind: 'promotion' });
+        expect(result.statusCode).toBe(200);
+        expect(JSON.parse(result.body).map((item: { playerId: string }) => item.playerId)).toEqual(['p2']);
+      });
     });
   });
 });

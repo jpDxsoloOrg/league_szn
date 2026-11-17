@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CircleArrowUp, CalendarDays, Handshake, Medal, Mic, Swords, Trophy, TrendingUp } from 'lucide-react';
+import { CircleArrowUp, CalendarDays, Handshake, Medal, Mic, Swords, Trophy, TrendingDown, TrendingUp } from 'lucide-react';
 import { activityApi } from '../services/api';
 import type { ActivityItem, ActivityItemType } from '../types';
 import Button from './ui/Button';
@@ -16,7 +16,7 @@ import './ActivityFeed.css';
 const DEFAULT_LIMIT = 20;
 const ALL_TYPES = 'all';
 
-/** Backend expects type=match|championship|season|tournament|challenge|promo|callup */
+/** Backend expects type=match|championship|season|tournament|challenge|promo|callup|promotion|relegation */
 const TYPE_TO_PARAM: Record<ActivityItemType, string> = {
   match_result: 'match',
   championship_change: 'championship',
@@ -26,6 +26,8 @@ const TYPE_TO_PARAM: Record<ActivityItemType, string> = {
   promo_posted: 'promo',
   callup_consideration: 'callup',
   callup_executed: 'callup',
+  promotion_watch: 'promotion',
+  relegation_watch: 'relegation',
 };
 
 const TYPE_FILTERS: { value: ActivityItemType | typeof ALL_TYPES; key: string }[] = [
@@ -47,6 +49,8 @@ const TYPE_ICONS: Record<ActivityItemType, ReactNode> = {
   promo_posted: <Mic aria-hidden="true" size={20} />,
   callup_consideration: <TrendingUp aria-hidden="true" size={20} />,
   callup_executed: <CircleArrowUp aria-hidden="true" size={20} />,
+  promotion_watch: <TrendingUp aria-hidden="true" size={20} />,
+  relegation_watch: <TrendingDown aria-hidden="true" size={20} />,
 };
 
 function getDetailLink(item: ActivityItem): string {
@@ -67,6 +71,8 @@ function getDetailLink(item: ActivityItem): string {
       return meta['promoId'] ? `/promos/${meta['promoId']}` : '/promos';
     case 'callup_consideration':
     case 'callup_executed':
+    case 'promotion_watch':
+    case 'relegation_watch':
       return meta['playerId'] ? `/player/${meta['playerId']}` : '/activity';
     default:
       return '/';
@@ -78,6 +84,9 @@ function getSummary(item: ActivityItem, t: (key: string, options?: Record<string
   const playerName = item.metadata['playerName'];
   if (item.type === 'callup_consideration' && typeof playerName === 'string') {
     return t('activity.summaries.callup_consideration', { name: playerName });
+  }
+  if ((item.type === 'promotion_watch' || item.type === 'relegation_watch') && typeof playerName === 'string') {
+    return t(`activity.summaries.${item.type}`, { name: playerName });
   }
   if (item.type === 'callup_executed' && typeof playerName === 'string') {
     const divisionName = item.metadata['toDivisionName'];

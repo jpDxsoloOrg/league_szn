@@ -505,7 +505,10 @@ export type ActivityItemType =
   | 'challenge_event'
   | 'promo_posted'
   | 'callup_consideration'
-  | 'callup_executed';
+  | 'callup_executed'
+  | 'promotion_watch'
+  /** Only returned to Moderator+, or to everyone when publicRelegationWatch is on. */
+  | 'relegation_watch';
 
 export interface ActivityItem {
   id: string;

@@ -390,12 +390,16 @@
       "challenge_event": "Challenges",
       "promo_posted": "Promos",
       "callup_consideration": "Call-ups",
-      "callup_executed": "Call-ups"
+      "callup_executed": "Call-ups",
+      "promotion_watch": "Promotion watch",
+      "relegation_watch": "Relegation watch"
     },
     "summaries": {
       "callup_consideration": "{{name}} is being considered for a call-up",
       "callup_executed": "{{name}} was called up",
-      "callup_executed_to": "{{name}} was called up to {{division}}"
+      "callup_executed_to": "{{name}} was called up to {{division}}",
+      "promotion_watch": "{{name}} is on the GMs' promotion watch",
+      "relegation_watch": "{{name}} is on the GMs' relegation watch"
     },
     "timeAgo": {
       "justNow": "Just now",

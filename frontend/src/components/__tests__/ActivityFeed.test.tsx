@@ -53,6 +53,19 @@ describe('ActivityFeed', () => {
       .toHaveAttribute('href', '/player/p1');
   });
 
+  it.each(['promotion_watch', 'relegation_watch'])('renders a %s item with a translated summary linking to the profile', async (type) => {
+    mockGetAll.mockResolvedValue(page([{
+      id: `${type}-p1-t1`,
+      type,
+      timestamp: '2026-11-01T10:00:00.000Z',
+      summary: "Edge is on the GMs' watch",
+      metadata: { playerId: 'p1', trackId: 't1', playerName: 'Edge' },
+    }]));
+    renderFeed();
+    expect(await screen.findByRole('link', { name: new RegExp(`activity\\.summaries\\.${type}`) }))
+      .toHaveAttribute('href', '/player/p1');
+  });
+
   it('links a call-up to the player profile and filters call-ups by the callup param', async () => {
     mockGetAll.mockResolvedValue(page([{
       id: 'callup-e1', type: 'callup_executed', timestamp: '2026-11-01T10:00:00.000Z',

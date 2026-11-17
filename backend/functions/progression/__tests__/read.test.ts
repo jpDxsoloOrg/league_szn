@@ -191,6 +191,40 @@ describe('GET /progression/players/{playerId}', () => {
     expect(await read('mod')).toEqual([]);
   });
 
+  describe('relegation danger (DMV-04)', () => {
+    beforeEach(async () => {
+      const now = new Date().toISOString();
+      await repos.progression.putTrack({ ...track, trackId: 'track-rel', kind: 'relegation', name: 'Relegation' });
+      await repos.progression.upsertPlayerProgression({
+        playerId: ownerPlayerId, trackId: 'track-rel', progressPct: 60, goals: [], computedAt: now,
+      });
+      await repos.progression.setConsideration(ownerPlayerId, 'track-rel', {
+        status: 'considering', markedBy: 'user-mod', markedAt: now,
+      });
+    });
+
+    const relegationRow = (rows: Array<{ kind: string }>) => rows.find((row) => row.kind === 'relegation');
+
+    it('is hidden from anonymous callers and other wrestlers', async () => {
+      expect(relegationRow(await read('anon'))).toBeUndefined();
+      expect(relegationRow(await read('other'))).toBeUndefined();
+    });
+
+    it('shows the owner their meter but never the GM mark', async () => {
+      expect(relegationRow(await read('owner'))).toMatchObject({ progressPct: 60, consideration: false });
+    });
+
+    it('shows Moderator+ the meter and the mark', async () => {
+      expect(relegationRow(await read('mod'))).toMatchObject({ consideration: true, considerationDetail: { markedBy: 'user-mod' } });
+    });
+
+    it('is shown to everyone once publicRelegationWatch is on', async () => {
+      await repos.user.siteConfig.updateTickerSettings({ publicRelegationWatch: true });
+      expect(relegationRow(await read('anon'))).toMatchObject({ progressPct: 60, consideration: true });
+      expect(relegationRow(await read('owner'))).toMatchObject({ consideration: true });
+    });
+  });
+
   it('returns 404 for an unknown player', async () => {
     const result = await call(makeEvent('anon', 'GET', resource, { pathParameters: { playerId: 'nope' } }));
     expect(result.statusCode).toBe(404);

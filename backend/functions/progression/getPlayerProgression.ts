@@ -9,6 +9,7 @@ import type {
 } from '../../lib/repositories/types';
 import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
 import { isPlayerVisible } from '../../lib/needsWrestler';
+import { isRelegationWatchPublic } from '../../lib/progression/considerations';
 import { badRequest, notFound, serverError, success } from '../../lib/response';
 
 /** One goal with its definition and the player's current value. */
@@ -65,6 +66,8 @@ export function toGoalDetails(track: ProgressionTrack, row: PlayerProgression): 
  * GET /progression/players/{playerId} (public). The player's progress on
  * every active track. Anonymous callers and other wrestlers get the summary;
  * the owner also gets goal detail; Moderator+ also gets the GM note.
+ * Relegation rows are left out for everyone but the owner and Moderator+,
+ * and the owner's row hides the GM mark, unless `publicRelegationWatch` is on.
  */
 export const getPlayerProgression: APIGatewayProxyHandler = async (event) => {
   try {
@@ -82,9 +85,10 @@ export const getPlayerProgression: APIGatewayProxyHandler = async (event) => {
     // Hidden players read as missing to everyone but themselves and staff.
     if (!isPlayerVisible(player) && !owner && !staff) return notFound('Player not found');
 
-    const [rows, tracks] = await Promise.all([
+    const [rows, tracks, relegationPublic] = await Promise.all([
       progression.listByPlayer(playerId),
       progression.listTracks({ isActive: true }),
+      staff ? Promise.resolve(true) : isRelegationWatchPublic(),
     ]);
     const trackById = new Map(tracks.map((track) => [track.trackId, track]));
 
@@ -92,12 +96,17 @@ export const getPlayerProgression: APIGatewayProxyHandler = async (event) => {
     for (const row of rows) {
       const track = trackById.get(row.trackId);
       if (!track) continue;
+      // Relegation danger is private unless the league opted in (DMV-04): the
+      // player sees their own meter but never the GMs' relegation mark, and
+      // everyone else sees nothing.
+      const relegationHidden = track.kind === 'relegation' && !relegationPublic;
+      if (relegationHidden && !owner) continue;
       const summary: PlayerProgressionSummary = {
         trackId: track.trackId,
         kind: track.kind,
         trackName: track.name,
         progressPct: row.progressPct,
-        consideration: row.consideration !== undefined,
+        consideration: row.consideration !== undefined && !relegationHidden,
         computedAt: row.computedAt,
       };
       if (owner || staff) summary.goals = toGoalDetails(track, row);
