@@ -1198,6 +1198,14 @@ functions:
           path: admin/announcements/{announcementId}
           method: any
           cors: *corsConfig
+      - http:
+          path: admin/ticker-messages
+          method: any
+          cors: *corsConfig
+      - http:
+          path: admin/ticker-messages/{messageId}
+          method: any
+          cors: *corsConfig
 
   # Notifications (consolidated: list, unreadCount, markRead, markAllRead)
   notifications:

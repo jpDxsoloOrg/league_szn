@@ -2,10 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-const { mockCreate } = vi.hoisted(() => ({ mockCreate: vi.fn() }));
+const { mockCreate, mockTickerCreate } = vi.hoisted(() => ({ mockCreate: vi.fn(), mockTickerCreate: vi.fn() }));
 
 vi.mock('../../../services/api', () => ({
   announcementsApi: { create: mockCreate },
+  tickerMessagesApi: { create: mockTickerCreate },
   imagesApi: {},
 }));
 
@@ -53,5 +54,51 @@ describe('AnnouncementWizard pop-up option', () => {
     await user.click(screen.getByRole('button', { name: /publish announcement/i }));
 
     expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({ showAsPopup: true }));
+  });
+});
+
+describe('AnnouncementWizard ticker option', () => {
+  const TICKER_LABEL = 'announcements.ticker.wizardPostToTicker';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCreate.mockResolvedValue({ announcementId: 'ann-1' });
+    mockTickerCreate.mockResolvedValue({});
+  });
+
+  it('is offered only in Breaking News', async () => {
+    await openFinalStep(/match card/i, 3);
+    expect(screen.queryByRole('checkbox', { name: TICKER_LABEL })).toBeNull();
+  });
+
+  it('does not post to the ticker unless ticked', async () => {
+    const { user, onPublished } = await openFinalStep(/breaking news/i, 2);
+    expect(screen.getByRole('checkbox', { name: TICKER_LABEL })).not.toBeChecked();
+    await user.click(screen.getByRole('button', { name: /publish announcement/i }));
+
+    expect(mockTickerCreate).not.toHaveBeenCalled();
+    expect(onPublished).toHaveBeenCalled();
+  });
+
+  it('posts the headline to the ticker, linked to the story', async () => {
+    const { user, onPublished } = await openFinalStep(/breaking news/i, 2);
+    await user.click(screen.getByRole('checkbox', { name: TICKER_LABEL }));
+    await user.click(screen.getByRole('button', { name: /publish announcement/i }));
+
+    expect(mockTickerCreate).toHaveBeenCalledWith(expect.objectContaining({
+      text: 'Breaking News',
+      href: '/news/ann-1',
+    }));
+    expect(onPublished).toHaveBeenCalled();
+  });
+
+  it('keeps the wizard open and explains when the ticker post fails', async () => {
+    mockTickerCreate.mockRejectedValue(new Error('boom'));
+    const { user, onPublished } = await openFinalStep(/breaking news/i, 2);
+    await user.click(screen.getByRole('checkbox', { name: TICKER_LABEL }));
+    await user.click(screen.getByRole('button', { name: /publish announcement/i }));
+
+    expect(onPublished).not.toHaveBeenCalled();
+    expect(await screen.findByText(/announcements.ticker.wizardPostFailed/)).toBeInTheDocument();
   });
 });

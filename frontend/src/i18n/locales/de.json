@@ -957,7 +957,45 @@
     "newsOnly": "Nur News",
     "dontShowAgain": "Nicht mehr anzeigen",
     "counter": "{{current}} von {{total}}",
-    "update": "Ankündigung aktualisieren"
+    "update": "Ankündigung aktualisieren",
+    "ticker": {
+      "title": "Ticker",
+      "description": "Kurze GM-Nachrichten für den Liga-Ticker. Jede läuft ab ihrem Start, bis sie abläuft.",
+      "create": "Neue Ticker-Nachricht",
+      "edit": "Ticker-Nachricht bearbeiten",
+      "save": "Nachricht speichern",
+      "empty": "Noch keine Ticker-Nachrichten.",
+      "pinned": "Angeheftet",
+      "expireNow": "Jetzt beenden",
+      "charCount": "{{count}}/{{max}} Zeichen",
+      "textRequired": "Der Nachrichtentext ist erforderlich.",
+      "datesRequired": "Start und Ablauf sind erforderlich.",
+      "expiryAfterStart": "Der Ablauf muss nach dem Start liegen.",
+      "createSuccess": "Ticker-Nachricht veröffentlicht.",
+      "updateSuccess": "Ticker-Nachricht aktualisiert.",
+      "expireSuccess": "Ticker-Nachricht beendet.",
+      "deleteSuccess": "Ticker-Nachricht gelöscht.",
+      "confirmDelete": "Diese Ticker-Nachricht löschen? Das kann nicht rückgängig gemacht werden.",
+      "loadError": "Ticker-Nachrichten konnten nicht geladen werden.",
+      "saveError": "Ticker-Nachricht konnte nicht gespeichert werden.",
+      "deleteError": "Ticker-Nachricht konnte nicht gelöscht werden.",
+      "wizardPostToTicker": "Auch im Ticker veröffentlichen",
+      "wizardPostFailed": "Die Ankündigung wurde veröffentlicht, aber die Ticker-Nachricht ist fehlgeschlagen: {{reason}}. Füge sie im Bereich Ticker hinzu, statt erneut zu veröffentlichen.",
+      "fields": {
+        "text": "Nachricht",
+        "textPlaceholder": "Draft-Abend diesen Freitag!",
+        "href": "Link (optional)",
+        "hrefPlaceholder": "/events oder https://...",
+        "startsAt": "Start",
+        "expiresAt": "Ablauf",
+        "pinned": "Vorne im Ticker anheften"
+      },
+      "status": {
+        "live": "Live",
+        "scheduled": "Geplant",
+        "expired": "Abgelaufen"
+      }
+    }
   },
   "videos": {
     "title": "Videos verwalten",

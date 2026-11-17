@@ -1,10 +1,17 @@
 import { v4 as uuidv4 } from 'uuid';
 import { NotFoundError } from '../errors';
-import { compareActiveAnnouncements } from '../ContentRepository';
+import {
+  compareActiveAnnouncements,
+  compareTickerMessages,
+  isTickerMessageActive,
+} from '../ContentRepository';
 import type {
   ContentRepository,
   AnnouncementCreateInput,
   AnnouncementPatch,
+  TickerMessageCreateInput,
+  TickerMessagePatch,
+  TickerMessagesMethods,
   PromoCreateInput,
   PromosMethods,
   StorylineRequestCreateInput,
@@ -15,6 +22,7 @@ import type {
 } from '../ContentRepository';
 import type {
   Announcement,
+  TickerMessage,
   Video,
   Promo,
   PromoType,
@@ -96,6 +104,66 @@ class AnnouncementsImpl implements AnnouncementsMethods {
 
   async delete(announcementId: string): Promise<void> {
     this.store.delete(announcementId);
+  }
+}
+
+// ─── Ticker messages ───────────────────────────────────────────────
+
+class TickerMessagesImpl implements TickerMessagesMethods {
+  readonly store = new Map<string, TickerMessage>();
+
+  async findById(messageId: string): Promise<TickerMessage | null> {
+    return this.store.get(messageId) ?? null;
+  }
+
+  async list(): Promise<TickerMessage[]> {
+    return Array.from(this.store.values()).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async listActive(now: Date = new Date()): Promise<TickerMessage[]> {
+    const nowIso = now.toISOString();
+    return Array.from(this.store.values())
+      .filter((message) => isTickerMessageActive(message, nowIso))
+      .sort(compareTickerMessages);
+  }
+
+  async create(input: TickerMessageCreateInput): Promise<TickerMessage> {
+    const now = new Date().toISOString();
+    const message: TickerMessage = {
+      messageId: uuidv4(),
+      text: input.text.trim(),
+      pinned: input.pinned === true,
+      startsAt: input.startsAt,
+      expiresAt: input.expiresAt,
+      createdBy: input.createdBy,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const href = input.href?.trim();
+    if (href) message.href = href;
+    this.store.set(message.messageId, message);
+    return message;
+  }
+
+  async update(messageId: string, patch: TickerMessagePatch): Promise<TickerMessage> {
+    const existing = this.store.get(messageId);
+    if (!existing) throw new NotFoundError('TickerMessage', messageId);
+
+    const updated: TickerMessage = { ...existing, updatedAt: new Date().toISOString() };
+    if (patch.text !== undefined) updated.text = patch.text.trim();
+    if (patch.pinned !== undefined) updated.pinned = patch.pinned === true;
+    if (patch.startsAt !== undefined) updated.startsAt = patch.startsAt;
+    if (patch.expiresAt !== undefined) updated.expiresAt = patch.expiresAt;
+    const href = typeof patch.href === 'string' ? patch.href.trim() : patch.href;
+    if (href) updated.href = href;
+    else if (href === null || href === '') delete updated.href;
+
+    this.store.set(messageId, updated);
+    return updated;
+  }
+
+  async delete(messageId: string): Promise<void> {
+    this.store.delete(messageId);
   }
 }
 
@@ -374,12 +442,14 @@ class StorylineRequestsImpl implements StorylineRequestsMethods {
 export class InMemoryContentRepository implements ContentRepository {
   readonly announcements: AnnouncementsImpl;
   readonly videos: VideosImpl;
+  readonly tickerMessages: TickerMessagesImpl;
   readonly promos: PromosImpl;
   readonly storylineRequests: StorylineRequestsImpl;
 
   constructor() {
     this.announcements = new AnnouncementsImpl();
     this.videos = new VideosImpl();
+    this.tickerMessages = new TickerMessagesImpl();
     this.promos = new PromosImpl();
     this.storylineRequests = new StorylineRequestsImpl();
   }

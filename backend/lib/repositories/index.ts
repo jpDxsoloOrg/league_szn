@@ -80,6 +80,9 @@ export type {
   ContentRepository,
   AnnouncementCreateInput,
   AnnouncementPatch,
+  TickerMessageCreateInput,
+  TickerMessagePatch,
+  TickerMessagesMethods,
   VideoCreateInput,
   VideoPatch,
   PromoCreateInput,
@@ -87,6 +90,12 @@ export type {
   StorylineRequestReviewInput,
   PromosMethods,
   StorylineRequestsMethods,
+} from './ContentRepository';
+export {
+  TICKER_KIND,
+  TICKER_TEXT_MAX_LENGTH,
+  isTickerMessageActive,
+  compareTickerMessages,
 } from './ContentRepository';
 
 export type {

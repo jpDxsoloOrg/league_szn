@@ -545,6 +545,19 @@ export interface Announcement {
 
 export type AnnouncementLayout = 'standard' | 'feature';
 
+/** A short GM message shown in the league ticker until it expires. */
+export interface TickerMessage {
+  messageId: string;
+  text: string;          // 1-140 characters
+  href?: string;         // Site path ("/events") or http(s) URL
+  pinned: boolean;
+  startsAt: string;
+  expiresAt: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type VideoCategory = 'match' | 'highlight' | 'promo' | 'other';
 
 export interface Video {

@@ -1,6 +1,7 @@
 import type { CrudRepository } from './CrudRepository';
 import type {
   Announcement,
+  TickerMessage,
   Video,
   Promo,
   PromoType,
@@ -33,6 +34,48 @@ export interface AnnouncementPatch {
   isActive?: boolean;
   expiresAt?: string | null;
   showAsPopup?: boolean;
+}
+
+// ─── Ticker message types ───────────────────────────────────────────
+
+/** Discriminator on Announcements-table rows that hold ticker messages. */
+export const TICKER_KIND = 'ticker';
+
+export const TICKER_TEXT_MAX_LENGTH = 140;
+
+export interface TickerMessageCreateInput {
+  text: string;
+  href?: string;
+  pinned?: boolean;
+  startsAt: string;
+  expiresAt: string;
+  createdBy: string;
+}
+
+export interface TickerMessagePatch {
+  text?: string;
+  /** null clears the link. */
+  href?: string | null;
+  pinned?: boolean;
+  startsAt?: string;
+  expiresAt?: string;
+}
+
+/** True when the message has started and not yet expired at `nowIso`. */
+export const isTickerMessageActive = (message: TickerMessage, nowIso: string): boolean =>
+  message.startsAt <= nowIso && message.expiresAt > nowIso;
+
+/** Ticker order: pinned first, then the most recently started. */
+export const compareTickerMessages = (a: TickerMessage, b: TickerMessage): number =>
+  Number(b.pinned === true) - Number(a.pinned === true) || b.startsAt.localeCompare(a.startsAt);
+
+export interface TickerMessagesMethods
+  extends CrudRepository<TickerMessage, TickerMessageCreateInput, TickerMessagePatch> {
+  /**
+   * Messages to show in the ticker right now: started, not expired,
+   * pinned first. `now` defaults to the current time.
+   */
+  listActive(now?: Date): Promise<TickerMessage[]>;
 }
 
 // ─── Video input types ──────────────────────────────────────────────
@@ -130,6 +173,8 @@ export interface ContentRepository {
   videos: CrudRepository<Video, VideoCreateInput, VideoPatch> & {
     listPublished(category?: string): Promise<Video[]>;
   };
+  /** GM ticker messages, stored in the Announcements table (kind 'ticker'). */
+  tickerMessages: TickerMessagesMethods;
   promos: PromosMethods;
   storylineRequests: StorylineRequestsMethods;
 }
