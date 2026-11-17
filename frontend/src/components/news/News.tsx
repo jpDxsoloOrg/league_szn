@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Newspaper } from 'lucide-react';
 import type { Announcement } from '../../types';
 import { formatDate } from '../../utils/dateUtils';
+import { toMediaUrl } from '../../utils/mediaUrl';
 import { excerpt, htmlToText } from '../../utils/htmlText';
 import Badge from '../ui/Badge';
 import EmptyState from '../ui/EmptyState';
@@ -24,6 +25,22 @@ function StoryMeta({ story }: { story: Announcement }) {
   );
 }
 
+/** Feature stories lead with their hero image; standard posts have none. */
+function StoryImage({ story, className }: { story: Announcement; className: string }) {
+  if (story.layout !== 'feature' || !story.heroImageUrl) return null;
+  return (
+    <Link to={`/news/${story.announcementId}`} className={className} tabIndex={-1} aria-hidden="true">
+      <img src={toMediaUrl(story.heroImageUrl)} alt="" loading="lazy" />
+    </Link>
+  );
+}
+
+/** Feature stories show their standfirst; standard posts an excerpt of the body. */
+function storySummary(story: Announcement, length: number): string {
+  if (story.layout === 'feature' && story.dek) return story.dek;
+  return excerpt(htmlToText(story.body), length);
+}
+
 /** The league's news desk: the newest story leads, the rest follow as a grid. */
 export default function News() {
   const { t } = useTranslation();
@@ -41,13 +58,14 @@ export default function News() {
       )}
 
       {lead && (
-        <article className="news-lead">
+        <article className={`news-lead${lead.layout === 'feature' && lead.heroImageUrl ? ' news-lead--feature' : ''}`}>
+          <StoryImage story={lead} className="news-lead__image" />
           <p className="news-lead__flag">{t('news.topStory')}</p>
           <StoryMeta story={lead} />
           <h2 className="news-lead__title">
             <Link to={`/news/${lead.announcementId}`}>{lead.title}</Link>
           </h2>
-          <p className="news-lead__excerpt">{excerpt(htmlToText(lead.body), LEAD_EXCERPT_LENGTH)}</p>
+          <p className="news-lead__excerpt">{storySummary(lead, LEAD_EXCERPT_LENGTH)}</p>
           <Link to={`/news/${lead.announcementId}`} className="news-story__more">
             {t('news.readStory')}
             <ArrowRight aria-hidden="true" size={16} />
@@ -62,11 +80,12 @@ export default function News() {
             {rest.map((story) => (
               <li key={story.announcementId}>
                 <article className="news-card">
+                  <StoryImage story={story} className="news-card__image" />
                   <StoryMeta story={story} />
                   <h3 className="news-card__title">
                     <Link to={`/news/${story.announcementId}`}>{story.title}</Link>
                   </h3>
-                  <p className="news-card__excerpt">{excerpt(htmlToText(story.body), CARD_EXCERPT_LENGTH)}</p>
+                  <p className="news-card__excerpt">{storySummary(story, CARD_EXCERPT_LENGTH)}</p>
                 </article>
               </li>
             ))}
