@@ -57,6 +57,8 @@ Hitting 100% does **not** move you automatically, and you don't need to be at 10
 
 When you're called up, your division changes, you get a notification, and the move appears in the activity feed. The GM may also announce it on the News page.
 
+The main roster has its own ladder, with promotions and relegations between divisions. See [Promotion and Relegation](division-movement) for what happens after your call-up.
+
 ## Tips
 
 - Keep competing. Every match moves the bar, even a loss.
@@ -64,4 +66,4 @@ When you're called up, your division changes, you get a notification, and the mo
 - Ask your opponents and friends to rate your matches.
 - Enjoy it. Everyone on the main roster started where you are now.
 
-See also: [Rate Matches](rate-matches), [Promos](promos), [Divisions](divisions).
+See also: [Promotion and Relegation](division-movement), [Rate Matches](rate-matches), [Promos](promos), [Divisions](divisions).

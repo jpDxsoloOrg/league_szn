@@ -332,7 +332,8 @@ describe('seedData', () => {
     const youngBoys = importData.divisions.find((division) => division.isDevelopmental === true);
     expect(youngBoys).toBeDefined();
 
-    const tracks = importData.progressionTracks as unknown as ProgressionTrack[];
+    const tracks = (importData.progressionTracks as unknown as ProgressionTrack[])
+      .filter((candidate) => candidate.kind === 'callup');
     expect(tracks).toHaveLength(1);
     const [track] = tracks;
     expect(track.kind).toBe('callup');
@@ -343,9 +344,9 @@ describe('seedData', () => {
     const youngBoysIds = importData.players
       .filter((player) => player.divisionId === youngBoys!.divisionId)
       .map((player) => player.playerId);
-    const rows = importData.playerProgression as unknown as PlayerProgression[];
+    const rows = (importData.playerProgression as unknown as PlayerProgression[])
+      .filter((row) => row.trackId === track.trackId);
     expect(rows.map((row) => row.playerId).sort()).toEqual([...youngBoysIds].sort());
-    expect(rows.every((row) => row.trackId === track.trackId)).toBe(true);
 
     // The four prospects land at clearly different points: 100, ~70, ~23, 10.
     const pctByName = new Map(
@@ -371,10 +372,96 @@ describe('seedData', () => {
     expect(flagged).toHaveLength(1);
     expect(flagged[0].playerId).toBe(ace.playerId);
     expect(flagged[0].consideration?.status).toBe('considering');
-    const events = importData.progressionEvents as unknown as ProgressionEvent[];
+    const events = (importData.progressionEvents as unknown as ProgressionEvent[])
+      .filter((event) => event.kind === 'callup' && event.type === 'consideration_added');
     expect(events).toEqual([
       expect.objectContaining({ playerId: ace.playerId, type: 'consideration_added', kind: 'callup' }),
     ]);
+  });
+
+  it('seeds the division ladder: tracks, watch flags, a hot-angle slump, history and a season review (DMV-10)', async () => {
+    mockImportAllData.mockResolvedValue({});
+
+    const result = await seedData(makeEvent(), ctx, cb);
+    expect(result!.statusCode).toBe(200);
+
+    const importData = mockImportAllData.mock.calls[0][0] as Record<string, Record<string, unknown>[]>;
+    const divisionId = (name: string): string =>
+      importData.divisions.find((division) => division.name === name)?.divisionId as string;
+    const playerId = (wrestler: string): string =>
+      importData.players.find((player) => player.currentWrestler === wrestler)?.playerId as string;
+
+    // Default tracks: NXT can go up and down, the tier-1 brands only down.
+    const tracks = importData.progressionTracks as unknown as ProgressionTrack[];
+    const trackOf = (kind: string, division: string): ProgressionTrack | undefined =>
+      tracks.find((track) => track.kind === kind && track.fromDivisionId === divisionId(division));
+    expect(trackOf('promotion', 'NXT')).toBeDefined();
+    expect(trackOf('relegation', 'NXT')).toBeDefined();
+    expect(trackOf('relegation', 'Raw')).toBeDefined();
+    expect(trackOf('relegation', 'SmackDown')).toBeDefined();
+    expect(trackOf('promotion', 'Raw')).toBeUndefined();
+    expect(trackOf('promotion', 'SmackDown')).toBeUndefined();
+
+    const rows = importData.playerProgression as unknown as PlayerProgression[];
+    const rowOf = (wrestler: string, track: ProgressionTrack | undefined): PlayerProgression | undefined =>
+      rows.find((row) => row.playerId === playerId(wrestler) && row.trackId === track?.trackId);
+
+    // Promotion watch: Undertaker and Cena, both well on their way.
+    for (const wrestler of ['The Undertaker', 'John Cena']) {
+      const row = rowOf(wrestler, trackOf('promotion', 'NXT'));
+      expect(row?.consideration?.status, wrestler).toBe('considering');
+      expect(row?.progressPct, wrestler).toBeGreaterThanOrEqual(50);
+    }
+    expect(rowOf('The Undertaker', trackOf('promotion', 'NXT'))?.progressPct).toBe(75);
+
+    // Relegation watch: CM Punk, in real danger.
+    const punk = rowOf('CM Punk', trackOf('relegation', 'SmackDown'));
+    expect(punk?.consideration?.status).toBe('considering');
+    expect(punk?.progressPct).toBeGreaterThanOrEqual(60);
+    expect(punk?.goals.find((goal) => goal.goalId === 'loss-pct')?.met).toBe(true);
+    const flagged = rows.filter((row) => row.consideration && row.trackId !== tracks.find((t) => t.kind === 'callup')?.trackId);
+    expect(flagged).toHaveLength(3);
+
+    // The Rock keeps losing to Stone Cold in their scorching rivalry, yet his
+    // relegation danger stays near zero: hot-angle losses never count.
+    const scorching = importData.rivalries.find((row) => row.recordType === 'META' && row.heat === 'scorching');
+    const rockLosses = (importData.matches as unknown as Match[]).filter((match) =>
+      match.rivalryId === scorching?.rivalryId && match.losers?.includes(playerId('The Rock')));
+    expect(rockLosses.length).toBeGreaterThanOrEqual(5);
+    const rock = rowOf('The Rock', trackOf('relegation', 'SmackDown'));
+    expect(rock?.progressPct).toBeLessThan(10);
+    expect(rock?.goals.find((goal) => goal.goalId === 'loss-pct')?.met).toBe(false);
+    expect(rock?.consideration).toBeUndefined();
+
+    // Edge's history: Young Boys -> NXT -> Raw, the promotion announced.
+    const events = importData.progressionEvents as unknown as Array<ProgressionEvent & { createdAtEventId?: string; recordType?: string }>;
+    const edgeMoves = events
+      .filter((event) => event.playerId === playerId('Edge') && event.type === 'executed')
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    expect(edgeMoves.map((event) => [event.kind, event.fromDivisionId, event.toDivisionId])).toEqual([
+      ['callup', divisionId('Young Boys'), divisionId('NXT')],
+      ['promotion', divisionId('NXT'), divisionId('Raw')],
+    ]);
+    expect(edgeMoves[1].announced).toBe(true);
+    // Every event row carries the table's sort key, or the import put fails.
+    for (const event of events.filter((row) => row.recordType === undefined)) {
+      expect(event.createdAtEventId).toBe(`${event.createdAt}#${event.eventId}`);
+    }
+
+    // A completed Pilot Season with its review: Edge's promotion applied,
+    // CM Punk's relegation recommended and waiting for a GM.
+    const pilot = importData.seasons.find((season) => season.status === 'completed');
+    expect(pilot).toBeDefined();
+    const reviews = events.filter((row) => row.playerId === `seasonReview#${pilot?.seasonId}`) as unknown as Array<Record<string, unknown>>;
+    expect(reviews).toHaveLength(9);
+    const reviewOf = (wrestler: string) => reviews.find((review) => review.reviewPlayerId === playerId(wrestler));
+    expect(reviewOf('Edge')).toMatchObject({ divisionId: divisionId('NXT'), recommendation: 'promote', decision: 'promote', toDivisionId: divisionId('Raw') });
+    expect(reviewOf('CM Punk')).toMatchObject({ recommendation: 'relegate' });
+    expect(reviewOf('CM Punk')?.decision).toBeUndefined();
+    expect(reviewOf('The Rock')).toMatchObject({ recommendation: 'stay' });
+
+    // Zones of 1 or 2 on the three-player tables.
+    expect(importData.divisions.find((division) => division.name === 'NXT')).toMatchObject({ promotionZoneSize: 2, relegationZoneSize: 1 });
   });
 
   it('returns 500 when importAllData throws', async () => {

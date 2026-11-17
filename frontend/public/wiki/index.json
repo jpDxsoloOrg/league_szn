@@ -44,5 +44,6 @@
   {"slug":"admin-rivalries","titleKey":"wiki.articles.adminRivalries","file":"admin-rivalries.md","adminOnly":true,"parent":"admin","navTitleKey":"wiki.navLabels.adminRivalries","title":"Admin: Rivalries"},
   {"slug":"rate-matches","titleKey":"wiki.articles.rateMatches","file":"rate-matches.md","title":"Rate Matches"},
   {"slug":"rivalry-heat-explained","titleKey":"wiki.articles.rivalryHeatExplained","file":"rivalry-heat-explained.md","title":"How Rivalry Heat Works"},
-  {"slug":"call-ups","titleKey":"wiki.articles.callUps","file":"call-ups.md","title":"Call-Ups: Young Boys to the Main Roster"}
+  {"slug":"call-ups","titleKey":"wiki.articles.callUps","file":"call-ups.md","title":"Call-Ups: Young Boys to the Main Roster"},
+  {"slug":"division-movement","titleKey":"wiki.articles.divisionMovement","file":"division-movement.md","title":"Promotion and Relegation"}
 ]

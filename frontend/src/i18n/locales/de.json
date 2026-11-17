@@ -476,6 +476,7 @@
       "rateMatches": "Kämpfe bewerten",
       "rivalryHeatExplained": "Wie Rivalitäts-Hitze funktioniert",
       "callUps": "Call-Ups: Von den Young Boys in den Hauptkader",
+      "divisionMovement": "Auf- und Abstieg",
       "strikesAndSuspensions": "Strikes und Sperren",
       "adminStrikes": "Admin: Strikes",
       "installApp": "App installieren",
@@ -560,10 +561,10 @@
       "promotion": "Aufstiegszone",
       "relegation": "Abstiegszone",
       "legend": "Tabellenzonen",
-      "promotionLegend_one": "Aufstiegszone: oberster {{count}} Platz",
-      "promotionLegend_other": "Aufstiegszone: oberste {{count}} Plätze",
-      "relegationLegend_one": "Abstiegszone: unterster {{count}} Platz",
-      "relegationLegend_other": "Abstiegszone: unterste {{count}} Plätze"
+      "promotionLegend_one": "Aufstiegszone: der oberste Platz",
+      "promotionLegend_other": "Aufstiegszone: die obersten {{count}} Plätze",
+      "relegationLegend_one": "Abstiegszone: der unterste Platz",
+      "relegationLegend_other": "Abstiegszone: die untersten {{count}} Plätze"
     }
   },
   "championships": {
@@ -3871,8 +3872,8 @@
       "lossPctLast": "Verliere {{threshold}} oder mehr der letzten {{lastMatches}} Matches",
       "currentLossStreak_one": "Verliere {{threshold}} Match in Folge",
       "currentLossStreak_other": "Verliere {{threshold}} Matches in Folge",
-      "daysSinceLastMatch_one": "Bestreite {{threshold}} Tag kein Match",
-      "daysSinceLastMatch_other": "Bestreite {{threshold}} Tage kein Match",
+      "daysSinceLastMatch_one": "Bestreite {{threshold}} Tag lang kein Match",
+      "daysSinceLastMatch_other": "Bestreite {{threshold}} Tage lang kein Match",
       "avgStarRatingBelow": "Durchschnitt von {{threshold}} oder weniger in bewerteten Matches",
       "avgStarRatingBelowMin": "Durchschnitt von {{threshold}} oder weniger über mindestens {{minRatedMatches}} bewertete Matches",
       "contenderRankBest": "Gehöre zu den Top {{threshold}} Herausforderern auf einen Divisionstitel",

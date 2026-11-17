@@ -57,6 +57,8 @@ Siehe [News und der Liga-Ticker](news) für alles andere, was das Laufband zeigt
 
 Bei einem Call-up ändert sich deine Division, du bekommst eine Benachrichtigung, und der Wechsel erscheint im Aktivitäts-Feed. Der GM kann ihn auch auf der News-Seite ankündigen.
 
+Der Hauptkader hat seine eigene Leiter, mit Auf- und Abstiegen zwischen den Divisionen. Was nach deinem Call-up passiert, steht unter [Auf- und Abstieg](division-movement).
+
 ## Tipps
 
 - Bleib dran. Jeder Kampf bewegt den Balken, auch eine Niederlage.
@@ -64,4 +66,4 @@ Bei einem Call-up ändert sich deine Division, du bekommst eine Benachrichtigung
 - Bitte deine Gegner und Freunde, deine Kämpfe zu bewerten.
 - Hab Spaß dabei. Jeder im Hauptkader hat dort angefangen, wo du jetzt stehst.
 
-Siehe auch: [Kämpfe bewerten](rate-matches), [Promos](promos), [Divisionen](divisions).
+Siehe auch: [Auf- und Abstieg](division-movement), [Kämpfe bewerten](rate-matches), [Promos](promos), [Divisionen](divisions).
