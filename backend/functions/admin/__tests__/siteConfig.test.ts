@@ -24,7 +24,13 @@ const DEFAULT_FEATURES = {
   rivalries: true,
   notifications: true,
   transfers: false,
+  ticker: true,
 };
+
+const ALL_SEGMENTS = [
+  'pinned', 'tonight', 'newChampions', 'potentialCallups', 'promotionWatch', 'hotRivalries',
+  'custom', 'news', 'upcomingShows', 'champions', 'latestResults',
+];
 
 function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent {
   return {
@@ -77,6 +83,11 @@ describe('getSiteConfig', () => {
     expect(body.features).toEqual(DEFAULT_FEATURES);
   });
 
+  it('returns the default ticker settings: every segment, normal speed, relegation private', async () => {
+    const body = JSON.parse((await getSiteConfig(makeEvent(), ctx, cb))!.body);
+    expect(body.ticker).toEqual({ enabledSegments: ALL_SEGMENTS, scrollSpeed: 'normal', publicRelegationWatch: false });
+  });
+
   it('returns features from existing config', async () => {
     await siteConfigRepo.updateFeatures({
       challenges: true,
@@ -99,6 +110,7 @@ describe('getSiteConfig', () => {
       rivalries: true,
       notifications: true,
       transfers: false,
+      ticker: true,
     });
   });
 });
@@ -251,6 +263,7 @@ describe('updateSiteConfig', () => {
       rivalries: true,
       notifications: true,
       transfers: false,
+      ticker: true,
     });
   });
 
@@ -273,6 +286,54 @@ describe('updateSiteConfig', () => {
       rivalries: true,
       notifications: true,
       transfers: false,
+      ticker: true,
     });
+  });
+
+  it('saves the ticker flag', async () => {
+    const event = withAuth(makeEvent({ body: JSON.stringify({ features: { ticker: false } }) }), 'Admin');
+    const result = await updateSiteConfig(event, ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    expect((await siteConfigRepo.getFeatures()).ticker).toBe(false);
+  });
+
+  it('saves ticker settings on their own and leaves the features alone', async () => {
+    const ticker = { enabledSegments: ['tonight', 'news', 'tonight'], scrollSpeed: 'fast', publicRelegationWatch: true };
+    const event = withAuth(makeEvent({ body: JSON.stringify({ ticker }) }), 'Admin');
+
+    const result = await updateSiteConfig(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    const expected = { enabledSegments: ['tonight', 'news'], scrollSpeed: 'fast', publicRelegationWatch: true };
+    expect(body.ticker).toEqual(expected);
+    expect(body.features).toEqual(DEFAULT_FEATURES);
+    expect(await siteConfigRepo.getTickerSettings()).toEqual(expected);
+  });
+
+  it('merges a partial ticker patch over the stored settings', async () => {
+    await siteConfigRepo.updateTickerSettings({ scrollSpeed: 'slow' });
+    const event = withAuth(makeEvent({ body: JSON.stringify({ ticker: { publicRelegationWatch: true } }) }), 'Admin');
+
+    const body = JSON.parse((await updateSiteConfig(event, ctx, cb))!.body);
+
+    expect(body.ticker).toEqual({ enabledSegments: ALL_SEGMENTS, scrollSpeed: 'slow', publicRelegationWatch: true });
+  });
+
+  it.each([
+    [{ ticker: 'fast' }, 'ticker must be an object'],
+    [{ ticker: { speed: 'fast' } }, 'Invalid ticker setting: speed'],
+    [{ ticker: { enabledSegments: ['tonight', 'gossip'] } }, 'enabledSegments must be an array of'],
+    [{ ticker: { enabledSegments: 'tonight' } }, 'enabledSegments must be an array of'],
+    [{ ticker: { scrollSpeed: 'ludicrous' } }, 'scrollSpeed must be one of: slow, normal, fast'],
+    [{ ticker: { publicRelegationWatch: 'yes' } }, 'publicRelegationWatch must be a boolean'],
+  ])('rejects bad ticker settings %j', async (payload, message) => {
+    const event = withAuth(makeEvent({ body: JSON.stringify(payload) }), 'Admin');
+
+    const result = await updateSiteConfig(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toContain(message);
+    expect((await siteConfigRepo.getTickerSettings()).scrollSpeed).toBe('normal');
   });
 });

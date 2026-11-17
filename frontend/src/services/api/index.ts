@@ -44,7 +44,8 @@ export { locationsApi } from './locations.api';
 export { progressionApi, executeProgressionError } from './progression.api';
 
 // Type/interface re-exports
-export type { SiteFeatures } from './siteConfig.api';
+export type { SiteFeatures, SiteConfigResponse, TickerSettings, TickerSegmentKey, TickerScrollSpeed } from './siteConfig.api';
+export { TICKER_SEGMENT_KEYS, TICKER_SCROLL_SPEEDS } from './siteConfig.api';
 export type { PlayerDirectoryEntry } from './players.api';
 export type {
   StatsPlayer,

@@ -3427,6 +3427,39 @@
         "name": "Statistiken"
       },
       "subtitle": "Schalte Website-Features ein oder aus. Deaktivierte Features werden aus der Navigation entfernt und sind für Nutzer nicht erreichbar. Daten werden weiterhin erfasst, solange ein Feature deaktiviert ist.",
+      "ticker": {
+        "name": "Liga-Ticker",
+        "description": "Der laufende Liga-Newsticker unter dem Header. Aus entfernt ihn überall."
+      },
+      "tickerSettings": {
+        "title": "Ticker-Einstellungen",
+        "description": "Lege fest, was der Liga-Ticker zeigt und wie schnell er läuft.",
+        "segmentsLabel": "Segmente",
+        "speedLabel": "Laufgeschwindigkeit",
+        "segments": {
+          "pinned": "Angeheftete GM-Nachrichten",
+          "tonight": "Heute Abend",
+          "newChampions": "Neue Champions",
+          "potentialCallups": "Mögliche Call-ups",
+          "promotionWatch": "Aufstiegsbeobachtung",
+          "hotRivalries": "Heiße Rivalitäten",
+          "custom": "GM-Nachrichten",
+          "news": "News",
+          "upcomingShows": "Kommende Shows",
+          "champions": "Aktuelle Champions",
+          "latestResults": "Neueste Ergebnisse"
+        },
+        "speeds": {
+          "slow": "Langsam",
+          "normal": "Normal",
+          "fast": "Schnell"
+        },
+        "publicRelegationWatch": "Abstiegsbeobachtung für alle anzeigen",
+        "publicRelegationWatchHint": "Aus: Abstiegsbeobachtung und Abstiegszonen sehen nur GMs.",
+        "save": "Ticker-Einstellungen speichern",
+        "saved": "Ticker-Einstellungen gespeichert.",
+        "saveFailed": "Ticker-Einstellungen konnten nicht gespeichert werden"
+      },
       "title": "Feature-Verwaltung",
       "transfers": {
         "description": "Anfragen für Divisionstransfers in Spielerprofilen und die Admin-Seite für Transfers",

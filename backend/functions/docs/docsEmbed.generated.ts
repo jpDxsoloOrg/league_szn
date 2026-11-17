@@ -690,11 +690,36 @@ components:
         promos: { type: boolean }
         contenders: { type: boolean }
         statistics: { type: boolean }
+        stables: { type: boolean }
+        rivalries: { type: boolean }
+        notifications: { type: boolean }
+        transfers: { type: boolean }
+        ticker: { type: boolean, description: 'League ticker. Off removes it everywhere and GET /ticker returns no segments.' }
+
+    TickerSettings:
+      type: object
+      properties:
+        enabledSegments:
+          type: array
+          description: Segment keys GET /ticker may return. Defaults to every key.
+          items:
+            type: string
+            enum: [pinned, tonight, newChampions, potentialCallups, promotionWatch, hotRivalries, custom, news, upcomingShows, champions, latestResults]
+        scrollSpeed: { type: string, enum: [slow, normal, fast], description: 'Defaults to normal.' }
+        publicRelegationWatch: { type: boolean, description: 'Show relegation watch and zones to everyone. Defaults to false (GMs only).' }
 
     SiteConfigResponse:
       type: object
       properties:
         features: { $ref: '#/components/schemas/SiteFeatures' }
+        ticker: { $ref: '#/components/schemas/TickerSettings' }
+
+    UpdateSiteConfigInput:
+      type: object
+      description: At least one of features or ticker. Both are partial patches.
+      properties:
+        features: { $ref: '#/components/schemas/SiteFeatures' }
+        ticker: { $ref: '#/components/schemas/TickerSettings' }
 
     UserListItem:
       type: object
@@ -1239,22 +1264,31 @@ paths:
   /site-config:
     get:
       tags: [Site Config]
-      summary: Get site config (feature flags)
+      summary: Get site config (feature flags and ticker settings)
       responses:
-        '200': { description: Site config }
+        '200':
+          description: Site config
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SiteConfigResponse' }
         '500': { description: 'Server error', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /admin/site-config:
     put:
       tags: [Site Config]
-      summary: Update site config
+      summary: Update site config (Admin)
       security: [{ BearerAuth: [] }]
       requestBody:
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/SiteConfigResponse' }
+            schema: { $ref: '#/components/schemas/UpdateSiteConfigInput' }
       responses:
-        '200': { description: Updated }
+        '200':
+          description: The full site config after the update
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SiteConfigResponse' }
+        '400': { description: 'Invalid feature key or ticker setting', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
@@ -2236,6 +2270,8 @@ paths:
         segments are sorted by \`priority\` ascending, with pinned GM messages first.
         Keys: pinned, tonight, newChampions, potentialCallups, promotionWatch,
         hotRivalries, custom, news, upcomingShows, champions, latestResults.
+        Segments turned off in the ticker settings are left out, and with the
+        \`ticker\` feature off the list is empty.
         Sent with \`Cache-Control: public, max-age=60\`.
       responses:
         '200':

@@ -21,8 +21,8 @@ import type {
   FantasyPick,
   WrestlerCost,
 } from '../types';
-import type { FeatureFlags, RivalryHeatTunables } from '../SiteConfigRepository';
-import { DEFAULT_FEATURES, DEFAULT_HEAT_TUNABLES } from '../SiteConfigRepository';
+import type { FeatureFlags, RivalryHeatTunables, TickerSettings } from '../SiteConfigRepository';
+import { DEFAULT_FEATURES, DEFAULT_HEAT_TUNABLES, mergeTickerSettings } from '../SiteConfigRepository';
 import type { CrudRepository } from '../CrudRepository';
 
 // ─── Notifications sub-object ──────────────────────────────────────
@@ -538,6 +538,30 @@ class SiteConfigDelegate implements SiteConfigMethods {
       Item: {
         configKey: 'rivalryHeatTunables',
         tunables: updated,
+        updatedAt: new Date().toISOString(),
+      },
+    });
+
+    return updated;
+  }
+
+  async getTickerSettings(): Promise<TickerSettings> {
+    const result = await dynamoDb.get({
+      TableName: TableNames.SITE_CONFIG,
+      Key: { configKey: 'tickerSettings' },
+    });
+    return mergeTickerSettings(result.Item?.settings as Partial<TickerSettings> | undefined);
+  }
+
+  async updateTickerSettings(patch: Partial<TickerSettings>): Promise<TickerSettings> {
+    const current = await this.getTickerSettings();
+    const updated = mergeTickerSettings({ ...current, ...patch });
+
+    await dynamoDb.put({
+      TableName: TableNames.SITE_CONFIG,
+      Item: {
+        configKey: 'tickerSettings',
+        settings: updated,
         updatedAt: new Date().toISOString(),
       },
     });

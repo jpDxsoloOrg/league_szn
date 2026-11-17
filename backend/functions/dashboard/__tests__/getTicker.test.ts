@@ -11,9 +11,13 @@ const mocks = vi.hoisted(() => ({
   announcementsListActive: vi.fn(),
   listTracks: vi.fn(),
   listByTrack: vi.fn(),
+  tickerMessagesListActive: vi.fn(),
+  getFeatures: vi.fn(),
+  getTickerSettings: vi.fn(),
 }));
 
-vi.mock('../../../lib/repositories', () => ({
+vi.mock('../../../lib/repositories', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../lib/repositories')>()),
   getRepositories: () => ({
     competition: {
       championships: { list: mocks.championshipsList, listAllHistory: mocks.listAllHistory },
@@ -21,12 +25,17 @@ vi.mock('../../../lib/repositories', () => ({
     },
     roster: { players: { listWithDeleted: mocks.playersList } },
     leagueOps: { events: { listByStatus: mocks.eventsListByStatus } },
-    content: { announcements: { listActive: mocks.announcementsListActive } },
+    content: {
+      announcements: { listActive: mocks.announcementsListActive },
+      tickerMessages: { listActive: mocks.tickerMessagesListActive },
+    },
+    user: { siteConfig: { getFeatures: mocks.getFeatures, getTickerSettings: mocks.getTickerSettings } },
     rivalries: { listByStatus: mocks.rivalriesListByStatus },
     progression: { listTracks: mocks.listTracks, listByTrack: mocks.listByTrack },
   }),
 }));
 
+import { DEFAULT_FEATURES, DEFAULT_TICKER_SETTINGS } from '../../../lib/repositories';
 import { handler as getTicker, TICKER_CACHE_SECONDS } from '../getTicker';
 import { handler as dashboardRouter } from '../handler';
 
@@ -51,6 +60,9 @@ describe('getTicker', () => {
     mocks.announcementsListActive.mockResolvedValue([]);
     mocks.listTracks.mockResolvedValue([]);
     mocks.listByTrack.mockResolvedValue([]);
+    mocks.tickerMessagesListActive.mockResolvedValue([]);
+    mocks.getFeatures.mockResolvedValue({ ...DEFAULT_FEATURES });
+    mocks.getTickerSettings.mockResolvedValue({ ...DEFAULT_TICKER_SETTINGS });
   });
 
   afterEach(() => {
@@ -123,6 +135,53 @@ describe('getTicker', () => {
     const result = await callTicker();
     expect(result.statusCode).toBe(200);
     expect(JSON.parse(result.body).segments.map((segment: { key: string }) => segment.key)).toEqual(['news']);
+  });
+
+  it('turns live GM messages into pinned and custom segments', async () => {
+    mocks.tickerMessagesListActive.mockResolvedValue([
+      { messageId: 'm1', text: 'Draft night!', href: '/events', pinned: true },
+      { messageId: 'm2', text: 'Welcome rookies', pinned: false },
+    ]);
+
+    const body = JSON.parse((await callTicker()).body);
+
+    expect(mocks.tickerMessagesListActive).toHaveBeenCalledWith(new Date('2026-11-16T18:00:00.000Z'));
+    expect(body.segments.map((segment: { key: string; items: unknown[] }) => [segment.key, segment.items])).toEqual([
+      ['pinned', [{ text: 'Draft night!', href: '/events' }]],
+      ['custom', [{ text: 'Welcome rookies' }]],
+    ]);
+  });
+
+  it('leaves out segments the admin turned off', async () => {
+    mocks.tickerMessagesListActive.mockResolvedValue([{ messageId: 'm1', text: 'Hi', pinned: true }]);
+    mocks.announcementsListActive.mockResolvedValue([{ announcementId: 'a1', title: 'Big news' }]);
+    mocks.getTickerSettings.mockResolvedValue({ ...DEFAULT_TICKER_SETTINGS, enabledSegments: ['news'] });
+
+    const body = JSON.parse((await callTicker()).body);
+
+    expect(body.segments.map((segment: { key: string }) => segment.key)).toEqual(['news']);
+  });
+
+  it('answers with no segments when the ticker feature is off', async () => {
+    mocks.getFeatures.mockResolvedValue({ ...DEFAULT_FEATURES, ticker: false });
+    mocks.announcementsListActive.mockResolvedValue([{ announcementId: 'a1', title: 'Big news' }]);
+
+    const result = await callTicker();
+
+    expect(result.statusCode).toBe(200);
+    expect(JSON.parse(result.body).segments).toEqual([]);
+    expect(mocks.announcementsListActive).not.toHaveBeenCalled();
+  });
+
+  it('falls back to showing everything when the settings cannot be read', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocks.getFeatures.mockRejectedValue(new Error('boom'));
+    mocks.getTickerSettings.mockRejectedValue(new Error('boom'));
+    mocks.announcementsListActive.mockResolvedValue([{ announcementId: 'a1', title: 'Big news' }]);
+
+    const body = JSON.parse((await callTicker()).body);
+
+    expect(body.segments.map((segment: { key: string }) => segment.key)).toEqual(['news']);
   });
 
   it('is routed at GET /ticker on the dashboard Lambda', async () => {
