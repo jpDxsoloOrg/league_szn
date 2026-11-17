@@ -97,6 +97,9 @@ export interface DivisionCreateInput {
   isDefaultForNewWrestlers?: boolean;
   /** Null is treated as "no tier". */
   tier?: number | null;
+  /** Null is treated as unset (default size). */
+  promotionZoneSize?: number | null;
+  relegationZoneSize?: number | null;
 }
 
 export interface DivisionPatch {
@@ -106,6 +109,9 @@ export interface DivisionPatch {
   isDefaultForNewWrestlers?: boolean;
   /** Null clears the tier (stored as NULL; readers use getDivisionTier). */
   tier?: number | null;
+  /** Null resets to the default size (readers use getZoneSize). */
+  promotionZoneSize?: number | null;
+  relegationZoneSize?: number | null;
 }
 
 // ─── Location input types ───────────────────────────────────────────

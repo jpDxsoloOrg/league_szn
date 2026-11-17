@@ -8,6 +8,6 @@ export const handler = createHandlerFactory<DivisionCreateInput, Division>({
   repo: () => ({ create: createDivision }),
   entityName: 'division',
   requiredFields: ['name'],
-  optionalFields: ['description', 'isDevelopmental', 'isDefaultForNewWrestlers', 'tier'],
+  optionalFields: ['description', 'isDevelopmental', 'isDefaultForNewWrestlers', 'tier', 'promotionZoneSize', 'relegationZoneSize'],
   validate: async (body) => validateDivisionFlags(body),
 });

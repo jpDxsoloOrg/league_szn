@@ -11,7 +11,9 @@ import EmptyState from '../ui/EmptyState';
 import Modal from '../ui/Modal';
 import PageHeader from '../ui/PageHeader';
 import {
+  DEFAULT_ZONE_SIZE,
   MAX_DIVISION_TIER,
+  MAX_ZONE_SIZE,
   MIN_DIVISION_TIER,
   divisionTierSortValue,
   getDivisionTier,
@@ -29,6 +31,9 @@ const EMPTY_FORM = {
   isDefaultForNewWrestlers: false,
   /** Kept as text so the field can be empty (no tier). */
   tier: '',
+  /** Kept as text; empty means the default size. */
+  promotionZoneSize: '',
+  relegationZoneSize: '',
 };
 
 /** Empty input means "no tier"; anything else must be a whole number in range. */
@@ -38,6 +43,15 @@ function parseTierInput(value: string): { tier: number | null; valid: boolean } 
   const tier = Number(trimmed);
   const valid = Number.isInteger(tier) && tier >= MIN_DIVISION_TIER && tier <= MAX_DIVISION_TIER;
   return { tier: valid ? tier : null, valid };
+}
+
+/** Empty input means "use the default size"; otherwise a whole number from 0 to the max. */
+function parseZoneSizeInput(value: string): { size: number | null; valid: boolean } {
+  const trimmed = value.trim();
+  if (trimmed === '') return { size: null, valid: true };
+  const size = Number(trimmed);
+  const valid = Number.isInteger(size) && size >= 0 && size <= MAX_ZONE_SIZE;
+  return { size: valid ? size : null, valid };
 }
 
 export default function ManageDivisions() {
@@ -94,6 +108,16 @@ export default function ManageDivisions() {
       return;
     }
 
+    const promotionZone = parseZoneSizeInput(formData.promotionZoneSize);
+    const relegationZone = parseZoneSizeInput(formData.relegationZoneSize);
+    if (!promotionZone.valid || !relegationZone.valid) {
+      setFormError(t('adminRoster.divisions.zoneInvalid', {
+        defaultValue: 'Zone sizes must be whole numbers from 0 to {{max}}.',
+        max: MAX_ZONE_SIZE,
+      }));
+      return;
+    }
+
     try {
       if (editingDivision) {
         await divisionsApi.update(editingDivision.divisionId, {
@@ -102,6 +126,8 @@ export default function ManageDivisions() {
           isDevelopmental: formData.isDevelopmental,
           isDefaultForNewWrestlers: formData.isDefaultForNewWrestlers,
           tier,
+          promotionZoneSize: promotionZone.size,
+          relegationZoneSize: relegationZone.size,
         });
         setSuccess(t('adminRoster.divisions.updated', 'Division updated successfully!'));
       } else {
@@ -111,6 +137,8 @@ export default function ManageDivisions() {
           isDevelopmental: formData.isDevelopmental,
           isDefaultForNewWrestlers: formData.isDefaultForNewWrestlers,
           ...(tier !== null ? { tier } : {}),
+          ...(promotionZone.size !== null ? { promotionZoneSize: promotionZone.size } : {}),
+          ...(relegationZone.size !== null ? { relegationZoneSize: relegationZone.size } : {}),
         });
         setSuccess(t('adminRoster.divisions.created', 'Division created successfully!'));
       }
@@ -130,6 +158,8 @@ export default function ManageDivisions() {
       isDevelopmental: division.isDevelopmental === true,
       isDefaultForNewWrestlers: division.isDefaultForNewWrestlers === true,
       tier: getDivisionTier(division)?.toString() ?? '',
+      promotionZoneSize: division.promotionZoneSize?.toString() ?? '',
+      relegationZoneSize: division.relegationZoneSize?.toString() ?? '',
     });
     setShowForm(true);
   };
@@ -305,6 +335,50 @@ export default function ManageDivisions() {
               )}
             </p>
           </div>
+          <div className="ar-field-row">
+            <div className="ar-field">
+              <label className="ar-field__label" htmlFor="division-promotion-zone">
+                {t('adminRoster.divisions.promotionZoneLabel', 'Promotion zone size')}
+              </label>
+              <input
+                className="ar-input ar-input--tier"
+                type="number"
+                id="division-promotion-zone"
+                inputMode="numeric"
+                min={0}
+                max={MAX_ZONE_SIZE}
+                step={1}
+                placeholder={String(DEFAULT_ZONE_SIZE)}
+                value={formData.promotionZoneSize}
+                onChange={(e) => setFormData({ ...formData, promotionZoneSize: e.target.value })}
+                aria-describedby="division-zone-hint"
+              />
+            </div>
+            <div className="ar-field">
+              <label className="ar-field__label" htmlFor="division-relegation-zone">
+                {t('adminRoster.divisions.relegationZoneLabel', 'Relegation zone size')}
+              </label>
+              <input
+                className="ar-input ar-input--tier"
+                type="number"
+                id="division-relegation-zone"
+                inputMode="numeric"
+                min={0}
+                max={MAX_ZONE_SIZE}
+                step={1}
+                placeholder={String(DEFAULT_ZONE_SIZE)}
+                value={formData.relegationZoneSize}
+                onChange={(e) => setFormData({ ...formData, relegationZoneSize: e.target.value })}
+                aria-describedby="division-zone-hint"
+              />
+            </div>
+          </div>
+          <p className="ar-field__hint" id="division-zone-hint">
+            {t(
+              'adminRoster.divisions.zoneHint',
+              'Places shown as the promotion (top) and relegation (bottom) zones when standings are filtered to this division. 0 turns a zone off. The top tier never shows a promotion zone, and the lowest division never shows a relegation zone.',
+            )}
+          </p>
           <div className="ar-field">
             <label className="ar-check" htmlFor="division-developmental">
               <input

@@ -246,3 +246,76 @@
   background-color: var(--color-overlay-soft);
   color: var(--color-draw);
 }
+
+/* DMV-07: promotion / relegation zones, league-table style. */
+.standings-table tr.standings-zone--promotion td:first-child,
+.standings-row.standings-zone--promotion {
+  box-shadow: inset 4px 0 0 var(--color-win);
+}
+
+.standings-table tr.standings-zone--relegation td:first-child,
+.standings-row.standings-zone--relegation {
+  box-shadow: inset 4px 0 0 var(--color-loss);
+}
+
+.standings-zone-icon {
+  display: inline-block;
+  margin-inline-end: 0.25rem;
+  font-size: 0.75em;
+  line-height: 1;
+}
+
+.standings-zone-icon--promotion {
+  color: var(--color-win);
+}
+
+.standings-zone-icon--relegation {
+  color: var(--color-loss);
+}
+
+.standings-zone-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.standings-zone-pill--promotion {
+  background-color: var(--tint-win);
+  color: var(--color-win);
+}
+
+.standings-zone-pill--relegation {
+  background-color: var(--tint-loss);
+  color: var(--color-loss);
+}
+
+.standings-zone-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+}
+
+.standings-zone-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding-inline-start: 0.5rem;
+  border-inline-start: 4px solid transparent;
+}
+
+.standings-zone-legend__item--promotion {
+  border-inline-start-color: var(--color-win);
+}
+
+.standings-zone-legend__item--relegation {
+  border-inline-start-color: var(--color-loss);
+}

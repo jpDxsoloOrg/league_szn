@@ -4,7 +4,7 @@ import { getRepositories } from './repositories';
 import { NotFoundError } from './repositories/errors';
 import type { DivisionCreateInput, DivisionPatch } from './repositories/LeagueOpsRepository';
 import type { Division } from './repositories/types';
-import { validateDivisionTier } from './divisionTiers';
+import { validateDivisionTier, validateZoneSize } from './divisionTiers';
 import { ensureDefaultLadderTracks } from './progression/ladderTemplates';
 
 /**
@@ -70,7 +70,7 @@ export function findDevelopmentalDivisions(divisions: Division[]): Division[] {
   return divisions.filter((d) => d.isDevelopmental === true).sort(byCreatedAt);
 }
 
-/** Reject non-boolean flag values and out-of-range tiers before they reach the table. */
+/** Reject non-boolean flags, out-of-range tiers and zone sizes before they reach the table. */
 export function validateDivisionFlags(body: Record<string, unknown>): APIGatewayProxyResult | null {
   for (const field of ['isDevelopmental', 'isDefaultForNewWrestlers'] as const) {
     if (body[field] !== undefined && typeof body[field] !== 'boolean') {
@@ -79,6 +79,10 @@ export function validateDivisionFlags(body: Record<string, unknown>): APIGateway
   }
   const tierError = validateDivisionTier(body.tier);
   if (tierError) return badRequest(tierError);
+  for (const field of ['promotionZoneSize', 'relegationZoneSize'] as const) {
+    const zoneError = validateZoneSize(field, body[field]);
+    if (zoneError) return badRequest(zoneError);
+  }
   return null;
 }
 

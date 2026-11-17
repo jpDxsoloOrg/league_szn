@@ -425,6 +425,10 @@ export interface Division {
   isDefaultForNewWrestlers?: boolean;
   /** Ladder position, 1 = top. Same tier = siblings; developmental ranks below all tiers. */
   tier?: number;
+  /** Top N of the division's standings form the promotion zone. Unset = 2, 0 disables. */
+  promotionZoneSize?: number;
+  /** Bottom N of the division's standings form the relegation zone. Unset = 2, 0 disables. */
+  relegationZoneSize?: number;
   createdAt: string;
   updatedAt: string;
 }

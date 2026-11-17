@@ -8,6 +8,6 @@ export const handler = updateHandlerFactory<DivisionPatch, Division>({
   repo: () => ({ update: updateDivision }),
   entityName: 'division',
   idParam: 'divisionId',
-  patchFields: ['name', 'description', 'isDevelopmental', 'isDefaultForNewWrestlers', 'tier'],
+  patchFields: ['name', 'description', 'isDevelopmental', 'isDefaultForNewWrestlers', 'tier', 'promotionZoneSize', 'relegationZoneSize'],
   validate: async (body) => validateDivisionFlags(body),
 });

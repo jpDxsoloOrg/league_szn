@@ -549,6 +549,15 @@
       "face": "Face",
       "neutral": "Neutral",
       "heel": "Heel"
+    },
+    "zones": {
+      "promotion": "Aufstiegszone",
+      "relegation": "Abstiegszone",
+      "legend": "Tabellenzonen",
+      "promotionLegend_one": "Aufstiegszone: oberster {{count}} Platz",
+      "promotionLegend_other": "Aufstiegszone: oberste {{count}} Plätze",
+      "relegationLegend_one": "Abstiegszone: unterster {{count}} Platz",
+      "relegationLegend_other": "Abstiegszone: unterste {{count}} Plätze"
     }
   },
   "championships": {
@@ -3037,7 +3046,11 @@
       "tierLabel": "Stufe (optional)",
       "tierHint": "1 ist die oberste Stufe. Divisionen auf derselben Stufe sind gleichrangig. Leer lassen für keine Stufe. Entwicklungsdivisionen stehen immer unter allen Stufen.",
       "tierBadge": "Stufe {{tier}}",
-      "tierInvalid": "Die Stufe muss eine ganze Zahl von {{min}} bis {{max}} sein oder leer bleiben."
+      "tierInvalid": "Die Stufe muss eine ganze Zahl von {{min}} bis {{max}} sein oder leer bleiben.",
+      "promotionZoneLabel": "Größe der Aufstiegszone",
+      "relegationZoneLabel": "Größe der Abstiegszone",
+      "zoneHint": "Plätze, die als Aufstiegszone (oben) und Abstiegszone (unten) markiert werden, wenn die Tabelle nach dieser Division gefiltert ist. 0 schaltet eine Zone ab. Die oberste Stufe zeigt nie eine Aufstiegszone, die unterste Division nie eine Abstiegszone.",
+      "zoneInvalid": "Zonengrößen müssen ganze Zahlen von 0 bis {{max}} sein."
     },
     "transfers": {
       "loadError": "Wechselanfragen konnten nicht geladen werden",

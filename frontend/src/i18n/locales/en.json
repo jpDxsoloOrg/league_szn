@@ -549,6 +549,15 @@
       "face": "Face",
       "neutral": "Neutral",
       "heel": "Heel"
+    },
+    "zones": {
+      "promotion": "Promotion zone",
+      "relegation": "Relegation zone",
+      "legend": "Standings zones",
+      "promotionLegend_one": "Promotion zone: top {{count}} place",
+      "promotionLegend_other": "Promotion zone: top {{count}} places",
+      "relegationLegend_one": "Relegation zone: bottom {{count}} place",
+      "relegationLegend_other": "Relegation zone: bottom {{count}} places"
     }
   },
   "championships": {
@@ -3033,7 +3042,11 @@
       "tierLabel": "Tier (Optional)",
       "tierHint": "1 is the top. Divisions on the same tier are siblings. Leave empty for no tier. Developmental divisions always rank below every tier.",
       "tierBadge": "Tier {{tier}}",
-      "tierInvalid": "Tier must be a whole number from {{min}} to {{max}}, or empty."
+      "tierInvalid": "Tier must be a whole number from {{min}} to {{max}}, or empty.",
+      "promotionZoneLabel": "Promotion zone size",
+      "relegationZoneLabel": "Relegation zone size",
+      "zoneHint": "Places shown as the promotion (top) and relegation (bottom) zones when standings are filtered to this division. 0 turns a zone off. The top tier never shows a promotion zone, and the lowest division never shows a relegation zone.",
+      "zoneInvalid": "Zone sizes must be whole numbers from 0 to {{max}}."
     },
     "transfers": {
       "loadError": "Failed to load transfer requests",

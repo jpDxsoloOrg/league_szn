@@ -11,6 +11,10 @@ export interface Division {
    * rank below every tiered one. See lib/divisionTiers.ts.
    */
   tier?: number;
+  /** DMV-07: top N of this division's standings form the promotion zone. Unset = 2, 0 disables. */
+  promotionZoneSize?: number;
+  /** DMV-07: bottom N of this division's standings form the relegation zone. Unset = 2, 0 disables. */
+  relegationZoneSize?: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -112,6 +112,8 @@ describe('ManageDivisions', () => {
         isDevelopmental: false,
         isDefaultForNewWrestlers: false,
         tier: null,
+        promotionZoneSize: null,
+        relegationZoneSize: null,
       });
     });
     await waitFor(() => {
@@ -203,6 +205,8 @@ describe('ManageDivisions', () => {
         isDevelopmental: true,
         isDefaultForNewWrestlers: true,
         tier: null,
+        promotionZoneSize: null,
+        relegationZoneSize: null,
       });
     });
   });
@@ -241,6 +245,44 @@ describe('ManageDivisions', () => {
     fireEvent.submit(screen.getByLabelText('Tier (Optional)').closest('form') as HTMLFormElement);
 
     expect(await screen.findByText('Tier must be a whole number from 1 to 99, or empty.')).toBeInTheDocument();
+    expect(mockDivisionsApi.update).not.toHaveBeenCalled();
+  });
+
+  it('loads and sends the zone sizes', async () => {
+    mockDivisionsApi.getAll.mockResolvedValue([
+      { ...mockDivisions[0], promotionZoneSize: 3 },
+      mockDivisions[1],
+    ]);
+    mockDivisionsApi.update.mockResolvedValue({});
+    const user = userEvent.setup();
+
+    render(<ManageDivisions />);
+    await waitFor(() => { expect(screen.getByText('Raw')).toBeInTheDocument(); });
+
+    await user.click(screen.getAllByRole('button', { name: 'Edit' })[0]);
+    expect(screen.getByLabelText('Promotion zone size')).toHaveValue(3);
+    await user.type(screen.getByLabelText('Relegation zone size'), '0');
+    await user.click(screen.getByRole('button', { name: 'Update Division' }));
+
+    await waitFor(() => {
+      expect(mockDivisionsApi.update).toHaveBeenCalledWith(
+        'div-1',
+        expect.objectContaining({ promotionZoneSize: 3, relegationZoneSize: 0 }),
+      );
+    });
+  });
+
+  it('rejects a zone size outside the allowed range without calling the API', async () => {
+    const user = userEvent.setup();
+
+    render(<ManageDivisions />);
+    await waitFor(() => { expect(screen.getByText('Raw')).toBeInTheDocument(); });
+
+    await user.click(screen.getAllByRole('button', { name: 'Edit' })[0]);
+    await user.type(screen.getByLabelText('Promotion zone size'), '21');
+    fireEvent.submit(screen.getByLabelText('Promotion zone size').closest('form') as HTMLFormElement);
+
+    expect(await screen.findByText('Zone sizes must be whole numbers from 0 to 20.')).toBeInTheDocument();
     expect(mockDivisionsApi.update).not.toHaveBeenCalled();
   });
 });

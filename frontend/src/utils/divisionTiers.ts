@@ -64,3 +64,53 @@ export function getAdjacentDivisions<T extends Pick<Division, 'divisionId' | 'ti
   const targetRank = direction === 'above' ? Math.max(...ranks) : Math.min(...ranks);
   return sortDivisionsByTier(divisions.filter((division) => getDivisionRank(division) === targetRank));
 }
+
+// ─── Standings zones (DMV-07) ───────────────────────────────────────
+
+/** Mirrors backend/lib/divisionTiers.ts: a division with no stored size uses 2. */
+export const DEFAULT_ZONE_SIZE = 2;
+export const MAX_ZONE_SIZE = 20;
+
+export type StandingsZone = 'promotion' | 'relegation';
+
+export interface StandingsZoneSizes {
+  promotion: number;
+  relegation: number;
+}
+
+/** A stored zone size, or the default when none is stored. */
+export function getZoneSize(value: number | null | undefined): number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : DEFAULT_ZONE_SIZE;
+}
+
+/**
+ * Zone sizes for one division's table. The top tier has no promotion zone and
+ * a division with nothing below it has no relegation zone. Untiered divisions
+ * are off the ladder and get neither. `showRelegation` is false for viewers
+ * who may not see the relegation zone.
+ */
+export function getStandingsZoneSizes(
+  divisions: readonly Division[],
+  divisionId: string,
+  showRelegation: boolean,
+): StandingsZoneSizes {
+  const division = divisions.find((candidate) => candidate.divisionId === divisionId);
+  if (!division) return { promotion: 0, relegation: 0 };
+  const hasAbove = getAdjacentDivisions(divisions, divisionId, 'above').length > 0;
+  const hasBelow = getAdjacentDivisions(divisions, divisionId, 'below').length > 0;
+  return {
+    promotion: hasAbove ? getZoneSize(division.promotionZoneSize) : 0,
+    relegation: showRelegation && hasBelow ? getZoneSize(division.relegationZoneSize) : 0,
+  };
+}
+
+/**
+ * The zone for a 1-based table position among `tableSize` ranked players.
+ * Promotion wins when a short table makes the zones overlap.
+ */
+export function getStandingsZone(rank: number, tableSize: number, sizes: StandingsZoneSizes): StandingsZone | undefined {
+  if (rank < 1 || rank > tableSize) return undefined;
+  if (rank <= sizes.promotion) return 'promotion';
+  if (rank > tableSize - sizes.relegation) return 'relegation';
+  return undefined;
+}

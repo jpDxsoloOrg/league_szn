@@ -158,6 +158,30 @@ describe('createDivision', () => {
     expect(JSON.parse(result!.body).tier).toBe(2);
   });
 
+  it('creates a division with zone sizes', async () => {
+    const result = await createDivision(
+      makeEvent({ body: JSON.stringify({ name: 'NXT', promotionZoneSize: 3, relegationZoneSize: 0 }) }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(201);
+    const body = JSON.parse(result!.body);
+    expect(body.promotionZoneSize).toBe(3);
+    expect(body.relegationZoneSize).toBe(0);
+  });
+
+  it('returns 400 for an invalid zone size', async () => {
+    const result = await createDivision(
+      makeEvent({ body: JSON.stringify({ name: 'NXT', promotionZoneSize: -1 }) }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toMatch(/^promotionZoneSize must be an integer/);
+  });
+
   it('returns 400 for an invalid tier', async () => {
     const result = await createDivision(makeEvent({ body: JSON.stringify({ name: 'NXT', tier: 0 }) }), ctx, cb);
 

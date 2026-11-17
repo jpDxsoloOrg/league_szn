@@ -2,8 +2,12 @@ import type { Division } from '../../types';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 import { createCrudApi } from './crudFactory';
 
-/** `tier: null` clears the tier. */
-export type DivisionUpdate = Omit<Partial<Division>, 'tier'> & { tier?: number | null };
+type NullableDivisionFields = 'tier' | 'promotionZoneSize' | 'relegationZoneSize';
+
+/** `tier: null` clears the tier; a null zone size resets it to the default. */
+export type DivisionUpdate = Omit<Partial<Division>, NullableDivisionFields> & {
+  [Field in NullableDivisionFields]?: number | null;
+};
 
 const baseDivisionsApi = createCrudApi<Division, { name: string; description?: string }>('divisions');
 
@@ -18,6 +22,8 @@ export const divisionsApi = {
     isDevelopmental?: boolean;
     isDefaultForNewWrestlers?: boolean;
     tier?: number;
+    promotionZoneSize?: number;
+    relegationZoneSize?: number;
   }): Promise<Division> => {
     return baseDivisionsApi.create(division);
   },

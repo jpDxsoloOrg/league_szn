@@ -416,6 +416,18 @@ components:
           minimum: 1
           maximum: 99
           description: Ladder position, 1 = top. Divisions with the same tier are siblings. Developmental divisions rank below every tiered division. Send null on update to clear it.
+        promotionZoneSize:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 20
+          description: Top N of this division's standings shown as the promotion zone. Unset means 2; 0 disables. The top tier never shows one. Send null on update to reset to the default.
+        relegationZoneSize:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 20
+          description: Bottom N of this division's standings shown as the relegation zone. Unset means 2; 0 disables. Only shown when a division sits below, and only to GMs unless the publicRelegationWatch ticker setting is on. Send null on update to reset to the default.
         createdAt: { type: string }
         updatedAt: { type: string }
 

@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { divisionTierSortValue, getAdjacentDivisions, getDivisionRank, sortDivisionsByTier } from '../divisionTiers';
+import {
+  divisionTierSortValue,
+  getAdjacentDivisions,
+  getDivisionRank,
+  getStandingsZone,
+  getStandingsZoneSizes,
+  sortDivisionsByTier,
+} from '../divisionTiers';
 import type { Division } from '../../types';
 
 function division(name: string, extra: Partial<Division> = {}): Division {
@@ -59,5 +66,37 @@ describe('divisionTierSortValue', () => {
       divisionTierSortValue(division('Young Boys', { isDevelopmental: true })),
     );
     expect(divisionTierSortValue(division('Legends'))).toBeGreaterThan(99);
+  });
+});
+
+describe('standings zones (DMV-07)', () => {
+  const ladder = [
+    division('Raw', { tier: 1 }),
+    division('NXT', { tier: 2, relegationZoneSize: 3 }),
+    division('Young Boys', { isDevelopmental: true }),
+    division('Legends'),
+  ];
+
+  it('gives the top tier no promotion zone and the bottom division no relegation zone', () => {
+    expect(getStandingsZoneSizes(ladder, 'Raw', true)).toEqual({ promotion: 0, relegation: 2 });
+    expect(getStandingsZoneSizes(ladder, 'Young Boys', true)).toEqual({ promotion: 2, relegation: 0 });
+  });
+
+  it('uses stored sizes and hides relegation when not allowed', () => {
+    expect(getStandingsZoneSizes(ladder, 'NXT', true)).toEqual({ promotion: 2, relegation: 3 });
+    expect(getStandingsZoneSizes(ladder, 'NXT', false)).toEqual({ promotion: 2, relegation: 0 });
+  });
+
+  it('gives untiered and unknown divisions no zones', () => {
+    expect(getStandingsZoneSizes(ladder, 'Legends', true)).toEqual({ promotion: 0, relegation: 0 });
+    expect(getStandingsZoneSizes(ladder, 'missing', true)).toEqual({ promotion: 0, relegation: 0 });
+  });
+
+  it('places ranks in zones, promotion first when they overlap', () => {
+    const sizes = { promotion: 2, relegation: 2 };
+    expect([1, 2, 3, 4, 5, 6].map((rank) => getStandingsZone(rank, 6, sizes)))
+      .toEqual(['promotion', 'promotion', undefined, undefined, 'relegation', 'relegation']);
+    expect([1, 2, 3].map((rank) => getStandingsZone(rank, 3, sizes))).toEqual(['promotion', 'promotion', 'relegation']);
+    expect(getStandingsZone(7, 6, sizes)).toBeUndefined();
   });
 });
