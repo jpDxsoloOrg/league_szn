@@ -320,7 +320,14 @@ export async function executeProgressionMove(input: ExecuteMoveInput): Promise<E
     actorUserId: input.actorUserId,
     createdAt: now,
   };
-  const executedEvent: ProgressionEvent = { ...baseEvent, trackId, eventId: randomUUID(), type: 'executed' };
+  const executedEvent: ProgressionEvent = {
+    ...baseEvent,
+    trackId,
+    eventId: randomUUID(),
+    type: 'executed',
+    // DMV-09: the activity feed shows a relegation only when it was announced.
+    ...(input.announce === true ? { announced: true } : {}),
+  };
 
   try {
     await runInTransaction(async (tx) => {

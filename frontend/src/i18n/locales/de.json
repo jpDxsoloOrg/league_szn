@@ -392,14 +392,20 @@
       "callup_consideration": "Call-ups",
       "callup_executed": "Call-ups",
       "promotion_watch": "Aufstiegsbeobachtung",
-      "relegation_watch": "Abstiegsbeobachtung"
+      "relegation_watch": "Abstiegsbeobachtung",
+      "division_promotion": "Divisionswechsel",
+      "division_relegation": "Divisionswechsel"
     },
     "summaries": {
       "callup_consideration": "{{name}} wird für einen Call-up in Betracht gezogen",
       "callup_executed": "{{name}} hat einen Call-up erhalten",
       "callup_executed_to": "{{name}} hat einen Call-up zu {{division}} erhalten",
       "promotion_watch": "{{name}} steht auf der Aufstiegsbeobachtung der GMs",
-      "relegation_watch": "{{name}} steht auf der Abstiegsbeobachtung der GMs"
+      "relegation_watch": "{{name}} steht auf der Abstiegsbeobachtung der GMs",
+      "division_promotion": "{{name}} ist aufgestiegen",
+      "division_promotion_to": "{{name}} ist zu {{division}} aufgestiegen",
+      "division_relegation": "{{name}} wechselt in eine neue Division",
+      "division_relegation_to": "{{name}} wechselt zu {{division}}"
     },
     "timeAgo": {
       "justNow": "Gerade eben",
@@ -4101,6 +4107,16 @@
             "relegation": "Abgestiegen"
           }
         }
+      }
+    },
+    "history": {
+      "title": "Divisionsverlauf",
+      "unknownDivision": "Ehemalige Division",
+      "kind": {
+        "callup": "Call-up",
+        "promotion": "Aufgestiegen",
+        "relegation": "Gewechselt",
+        "transfer": "Transfer"
       }
     }
   },

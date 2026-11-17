@@ -893,6 +893,11 @@ export interface ProgressionEvent {
   toDivisionId?: string;
   actorUserId: string;
   createdAt: string;
+  /**
+   * DMV-09: set on `executed` events when the GM opted in to a News
+   * announcement. A relegation reaches the public activity feed only then.
+   */
+  announced?: boolean;
 }
 
 /** DMV-03: what a GM can do with a player at the end of a season. */

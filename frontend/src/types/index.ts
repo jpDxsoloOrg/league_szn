@@ -512,7 +512,9 @@ export type ActivityItemType =
   | 'callup_executed'
   | 'promotion_watch'
   /** Only returned to Moderator+, or to everyone when publicRelegationWatch is on. */
-  | 'relegation_watch';
+  | 'relegation_watch'
+  | 'division_promotion'
+  | 'division_relegation';
 
 export interface ActivityItem {
   id: string;

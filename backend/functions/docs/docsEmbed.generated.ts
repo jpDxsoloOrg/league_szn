@@ -2337,13 +2337,14 @@ paths:
           description: Pagination cursor (timestamp|id)
         - name: type
           in: query
-          schema: { type: string, enum: [match, championship, challenge, promo, tournament, season, callup, promotion, relegation] }
+          schema: { type: string, enum: [match, championship, challenge, promo, tournament, season, callup, promotion, relegation, division] }
           description: >
             \`callup\` returns both item types: \`callup_consideration\` (current marks) and \`callup_executed\`.
             \`promotion\` returns \`promotion_watch\` (current GM marks, public). \`relegation\` returns
             \`relegation_watch\`, which only Moderator+ get (send a bearer token) unless the
             \`publicRelegationWatch\` ticker setting is on; it is never in the public feed otherwise.
-            Unknown values are ignored.
+            \`division\` returns \`division_promotion\` and \`division_relegation\`; a relegation is listed
+            only when its announcement was opted in. Unknown values are ignored.
       responses:
         '200':
           description: Paginated activity items
@@ -4384,6 +4385,37 @@ paths:
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/PlayerProgressionSummary' } }
+        '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /progression/players/{playerId}/history:
+    get:
+      tags: [Progression]
+      summary: A player's division history
+      description: >-
+        Public (DMV-09). Executed call-ups, promotions and relegations merged with approved
+        division transfers, oldest first. A transfer's \`movedAt\` is its review time. Division
+        names are null when the division has since been deleted. Hidden players return 404
+        except to themselves and staff.
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Division moves, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id, kind, fromDivisionId, fromDivisionName, toDivisionId, toDivisionName, movedAt]
+                  properties:
+                    id: { type: string, description: 'Progression eventId or transfer requestId' }
+                    kind: { type: string, enum: [callup, promotion, relegation, transfer] }
+                    fromDivisionId: { type: string }
+                    fromDivisionName: { type: string, nullable: true }
+                    toDivisionId: { type: string }
+                    toDivisionName: { type: string, nullable: true }
+                    movedAt: { type: string, format: date-time }
         '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /progression/tracks:

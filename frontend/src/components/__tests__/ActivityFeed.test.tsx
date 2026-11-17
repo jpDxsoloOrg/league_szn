@@ -94,6 +94,25 @@ describe('ActivityFeed', () => {
       .toHaveAttribute('href', '/player/p1');
   });
 
+  it('links division moves to the profile and filters them by the division param', async () => {
+    mockGetAll.mockResolvedValue(page([{
+      id: 'division-e3', type: 'division_relegation', timestamp: '2026-11-01T10:00:00.000Z',
+      summary: 'Kenta moves to NXT',
+      metadata: { playerId: 'p1', playerName: 'Kenta', toDivisionName: 'NXT' },
+    }]));
+    renderFeed();
+    expect(await screen.findByRole('link', { name: /activity\.summaries\.division_relegation_to/ }))
+      .toHaveAttribute('href', '/player/p1');
+
+    await userEvent.click(screen.getByRole('tab', { name: 'activity.types.division_promotion' }));
+    await waitFor(() => {
+      expect(mockGetAll).toHaveBeenLastCalledWith(
+        expect.objectContaining({ type: 'division' }),
+        expect.any(AbortSignal),
+      );
+    });
+  });
+
   it('shows the empty state', async () => {
     mockGetAll.mockResolvedValue(page([]));
     renderFeed();

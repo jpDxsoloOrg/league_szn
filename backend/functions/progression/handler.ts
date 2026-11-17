@@ -12,6 +12,7 @@ import { considerationRoutes } from './routes/consideration';
 import { executeRoutes } from './routes/execute';
 import { historyRoutes } from './routes/history';
 import { reviewRoutes, handleSeasonSnapshotInvoke, isSeasonSnapshotPayload } from './routes/reviews';
+import { divisionHistoryRoutes } from './routes/divisionHistory';
 
 const noopCallback = () => {};
 
@@ -27,6 +28,7 @@ export const routes: ReadonlyArray<RouteConfig> = [
   ...executeRoutes,
   ...historyRoutes,
   ...reviewRoutes,
+  ...divisionHistoryRoutes,
 ];
 
 const router = createRouter(routes);

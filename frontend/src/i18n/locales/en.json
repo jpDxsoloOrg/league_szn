@@ -392,14 +392,20 @@
       "callup_consideration": "Call-ups",
       "callup_executed": "Call-ups",
       "promotion_watch": "Promotion watch",
-      "relegation_watch": "Relegation watch"
+      "relegation_watch": "Relegation watch",
+      "division_promotion": "Division moves",
+      "division_relegation": "Division moves"
     },
     "summaries": {
       "callup_consideration": "{{name}} is being considered for a call-up",
       "callup_executed": "{{name}} was called up",
       "callup_executed_to": "{{name}} was called up to {{division}}",
       "promotion_watch": "{{name}} is on the GMs' promotion watch",
-      "relegation_watch": "{{name}} is on the GMs' relegation watch"
+      "relegation_watch": "{{name}} is on the GMs' relegation watch",
+      "division_promotion": "{{name}} was promoted",
+      "division_promotion_to": "{{name}} was promoted to {{division}}",
+      "division_relegation": "{{name}} moves to a new division",
+      "division_relegation_to": "{{name}} moves to {{division}}"
     },
     "timeAgo": {
       "justNow": "Just now",
@@ -4101,6 +4107,16 @@
             "relegation": "Relegated"
           }
         }
+      }
+    },
+    "history": {
+      "title": "Division History",
+      "unknownDivision": "Former division",
+      "kind": {
+        "callup": "Called up",
+        "promotion": "Promoted",
+        "relegation": "Moved",
+        "transfer": "Transferred"
       }
     }
   },

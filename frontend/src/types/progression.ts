@@ -310,3 +310,19 @@ export interface RecomputeProgressionResult {
   rowsDropped: number;
   failures: ProgressionRecomputeFailure[];
 }
+
+/** DMV-09: kind of one division move. `transfer` is an approved transfer request. */
+export type DivisionMoveKind = ProgressionKind | 'transfer';
+
+/** One row of GET /progression/players/{playerId}/history (oldest first). */
+export interface DivisionHistoryEntry {
+  /** Progression eventId or transfer requestId. */
+  id: string;
+  kind: DivisionMoveKind;
+  fromDivisionId: string;
+  /** null when the division has since been deleted. */
+  fromDivisionName: string | null;
+  toDivisionId: string;
+  toDivisionName: string | null;
+  movedAt: string;
+}

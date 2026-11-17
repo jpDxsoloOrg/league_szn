@@ -413,6 +413,71 @@ describe('getActivity', () => {
     });
   });
 
+  describe('division_promotion / division_relegation (DMV-09)', () => {
+    const executed = (eventId: string, kind: string, extra: Record<string, unknown> = {}) => ({
+      eventId,
+      playerId: 'p1',
+      trackId: `t-${kind}`,
+      kind,
+      type: 'executed',
+      fromDivisionId: 'd-nxt',
+      toDivisionId: kind === 'promotion' ? 'd-raw' : 'd-yb',
+      actorUserId: 'a',
+      createdAt: `2026-11-1${eventId.slice(-1)}T00:00:00.000Z`,
+      ...extra,
+    });
+
+    beforeEach(() => {
+      mockListTracks.mockResolvedValue([]);
+      mockListByTrack.mockResolvedValue([]);
+      mockDivisionsList.mockResolvedValue([
+        { divisionId: 'd-yb', name: 'Young Boys' },
+        { divisionId: 'd-nxt', name: 'NXT' },
+        { divisionId: 'd-raw', name: 'Raw' },
+      ]);
+      mockPlayersList.mockResolvedValue([{ playerId: 'p1', name: 'Kenta', currentWrestler: 'W' }]);
+    });
+
+    it('lists promotions, and relegations only when announced, with neutral copy', async () => {
+      mockListEventsByType.mockResolvedValue([
+        executed('e1', 'promotion'),
+        executed('e2', 'relegation'),
+        executed('e3', 'relegation', { announced: true }),
+        executed('e4', 'callup', { toDivisionId: 'd-raw' }),
+      ]);
+
+      const result = await getActivity(makeEvent({ queryStringParameters: { type: 'division' } }), ctx, cb);
+      const body = JSON.parse(result!.body);
+
+      expect(mockMatchesListCompleted).not.toHaveBeenCalled();
+      expect(body.items.map((item: { id: string }) => item.id)).toEqual(['division-e3', 'division-e1']);
+      expect(body.items[0]).toMatchObject({
+        type: 'division_relegation',
+        summary: 'Kenta moves to Young Boys',
+        metadata: { playerId: 'p1', playerName: 'Kenta', fromDivisionName: 'NXT', toDivisionName: 'Young Boys' },
+      });
+      expect(body.items[1]).toMatchObject({ type: 'division_promotion', summary: 'Kenta was promoted to Raw' });
+    });
+
+    it('keeps division moves out of the call-up filter and in the unfiltered feed', async () => {
+      mockListEventsByType.mockResolvedValue([executed('e1', 'promotion'), executed('e4', 'callup')]);
+
+      const callups = JSON.parse((await getActivity(makeEvent({ queryStringParameters: { type: 'callup' } }), ctx, cb))!.body);
+      expect(callups.items.map((item: { type: string }) => item.type)).toEqual(['callup_executed']);
+
+      const all = JSON.parse((await getActivity(makeEvent(), ctx, cb))!.body);
+      expect(all.items.map((item: { type: string }) => item.type)).toEqual(['callup_executed', 'division_promotion']);
+    });
+
+    it('drops division moves for hidden players', async () => {
+      mockListEventsByType.mockResolvedValue([executed('e1', 'promotion')]);
+      mockPlayersList.mockResolvedValue([{ playerId: 'p1', name: 'Kenta', currentWrestler: 'Needs Wrestler' }]);
+
+      const result = await getActivity(makeEvent({ queryStringParameters: { type: 'division' } }), ctx, cb);
+      expect(JSON.parse(result!.body).items).toEqual([]);
+    });
+  });
+
   it('returns 500 when a repository method throws', async () => {
     mockMatchesListCompleted.mockRejectedValue(new Error('DynamoDB failure'));
 

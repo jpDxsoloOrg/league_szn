@@ -145,6 +145,7 @@ export function fromProgressionEventItem(row: Record<string, unknown>): Progress
     createdAt: row.createdAt as string,
   };
   if (typeof row.toDivisionId === 'string') event.toDivisionId = row.toDivisionId;
+  if (row.announced === true) event.announced = true;
   return event;
 }
 

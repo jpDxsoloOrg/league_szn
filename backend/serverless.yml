@@ -859,6 +859,10 @@ functions:
           method: post
           cors: *corsConfig
       - http:
+          path: progression/players/{playerId}/history
+          method: get
+          cors: *corsConfig
+      - http:
           path: progression/considerations
           method: get
           cors: *corsConfig

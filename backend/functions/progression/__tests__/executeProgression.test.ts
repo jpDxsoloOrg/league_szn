@@ -390,6 +390,8 @@ describe('executeProgression: promotion and relegation (DMV-05)', () => {
     expect(JSON.parse(res.body)).toMatchObject({ kind: 'relegation', toDivisionId: ladder.nxtId });
     expect(JSON.parse(res.body).announcementId).toBeUndefined();
     expect(await state.repos.content.announcements.list()).toEqual([]);
+    const [executed] = (await state.repos.progression.listEvents(ladder.playerId)).filter((e) => e.type === 'executed');
+    expect(executed.announced).toBeUndefined();
     expect(mockCreateNotification).toHaveBeenCalledWith(expect.objectContaining({ message: 'You move to NXT.' }));
     expect(mockInvokeAsync).toHaveBeenCalledWith('contenders', { source: 'progressionExecute' });
   });
@@ -403,6 +405,9 @@ describe('executeProgression: promotion and relegation (DMV-05)', () => {
     const [announcement] = await state.repos.content.announcements.list();
     expect(announcement.title).toBe('Bron moves to NXT');
     expect(announcement.body).toContain('moves from <em>Raw</em> to <strong>NXT</strong>');
+    // DMV-09: the opt-in is stored so the activity feed may show the relegation.
+    const [executed] = (await state.repos.progression.listEvents(ladder.playerId)).filter((e) => e.type === 'executed');
+    expect(executed.announced).toBe(true);
   });
 
   it('relegates the lowest tier into developmental', async () => {

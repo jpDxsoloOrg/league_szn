@@ -27,6 +27,7 @@ import { computePlayerForm } from '../../utils/matchDisplay';
 import { getTitleAccent } from '../titleAccent';
 import CallUpProgress from '../progression/CallUpProgress';
 import ConsiderationBanner from '../progression/ConsiderationBanner';
+import DivisionHistory from '../progression/DivisionHistory';
 import MovesetSection from './MovesetSection';
 import ProfileHero from './ProfileHero';
 import ProfileRivalries from './ProfileRivalries';
@@ -217,6 +218,7 @@ export default function PublicProfile() {
       <ConsiderationBanner playerId={player.playerId} />
       <RecordSummary record={player} titlesHeld={titles.length} />
       <CallUpProgress playerId={player.playerId} showGoals={isAdminOrModerator} />
+      <DivisionHistory playerId={player.playerId} />
 
       <div className="profile-columns">
         <RecentMatches playerId={player.playerId} matches={matches} names={names} />

@@ -1,5 +1,6 @@
 import type {
   CreateProgressionTrackInput,
+  DivisionHistoryEntry,
   ExecuteProgressionError,
   ExecuteProgressionInput,
   ExecuteProgressionResult,
@@ -39,6 +40,11 @@ export const progressionApi = {
   /** Public. Goal detail for the owner and Moderator+; GM note for Moderator+. */
   getForPlayer: async (playerId: string, signal?: AbortSignal): Promise<PlayerProgressionSummary[]> => {
     return fetchWithAuth(`${API_BASE_URL}/progression/players/${enc(playerId)}`, {}, signal);
+  },
+
+  /** Public (DMV-09). Division moves and approved transfers, oldest first. */
+  getDivisionHistory: async (playerId: string, signal?: AbortSignal): Promise<DivisionHistoryEntry[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/progression/players/${enc(playerId)}/history`, {}, signal);
   },
 
   /** Public. */
