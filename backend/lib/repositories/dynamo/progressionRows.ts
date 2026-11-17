@@ -2,14 +2,35 @@
  * Row mapping shared by DynamoProgressionRepository and DynamoUnitOfWork, so
  * the direct and transactional write paths produce identical items.
  */
-import { progressionEventSortKey } from '../progression';
+import { progressionEventSortKey, SEASON_REVIEW_RECORD_TYPE, seasonReviewPartition } from '../progression';
 import type { ProgressionConsiderationSeed } from '../unitOfWork';
 import type {
   PlayerProgression,
   ProgressionConsideration,
   ProgressionEvent,
   ProgressionTrack,
+  SeasonMovementReview,
 } from '../types';
+
+/**
+ * DMV-03: a season review lives in ProgressionEvents under the partition
+ * `seasonReview#<seasonId>`, sort key = the reviewed playerId. The reviewed
+ * player is kept in `reviewPlayerId` because `playerId` holds the partition.
+ */
+export function toSeasonReviewItem(review: SeasonMovementReview): Record<string, unknown> {
+  return {
+    ...review,
+    playerId: seasonReviewPartition(review.seasonId),
+    createdAtEventId: review.playerId,
+    reviewPlayerId: review.playerId,
+    recordType: SEASON_REVIEW_RECORD_TYPE,
+  };
+}
+
+export function fromSeasonReviewItem(row: Record<string, unknown>): SeasonMovementReview {
+  const { createdAtEventId: _sortKey, reviewPlayerId, recordType: _recordType, ...rest } = row;
+  return { ...rest, playerId: reviewPlayerId } as unknown as SeasonMovementReview;
+}
 
 export interface UpdateParts {
   Key: Record<string, unknown>;

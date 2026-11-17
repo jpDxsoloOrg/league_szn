@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories, NotFoundError } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError, conflict } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
+import { invokeAsync } from '../../lib/asyncLambda';
 
 const SEASON_STATUSES: ReadonlyArray<string> = ['active', 'completed'];
 
@@ -45,6 +46,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const updated = await seasons.update(seasonId, body);
+
+    // DMV-03: snapshot every player's promotion / relegation standing for the
+    // end-of-season movement review. Best-effort: the season is already ended.
+    if (body.status === 'completed' && existing.status !== 'completed') {
+      try {
+        await invokeAsync('progression', { action: 'seasonSnapshot', seasonId });
+      } catch (err) {
+        console.warn('Failed to request the season movement snapshot:', err);
+      }
+    }
+
     return success(updated);
   } catch (err) {
     if (err instanceof NotFoundError) return notFound('Season not found');

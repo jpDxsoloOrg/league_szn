@@ -890,3 +890,37 @@ export interface ProgressionEvent {
   actorUserId: string;
   createdAt: string;
 }
+
+/** DMV-03: what a GM can do with a player at the end of a season. */
+export type SeasonMovementChoice = 'promote' | 'relegate' | 'stay';
+
+/**
+ * DMV-03: one player's promotion / relegation standing, snapshotted when a
+ * season ends. Stored in ProgressionEvents under the partition
+ * `seasonReview#<seasonId>` with the playerId as sort key.
+ */
+export interface SeasonMovementReview {
+  seasonId: string;
+  playerId: string;
+  /** The player's division when the snapshot was taken. */
+  divisionId: string;
+  /** Best active promotion track out of the division (highest progress). */
+  promotionTrackId?: string;
+  /** 0-100; 0 when the player has no row on a promotion track. */
+  promotionPct: number;
+  /** Best active relegation track out of the division (highest progress). */
+  relegationTrackId?: string;
+  /** 0-100. Protected (hot-angle) losses are already excluded by the recompute. */
+  relegationPct: number;
+  /** 1-based rank in the division's season standings; absent without a season match. */
+  seasonRank?: number;
+  /** A GM marked the player under consideration on one of the tracks. */
+  flagged: boolean;
+  recommendation: SeasonMovementChoice;
+  decision?: SeasonMovementChoice;
+  decidedBy?: string;
+  decidedAt?: string;
+  /** Set when an applied promote / relegate moved the player. */
+  toDivisionId?: string;
+  createdAt: string;
+}

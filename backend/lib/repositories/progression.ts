@@ -20,6 +20,7 @@ import type {
   ProgressionEventType,
   ProgressionKind,
   ProgressionTrack,
+  SeasonMovementReview,
 } from './types';
 
 export interface ProgressionTrackFilter {
@@ -142,4 +143,19 @@ export interface ProgressionRepository {
    * cut to `options.limit`. Feeds the admin call-up history.
    */
   listRecentEvents(filter?: ProgressionEventFilter, options?: ListProgressionEventsOptions): Promise<ProgressionEvent[]>;
+
+  // ── Season movement reviews (DMV-03) ────────────────────────────
+  // Stored in ProgressionEvents under `seasonReview#<seasonId>`; the event
+  // reads above never return these rows.
+  /** Create or fully replace one player's review. */
+  putSeasonReview(review: SeasonMovementReview): Promise<SeasonMovementReview>;
+  getSeasonReview(seasonId: string, playerId: string): Promise<SeasonMovementReview | null>;
+  /** Every review of a season, ordered by playerId. */
+  listSeasonReviews(seasonId: string): Promise<SeasonMovementReview[]>;
 }
+
+/** Partition key of a season's review rows in ProgressionEvents. */
+export const seasonReviewPartition = (seasonId: string): string => `seasonReview#${seasonId}`;
+
+/** Marks review rows so event scans can skip them. */
+export const SEASON_REVIEW_RECORD_TYPE = 'seasonMovementReview';

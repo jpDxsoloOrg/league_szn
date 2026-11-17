@@ -4594,3 +4594,137 @@ paths:
                     trackId: { type: string }
                     markedAt: { type: string, format: date-time }
         '400': { description: 'Unknown kind', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /progression/reviews/{seasonId}:
+    get:
+      tags: [Progression]
+      summary: End-of-season movement review (Moderator+)
+      description: >-
+        The snapshot taken when the season was completed (DMV-03): one row per
+        player in a division with an active promotion or relegation track. Each
+        row has the player's best promotion and relegation progress, their rank
+        in the division's season standings, whether a GM flagged them (under
+        consideration), the recommendation and any decision already applied.
+        Recommendation: promote at 100% promotion progress or for the top of
+        the division's season standings; relegate at 100% relegation progress
+        (losses in hot or scorching rivalries never count); otherwise stay.
+        `targets` previews where a promote / relegate would go.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: seasonId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The season's reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  seasonId: { type: string }
+                  seasonStatus: { type: string, enum: [active, completed] }
+                  reviews:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        seasonId: { type: string }
+                        playerId: { type: string }
+                        playerName: { type: string }
+                        currentWrestler: { type: string }
+                        divisionId: { type: string, description: Division at snapshot time }
+                        currentDivisionId: { type: string, description: Division now }
+                        promotionTrackId: { type: string }
+                        promotionPct: { type: number }
+                        relegationTrackId: { type: string }
+                        relegationPct: { type: number }
+                        seasonRank: { type: integer, description: "1-based rank in the division's season standings" }
+                        flagged: { type: boolean }
+                        recommendation: { type: string, enum: [promote, relegate, stay] }
+                        decision: { type: string, enum: [promote, relegate, stay] }
+                        decidedBy: { type: string }
+                        decidedAt: { type: string, format: date-time }
+                        toDivisionId: { type: string, description: Set once a promote or relegate moved the player }
+                        createdAt: { type: string, format: date-time }
+                        targets:
+                          type: object
+                          description: 'Per move, `{ ok: true, toDivisionId }` or `{ ok: false, code, message }` (e.g. AMBIGUOUS_TARGET, NO_DIVISION_ABOVE)'
+                          properties:
+                            promote: { type: object }
+                            relegate: { type: object }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Season not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /progression/reviews/{seasonId}/apply:
+    post:
+      tags: [Progression]
+      summary: Apply end-of-season movement decisions (Moderator+)
+      description: >-
+        Applies up to 50 decisions in order. Each promote / relegate runs the
+        same move as POST /progression/players/{playerId}/execute on the
+        review's promotion / relegation track; stay only records the decision.
+        A failure for one player does not stop the others: every player gets a
+        result, with the refusal (status, message and code such as
+        HOLDS_DIVISION_TITLE, AMBIGUOUS_TARGET, REVIEW_NOT_FOUND, ALREADY_APPLIED
+        or NO_TRACK) when it failed. Contenders are recalculated once for the
+        batch.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: seasonId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decisions]
+              properties:
+                decisions:
+                  type: array
+                  minItems: 1
+                  maxItems: 50
+                  items:
+                    type: object
+                    required: [playerId, decision]
+                    properties:
+                      playerId: { type: string }
+                      decision: { type: string, enum: [promote, relegate, stay] }
+                      toDivisionId: { type: string, description: Overrides the default target (needed when several sibling divisions qualify) }
+                      force: { type: boolean, description: Proceed even if the player holds a title restricted to the old division }
+                      announce: { type: boolean, description: Publish a News announcement for the move }
+      responses:
+        '200':
+          description: Per-player results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  seasonId: { type: string }
+                  applied: { type: integer }
+                  failed: { type: integer }
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        playerId: { type: string }
+                        decision: { type: string, enum: [promote, relegate, stay] }
+                        ok: { type: boolean }
+                        move: { type: object, description: 'The executed move, as returned by POST /progression/players/{playerId}/execute' }
+                        refusal:
+                          type: object
+                          properties:
+                            status: { type: integer }
+                            message: { type: string }
+                            details: { type: object, properties: { code: { type: string } } }
+        '400': { description: 'Invalid decisions', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Season not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

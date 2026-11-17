@@ -3,6 +3,7 @@ import { dynamoDb, TableNames } from '../../dynamodb';
 import { NotFoundError } from '../errors';
 import {
   progressionEventSortKey,
+  seasonReviewPartition,
   selectRecentEvents,
   type ListByTrackOptions,
   type ListProgressionEventsOptions,
@@ -18,13 +19,16 @@ import type {
   ProgressionEvent,
   ProgressionEventType,
   ProgressionTrack,
+  SeasonMovementReview,
 } from '../types';
 import {
   buildUpsertProgressionUpdate,
   fromPlayerProgressionItem,
   fromProgressionEventItem,
   fromProgressionTrackItem,
+  fromSeasonReviewItem,
   toProgressionEventItem,
+  toSeasonReviewItem,
 } from './progressionRows';
 
 export const TRACK_INDEX = 'TrackIndex';
@@ -250,7 +254,39 @@ export class DynamoProgressionRepository implements ProgressionRepository {
     options: ListProgressionEventsOptions = {},
   ): Promise<ProgressionEvent[]> {
     // Events have no global time index; at this table's size a scan is fine.
-    const rows = await dynamoDb.scanAll({ TableName: TableNames.PROGRESSION_EVENTS });
+    // Season review rows (DMV-03) share the table; skip them.
+    const rows = await dynamoDb.scanAll({
+      TableName: TableNames.PROGRESSION_EVENTS,
+      FilterExpression: 'attribute_not_exists(#recordType)',
+      ExpressionAttributeNames: { '#recordType': 'recordType' },
+    });
     return selectRecentEvents(rows.map(fromProgressionEventItem), filter, options.limit);
+  }
+
+  // ── Season movement reviews (DMV-03) ────────────────────────────
+  async putSeasonReview(review: SeasonMovementReview): Promise<SeasonMovementReview> {
+    await dynamoDb.put({
+      TableName: TableNames.PROGRESSION_EVENTS,
+      Item: toSeasonReviewItem(review),
+    });
+    return { ...review };
+  }
+
+  async getSeasonReview(seasonId: string, playerId: string): Promise<SeasonMovementReview | null> {
+    const result = await dynamoDb.get({
+      TableName: TableNames.PROGRESSION_EVENTS,
+      Key: { playerId: seasonReviewPartition(seasonId), createdAtEventId: playerId },
+    });
+    return result.Item ? fromSeasonReviewItem(result.Item) : null;
+  }
+
+  async listSeasonReviews(seasonId: string): Promise<SeasonMovementReview[]> {
+    const rows = await dynamoDb.queryAll({
+      TableName: TableNames.PROGRESSION_EVENTS,
+      KeyConditionExpression: '#playerId = :partition',
+      ExpressionAttributeNames: { '#playerId': 'playerId' },
+      ExpressionAttributeValues: { ':partition': seasonReviewPartition(seasonId) },
+    });
+    return rows.map(fromSeasonReviewItem);
   }
 }

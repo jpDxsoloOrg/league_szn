@@ -866,6 +866,14 @@ functions:
           path: progression/events
           method: get
           cors: *corsConfig
+      - http:
+          path: progression/reviews/{seasonId}
+          method: get
+          cors: *corsConfig
+      - http:
+          path: progression/reviews/{seasonId}/apply
+          method: post
+          cors: *corsConfig
 
   # Images
   generateUploadUrl:

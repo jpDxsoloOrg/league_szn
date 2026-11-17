@@ -16,6 +16,7 @@ import type {
   ProgressionEvent,
   ProgressionEventType,
   ProgressionTrack,
+  SeasonMovementReview,
 } from '../types';
 
 export const playerProgressionKey = (playerId: string, trackId: string): string =>
@@ -177,5 +178,25 @@ export class InMemoryProgressionRepository implements ProgressionRepository {
     options: ListProgressionEventsOptions = {},
   ): Promise<ProgressionEvent[]> {
     return selectRecentEvents(this.eventsStore, filter, options.limit).map(clone);
+  }
+
+  // ── Season movement reviews (DMV-03) ────────────────────────────
+  readonly seasonReviewsStore: Map<string, SeasonMovementReview> = new Map();
+
+  async putSeasonReview(review: SeasonMovementReview): Promise<SeasonMovementReview> {
+    this.seasonReviewsStore.set(`${review.seasonId}#${review.playerId}`, clone(review));
+    return clone(review);
+  }
+
+  async getSeasonReview(seasonId: string, playerId: string): Promise<SeasonMovementReview | null> {
+    const review = this.seasonReviewsStore.get(`${seasonId}#${playerId}`);
+    return review ? clone(review) : null;
+  }
+
+  async listSeasonReviews(seasonId: string): Promise<SeasonMovementReview[]> {
+    return Array.from(this.seasonReviewsStore.values())
+      .filter((review) => review.seasonId === seasonId)
+      .sort((a, b) => a.playerId.localeCompare(b.playerId))
+      .map(clone);
   }
 }
