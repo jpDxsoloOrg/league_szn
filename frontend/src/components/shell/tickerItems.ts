@@ -1,112 +1,55 @@
-import type { TFunction } from 'i18next';
-import type { TickerItem } from '../ui/Ticker';
-import type { LeaguePulse } from '../../hooks/useLeaguePulse';
-import type { EnrichedMatchData, EventWithMatches } from '../../types/event';
-import { formatCalendarDate } from '../../utils/dateUtils';
+import type { i18n as I18n, TFunction } from 'i18next';
+import type { TickerItem, TickerTagTone } from '../ui/Ticker';
+import type { TickerFeedItem, TickerFeedSegment } from '../../services/api';
+import { isAdminPath } from '../../config/navConfig';
 
-const NEWS_SHOWN = 3;
-const SHORT_DATE: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+/** Sign-in pages keep their focus; the ticker stays off them. */
+const AUTH_PATHS = ['/login', '/signup', '/forgot-password'];
 
-function namesOf(match: EnrichedMatchData, playerIds: string[] | undefined): string[] {
-  const ids = new Set(playerIds ?? []);
-  return match.participants.filter((participant) => ids.has(participant.playerId)).map((participant) => participant.wrestlerName);
+/** Pill colour for each segment. Unknown segments get the neutral pill. */
+const SEGMENT_TONES: Readonly<Record<string, TickerTagTone>> = {
+  pinned: 'action',
+  tonight: 'action',
+  newChampions: 'prestige',
+  potentialCallups: 'data',
+  promotionWatch: 'data',
+  hotRivalries: 'heat',
+  custom: 'neutral',
+  news: 'neutral',
+  upcomingShows: 'data',
+  champions: 'prestige',
+  latestResults: 'data',
+};
+
+/** Admin and sign-in pages show no ticker. */
+export function isTickerHiddenPath(pathname: string): boolean {
+  return isAdminPath(pathname) || AUTH_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
-/** "A def. B & C", or "A vs B (draw)". Null for a match with no result to report. */
-export function describeResult(match: EnrichedMatchData, t: TFunction): string | null {
-  if (match.status !== 'completed') return null;
-  const winners = namesOf(match, match.winners);
-  const losers = namesOf(match, match.losers);
-  if (winners.length === 0) return null;
-  // A draw is stored with every participant as a winner and no losers.
-  return losers.length === 0
-    ? `${winners.join(' vs ')} (${t('dashboard.draw')})`
-    : `${winners.join(' & ')} ${t('dashboard.def')} ${losers.join(' & ')}`;
+/** Site paths go through the router; GM messages may also link out over http(s). */
+function linkFor(href: string | undefined): Pick<TickerItem, 'to' | 'externalHref'> {
+  if (!href) return {};
+  if (href.startsWith('/') && !href.startsWith('//')) return { to: href };
+  if (/^https?:\/\//i.test(href)) return { externalHref: href };
+  return {};
 }
 
-/**
- * One finished show as a run of headlines: the show's name once, then each
- * result in card order. A title match carries the title as a gold tag. A show
- * with no results to report adds nothing.
- */
-function showResultItems(show: EventWithMatches, t: TFunction, locale?: string): TickerItem[] {
-  const to = `/events/${show.eventId}/results`;
-  const card = [...show.enrichedMatches].sort((first, second) => first.position - second.position);
-  const results: TickerItem[] = [];
-  for (const entry of card) {
-    const match = entry.matchData;
-    const text = match ? describeResult(match, t) : null;
-    if (!match || !text) continue;
-    const title = match.isChampionship ? match.championshipName : undefined;
-    results.push({
-      id: `result-${show.eventId}-${entry.matchId}`,
-      ...(title ? { tag: title, tagTone: 'prestige' as const } : {}),
-      text,
-      to,
-    });
-  }
-  if (results.length === 0) return [];
-  return [
-    {
-      id: `results-${show.eventId}`,
-      tag: t('ticker.tags.results'),
-      tagTone: 'data',
-      text: `${show.name} · ${formatCalendarDate(show.date, locale, SHORT_DATE)}`,
-      to,
-    },
-    ...results,
-  ];
+function itemText(item: TickerFeedItem, t: TFunction, i18n: I18n): string {
+  // With the params, so a plural key ("_one"/"_other") counts as present.
+  if (item.textKey && i18n.exists(item.textKey, item.textParams)) return t(item.textKey, item.textParams ?? {});
+  return item.text;
 }
 
-/**
- * Headlines for the crawl, built only from what the API returned: shows still
- * to come, news, players up for a call-up, the current champions, then the
- * last finished show's results: the show named once, then its matches in card order.
- */
-export function buildTickerItems(pulse: LeaguePulse, t: TFunction, locale?: string): TickerItem[] {
-  const items: TickerItem[] = [];
-
-  for (const show of pulse.upcomingShows) {
-    const live = show.status === 'in-progress';
-    items.push({
-      id: `show-${show.eventId}`,
-      tag: live ? t('ticker.tags.live') : t('ticker.tags.upcoming'),
-      tagTone: 'action',
-      text: live ? show.name : `${show.name} · ${formatCalendarDate(show.date, locale, SHORT_DATE)}`,
-      to: `/events/${show.eventId}`,
-    });
-  }
-
-  for (const article of pulse.news.slice(0, NEWS_SHOWN)) {
-    items.push({ id: `news-${article.announcementId}`, tag: t('ticker.tags.news'), tagTone: 'prestige', text: article.title, to: `/news/${article.announcementId}` });
-  }
-
-  for (const callUp of pulse.callUps) {
-    items.push({
-      id: `callup-${callUp.playerId}`,
-      tag: t('ticker.tags.callup'),
-      tagTone: 'action',
-      text: t('ticker.callupText', { name: callUp.wrestlerName || callUp.name }),
-      to: `/player/${callUp.playerId}`,
-    });
-  }
-
-  // Before the results, so a long run of results cannot push them past the crawl's limit.
-  for (const champion of pulse.dashboard?.currentChampions ?? []) {
-    items.push({
-      id: `champion-${champion.championshipId}`,
-      tag: t('ticker.tags.champion'),
-      tagTone: 'prestige',
-      text: `${champion.championName} · ${champion.championshipName}`,
-      to: '/championships',
-      ...(champion.championshipImageUrl ? { iconUrl: champion.championshipImageUrl } : {}),
-    });
-  }
-
-  // recentShows arrives newest first.
-  for (const show of pulse.recentShows) {
-    items.push(...showResultItems(show, t, locale));
-  }
-
-  return items;
+/** The feed's segments as one run of headlines; each headline carries its segment's pill. */
+export function feedToTickerItems(segments: TickerFeedSegment[], t: TFunction, i18n: I18n): TickerItem[] {
+  return segments.flatMap((segment) => {
+    const tag = i18n.exists(segment.labelKey) ? t(segment.labelKey) : undefined;
+    const tagTone = SEGMENT_TONES[segment.key] ?? 'neutral';
+    return segment.items.map((item, index) => ({
+      id: `${segment.key}-${index}`,
+      text: itemText(item, t, i18n),
+      ...(tag ? { tag, tagTone } : {}),
+      ...linkFor(item.href),
+    }));
+  });
 }

@@ -3703,15 +3703,23 @@
     "ariaLabel": "Nachrichtenticker der Liga",
     "pause": "Ticker anhalten",
     "resume": "Ticker fortsetzen",
-    "tags": {
-      "live": "Live",
-      "upcoming": "Demnächst",
+    "dismiss": "Ticker ausblenden",
+    "segments": {
+      "pinned": "Eilmeldung",
+      "tonight": "Heute Abend",
+      "newChampions": "Neuer Champion",
+      "potentialCallups": "Call-up-Kandidaten",
+      "promotionWatch": "Aufstiegskandidaten",
+      "hotRivalries": "Heiße Rivalität",
+      "custom": "GM-Meldung",
       "news": "News",
-      "results": "Ergebnisse",
-      "champion": "Champion",
-      "callup": "Call-up-Kandidat"
+      "upcomingShows": "Demnächst",
+      "champions": "Champions",
+      "latestResults": "Ergebnisse"
     },
-    "callupText": "{{name}} ist Kandidat für eine Beförderung in den Hauptkader"
+    "nextPpvText_one": "Nächster PPV in {{count}} Tag: {{name}}",
+    "nextPpvText_other": "Nächster PPV in {{count}} Tagen: {{name}}",
+    "newChampionText": "Neuer Titelträger: {{champion}} · {{championship}}"
   },
   "shell": {
     "status": {

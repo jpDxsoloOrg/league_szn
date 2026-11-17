@@ -1,10 +1,11 @@
 /*
- * The news crawl: a label badge, the moving headlines and a pause button on one
- * strip. The track holds the list twice and slides left by half its width, so
- * the loop has no seam.
+ * The news crawl: a label badge, the moving headlines and the pause and
+ * dismiss buttons on one strip. The track holds the list twice and slides left
+ * by half its width, so the loop has no seam. Its run time is one step per few
+ * characters of headline (see `crawlSteps`), so every crawl moves at one speed.
  */
 .ui-ticker {
-  --ticker-seconds-per-item: 9s;
+  --ticker-seconds-per-step: 9s;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -123,7 +124,15 @@
   background-color: var(--rim-world);
 }
 
-.ui-ticker__pause {
+.ui-ticker__tag--heat {
+  background-color: var(--rim-tag);
+}
+
+.ui-ticker__tag--neutral {
+  background-color: var(--color-text-secondary);
+}
+
+.ui-ticker__control {
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -138,210 +147,210 @@
   cursor: pointer;
 }
 
-.ui-ticker__pause:hover {
+.ui-ticker__control:hover {
   color: var(--color-text);
 }
 
 /* The strip is only as tall as the button, so its focus ring is drawn inside it. */
-.ui-ticker__pause:focus-visible {
+.ui-ticker__control:focus-visible {
   outline-offset: -2px;
 }
 
 /* The crawl takes longer the more headlines it carries. */
-.ui-ticker__track[data-items='1'] {
-  --ticker-items: 1;
+.ui-ticker__track[data-steps='1'] {
+  --ticker-steps: 1;
 }
 
-.ui-ticker__track[data-items='2'] {
-  --ticker-items: 2;
+.ui-ticker__track[data-steps='2'] {
+  --ticker-steps: 2;
 }
 
-.ui-ticker__track[data-items='3'] {
-  --ticker-items: 3;
+.ui-ticker__track[data-steps='3'] {
+  --ticker-steps: 3;
 }
 
-.ui-ticker__track[data-items='4'] {
-  --ticker-items: 4;
+.ui-ticker__track[data-steps='4'] {
+  --ticker-steps: 4;
 }
 
-.ui-ticker__track[data-items='5'] {
-  --ticker-items: 5;
+.ui-ticker__track[data-steps='5'] {
+  --ticker-steps: 5;
 }
 
-.ui-ticker__track[data-items='6'] {
-  --ticker-items: 6;
+.ui-ticker__track[data-steps='6'] {
+  --ticker-steps: 6;
 }
 
-.ui-ticker__track[data-items='7'] {
-  --ticker-items: 7;
+.ui-ticker__track[data-steps='7'] {
+  --ticker-steps: 7;
 }
 
-.ui-ticker__track[data-items='8'] {
-  --ticker-items: 8;
+.ui-ticker__track[data-steps='8'] {
+  --ticker-steps: 8;
 }
 
-.ui-ticker__track[data-items='9'] {
-  --ticker-items: 9;
+.ui-ticker__track[data-steps='9'] {
+  --ticker-steps: 9;
 }
 
-.ui-ticker__track[data-items='10'] {
-  --ticker-items: 10;
+.ui-ticker__track[data-steps='10'] {
+  --ticker-steps: 10;
 }
 
-.ui-ticker__track[data-items='11'] {
-  --ticker-items: 11;
+.ui-ticker__track[data-steps='11'] {
+  --ticker-steps: 11;
 }
 
-.ui-ticker__track[data-items='12'] {
-  --ticker-items: 12;
+.ui-ticker__track[data-steps='12'] {
+  --ticker-steps: 12;
 }
 
-.ui-ticker__track[data-items='13'] {
-  --ticker-items: 13;
+.ui-ticker__track[data-steps='13'] {
+  --ticker-steps: 13;
 }
 
-.ui-ticker__track[data-items='14'] {
-  --ticker-items: 14;
+.ui-ticker__track[data-steps='14'] {
+  --ticker-steps: 14;
 }
 
-.ui-ticker__track[data-items='15'] {
-  --ticker-items: 15;
+.ui-ticker__track[data-steps='15'] {
+  --ticker-steps: 15;
 }
 
-.ui-ticker__track[data-items='16'] {
-  --ticker-items: 16;
+.ui-ticker__track[data-steps='16'] {
+  --ticker-steps: 16;
 }
 
-.ui-ticker__track[data-items='17'] {
-  --ticker-items: 17;
+.ui-ticker__track[data-steps='17'] {
+  --ticker-steps: 17;
 }
 
-.ui-ticker__track[data-items='18'] {
-  --ticker-items: 18;
+.ui-ticker__track[data-steps='18'] {
+  --ticker-steps: 18;
 }
 
-.ui-ticker__track[data-items='19'] {
-  --ticker-items: 19;
+.ui-ticker__track[data-steps='19'] {
+  --ticker-steps: 19;
 }
 
-.ui-ticker__track[data-items='20'] {
-  --ticker-items: 20;
+.ui-ticker__track[data-steps='20'] {
+  --ticker-steps: 20;
 }
 
-.ui-ticker__track[data-items='21'] {
-  --ticker-items: 21;
+.ui-ticker__track[data-steps='21'] {
+  --ticker-steps: 21;
 }
 
-.ui-ticker__track[data-items='22'] {
-  --ticker-items: 22;
+.ui-ticker__track[data-steps='22'] {
+  --ticker-steps: 22;
 }
 
-.ui-ticker__track[data-items='23'] {
-  --ticker-items: 23;
+.ui-ticker__track[data-steps='23'] {
+  --ticker-steps: 23;
 }
 
-.ui-ticker__track[data-items='24'] {
-  --ticker-items: 24;
+.ui-ticker__track[data-steps='24'] {
+  --ticker-steps: 24;
 }
 
-.ui-ticker__track[data-items='25'] {
-  --ticker-items: 25;
+.ui-ticker__track[data-steps='25'] {
+  --ticker-steps: 25;
 }
 
-.ui-ticker__track[data-items='26'] {
-  --ticker-items: 26;
+.ui-ticker__track[data-steps='26'] {
+  --ticker-steps: 26;
 }
 
-.ui-ticker__track[data-items='27'] {
-  --ticker-items: 27;
+.ui-ticker__track[data-steps='27'] {
+  --ticker-steps: 27;
 }
 
-.ui-ticker__track[data-items='28'] {
-  --ticker-items: 28;
+.ui-ticker__track[data-steps='28'] {
+  --ticker-steps: 28;
 }
 
-.ui-ticker__track[data-items='29'] {
-  --ticker-items: 29;
+.ui-ticker__track[data-steps='29'] {
+  --ticker-steps: 29;
 }
 
-.ui-ticker__track[data-items='30'] {
-  --ticker-items: 30;
+.ui-ticker__track[data-steps='30'] {
+  --ticker-steps: 30;
 }
 
-.ui-ticker__track[data-items='31'] {
-  --ticker-items: 31;
+.ui-ticker__track[data-steps='31'] {
+  --ticker-steps: 31;
 }
 
-.ui-ticker__track[data-items='32'] {
-  --ticker-items: 32;
+.ui-ticker__track[data-steps='32'] {
+  --ticker-steps: 32;
 }
 
-.ui-ticker__track[data-items='33'] {
-  --ticker-items: 33;
+.ui-ticker__track[data-steps='33'] {
+  --ticker-steps: 33;
 }
 
-.ui-ticker__track[data-items='34'] {
-  --ticker-items: 34;
+.ui-ticker__track[data-steps='34'] {
+  --ticker-steps: 34;
 }
 
-.ui-ticker__track[data-items='35'] {
-  --ticker-items: 35;
+.ui-ticker__track[data-steps='35'] {
+  --ticker-steps: 35;
 }
 
-.ui-ticker__track[data-items='36'] {
-  --ticker-items: 36;
+.ui-ticker__track[data-steps='36'] {
+  --ticker-steps: 36;
 }
 
-.ui-ticker__track[data-items='37'] {
-  --ticker-items: 37;
+.ui-ticker__track[data-steps='37'] {
+  --ticker-steps: 37;
 }
 
-.ui-ticker__track[data-items='38'] {
-  --ticker-items: 38;
+.ui-ticker__track[data-steps='38'] {
+  --ticker-steps: 38;
 }
 
-.ui-ticker__track[data-items='39'] {
-  --ticker-items: 39;
+.ui-ticker__track[data-steps='39'] {
+  --ticker-steps: 39;
 }
 
-.ui-ticker__track[data-items='40'] {
-  --ticker-items: 40;
+.ui-ticker__track[data-steps='40'] {
+  --ticker-steps: 40;
 }
 
-.ui-ticker__track[data-items='41'] {
-  --ticker-items: 41;
+.ui-ticker__track[data-steps='41'] {
+  --ticker-steps: 41;
 }
 
-.ui-ticker__track[data-items='42'] {
-  --ticker-items: 42;
+.ui-ticker__track[data-steps='42'] {
+  --ticker-steps: 42;
 }
 
-.ui-ticker__track[data-items='43'] {
-  --ticker-items: 43;
+.ui-ticker__track[data-steps='43'] {
+  --ticker-steps: 43;
 }
 
-.ui-ticker__track[data-items='44'] {
-  --ticker-items: 44;
+.ui-ticker__track[data-steps='44'] {
+  --ticker-steps: 44;
 }
 
-.ui-ticker__track[data-items='45'] {
-  --ticker-items: 45;
+.ui-ticker__track[data-steps='45'] {
+  --ticker-steps: 45;
 }
 
-.ui-ticker__track[data-items='46'] {
-  --ticker-items: 46;
+.ui-ticker__track[data-steps='46'] {
+  --ticker-steps: 46;
 }
 
-.ui-ticker__track[data-items='47'] {
-  --ticker-items: 47;
+.ui-ticker__track[data-steps='47'] {
+  --ticker-steps: 47;
 }
 
-.ui-ticker__track[data-items='48'] {
-  --ticker-items: 48;
+.ui-ticker__track[data-steps='48'] {
+  --ticker-steps: 48;
 }
 
 .ui-ticker--crawling .ui-ticker__track {
-  animation: ui-ticker-crawl calc(var(--ticker-seconds-per-item) * var(--ticker-items, 1)) linear infinite;
+  animation: ui-ticker-crawl calc(var(--ticker-seconds-per-step) * var(--ticker-steps, 1)) linear infinite;
 }
 
 /* Pauses while focus is on a headline or from the pause button. */
@@ -367,17 +376,35 @@
   }
 }
 
-/* Reduced motion: no crawl, the strip scrolls sideways by hand. */
-.ui-ticker--static .ui-ticker__viewport {
-  overflow-x: auto;
-  scrollbar-width: none;
+/* Reduced motion: nothing moves. One headline at a time fades in. */
+.ui-ticker__list--single {
+  min-width: 0;
+  padding: 0;
 }
 
-.ui-ticker--static .ui-ticker__viewport::-webkit-scrollbar {
-  display: none;
+.ui-ticker__list--single .ui-ticker__item {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* The script switches to the static list; this covers the first paint. The
+/* An opacity change is not motion, so it runs past the site-wide reduced-motion rule. */
+.ui-ticker--fading .ui-ticker__item--fade {
+  animation: ui-ticker-fade 400ms ease-out both !important;
+  animation-duration: 400ms !important;
+}
+
+@keyframes ui-ticker-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* The script switches to the fading list; this covers the first paint. The
    site-wide reduced-motion rule would otherwise run the crawl in an instant. */
 @media (prefers-reduced-motion: reduce) {
   .ui-ticker .ui-ticker__track {

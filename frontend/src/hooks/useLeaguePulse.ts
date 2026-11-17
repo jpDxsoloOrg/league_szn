@@ -1,81 +1,29 @@
 import { useEffect, useState } from 'react';
-import { announcementsApi, dashboardApi, eventsApi, progressionApi } from '../services/api';
-import type { Announcement, DashboardData } from '../types';
-import type { EventWithMatches, LeagueEvent } from '../types/event';
-import type { ProgressionConsiderationEntry } from '../types/progression';
-import { toCalendarDate } from '../utils/dateUtils';
+import { dashboardApi } from '../services/api';
+import type { DashboardData } from '../types';
 import { waitForPageRequests } from '../utils/deferShellRequest';
 
-/** What the shell shows about the league right now: the status strip and the ticker. */
+/**
+ * What the shell's status strip shows about the league right now. The ticker
+ * reads its own feed (`useTickerFeed`).
+ */
 export interface LeaguePulse {
   dashboard: DashboardData | null;
-  news: Announcement[];
-  /** Shows still to come or under way, soonest first. */
-  upcomingShows: LeagueEvent[];
-  /** The latest finished show with its card (at most RECENT_SHOWS_SHOWN), newest first. */
-  recentShows: EventWithMatches[];
-  /** Players the GMs are considering for a call-up, newest mark first. */
-  callUps: ProgressionConsiderationEntry[];
 }
 
-const EMPTY_PULSE: LeaguePulse = { dashboard: null, news: [], upcomingShows: [], recentShows: [], callUps: [] };
+const EMPTY_PULSE: LeaguePulse = { dashboard: null };
 
 /** The shell reuses one answer for this long, so moving between pages adds no requests. */
 export const PULSE_MAX_AGE_MS = 5 * 60 * 1000;
-export const UPCOMING_SHOWS_SHOWN = 3;
-/** Results cover only the last finished show. */
-export const RECENT_SHOWS_SHOWN = 1;
-/** Older shows tried, newest first, when the latest one fails to load. */
-const RECENT_SHOW_ATTEMPTS = 3;
 
 let cached: { loadedAt: number; request: Promise<LeaguePulse> } | null = null;
 
-function byDate(first: LeagueEvent, second: LeagueEvent): number {
-  return toCalendarDate(first.date).localeCompare(toCalendarDate(second.date));
-}
-
-/** One finished show's card. A show that fails to load is left out, not fatal. */
-async function loadShow(eventId: string): Promise<EventWithMatches | null> {
-  try {
-    return await eventsApi.getById(eventId);
-  } catch {
-    return null;
-  }
-}
-
 async function loadPulse(): Promise<LeaguePulse> {
-  const [dashboard, news, events, callUps] = await Promise.allSettled([
-    dashboardApi.get(),
-    announcementsApi.getActive(),
-    eventsApi.getAll(),
-    progressionApi.getConsiderations('callup'),
-  ]);
-  const allEvents = events.status === 'fulfilled' ? events.value : [];
-
-  const upcomingShows = allEvents
-    .filter((event) => event.status === 'upcoming' || event.status === 'in-progress')
-    .sort(byDate)
-    .slice(0, UPCOMING_SHOWS_SHOWN);
-  const finished = allEvents
-    .filter((event) => event.status === 'completed')
-    .sort((first, second) => byDate(second, first))
-    .slice(0, RECENT_SHOW_ATTEMPTS);
-
-  // One at a time: the account allows few concurrent Lambdas.
-  const recentShows: EventWithMatches[] = [];
-  for (const event of finished) {
-    if (recentShows.length >= RECENT_SHOWS_SHOWN) break;
-    const show = await loadShow(event.eventId);
-    if (show) recentShows.push(show);
+  try {
+    return { dashboard: await dashboardApi.get() };
+  } catch {
+    return EMPTY_PULSE;
   }
-
-  return {
-    dashboard: dashboard.status === 'fulfilled' ? dashboard.value : null,
-    news: news.status === 'fulfilled' ? news.value : [],
-    upcomingShows,
-    recentShows,
-    callUps: callUps.status === 'fulfilled' ? callUps.value : [],
-  };
 }
 
 function getPulse(): Promise<LeaguePulse> {

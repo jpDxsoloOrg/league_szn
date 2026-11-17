@@ -3703,15 +3703,23 @@
     "ariaLabel": "League news ticker",
     "pause": "Pause ticker",
     "resume": "Resume ticker",
-    "tags": {
-      "live": "Live",
-      "upcoming": "Upcoming",
+    "dismiss": "Hide ticker",
+    "segments": {
+      "pinned": "Breaking",
+      "tonight": "Tonight",
+      "newChampions": "New champion",
+      "potentialCallups": "Call-up watch",
+      "promotionWatch": "Promotion watch",
+      "hotRivalries": "Hot rivalry",
+      "custom": "GM update",
       "news": "News",
-      "results": "Results",
-      "champion": "Champion",
-      "callup": "Call-up watch"
+      "upcomingShows": "Upcoming",
+      "champions": "Champions",
+      "latestResults": "Results"
     },
-    "callupText": "{{name}} is being considered for a call-up"
+    "nextPpvText_one": "Next PPV in {{count}} day: {{name}}",
+    "nextPpvText_other": "Next PPV in {{count}} days: {{name}}",
+    "newChampionText": "{{champion}} wins the {{championship}}"
   },
   "shell": {
     "status": {
