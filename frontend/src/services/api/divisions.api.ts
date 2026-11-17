@@ -1,5 +1,9 @@
 import type { Division } from '../../types';
+import { API_BASE_URL, fetchWithAuth } from './apiClient';
 import { createCrudApi } from './crudFactory';
+
+/** `tier: null` clears the tier. */
+export type DivisionUpdate = Omit<Partial<Division>, 'tier'> & { tier?: number | null };
 
 const baseDivisionsApi = createCrudApi<Division, { name: string; description?: string }>('divisions');
 
@@ -13,12 +17,18 @@ export const divisionsApi = {
     description?: string;
     isDevelopmental?: boolean;
     isDefaultForNewWrestlers?: boolean;
+    tier?: number;
   }): Promise<Division> => {
     return baseDivisionsApi.create(division);
   },
 
-  update: async (divisionId: string, updates: Partial<Division>): Promise<Division> => {
-    return baseDivisionsApi.updateById(divisionId, updates);
+  // Called directly rather than through updateById, whose Partial<Division>
+  // payload has no room for `tier: null`.
+  update: async (divisionId: string, updates: DivisionUpdate): Promise<Division> => {
+    return fetchWithAuth(`${API_BASE_URL}/divisions/${divisionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
   },
 
   delete: async (divisionId: string): Promise<void> => {

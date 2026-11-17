@@ -408,6 +408,12 @@ components:
         isDefaultForNewWrestlers:
           type: boolean
           description: New sign-ups land in this division. Setting it to true clears it on the previous default; at most one division carries it.
+        tier:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 99
+          description: Ladder position, 1 = top. Divisions with the same tier are siblings. Developmental divisions rank below every tiered division. Send null on update to clear it.
         createdAt: { type: string }
         updatedAt: { type: string }
 
@@ -1589,6 +1595,7 @@ paths:
     get:
       tags: [Divisions]
       summary: List divisions
+      description: Sorted by tier (top first), then untiered divisions, then developmental divisions; ties by name.
       responses:
         '200': { description: List of divisions }
     post:

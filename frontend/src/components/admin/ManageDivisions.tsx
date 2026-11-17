@@ -10,6 +10,12 @@ import type { DataTableColumn } from '../ui/DataTable';
 import EmptyState from '../ui/EmptyState';
 import Modal from '../ui/Modal';
 import PageHeader from '../ui/PageHeader';
+import {
+  MAX_DIVISION_TIER,
+  MIN_DIVISION_TIER,
+  divisionTierSortValue,
+  getDivisionTier,
+} from '../../utils/divisionTiers';
 import AdminNotice from './AdminNotice';
 import ConfirmModal from './ConfirmModal';
 import './adminRoster.css';
@@ -21,7 +27,18 @@ const EMPTY_FORM = {
   description: '',
   isDevelopmental: false,
   isDefaultForNewWrestlers: false,
+  /** Kept as text so the field can be empty (no tier). */
+  tier: '',
 };
+
+/** Empty input means "no tier"; anything else must be a whole number in range. */
+function parseTierInput(value: string): { tier: number | null; valid: boolean } {
+  const trimmed = value.trim();
+  if (trimmed === '') return { tier: null, valid: true };
+  const tier = Number(trimmed);
+  const valid = Number.isInteger(tier) && tier >= MIN_DIVISION_TIER && tier <= MAX_DIVISION_TIER;
+  return { tier: valid ? tier : null, valid };
+}
 
 export default function ManageDivisions() {
   const { t } = useTranslation();
@@ -67,6 +84,16 @@ export default function ManageDivisions() {
     setError(null);
     setSuccess(null);
 
+    const { tier, valid: tierValid } = parseTierInput(formData.tier);
+    if (!tierValid) {
+      setFormError(t('adminRoster.divisions.tierInvalid', {
+        defaultValue: 'Tier must be a whole number from {{min}} to {{max}}, or empty.',
+        min: MIN_DIVISION_TIER,
+        max: MAX_DIVISION_TIER,
+      }));
+      return;
+    }
+
     try {
       if (editingDivision) {
         await divisionsApi.update(editingDivision.divisionId, {
@@ -74,6 +101,7 @@ export default function ManageDivisions() {
           description: formData.description || undefined,
           isDevelopmental: formData.isDevelopmental,
           isDefaultForNewWrestlers: formData.isDefaultForNewWrestlers,
+          tier,
         });
         setSuccess(t('adminRoster.divisions.updated', 'Division updated successfully!'));
       } else {
@@ -82,6 +110,7 @@ export default function ManageDivisions() {
           description: formData.description || undefined,
           isDevelopmental: formData.isDevelopmental,
           isDefaultForNewWrestlers: formData.isDefaultForNewWrestlers,
+          ...(tier !== null ? { tier } : {}),
         });
         setSuccess(t('adminRoster.divisions.created', 'Division created successfully!'));
       }
@@ -100,6 +129,7 @@ export default function ManageDivisions() {
       description: division.description || '',
       isDevelopmental: division.isDevelopmental === true,
       isDefaultForNewWrestlers: division.isDefaultForNewWrestlers === true,
+      tier: getDivisionTier(division)?.toString() ?? '',
     });
     setShowForm(true);
   };
@@ -129,8 +159,13 @@ export default function ManageDivisions() {
       render: (division) => (
         <div className="ar-stack">
           <span className="ar-strong">{division.name}</span>
-          {(division.isDevelopmental || division.isDefaultForNewWrestlers) && (
+          {(division.isDevelopmental || division.isDefaultForNewWrestlers || getDivisionTier(division) !== undefined) && (
             <div className="ar-badges">
+              {!division.isDevelopmental && getDivisionTier(division) !== undefined && (
+                <Badge tone="neutral">
+                  {t('adminRoster.divisions.tierBadge', { defaultValue: 'Tier {{tier}}', tier: getDivisionTier(division) })}
+                </Badge>
+              )}
               {division.isDevelopmental && (
                 <Badge tone="violet">{t('adminRoster.divisions.developmentalBadge', 'Developmental')}</Badge>
               )}
@@ -142,6 +177,13 @@ export default function ManageDivisions() {
         </div>
       ),
       sortValue: (division) => division.name,
+    },
+    {
+      key: 'tier',
+      header: t('adminRoster.divisions.tierColumn', 'Tier'),
+      // Developmental divisions rank below every tier; their badge already says so.
+      render: (division) => (division.isDevelopmental ? '—' : getDivisionTier(division) ?? '—'),
+      sortValue: (division) => divisionTierSortValue(division),
     },
     {
       key: 'description',
@@ -239,6 +281,29 @@ export default function ManageDivisions() {
               placeholder={t('adminRoster.divisions.descriptionPlaceholder', 'Brief description of this division')}
               rows={3}
             />
+          </div>
+          <div className="ar-field">
+            <label className="ar-field__label" htmlFor="division-tier">
+              {t('adminRoster.divisions.tierLabel', 'Tier (Optional)')}
+            </label>
+            <input
+              className="ar-input ar-input--tier"
+              type="number"
+              id="division-tier"
+              inputMode="numeric"
+              min={MIN_DIVISION_TIER}
+              max={MAX_DIVISION_TIER}
+              step={1}
+              value={formData.tier}
+              onChange={(e) => setFormData({ ...formData, tier: e.target.value })}
+              aria-describedby="division-tier-hint"
+            />
+            <p className="ar-field__hint" id="division-tier-hint">
+              {t(
+                'adminRoster.divisions.tierHint',
+                '1 is the top. Divisions on the same tier are siblings. Leave empty for no tier. Developmental divisions always rank below every tier.',
+              )}
+            </p>
           </div>
           <div className="ar-field">
             <label className="ar-check" htmlFor="division-developmental">

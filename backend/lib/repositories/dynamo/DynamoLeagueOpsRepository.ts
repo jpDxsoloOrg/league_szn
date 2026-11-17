@@ -69,6 +69,7 @@ export class DynamoLeagueOpsRepository implements LeagueOpsRepository {
       ...(input.isDefaultForNewWrestlers !== undefined
         ? { isDefaultForNewWrestlers: input.isDefaultForNewWrestlers }
         : {}),
+      ...(typeof input.tier === 'number' ? { tier: input.tier } : {}),
       createdAt: now,
       updatedAt: now,
     }),

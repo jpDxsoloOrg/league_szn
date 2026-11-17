@@ -58,6 +58,24 @@ describe('getDivisions', () => {
     expect(body.map((d: { name: string }) => d.name).sort()).toEqual(['Raw', 'SmackDown']);
   });
 
+  it('sorts by tier, then untiered, then developmental', async () => {
+    await repos.leagueOps.divisions.create({ name: 'Young Boys', isDevelopmental: true });
+    await repos.leagueOps.divisions.create({ name: 'Legends' });
+    await repos.leagueOps.divisions.create({ name: 'NXT', tier: 2 });
+    await repos.leagueOps.divisions.create({ name: 'SmackDown', tier: 1 });
+    await repos.leagueOps.divisions.create({ name: 'Raw', tier: 1 });
+
+    const result = await getDivisions(makeEvent(), ctx, cb);
+
+    expect(JSON.parse(result!.body).map((d: { name: string }) => d.name)).toEqual([
+      'Raw',
+      'SmackDown',
+      'NXT',
+      'Legends',
+      'Young Boys',
+    ]);
+  });
+
   it('returns empty array when no divisions exist', async () => {
     const result = await getDivisions(makeEvent(), ctx, cb);
 
@@ -131,6 +149,20 @@ describe('createDivision', () => {
     expect(result!.statusCode).toBe(201);
     expect(JSON.parse(result!.body).isDefaultForNewWrestlers).toBe(true);
     expect((await repos.leagueOps.divisions.findById(oldDefault.divisionId))?.isDefaultForNewWrestlers).toBe(false);
+  });
+
+  it('creates a division with a tier', async () => {
+    const result = await createDivision(makeEvent({ body: JSON.stringify({ name: 'NXT', tier: 2 }) }), ctx, cb);
+
+    expect(result!.statusCode).toBe(201);
+    expect(JSON.parse(result!.body).tier).toBe(2);
+  });
+
+  it('returns 400 for an invalid tier', async () => {
+    const result = await createDivision(makeEvent({ body: JSON.stringify({ name: 'NXT', tier: 0 }) }), ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toMatch(/^tier must be an integer/);
   });
 
   it('returns 400 for a non-boolean flag', async () => {

@@ -423,6 +423,8 @@ export interface Division {
   isDevelopmental?: boolean;
   /** New sign-ups land here. At most one division carries this flag. */
   isDefaultForNewWrestlers?: boolean;
+  /** Ladder position, 1 = top. Same tier = siblings; developmental ranks below all tiers. */
+  tier?: number;
   createdAt: string;
   updatedAt: string;
 }

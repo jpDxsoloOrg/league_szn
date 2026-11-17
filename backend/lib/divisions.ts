@@ -4,6 +4,7 @@ import { getRepositories } from './repositories';
 import { NotFoundError } from './repositories/errors';
 import type { DivisionCreateInput, DivisionPatch } from './repositories/LeagueOpsRepository';
 import type { Division } from './repositories/types';
+import { validateDivisionTier } from './divisionTiers';
 
 /**
  * Name the signup lookup used before divisions carried an explicit flag.
@@ -68,13 +69,15 @@ export function findDevelopmentalDivisions(divisions: Division[]): Division[] {
   return divisions.filter((d) => d.isDevelopmental === true).sort(byCreatedAt);
 }
 
-/** Reject non-boolean flag values before they reach the table. */
+/** Reject non-boolean flag values and out-of-range tiers before they reach the table. */
 export function validateDivisionFlags(body: Record<string, unknown>): APIGatewayProxyResult | null {
   for (const field of ['isDevelopmental', 'isDefaultForNewWrestlers'] as const) {
     if (body[field] !== undefined && typeof body[field] !== 'boolean') {
       return badRequest(`${field} must be a boolean`);
     }
   }
+  const tierError = validateDivisionTier(body.tier);
+  if (tierError) return badRequest(tierError);
   return null;
 }
 
