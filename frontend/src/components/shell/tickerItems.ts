@@ -77,7 +77,9 @@ export function buildTickerItems(pulse: LeaguePulse, t: TFunction, locale?: stri
     });
   }
 
-  for (const article of pulse.news.slice(0, NEWS_SHOWN)) {
+  // Newest first, like the News page; the API orders by priority first.
+  const newestNews = [...pulse.news].sort((first, second) => second.createdAt.localeCompare(first.createdAt));
+  for (const article of newestNews.slice(0, NEWS_SHOWN)) {
     items.push({ id: `news-${article.announcementId}`, tag: t('ticker.tags.news'), tagTone: 'prestige', text: article.title, to: `/news/${article.announcementId}` });
   }
 

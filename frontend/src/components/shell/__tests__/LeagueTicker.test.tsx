@@ -77,6 +77,13 @@ describe('buildTickerItems', () => {
     expect(items[6]).toMatchObject({ tag: 'World Title', tagTone: 'prestige', text: 'Lynx dashboard.def Kai & Zed' });
   });
 
+  it('runs news newest first, whatever its priority', () => {
+    const older = { ...STORY, announcementId: 'old', priority: 3, createdAt: '2026-11-15T19:25:54.751Z' };
+    const newer = { ...STORY, announcementId: 'new', priority: 2, createdAt: '2026-11-17T05:00:00.000Z' };
+    const items = buildTickerItems({ ...EMPTY, news: [older, newer] }, t, 'en');
+    expect(items.map((item) => item.id)).toEqual(['news-new', 'news-old']);
+  });
+
   it('tags news in gold and lists each champion with their belt before the results', () => {
     const dashboard = {
       currentChampions: [
