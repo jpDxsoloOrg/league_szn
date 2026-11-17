@@ -331,3 +331,16 @@
     left: 0.4rem;
   }
 }
+
+/* Names in a match heading link to profiles but keep the heading look. */
+.feature-story__body .fs-card__matchup a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.feature-story__body .fs-card__matchup a:hover,
+.feature-story__body .fs-card__matchup a:focus-visible {
+  text-decoration: underline;
+  text-decoration-color: var(--fs-red);
+  text-underline-offset: 0.15em;
+}
