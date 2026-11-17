@@ -6,8 +6,8 @@
       "title": "Promotion & Relegation and League Wire Upgrades",
       "titleDe": "Auf- und Abstieg und Upgrades für den Liga-Ticker",
       "file": "v1.2.0.md",
-      "summary": "Divisions now form a ladder with promotion meters, promotion watch, standings zones and division history, and the League Wire moves to the top with new segments, GM messages and a pause button.",
-      "summaryDe": "Die Divisionen bilden jetzt eine Leiter mit Aufstiegsanzeige, Aufstiegsbeobachtung, Tabellenzonen und Divisionsverlauf, und der Liga-Ticker wandert nach oben, mit neuen Segmenten, GM-Meldungen und einer Pause-Taste."
+      "summary": "Divisions now form a ladder with promotion meters, promotion watch, standings zones and division history, and the League Wire gets new segments, GM messages and a pause button.",
+      "summaryDe": "Die Divisionen bilden jetzt eine Leiter mit Aufstiegsanzeige, Aufstiegsbeobachtung, Tabellenzonen und Divisionsverlauf, und der Liga-Ticker bekommt neue Segmente, GM-Meldungen und eine Pause-Taste."
     },
     {
       "version": "1.1.1",
