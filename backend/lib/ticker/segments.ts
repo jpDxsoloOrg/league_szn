@@ -62,6 +62,10 @@ export const TICKER_PRIORITY: Readonly<Record<TickerSegmentKey, number>> = {
   latestResults: 90,
 };
 
+/** Every segment key, in priority order. */
+export const TICKER_SEGMENT_KEYS: readonly TickerSegmentKey[] = (Object.keys(TICKER_PRIORITY) as TickerSegmentKey[])
+  .sort((first, second) => TICKER_PRIORITY[first] - TICKER_PRIORITY[second]);
+
 export const NEW_CHAMPION_WINDOW_DAYS = 7;
 export const NEWS_SHOWN = 3;
 export const UPCOMING_SHOWS_SHOWN = 3;

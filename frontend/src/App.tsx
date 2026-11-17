@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParam
 import { useTranslation } from 'react-i18next';
 import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
-import { SiteConfigProvider } from './contexts/SiteConfigContext';
+import { SiteConfigProvider, useSiteConfig } from './contexts/SiteConfigContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ScrollToTop from './components/ScrollToTop';
 import NotFound from './components/NotFound';
@@ -129,6 +129,7 @@ function AppLayout() {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const { pathname } = useLocation();
+  const { features } = useSiteConfig();
   const pageTitle = getPageInfo(pathname, t).title;
   useRouteTitle(pageTitle);
 
@@ -139,7 +140,7 @@ function AppLayout() {
       <div className="shell-top">
         {isMobile ? <MobileHeader /> : <ShellHeader />}
         {/* Under the top bar; it hides itself on admin and sign-in pages. */}
-        <LeagueTicker />
+        {features.ticker && <LeagueTicker />}
         {!isMobile && <SectionNav childTabsOnly />}
       </div>
       {/* On phones the tab rows scroll away, so only the slim header and the ticker stay pinned. */}

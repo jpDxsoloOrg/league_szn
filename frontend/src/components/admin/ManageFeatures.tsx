@@ -5,6 +5,7 @@ import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import Card from '../ui/Card';
 import PageHeader from '../ui/PageHeader';
 import AdminNotice from './AdminNotice';
+import TickerSettingsPanel from './TickerSettingsPanel';
 import './adminContent.css';
 import './ManageFeatures.css';
 
@@ -40,6 +41,10 @@ const FEATURE_LABELS: Record<keyof SiteFeatures, { name: string; description: st
   transfers: {
     name: 'Division Transfers',
     description: 'Division transfer requests on player profiles and the admin Transfers page',
+  },
+  ticker: {
+    name: 'League Ticker',
+    description: 'The scrolling league news ticker under the header. Off removes it everywhere.',
   },
 };
 
@@ -112,6 +117,8 @@ export default function ManageFeatures() {
           })}
         </ul>
       </Card>
+
+      <TickerSettingsPanel />
     </div>
   );
 }

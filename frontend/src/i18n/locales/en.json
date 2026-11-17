@@ -3427,6 +3427,39 @@
         "name": "Statistics"
       },
       "subtitle": "Toggle site features on or off. Disabled features will be hidden from navigation and inaccessible to users. Data continues to be collected while features are disabled.",
+      "ticker": {
+        "name": "League Ticker",
+        "description": "The scrolling league news ticker under the header. Off removes it everywhere."
+      },
+      "tickerSettings": {
+        "title": "Ticker Settings",
+        "description": "Choose what the league ticker shows and how fast it scrolls.",
+        "segmentsLabel": "Segments",
+        "speedLabel": "Scroll speed",
+        "segments": {
+          "pinned": "Pinned GM messages",
+          "tonight": "Tonight",
+          "newChampions": "New champions",
+          "potentialCallups": "Potential call-ups",
+          "promotionWatch": "Promotion watch",
+          "hotRivalries": "Hot rivalries",
+          "custom": "GM messages",
+          "news": "News",
+          "upcomingShows": "Upcoming shows",
+          "champions": "Current champions",
+          "latestResults": "Latest results"
+        },
+        "speeds": {
+          "slow": "Slow",
+          "normal": "Normal",
+          "fast": "Fast"
+        },
+        "publicRelegationWatch": "Show relegation watch to everyone",
+        "publicRelegationWatchHint": "Off keeps relegation watch and relegation zones visible to GMs only.",
+        "save": "Save Ticker Settings",
+        "saved": "Ticker settings saved.",
+        "saveFailed": "Failed to save ticker settings"
+      },
       "title": "Feature Management",
       "transfers": {
         "description": "Division transfer requests on player profiles and the admin Transfers page",

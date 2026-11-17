@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { siteConfigApi, type SiteFeatures } from '../services/api';
+import { siteConfigApi, TICKER_SEGMENT_KEYS, type SiteFeatures, type TickerSettings } from '../services/api';
 
 interface SiteConfigContextType {
   features: SiteFeatures;
+  tickerSettings: TickerSettings;
   isLoading: boolean;
   refreshConfig: () => Promise<void>;
 }
@@ -16,12 +17,20 @@ const DEFAULT_FEATURES: SiteFeatures = {
   notifications: true,
   rivalries: true,
   transfers: false,
+  ticker: true,
+};
+
+const DEFAULT_TICKER_SETTINGS: TickerSettings = {
+  enabledSegments: [...TICKER_SEGMENT_KEYS],
+  scrollSpeed: 'normal',
+  publicRelegationWatch: false,
 };
 
 const SiteConfigContext = createContext<SiteConfigContextType | undefined>(undefined);
 
 export function SiteConfigProvider({ children }: { children: ReactNode }) {
   const [features, setFeatures] = useState<SiteFeatures>(DEFAULT_FEATURES);
+  const [tickerSettings, setTickerSettings] = useState<TickerSettings>(DEFAULT_TICKER_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchConfig = useCallback(async (mountedCheck?: () => boolean) => {
@@ -29,10 +38,12 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
       const result = await siteConfigApi.getFeatures();
       if (mountedCheck && !mountedCheck()) return;
       setFeatures({ ...DEFAULT_FEATURES, ...result.features });
+      setTickerSettings({ ...DEFAULT_TICKER_SETTINGS, ...result.ticker });
     } catch {
       if (mountedCheck && !mountedCheck()) return;
       // On error, fall back to the defaults
       setFeatures(DEFAULT_FEATURES);
+      setTickerSettings(DEFAULT_TICKER_SETTINGS);
     }
     if (mountedCheck && !mountedCheck()) return;
     setIsLoading(false);
@@ -52,7 +63,7 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
   }, [fetchConfig]);
 
   return (
-    <SiteConfigContext.Provider value={{ features, isLoading, refreshConfig }}>
+    <SiteConfigContext.Provider value={{ features, tickerSettings, isLoading, refreshConfig }}>
       {children}
     </SiteConfigContext.Provider>
   );

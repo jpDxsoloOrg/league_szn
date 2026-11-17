@@ -7,11 +7,15 @@ const { mockGetFeatures } = vi.hoisted(() => ({
   mockGetFeatures: vi.fn(),
 }));
 
-vi.mock('../../services/api', () => ({
-  siteConfigApi: {
-    getFeatures: mockGetFeatures,
-  },
-}));
+vi.mock('../../services/api', async () => {
+  const { TICKER_SEGMENT_KEYS } = await vi.importActual<typeof import('../../services/api/siteConfig.api')>('../../services/api/siteConfig.api');
+  return {
+    TICKER_SEGMENT_KEYS,
+    siteConfigApi: {
+      getFeatures: mockGetFeatures,
+    },
+  };
+});
 
 import { SiteConfigProvider, useSiteConfig } from '../SiteConfigContext';
 
@@ -29,6 +33,7 @@ const ALL_ENABLED = {
   notifications: true,
   rivalries: true,
   transfers: false,
+  ticker: true,
 };
 
 describe('SiteConfigContext', () => {
@@ -46,6 +51,7 @@ describe('SiteConfigContext', () => {
       notifications: true,
       rivalries: true,
       transfers: true,
+      ticker: false,
     };
     mockGetFeatures.mockResolvedValue({ features: serverFeatures });
 
@@ -89,7 +95,33 @@ describe('SiteConfigContext', () => {
       notifications: true,
       rivalries: true,
       transfers: false,
+      ticker: true,
     });
+  });
+
+  it('provides ticker settings, filling gaps from the defaults', async () => {
+    mockGetFeatures.mockResolvedValue({ features: {}, ticker: { scrollSpeed: 'fast', enabledSegments: ['news'] } });
+
+    const { result } = renderHook(() => useSiteConfig(), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.tickerSettings).toEqual({
+      enabledSegments: ['news'], scrollSpeed: 'fast', publicRelegationWatch: false,
+    });
+  });
+
+  it('uses default ticker settings when the server sends none', async () => {
+    mockGetFeatures.mockResolvedValue({ features: {} });
+
+    const { result } = renderHook(() => useSiteConfig(), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.features.ticker).toBe(true);
+    expect(result.current.tickerSettings.scrollSpeed).toBe('normal');
+    expect(result.current.tickerSettings.enabledSegments).toHaveLength(11);
+    expect(result.current.tickerSettings.publicRelegationWatch).toBe(false);
   });
 
   it('keeps division transfers off when the server has no value for them', async () => {

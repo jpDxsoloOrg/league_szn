@@ -110,8 +110,8 @@ export type {
 } from './UserRepository';
 
 // SiteConfigRepository kept for FeatureFlags and DEFAULT_FEATURES
-export type { FeatureFlags } from './SiteConfigRepository';
-export { DEFAULT_FEATURES } from './SiteConfigRepository';
+export type { FeatureFlags, TickerSettings, TickerScrollSpeed } from './SiteConfigRepository';
+export { DEFAULT_FEATURES, DEFAULT_TICKER_SETTINGS, TICKER_SCROLL_SPEEDS } from './SiteConfigRepository';
 
 export type {
   FactionMessage,

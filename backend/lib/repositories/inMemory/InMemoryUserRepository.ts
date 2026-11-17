@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { NotFoundError } from '../errors';
-import type { FeatureFlags, RivalryHeatTunables } from '../SiteConfigRepository';
-import { DEFAULT_FEATURES, DEFAULT_HEAT_TUNABLES } from '../SiteConfigRepository';
+import type { FeatureFlags, RivalryHeatTunables, TickerSettings } from '../SiteConfigRepository';
+import { DEFAULT_FEATURES, DEFAULT_HEAT_TUNABLES, mergeTickerSettings } from '../SiteConfigRepository';
 import type {
   UserRepository,
   NotificationPage,
@@ -340,6 +340,7 @@ class FantasyImpl implements FantasyMethods {
 class SiteConfigImpl implements SiteConfigMethods {
   features: FeatureFlags = { ...DEFAULT_FEATURES };
   heatTunables: RivalryHeatTunables = { ...DEFAULT_HEAT_TUNABLES };
+  tickerSettings: TickerSettings = mergeTickerSettings(undefined);
 
   async getFeatures(): Promise<FeatureFlags> {
     return { ...this.features };
@@ -357,6 +358,15 @@ class SiteConfigImpl implements SiteConfigMethods {
   async updateHeatTunables(patch: Partial<RivalryHeatTunables>): Promise<RivalryHeatTunables> {
     this.heatTunables = { ...this.heatTunables, ...patch };
     return { ...this.heatTunables };
+  }
+
+  async getTickerSettings(): Promise<TickerSettings> {
+    return { ...this.tickerSettings, enabledSegments: [...this.tickerSettings.enabledSegments] };
+  }
+
+  async updateTickerSettings(patch: Partial<TickerSettings>): Promise<TickerSettings> {
+    this.tickerSettings = mergeTickerSettings({ ...this.tickerSettings, ...patch });
+    return this.getTickerSettings();
   }
 }
 

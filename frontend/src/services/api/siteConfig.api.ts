@@ -9,6 +9,41 @@ export interface SiteFeatures {
   notifications: boolean;
   rivalries: boolean;
   transfers: boolean;
+  /** The league ticker. Off removes it everywhere. */
+  ticker: boolean;
+}
+
+/** Ticker segment keys, in the order the feed shows them. Mirrors `TICKER_PRIORITY` on the backend. */
+export const TICKER_SEGMENT_KEYS = [
+  'pinned',
+  'tonight',
+  'newChampions',
+  'potentialCallups',
+  'promotionWatch',
+  'hotRivalries',
+  'custom',
+  'news',
+  'upcomingShows',
+  'champions',
+  'latestResults',
+] as const;
+export type TickerSegmentKey = typeof TICKER_SEGMENT_KEYS[number];
+
+export const TICKER_SCROLL_SPEEDS = ['slow', 'normal', 'fast'] as const;
+export type TickerScrollSpeed = typeof TICKER_SCROLL_SPEEDS[number];
+
+/** Admin ticker settings. Mirrors `TickerSettings` on the backend. */
+export interface TickerSettings {
+  enabledSegments: TickerSegmentKey[];
+  scrollSpeed: TickerScrollSpeed;
+  /** Show relegation watch and zones to everyone, not just GMs. */
+  publicRelegationWatch: boolean;
+}
+
+export interface SiteConfigResponse {
+  features: SiteFeatures;
+  /** Older backends leave it out. */
+  ticker?: TickerSettings;
 }
 
 /**
@@ -27,7 +62,7 @@ export interface RivalryHeatTunables {
 }
 
 export const siteConfigApi = {
-  getFeatures: async (signal?: AbortSignal): Promise<{ features: SiteFeatures }> => {
+  getFeatures: async (signal?: AbortSignal): Promise<SiteConfigResponse> => {
     return fetchWithAuth(`${API_BASE_URL}/site-config`, {}, signal);
   },
 
@@ -35,6 +70,13 @@ export const siteConfigApi = {
     return fetchWithAuth(`${API_BASE_URL}/admin/site-config`, {
       method: 'PUT',
       body: JSON.stringify({ features }),
+    });
+  },
+
+  updateTickerSettings: async (ticker: Partial<TickerSettings>): Promise<Required<SiteConfigResponse>> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/site-config`, {
+      method: 'PUT',
+      body: JSON.stringify({ ticker }),
     });
   },
 

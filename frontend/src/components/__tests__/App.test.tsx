@@ -89,6 +89,7 @@ vi.mock('react-router-dom', async () => {
 import App from '../../App';
 
 const ALL_FEATURES = {
+  ticker: true,
   challenges: true,
   promos: true,
   contenders: true,
@@ -147,6 +148,15 @@ describe('App', () => {
     expect(screen.getByTestId('league-ticker')).toBeInTheDocument();
     expect(await screen.findByTestId('dashboard')).toBeInTheDocument();
     expect(screen.getByRole('main')).toContainElement(screen.getByTestId('dashboard'));
+  });
+
+  it('leaves the ticker out when the ticker feature is off', async () => {
+    mockUseAuth.mockReturnValue(authenticatedAuth());
+    mockUseSiteConfig.mockReturnValue({ features: { ...ALL_FEATURES, ticker: false }, isLoading: false });
+    render(<App />);
+
+    expect(await screen.findByTestId('dashboard')).toBeInTheDocument();
+    expect(screen.queryByTestId('league-ticker')).not.toBeInTheDocument();
   });
 
   it('pins the section tabs on desktop but lets them scroll away on phones', async () => {
