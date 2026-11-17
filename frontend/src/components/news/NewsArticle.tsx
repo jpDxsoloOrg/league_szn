@@ -8,6 +8,7 @@ import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import Badge from '../ui/Badge';
 import EmptyState from '../ui/EmptyState';
 import Skeleton from '../ui/Skeleton';
+import FeatureStory from './FeatureStory';
 import { BREAKING_PRIORITY, useNews } from './useNews';
 import '../announcementContent.css';
 import './News.css';
@@ -33,7 +34,9 @@ export default function NewsArticle() {
         <EmptyState icon={<Newspaper aria-hidden="true" size={48} />} title={t('news.notFound.title')} description={t('news.notFound.description')} />
       )}
 
-      {story && (
+      {story?.layout === 'feature' && <FeatureStory story={story} />}
+
+      {story && story.layout !== 'feature' && (
         <article className="news-article">
           <header className="news-article__header">
             <p className="news-story__meta">

@@ -528,9 +528,22 @@ export interface Announcement {
   expiresAt?: string;
   videoUrl?: string;     // Optional attached video URL
   showAsPopup?: boolean; // Also shown as a pop-up; missing means News only
+  /** 'feature' renders as a magazine-style story; missing means a standard news post. */
+  layout?: AnnouncementLayout;
+  /** Feature stories: wide image above the headline (absolute URL or site path). */
+  heroImageUrl?: string;
+  heroAlt?: string;
+  /** Feature stories: small label above the headline, e.g. "Mayhem Monday Results". */
+  kicker?: string;
+  /** Feature stories: the standfirst under the headline. */
+  dek?: string;
+  /** Feature stories: author line, e.g. "By the League Wire Desk". */
+  byline?: string;
   createdAt: string;
   updatedAt: string;
 }
+
+export type AnnouncementLayout = 'standard' | 'feature';
 
 export type VideoCategory = 'match' | 'highlight' | 'promo' | 'other';
 

@@ -180,3 +180,85 @@
     padding: 1.125rem;
   }
 }
+
+/* Feature stories on the front page carry their hero image. */
+.news-lead__image,
+.news-card__image {
+  display: block;
+  overflow: hidden;
+  background-color: #000;
+}
+
+.news-lead__image img,
+.news-card__image img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.news-lead__image:hover img,
+.news-card__image:hover img {
+  transform: scale(1.03);
+}
+
+.news-card__image {
+  margin: -1.125rem -1.25rem 0.25rem;
+}
+
+/* Desktop: image left, headline right, so the headline stays above the fold. */
+.news-lead--feature {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  align-content: center;
+  column-gap: 1.75rem;
+  row-gap: 0.75rem;
+  padding: 0 1.75rem 0 0;
+  overflow: hidden;
+}
+
+.news-lead--feature > .news-lead__image {
+  grid-column: 1;
+  grid-row: 1 / span 5;
+}
+
+.news-lead--feature > :not(.news-lead__image) {
+  grid-column: 2;
+}
+
+.news-lead--feature > .news-lead__flag {
+  margin-top: 1.5rem;
+}
+
+.news-lead--feature > .news-story__more {
+  margin-bottom: 1.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .news-lead__image img,
+  .news-card__image img {
+    transition: none;
+  }
+}
+
+/* Tablets and phones: stack the image above the headline. */
+@media (max-width: 1024px) {
+  .news-lead--feature {
+    display: flex;
+    padding: 0 0 1.125rem;
+  }
+
+  .news-lead--feature > :not(.news-lead__image) {
+    margin-left: 1.125rem;
+    margin-right: 1.125rem;
+  }
+
+  .news-lead--feature > .news-lead__flag {
+    margin-top: 0;
+  }
+
+  .news-lead--feature > .news-story__more {
+    margin-bottom: 0;
+  }
+}

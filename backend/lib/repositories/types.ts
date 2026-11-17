@@ -50,6 +50,14 @@ export interface Announcement {
   videoUrl?: string;
   /** Also shown as a pop-up. Missing on older rows, which are News only. */
   showAsPopup?: boolean;
+  /** 'feature' renders as a magazine-style story on News; missing means a standard post. */
+  layout?: 'standard' | 'feature';
+  /** Feature stories only (published with scripts/publish-news-story.ts). */
+  heroImageUrl?: string;
+  heroAlt?: string;
+  kicker?: string;
+  dek?: string;
+  byline?: string;
   createdBy: string;
   createdAt: string;
   updatedAt: string;

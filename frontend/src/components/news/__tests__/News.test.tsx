@@ -65,6 +65,42 @@ describe('NewsArticle', () => {
     expect(screen.getByRole('link', { name: 'news.backToNews' })).toHaveAttribute('href', '/news');
   });
 
+  it('lays out a feature story with its hero, kicker, standfirst and byline', async () => {
+    const feature = {
+      ...NEWER,
+      announcementId: 'f1',
+      title: 'Venom and Blood',
+      priority: 1,
+      layout: 'feature' as const,
+      heroImageUrl: '/news/images/hero.webp',
+      heroAlt: 'Show poster',
+      kicker: 'Mayhem Monday Results',
+      dek: 'The standfirst.',
+      byline: 'By the League Wire Desk',
+      body: '<div class="fs-card"><p class="fs-card__matchup">A def. B</p></div>',
+    };
+    mockGetActive.mockResolvedValue([feature]);
+    const { container } = renderAt('/news/f1');
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Venom and Blood' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Show poster' })).toHaveAttribute('src', '/news/images/hero.webp');
+    expect(screen.getByText('Mayhem Monday Results')).toBeInTheDocument();
+    expect(screen.getByText('The standfirst.')).toBeInTheDocument();
+    expect(screen.getByText('By the League Wire Desk')).toBeInTheDocument();
+    expect(container.querySelector('.feature-story .fs-card__matchup')).toHaveTextContent('A def. B');
+    expect(container.querySelector('.news-article')).toBeNull();
+  });
+
+  it('shows a feature story hero and standfirst on the front page', async () => {
+    mockGetActive.mockResolvedValue([
+      { ...NEWER, layout: 'feature' as const, heroImageUrl: '/news/images/hero.webp', dek: 'The standfirst.' },
+    ]);
+    const { container } = renderAt('/news');
+
+    expect(await screen.findByText('The standfirst.')).toBeInTheDocument();
+    expect(container.querySelector('.news-lead--feature img')).toHaveAttribute('src', '/news/images/hero.webp');
+  });
+
   it('explains a story that is gone', async () => {
     mockGetActive.mockResolvedValue([OLDER]);
     renderAt('/news/missing');
