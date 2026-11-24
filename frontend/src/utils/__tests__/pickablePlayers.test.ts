@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { pickablePlayers, pickableTagTeams } from '../pickablePlayers';
+import { pickablePlayers, pickableTagTeams, tagTeamPickerOptions } from '../pickablePlayers';
+import type { TagTeamPickerOption } from '../pickablePlayers';
 
 const roster = [
   { playerId: 'real', currentWrestler: 'The Rock' },
@@ -58,5 +59,32 @@ describe('pickableTagTeams', () => {
 
   it('keeps a team whose hidden member is already on the record', () => {
     expect(teamIds(pickableTagTeams(teams, roster, ['blank']))).toEqual(['clean', 'half-hidden']);
+  });
+});
+
+describe('tagTeamPickerOptions', () => {
+  const teams = [
+    { tagTeamId: 'clean', player1Id: 'real', player2Id: 'other' },
+    { tagTeamId: 'half-hidden', player1Id: 'real', player2Id: 'blank' },
+    { tagTeamId: 'all-hidden', player1Id: 'placeholder', player2Id: 'missing' },
+  ];
+
+  const counts = (options: TagTeamPickerOption<(typeof teams)[number]>[]) =>
+    options.map((option) => [option.team.tagTeamId, option.unavailableMemberCount]);
+
+  it('keeps every team and counts its hidden members', () => {
+    expect(counts(tagTeamPickerOptions(teams, roster))).toEqual([
+      ['clean', 0],
+      ['half-hidden', 1],
+      ['all-hidden', 2],
+    ]);
+  });
+
+  it('does not count a hidden member who is already on the record', () => {
+    expect(counts(tagTeamPickerOptions(teams, roster, ['blank']))).toEqual([
+      ['clean', 0],
+      ['half-hidden', 0],
+      ['all-hidden', 2],
+    ]);
   });
 });

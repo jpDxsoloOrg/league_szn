@@ -18,7 +18,8 @@ import type { PromoWithContext } from '../../types/promo';
 import { findChallengeToBook } from '../challenges/challengeUtils';
 import { formatCalendarDate } from '../../utils/dateUtils';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
-import { pickablePlayers, pickableTagTeams } from '../../utils/pickablePlayers';
+import { pickablePlayers, tagTeamPickerOptions } from '../../utils/pickablePlayers';
+import { findTagTeamForSide } from '../../utils/tagTeamSides';
 import { nameOrUnnamed } from '../../utils/playerName';
 import SearchableSelect from './SearchableSelect';
 import Button from '../ui/Button';
@@ -526,7 +527,7 @@ export default function ScheduleMatch() {
   )?.participants ?? [];
   const keptPlayerIds = [...selectedPlayerIds, ...tournamentEntrantIds];
   const bookablePlayers = pickablePlayers(players, keptPlayerIds);
-  const bookableTagTeams = pickableTagTeams(activeTagTeams, players, keptPlayerIds);
+  const tagTeamOptions = tagTeamPickerOptions(activeTagTeams, players, keptPlayerIds);
   const selectedPlayers = players.filter((player) => selectedPlayerIds.includes(player.playerId));
   const signupBlockedPicks = selectedPlayers.filter((player) => player.discipline?.status === 'signup-blocked');
   const deactivatedEntrantPicks = selectedPlayers.filter(
@@ -574,15 +575,16 @@ export default function ScheduleMatch() {
     });
   };
 
-  const getTagTeamForTeam = (teamIndex: number): string => {
-    const team = teams[teamIndex];
-    if (!team || team.length !== 2) return '';
-    // Check if the two members match an active tag team
-    const found = activeTagTeams.find(
-      tt => (tt.player1Id === team[0] && tt.player2Id === team[1])
-        || (tt.player1Id === team[1] && tt.player2Id === team[0])
-    );
-    return found?.tagTeamId ?? '';
+  const getTagTeamForTeam = (teamIndex: number): string =>
+    findTagTeamForSide(activeTagTeams, teams[teamIndex])?.tagTeamId ?? '';
+
+  /** "Team 1: The Usos" when the side is a registered pair, otherwise "Team 1". */
+  const sideLabel = (teamIndex: number): string => {
+    const number = teamIndex + 1;
+    const tagTeam = findTagTeamForSide(activeTagTeams, teams[teamIndex]);
+    return tagTeam
+      ? t('scheduleMatch.tagTeam.teamWithName', { number, name: tagTeam.name, defaultValue: `Team ${number}: ${tagTeam.name}` })
+      : `${t('scheduleMatch.tagTeam.team', 'Team')} ${number}`;
   };
 
   if (loading) {
@@ -880,7 +882,7 @@ export default function ScheduleMatch() {
                   return (
                     <div key={teamIndex} className="team-section">
                       <div className="team-header">
-                        <h3>{teamName}</h3>
+                        <h3>{sideLabel(teamIndex)}</h3>
                         {teams.length > 2 && (
                           <button
                             type="button"
@@ -903,8 +905,8 @@ export default function ScheduleMatch() {
                             className="tag-team-dropdown"
                           >
                             <option value="">{t('scheduleMatch.tagTeam.selectTagTeam', 'Select a Tag Team...')}</option>
-                            {bookableTagTeams
-                              .filter(tt => {
+                            {tagTeamOptions
+                              .filter(({ team: tt }) => {
                                 // Hide tag teams already assigned to other teams
                                 const assignedToOther = teams.some((otherTeam, i) => {
                                   if (i === teamIndex) return false;
@@ -912,9 +914,13 @@ export default function ScheduleMatch() {
                                 });
                                 return !assignedToOther;
                               })
-                              .map(tt => (
-                                <option key={tt.tagTeamId} value={tt.tagTeamId}>
+                              .map(({ team: tt, unavailableMemberCount }) => (
+                                <option key={tt.tagTeamId} value={tt.tagTeamId} disabled={unavailableMemberCount > 0}>
                                   {tt.name} ({tt.player1Name ?? getPlayerName(tt.player1Id)} &amp; {tt.player2Name ?? getPlayerName(tt.player2Id)})
+                                  {unavailableMemberCount > 0 && ` ${t('scheduleMatch.tagTeam.membersUnavailable', {
+                                    count: unavailableMemberCount,
+                                    defaultValue: `(${unavailableMemberCount} member unavailable)`,
+                                  })}`}
                                 </option>
                               ))}
                           </select>
@@ -991,7 +997,7 @@ export default function ScheduleMatch() {
               <div className="teams-summary">
                 {teams.map((team, i) => (
                   <span key={i} className={`team-count ${team.length >= 2 ? 'valid' : 'invalid'}`}>
-                    {t('scheduleMatch.tagTeam.team', 'Team')} {i + 1}: {team.length} {t('scheduleMatch.tagTeam.members', 'members')}
+                    {sideLabel(i)} · {team.length} {t('scheduleMatch.tagTeam.members', 'members')}
                   </span>
                 ))}
               </div>

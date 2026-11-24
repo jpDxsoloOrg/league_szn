@@ -636,6 +636,9 @@
     "error": "Failed to schedule match",
     "minParticipantsError": "Please select at least 2 participants",
     "tagTeam": {
+      "teamWithName": "Team {{number}}: {{name}}",
+      "membersUnavailable_one": "({{count}} member unavailable)",
+      "membersUnavailable_other": "({{count}} members unavailable)",
       "selectTeams": "Select Teams",
       "team": "Team",
       "addTeam": "Add Team",

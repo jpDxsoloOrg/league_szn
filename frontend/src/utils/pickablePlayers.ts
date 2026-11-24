@@ -42,3 +42,29 @@ export function pickableTagTeams<T extends TagTeamMembers>(
   );
   return tagTeams.filter((team) => !unpickableIds.has(team.player1Id) && !unpickableIds.has(team.player2Id));
 }
+
+export interface TagTeamPickerOption<T> {
+  team: T;
+  /** Members hidden from booking; the team can't be picked while this is above 0. */
+  unavailableMemberCount: number;
+}
+
+/**
+ * Every tag team for a booking picker, with how many of its members are hidden.
+ * Unlike `pickableTagTeams`, a team with a hidden member stays in the list, so
+ * the picker can show it as unavailable instead of dropping it silently.
+ */
+export function tagTeamPickerOptions<T extends TagTeamMembers>(
+  tagTeams: readonly T[],
+  players: readonly RosterPlayer[],
+  keepIds: Iterable<string> = [],
+): TagTeamPickerOption<T>[] {
+  const pickableIds = new Set(pickablePlayers(players, keepIds).map((player) => player.playerId));
+  const unpickableIds = new Set(
+    players.map((player) => player.playerId).filter((playerId) => !pickableIds.has(playerId)),
+  );
+  return tagTeams.map((team) => ({
+    team,
+    unavailableMemberCount: [team.player1Id, team.player2Id].filter((playerId) => unpickableIds.has(playerId)).length,
+  }));
+}
