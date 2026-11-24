@@ -21,8 +21,9 @@
  *
  * House rule (DMV-02): a wrestler is never punished for losing a match that
  * is part of a hot angle. Matches tagged `isHotAngle` that the player LOST
- * are skipped by the loss metrics (`lossPct`, `currentLossStreak`): they are
- * not counted, and they neither extend nor break a loss streak.
+ * are skipped by the loss metrics (`lossPct`, `currentLossStreak`, `losses`,
+ * `currentWinlessStreak`): they are not counted, and they neither extend nor
+ * break a loss or winless streak.
  */
 
 import type {
@@ -253,6 +254,19 @@ function currentLossStreak(matches: ProgressionMatchInput[]): number {
 }
 
 /**
+ * Consecutive matches without a win (losses and draws) from the newest match
+ * back; a win breaks it. Hot-angle losses are skipped.
+ */
+function currentWinlessStreak(matches: ProgressionMatchInput[]): number {
+  let streak = 0;
+  for (const match of newestFirst(relegationMatches(matches))) {
+    if (match.result === 'win') break;
+    streak += 1;
+  }
+  return streak;
+}
+
+/**
  * Whole days from the latest match (or, with none, from `fallbackSince`)
  * to `asOf`. Null when there is nothing to measure from.
  */
@@ -296,7 +310,8 @@ function bestContenderRank(ranks: readonly number[] | undefined): number | null 
  * direction. `contenderRankBest` is a rank (lower = better), so promotion
  * goals pair it with 'atMost'.
  *
- * `lossPct` and `currentLossStreak` skip hot-angle losses (house rule).
+ * `lossPct`, `currentLossStreak`, `losses` and `currentWinlessStreak` skip
+ * hot-angle losses (house rule).
  */
 export function computeMetric(
   metric: ProgressionMetric,
@@ -317,6 +332,10 @@ export function computeMetric(
       return resultPct(rateSample(relegationMatches(matches), params.lastMatches), 'loss');
     case 'currentLossStreak':
       return currentLossStreak(matches);
+    case 'losses':
+      return relegationMatches(matches).filter((match) => match.result === 'loss').length;
+    case 'currentWinlessStreak':
+      return currentWinlessStreak(matches);
     case 'daysSinceLastMatch':
       return daysSinceLastMatch(matches, inputs.asOf, window.since);
     case 'avgStarRatingBelow': {

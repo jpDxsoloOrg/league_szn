@@ -1122,10 +1122,11 @@ components:
         goalId: { type: string, description: Generated when omitted on create. }
         metric:
           type: string
-          enum: [matchesCompeted, wins, winPct, avgStarRating, promosCut, promosWithReactions, totalPromoReactions, matchOfTheNight, challengesIssued, currentWinStreak, lossPct, currentLossStreak, daysSinceLastMatch, avgStarRatingBelow, contenderRankBest]
+          enum: [matchesCompeted, wins, winPct, avgStarRating, promosCut, promosWithReactions, totalPromoReactions, matchOfTheNight, challengesIssued, currentWinStreak, lossPct, currentLossStreak, daysSinceLastMatch, avgStarRatingBelow, contenderRankBest, losses, currentWinlessStreak]
           description: >-
-            lossPct and currentLossStreak skip losses in hot-angle matches (linked to an active rivalry
-            at hot heat or above). daysSinceLastMatch counts whole days since the latest match.
+            lossPct, currentLossStreak, losses and currentWinlessStreak skip losses in hot-angle matches
+            (linked to an active rivalry at hot heat or above): they neither count nor break a streak.
+            currentWinlessStreak counts losses and draws from the newest match back until a win. daysSinceLastMatch counts whole days since the latest match.
             avgStarRatingBelow is 5 minus the average star rating. contenderRankBest is the best
             contender rank on the titles of the player's division (lower is better; use direction atMost).
         threshold: { type: number, description: Must be greater than 0. }

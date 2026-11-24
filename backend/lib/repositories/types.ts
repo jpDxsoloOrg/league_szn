@@ -812,7 +812,10 @@ export type ProgressionMetric =
   | 'currentLossStreak'
   | 'daysSinceLastMatch'
   | 'avgStarRatingBelow'
-  | 'contenderRankBest';
+  | 'contenderRankBest'
+  // PRL-03: relegation metrics. Both skip hot-angle losses.
+  | 'losses'
+  | 'currentWinlessStreak';
 
 export type ProgressionWindowMode = 'allTime' | 'season' | 'sinceJoinedDivision';
 
