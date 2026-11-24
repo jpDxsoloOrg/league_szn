@@ -90,6 +90,56 @@ components:
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
 
+    FormResult:
+      type: string
+      enum: [W, L, D]
+
+    Streak:
+      type: object
+      required: [type, count]
+      properties:
+        type: { $ref: '#/components/schemas/FormResult' }
+        count: { type: integer }
+
+    DivisionRecord:
+      type: object
+      description: >-
+        Record in the player's current division. Counts only completed matches
+        whose result time (completedAt, else date) is on or after divisionJoinedAt,
+        within the requested season when seasonId is given. A player with no
+        divisionJoinedAt gets the same record as the row (career or season).
+      required: [wins, losses, draws, recentForm, currentStreak]
+      properties:
+        wins: { type: integer }
+        losses: { type: integer }
+        draws: { type: integer }
+        recentForm:
+          type: array
+          maxItems: 5
+          description: Newest first.
+          items: { $ref: '#/components/schemas/FormResult' }
+        currentStreak: { $ref: '#/components/schemas/Streak' }
+        since:
+          type: string
+          format: date-time
+          description: The divisionJoinedAt the record counts from. Omitted when the player has never moved division.
+
+    StandingsPlayer:
+      allOf:
+        - $ref: '#/components/schemas/Player'
+        - type: object
+          required: [divisionRecord]
+          properties:
+            divisionJoinedAt: { type: string, format: date-time }
+            mainOverall: { type: integer }
+            recentForm:
+              type: array
+              maxItems: 5
+              description: Newest first.
+              items: { $ref: '#/components/schemas/FormResult' }
+            currentStreak: { $ref: '#/components/schemas/Streak' }
+            divisionRecord: { $ref: '#/components/schemas/DivisionRecord' }
+
     Refusal:
       type: object
       required: [message, code]
@@ -1586,12 +1636,28 @@ paths:
     get:
       tags: [Standings]
       summary: Get standings
+      description: >-
+        Career (or season, with seasonId) W-L-D per visible player, plus a
+        divisionRecord counting only results since the player joined their
+        current division.
       parameters:
         - name: seasonId
           in: query
           schema: { type: string }
       responses:
-        '200': { description: Standings }
+        '200':
+          description: Standings
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [players, sortedByWins]
+                properties:
+                  players:
+                    type: array
+                    items: { $ref: '#/components/schemas/StandingsPlayer' }
+                  seasonId: { type: string }
+                  sortedByWins: { type: boolean }
 
   /seasons:
     get:

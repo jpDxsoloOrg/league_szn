@@ -111,6 +111,22 @@ function ZoneLegend({ sizes }: { sizes: StandingsZoneSizes }) {
   );
 }
 
+function isSingleDivision(selectedDivision: string): boolean {
+  return selectedDivision !== 'all' && selectedDivision !== 'none';
+}
+
+/** Swap in the record since the player joined their division, when the API sent one. */
+function withDivisionRecord(player: Player): Player {
+  if (!player.divisionRecord) return player;
+  const { wins, losses, draws, recentForm, currentStreak } = player.divisionRecord;
+  return { ...player, wins, losses, draws, recentForm, currentStreak };
+}
+
+/** Wins descending, then losses ascending — the order the API uses for the career table. */
+function compareByRecord(first: Player, second: Player): number {
+  return second.wins - first.wins || first.losses - second.losses;
+}
+
 function zoneClass(player: RankedPlayer): string | undefined {
   return player.zone ? `standings-zone standings-zone--${player.zone}` : undefined;
 }
@@ -205,7 +221,12 @@ export default function Standings() {
     const matchesAlignment = (player: Player) => selectedAlignment === 'all' || player.alignment === selectedAlignment;
 
     const hasPlayed = (player: Player) => player.wins + player.losses + player.draws > 0;
-    const shown = (standings?.players ?? []).filter((player) => matchesDivision(player) && matchesAlignment(player));
+    const filtered = (standings?.players ?? []).filter((player) => matchesDivision(player) && matchesAlignment(player));
+    // PRL-09: one division's table counts only results since each player joined
+    // it, so a wrestler who just moved starts at 0-0-0. All divisions keeps the career record.
+    const shown = isSingleDivision(selectedDivision)
+      ? filtered.map(withDivisionRecord).sort(compareByRecord)
+      : filtered;
 
     // The API sorts on wins, which puts 0-0-0 above 0-2-0. Players who have
     // wrestled rank first, so the podium is always the top of the table.
@@ -419,6 +440,9 @@ export default function Standings() {
         )}
 
         {rankedPlayers.some((player) => player.zone) && <ZoneLegend sizes={zoneSizes} />}
+        {isSingleDivision(selectedDivision) && (
+          <p className="standings-division-since">{t('standings.divisionSince')}</p>
+        )}
       </>
     );
   };

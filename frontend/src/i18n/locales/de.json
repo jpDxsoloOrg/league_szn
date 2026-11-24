@@ -547,6 +547,7 @@
     "loadFailed": "Die Tabelle konnte nicht geladen werden.",
     "noMatchesTitle": "Keine Wrestler passen zu diesen Filtern",
     "noMatchesHint": "Versuche eine andere Division oder Ausrichtung.",
+    "divisionSince": "Bilanzen zählen ab dem Wechsel des Wrestlers in diese Division.",
     "topThree": "Top drei",
     "restOfTable": "Die Verfolger",
     "ranksRange": "Plätze {{from}} - {{to}}",

@@ -547,6 +547,7 @@
     "loadFailed": "Could not load the standings.",
     "noMatchesTitle": "No wrestlers match these filters",
     "noMatchesHint": "Try a different division or alignment.",
+    "divisionSince": "Records count from when each wrestler joined this division.",
     "topThree": "Top three",
     "restOfTable": "The chase pack",
     "ranksRange": "Ranks {{from}} - {{to}}",

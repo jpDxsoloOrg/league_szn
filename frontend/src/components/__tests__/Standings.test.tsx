@@ -634,4 +634,75 @@ describe('Standings', () => {
       expect(within(row).getByRole('img', { name: 'standings.zones.relegation' })).toBeInTheDocument();
     });
   });
+
+  describe('division records (PRL-09)', () => {
+    const divisionsWithHeavyweight = [
+      { divisionId: 'hw', name: 'Heavyweight', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+      { divisionId: 'mc', name: 'Mid Card', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+    ];
+
+    function heavyweight(playerId: string, wins: number, losses: number) {
+      return {
+        playerId,
+        name: `Heavy ${playerId}`,
+        currentWrestler: `Wrestler ${playerId}`,
+        wins,
+        losses,
+        draws: 0,
+        divisionId: 'hw',
+        createdAt: '2024-01-01',
+        updatedAt: '2024-06-01',
+        divisionRecord: { wins, losses, draws: 0, recentForm: ['W'], currentStreak: { type: 'W', count: 1 } },
+      };
+    }
+
+    // Career 20-0-0, but promoted yesterday with no matches since.
+    const promoted = {
+      ...heavyweight('promoted', 20, 0),
+      name: 'Promoted Star',
+      divisionRecord: {
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        recentForm: [],
+        currentStreak: { type: 'W', count: 0 },
+        since: '2026-11-23T12:00:00.000Z',
+      },
+    };
+
+    beforeEach(() => {
+      mockGetAllSeasons.mockResolvedValue([]);
+      mockGetAllDivisions.mockResolvedValue(divisionsWithHeavyweight);
+      mockGetStandings.mockResolvedValue({
+        players: [promoted, heavyweight('h1', 5, 1), heavyweight('h2', 4, 2), heavyweight('h3', 3, 3), heavyweight('h4', 1, 4)],
+        sortedByWins: true,
+      });
+    });
+
+    it('ranks a newly promoted player last at 0-0-0 in their new division', async () => {
+      renderStandings();
+
+      const podium = await screen.findByRole('list', { name: 'Top three' });
+      expect(within(podium).queryByText('Promoted Star')).not.toBeInTheDocument();
+
+      const row = screen.getByText('Promoted Star').closest('tr');
+      if (!row) throw new Error('No row for Promoted Star');
+      expect(within(row).getByText('#5')).toBeInTheDocument();
+      expect(within(row).getByText('0 - 0 - 0')).toBeInTheDocument();
+      expect(row).not.toHaveClass('standings-zone');
+      expect(screen.getByText('standings.divisionSince')).toBeInTheDocument();
+    });
+
+    it('ranks by career record across all divisions', async () => {
+      const user = userEvent.setup();
+      renderStandings();
+      await user.click(await screen.findByRole('button', { name: 'All' }));
+
+      const podium = await screen.findByRole('list', { name: 'Top three' });
+      const [first] = within(podium).getAllByRole('listitem');
+      expect(within(first).getByText('Promoted Star')).toBeInTheDocument();
+      expect(within(first).getByText('20 - 0 - 0')).toBeInTheDocument();
+      expect(screen.queryByText('standings.divisionSince')).not.toBeInTheDocument();
+    });
+  });
 });
