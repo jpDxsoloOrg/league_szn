@@ -897,7 +897,11 @@ export interface PlayerProgression {
   notifiedGoalIds?: string[];
 }
 
-export type ProgressionEventType = 'consideration_added' | 'consideration_removed' | 'executed';
+/**
+ * `goals_reset` (PRL-05): a GM restarted the player's goals without moving
+ * them. One event is logged per track out of the player's current division.
+ */
+export type ProgressionEventType = 'consideration_added' | 'consideration_removed' | 'executed' | 'goals_reset';
 
 export interface ProgressionEvent {
   eventId: string;
@@ -914,6 +918,8 @@ export interface ProgressionEvent {
    * announcement. A relegation reaches the public activity feed only then.
    */
   announced?: boolean;
+  /** PRL-05: the GM's optional note on a `goals_reset` event. */
+  note?: string;
 }
 
 /** DMV-03: what a GM can do with a player at the end of a season. */
