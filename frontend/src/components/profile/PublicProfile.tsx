@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { UserRoundX } from 'lucide-react';
 import {
   championshipsApi,
@@ -45,6 +46,25 @@ interface PlayerProfile extends Player {
   seasonRecords?: SeasonRecord[];
 }
 
+/**
+ * Rank from the all-time standings. Inside a division it is the division
+ * table's rank, which counts only results since the player joined it (PRL-09);
+ * a player with no division gets the overall rank.
+ */
+function rankLabel(
+  standing: Player | undefined,
+  divisionName: string | undefined,
+  t: TFunction,
+): string | undefined {
+  if (!standing) return undefined;
+  const divisionRank = standing.divisionRecord?.rank;
+  if (divisionName && divisionRank) {
+    return t('publicProfile.rankInDivision', { rank: divisionRank, division: divisionName });
+  }
+  if (!standing.divisionId && standing.rank) return t('publicProfile.rankOverall', { rank: standing.rank });
+  return undefined;
+}
+
 export default function PublicProfile() {
   const { playerId } = useParams<{ playerId: string }>();
   const { t } = useTranslation();
@@ -52,7 +72,7 @@ export default function PublicProfile() {
   const { features } = useSiteConfig();
 
   const [player, setPlayer] = useState<PlayerProfile | null>(null);
-  const [overall, setOverall] = useState<number | undefined>();
+  const [standing, setStanding] = useState<Player | undefined>();
   const [matches, setMatches] = useState<Match[]>([]);
   const [championships, setChampionships] = useState<Championship[]>([]);
   const [rivalries, setRivalries] = useState<Rivalry[]>([]);
@@ -109,8 +129,8 @@ export default function PublicProfile() {
         setChampionships(championshipsData);
         setRivalries(rivalriesData);
         setDirectory(directoryData);
-        // Standings leave some players out, so they only supply the overall.
-        setOverall(standingsData?.players.find((entry) => entry.playerId === playerId)?.mainOverall);
+        // Standings leave some players out, so they only supply the overall, points and rank.
+        setStanding(standingsData?.players.find((entry) => entry.playerId === playerId));
       } catch (err) {
         if (signal.aborted) return;
         if (isApiError(err, 404)) {
@@ -158,10 +178,11 @@ export default function PublicProfile() {
     );
   }
 
+  const divisionName = divisions.find((division) => division.divisionId === player.divisionId)?.name;
   const details = [
     {
       label: t('publicProfile.division'),
-      value: divisions.find((division) => division.divisionId === player.divisionId)?.name,
+      value: divisionName,
     },
     {
       label: t('publicProfile.stable'),
@@ -202,7 +223,7 @@ export default function PublicProfile() {
         player={player}
         details={details}
         card={{
-          overall: player.mainOverall ?? overall,
+          overall: player.mainOverall ?? standing?.mainOverall,
           titles,
           // The form is newest first; FormDots reads oldest to newest.
           form: [...form.recentForm].reverse(),
@@ -225,7 +246,12 @@ export default function PublicProfile() {
 
       <ConsiderationBanner playerId={player.playerId} />
       <DivisionWatchBanners playerId={player.playerId} viewer={viewer} />
-      <RecordSummary record={player} titlesHeld={titles.length} />
+      <RecordSummary
+        record={player}
+        titlesHeld={titles.length}
+        points={standing?.points}
+        rank={rankLabel(standing, divisionName, t)}
+      />
       <CallUpProgress playerId={player.playerId} showGoals={isAdminOrModerator} />
       <DivisionProgress playerId={player.playerId} viewer={viewer} />
       <DivisionHistory playerId={player.playerId} />

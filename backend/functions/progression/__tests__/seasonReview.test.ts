@@ -80,7 +80,7 @@ interface Fixture {
   ace: string;
   /** relegationPct 100, flagged, holds the Main Event title. */
   champ: string;
-  /** Top of the division's season standings, low progress. */
+  /** Top of the division's season table on points (fewer wins than midcard), low progress. */
   leader: string;
   /** Nothing special. */
   midcard: string;
@@ -95,8 +95,14 @@ async function seed(): Promise<Fixture> {
   const nxt = await repos.leagueOps.divisions.create({ name: 'NXT', tier: 3 });
   const season = await repos.season.seasons.create({ name: 'Season 1', startDate: '2026-01-01T00:00:00.000Z' });
 
+  // Joined before the season, so every season result counts in the division table.
   const mk = async (name: string, divisionId: string) =>
-    (await repos.roster.players.create({ name, currentWrestler: name, divisionId })).playerId;
+    (await repos.roster.players.create({
+      name,
+      currentWrestler: name,
+      divisionId,
+      divisionJoinedAt: '2026-01-01T00:00:00.000Z',
+    })).playerId;
   const ace = await mk('Ace', mainEvent.divisionId);
   const champ = await mk('Champ', mainEvent.divisionId);
   const leader = await mk('Leader', mainEvent.divisionId);
@@ -123,10 +129,29 @@ async function seed(): Promise<Fixture> {
   await row(leader, 't-promo', 40);
   await row(midcard, 't-promo', 10);
 
-  await repos.season.standings.increment(season.seasonId, leader, { wins: 8, losses: 1 });
-  await repos.season.standings.increment(season.seasonId, midcard, { wins: 3, losses: 4 });
-  await repos.season.standings.increment(season.seasonId, champ, { wins: 1, losses: 6 });
-  await repos.season.standings.increment(season.seasonId, rawStar, { wins: 9, losses: 0 });
+  // Leader: 1 win and 4 draws (7 points). Midcard: 2 wins (6 points). Champ: 0-3.
+  // Ranking on wins would put midcard first; the season table ranks on points.
+  let day = 1;
+  const result = async (winner: string, loser: string, isDraw = false) => {
+    const date = `2026-02-${String(day).padStart(2, '0')}T20:00:00.000Z`;
+    await repos.competition.matches.create({
+      matchId: `m${day}`,
+      date,
+      status: 'completed',
+      matchFormat: 'singles',
+      seasonId: season.seasonId,
+      participants: [winner, loser],
+      winners: isDraw ? [] : [winner],
+      losers: isDraw ? [] : [loser],
+      ...(isDraw ? { isDraw: true } : {}),
+    });
+    day += 1;
+  };
+  await result(leader, champ);
+  for (let draw = 0; draw < 4; draw += 1) await result(leader, 'jobber', true);
+  await result(midcard, champ);
+  await result(midcard, champ);
+  await result(rawStar, 'jobber');
 
   await repos.competition.championships.create({
     name: 'Main Event Title',

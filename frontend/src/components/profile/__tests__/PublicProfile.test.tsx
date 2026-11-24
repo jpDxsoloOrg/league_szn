@@ -83,6 +83,42 @@ describe('PublicProfile', () => {
     expect(screen.getByText('Raw')).toBeInTheDocument();
   });
 
+  it('shows all-time points and the rank inside the division table', async () => {
+    mockGetStandings.mockResolvedValue({
+      rankedBy: 'points',
+      players: [{
+        playerId: 'p1',
+        divisionId: 'd1',
+        points: 19,
+        rank: 5,
+        divisionRecord: { wins: 2, losses: 0, draws: 0, recentForm: [], currentStreak: { type: 'W', count: 2 }, points: 6, rank: 2 },
+      }],
+    });
+    renderProfile();
+
+    expect(await screen.findByText('publicProfile.points')).toBeInTheDocument();
+    expect(screen.getByText('19')).toBeInTheDocument();
+    // Division rank, not the overall rank of 5.
+    expect(screen.getByText('publicProfile.rankInDivision 2 Raw')).toBeInTheDocument();
+  });
+
+  it('falls back to the overall rank for a player with no division', async () => {
+    mockGetById.mockResolvedValue({ ...player, divisionId: undefined });
+    mockGetStandings.mockResolvedValue({ players: [{ playerId: 'p1', points: 4, rank: 3 }] });
+    renderProfile();
+
+    expect(await screen.findByText('publicProfile.rankOverall 3')).toBeInTheDocument();
+  });
+
+  it('leaves points and rank out when the standings do not list the player', async () => {
+    mockGetStandings.mockResolvedValue({ players: [] });
+    renderProfile();
+
+    expect(await screen.findByText('6-3-1')).toBeInTheDocument();
+    expect(screen.queryByText('publicProfile.points')).not.toBeInTheDocument();
+    expect(screen.queryByText('publicProfile.rank')).not.toBeInTheDocument();
+  });
+
   it('builds form and recent matches from the player own matches, even when standings leave them out', async () => {
     mockGetStandings.mockResolvedValue({ players: [] });
     mockGetMatches.mockResolvedValue([
