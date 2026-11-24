@@ -70,14 +70,16 @@ describe('reviewTransferRequest', () => {
     expect(mockPlayers.update).not.toHaveBeenCalled();
   });
 
-  it('recomputes progression for the moved player on approval', async () => {
+  it('recomputes progression and contenders for the moved player on approval', async () => {
     await reviewTransferRequest(event('approved'), ctx, cb);
 
-    expect(mockInvokeAsync).toHaveBeenCalledTimes(1);
+    expect(mockInvokeAsync).toHaveBeenCalledTimes(2);
     expect(mockInvokeAsync).toHaveBeenCalledWith('progression', expect.objectContaining({ playerIds: ['p1'] }));
+    // PRL-10: the new division's titles rank from the join date.
+    expect(mockInvokeAsync).toHaveBeenCalledWith('contenders', { source: 'divisionMove' });
   });
 
-  it('does not recompute progression on rejection', async () => {
+  it('does not recompute progression or contenders on rejection', async () => {
     await reviewTransferRequest(event('rejected'), ctx, cb);
 
     expect(mockInvokeAsync).not.toHaveBeenCalled();

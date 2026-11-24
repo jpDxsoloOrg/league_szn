@@ -883,3 +883,134 @@ describe('calculateRankingsForChampionship on a singles title', () => {
     `);
   });
 });
+
+describe('calculateRankingsForChampionship after a division move (PRL-10)', () => {
+  const joinedAt = daysAgo(5);
+  const singlesParams = {
+    championshipId: 'heavyweight',
+    championshipType: 'singles' as const,
+    currentChampion: undefined,
+    divisionId: 'heavyweight',
+    seasonId: 'season-1',
+    minimumMatches: 3,
+    maxContenders: 10,
+  };
+
+  /** p1 was promoted at `joinedAt` after six Mid Card wins over p2. */
+  const midCardWins = [10, 11, 12, 13, 14, 15].map((days) => makeMatch({
+    matchId: `old-${days}`, date: daysAgo(days), winners: ['p1'], losers: ['p2'],
+  }));
+
+  /** `null` leaves p1 without a divisionJoinedAt. */
+  function heavyweightPlayers(p1JoinedAt: string | null = joinedAt) {
+    return ['p1', 'p2', 'p3', 'p4'].map((playerId) => ({
+      playerId,
+      currentWrestler: 'Edge',
+      divisionId: 'heavyweight',
+      ...(playerId === 'p1' && p1JoinedAt ? { divisionJoinedAt: p1JoinedAt } : {}),
+    }));
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('does not rank a promoted player on wins from the old division', async () => {
+    mockScanAll.mockResolvedValueOnce(heavyweightPlayers());
+    mockScanAll.mockResolvedValueOnce(midCardWins);
+
+    const results = await calculateRankingsForChampionship(singlesParams);
+    expect(results.map((r) => r.playerId)).not.toContain('p1');
+  });
+
+  it('lists an always-included promoted player with an empty ranking', async () => {
+    mockScanAll.mockResolvedValueOnce(heavyweightPlayers());
+    mockScanAll.mockResolvedValueOnce(midCardWins);
+
+    const results = await calculateRankingsForChampionship({ ...singlesParams, alwaysIncludePlayerIds: ['p1'] });
+    expect(results.find((r) => r.playerId === 'p1')).toMatchObject({
+      rank: 0, rankingScore: 0, matchesInPeriod: 0, winsInPeriod: 0,
+    });
+  });
+
+  it('ranks a promoted player on matches since joining only', async () => {
+    // p3 beat p4 twice before p1's move, so it is 2-1 for the season.
+    const sinceJoining = [
+      makeMatch({ matchId: 'p3-old-1', date: daysAgo(20), winners: ['p3'], losers: ['p4'] }),
+      makeMatch({ matchId: 'p3-old-2', date: daysAgo(19), winners: ['p3'], losers: ['p4'] }),
+      makeMatch({ matchId: 'new-1', date: daysAgo(3), winners: ['p1'], losers: ['p3'] }),
+      makeMatch({ matchId: 'new-2', date: daysAgo(2), winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'new-3', date: daysAgo(1), winners: ['p1'], losers: ['p2'] }),
+    ];
+    mockScanAll.mockResolvedValueOnce(heavyweightPlayers());
+    mockScanAll.mockResolvedValueOnce([...midCardWins, ...sinceJoining]);
+
+    const results = await calculateRankingsForChampionship(singlesParams);
+    const p1 = results.find((r) => r.playerId === 'p1');
+    expect(p1).toMatchObject({ matchesInPeriod: 3, winsInPeriod: 3, currentStreak: 3 });
+    // Opponents stay season-wide: p3 is 2-1 (p2 is 0-8), not 0-1 since the move.
+    expect(p1?.qualityScore).toBeCloseTo(((2 / 3 + 0 + 0) / 3) * 100, 1);
+  });
+
+  it('uses when the result was recorded, not the booked date', async () => {
+    const bookedBeforeRecordedAfter = [1, 2, 3].map((days) => ({
+      ...makeMatch({ matchId: `late-${days}`, date: daysAgo(10), winners: ['p1'], losers: ['p2'] }),
+      completedAt: daysAgo(days),
+    }));
+    mockScanAll.mockResolvedValueOnce(heavyweightPlayers());
+    mockScanAll.mockResolvedValueOnce(bookedBeforeRecordedAfter);
+
+    const results = await calculateRankingsForChampionship(singlesParams);
+    expect(results.find((r) => r.playerId === 'p1')?.matchesInPeriod).toBe(3);
+  });
+
+  it('counts every match for a player with no divisionJoinedAt', async () => {
+    mockScanAll.mockResolvedValueOnce(heavyweightPlayers(null));
+    mockScanAll.mockResolvedValueOnce(midCardWins);
+
+    const results = await calculateRankingsForChampionship(singlesParams);
+    expect(results.find((r) => r.playerId === 'p1')?.matchesInPeriod).toBe(6);
+  });
+
+  it('counts every match on a title without a division', async () => {
+    mockScanAll.mockResolvedValueOnce(heavyweightPlayers());
+    mockScanAll.mockResolvedValueOnce(midCardWins);
+
+    const results = await calculateRankingsForChampionship({ ...singlesParams, divisionId: undefined });
+    expect(results.find((r) => r.playerId === 'p1')).toMatchObject({ matchesInPeriod: 6, winsInPeriod: 6 });
+  });
+
+  it("cuts a tag team at the later member's join date", async () => {
+    const team = (tagTeamId: string, player1Id: string, player2Id: string) => ({
+      tagTeamId, name: tagTeamId, player1Id, player2Id, status: 'active',
+      wins: 0, losses: 0, draws: 0, createdAt: daysAgo(100), updatedAt: daysAgo(100),
+    });
+    const tagWin = (matchId: string, days: number) => makeMatch({
+      matchId, date: daysAgo(days), winners: ['a1', 'a2'], losers: ['b1', 'b2'],
+      teams: [['a1', 'a2'], ['b1', 'b2']], matchFormat: 'tag',
+    });
+    // a1 joined 20 days ago, a2 only 5 days ago: three wins sit between the two.
+    const joined: Record<string, string> = { a1: daysAgo(20), a2: joinedAt };
+    mockScanAll.mockResolvedValueOnce(['a1', 'a2', 'b1', 'b2'].map((playerId) => ({
+      playerId,
+      currentWrestler: 'Edge',
+      divisionId: 'heavyweight',
+      ...(joined[playerId] ? { divisionJoinedAt: joined[playerId] } : {}),
+    })));
+    mockScanAll.mockResolvedValueOnce([
+      tagWin('t-10', 10), tagWin('t-11', 11), tagWin('t-12', 12),
+      tagWin('t-1', 1), tagWin('t-2', 2), tagWin('t-3', 3),
+    ]);
+    mockListTagTeams.mockResolvedValueOnce([team('team-a', 'a1', 'a2'), team('team-b', 'b1', 'b2')]);
+
+    const results = await calculateRankingsForChampionship({
+      ...singlesParams,
+      championshipId: 'heavyweight-tag',
+      championshipType: 'tag',
+    });
+
+    expect(results.find((r) => r.playerId === 'team-a')).toMatchObject({ matchesInPeriod: 3, winsInPeriod: 3 });
+    // team-b has no join dates, so all six losses still count.
+    expect(results.find((r) => r.playerId === 'team-b')).toMatchObject({ matchesInPeriod: 6, winsInPeriod: 0 });
+  });
+});

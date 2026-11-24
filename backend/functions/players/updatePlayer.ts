@@ -6,6 +6,7 @@ import { parseBody } from '../../lib/parseBody';
 import { NEEDS_WRESTLER, isNeedsWrestler } from '../../lib/needsWrestler';
 import { requireRole } from '../../lib/auth';
 import { triggerProgressionRecompute } from '../../lib/progression/trigger';
+import { triggerContenderRecalculation } from '../../lib/contenderTrigger';
 import { divisionMovePatch } from '../../lib/divisions';
 import { applyMovesetFields } from './movesetFields';
 import type { PlayerPatch } from '../../lib/repositories';
@@ -207,9 +208,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // A division change (including clearing it) moves the player onto other
     // progression tracks: score the new ones and drop the old division's rows.
+    // Division-locked titles change eligibility and the contender window
+    // restarts at divisionJoinedAt, so contender rankings are refreshed too.
     const divisionChanged = 'divisionId' in patch && patch.divisionId !== player.divisionId;
     const recomputeOnDivisionChange = async (): Promise<void> => {
-      if (divisionChanged) await triggerProgressionRecompute([playerId], 'playerDivisionChanged');
+      if (!divisionChanged) return;
+      await triggerProgressionRecompute([playerId], 'playerDivisionChanged');
+      await triggerContenderRecalculation('divisionMove');
     };
 
     // If any FK transition happened, stage the player update + wrestler

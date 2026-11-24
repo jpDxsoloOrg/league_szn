@@ -571,8 +571,10 @@ describe('updatePlayer', () => {
       const result = await update(player.playerId, { divisionId: raw.divisionId });
 
       expect(result!.statusCode).toBe(200);
-      expect(mockInvokeAsync).toHaveBeenCalledTimes(1);
+      expect(mockInvokeAsync).toHaveBeenCalledTimes(2);
       expect(mockInvokeAsync).toHaveBeenCalledWith('progression', expect.objectContaining({ playerIds: [player.playerId] }));
+      // PRL-10: division-locked titles rank from the new join date.
+      expect(mockInvokeAsync).toHaveBeenCalledWith('contenders', { source: 'divisionMove' });
     });
 
     it('recomputes the player when the division is cleared', async () => {
@@ -583,6 +585,7 @@ describe('updatePlayer', () => {
 
       expect(result!.statusCode).toBe(200);
       expect(mockInvokeAsync).toHaveBeenCalledWith('progression', expect.objectContaining({ playerIds: [player.playerId] }));
+      expect(mockInvokeAsync).toHaveBeenCalledWith('contenders', { source: 'divisionMove' });
     });
 
     it('does not recompute when the division is unchanged or not sent', async () => {

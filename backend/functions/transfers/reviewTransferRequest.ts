@@ -5,6 +5,7 @@ import { getAuthContext, requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { createNotification } from '../../lib/notifications';
 import { triggerProgressionRecompute } from '../../lib/progression/trigger';
+import { triggerContenderRecalculation } from '../../lib/contenderTrigger';
 import { divisionMovePatch } from '../../lib/divisions';
 
 interface ReviewTransferBody {
@@ -63,6 +64,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       });
       // New division: score the new tracks and drop the old division's rows.
       await triggerProgressionRecompute([playerId], 'transferApproved');
+      // Division-locked titles: new eligibility, and the contender window restarts.
+      await triggerContenderRecalculation('divisionMove');
     }
 
     // Look up the player's userId to send a notification
