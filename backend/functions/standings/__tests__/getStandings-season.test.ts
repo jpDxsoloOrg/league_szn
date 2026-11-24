@@ -16,7 +16,10 @@ vi.mock('../../../lib/repositories', () => ({
       overalls: { listAll: mockOverallsListAll },
       players: { list: mockPlayersList },
     },
-    competition: { matches: { listCompleted: mockMatchesListCompleted } },
+    competition: {
+      matches: { listCompleted: mockMatchesListCompleted },
+      championships: { listAllHistory: async () => [] },
+    },
     season: { standings: { listBySeason: mockSeasonStandingsListBySeason } },
   }),
 }));
@@ -121,17 +124,20 @@ describe('getStandings — season-specific (with seasonId)', () => {
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     expect(body.seasonId).toBe('s1');
-    expect(body.sortedByWins).toBe(true);
+    expect(body.rankedBy).toBe('points');
+    expect(body.sortedByWins).toBe(false);
     expect(body.players).toHaveLength(3);
 
-    // Sorted: Bob (8 wins), Alice (5 wins), Carol (0 wins)
-    expect(body.players[0].name).toBe('Bob');
-    expect(body.players[0].wins).toBe(8);
-    expect(body.players[0].losses).toBe(3);
-    expect(body.players[0].draws).toBe(0);
+    // No season matches: everyone is on 0 points with nothing played, so the
+    // name settles the order. Records still come from SeasonStandings.
+    expect(body.players.map((p: { name: string }) => p.name)).toEqual(['Alice', 'Bob', 'Carol']);
+    const bob = body.players[1];
+    expect(bob.name).toBe('Bob');
+    expect(bob.wins).toBe(8);
+    expect(bob.losses).toBe(3);
+    expect(bob.draws).toBe(0);
 
-    expect(body.players[1].name).toBe('Alice');
-    expect(body.players[1].wins).toBe(5);
+    expect(body.players[0].wins).toBe(5);
 
     // Carol has no season standings, so she gets 0-0-0
     expect(body.players[2].name).toBe('Carol');
@@ -164,27 +170,32 @@ describe('getStandings — season-specific (with seasonId)', () => {
     });
   });
 
-  it('sorts season standings by wins desc then losses asc', async () => {
+  it("ranks by points from that season's matches only", async () => {
     mockSeasonStandingsListBySeason.mockResolvedValue([
-      { seasonId: 's1', playerId: 'p1', wins: 5, losses: 4, draws: 0 },
-      { seasonId: 's1', playerId: 'p2', wins: 5, losses: 1, draws: 0 },
-      { seasonId: 's1', playerId: 'p3', wins: 7, losses: 3, draws: 0 },
+      { seasonId: 's1', playerId: 'p1', wins: 0, losses: 1, draws: 0 },
+      { seasonId: 's1', playerId: 'p2', wins: 1, losses: 0, draws: 0 },
     ]);
     mockOverallsListAll.mockResolvedValue([]);
-    mockMatchesListCompleted.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([
+      { matchId: 'm1', seasonId: 's1', winners: ['p2'], losers: ['p1'], participants: ['p1', 'p2'], date: '2026-02-01', updatedAt: '2026-02-01' },
+      { matchId: 'm2', seasonId: 'other', winners: ['p1'], losers: ['p2'], participants: ['p1', 'p2'], date: '2026-03-01', updatedAt: '2026-03-01' },
+      { matchId: 'm3', seasonId: 'other', winners: ['p1'], losers: ['p2'], participants: ['p1', 'p2'], date: '2026-03-02', updatedAt: '2026-03-02' },
+    ]);
     mockPlayersList.mockResolvedValue([
       { playerId: 'p1', name: 'Alice', currentWrestler: 'W1' },
       { playerId: 'p2', name: 'Bob', currentWrestler: 'W2' },
-      { playerId: 'p3', name: 'Carol', currentWrestler: 'W3' },
+      { playerId: 'p3', name: 'Aaron', currentWrestler: 'W3' },
     ]);
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
     const body = JSON.parse(result!.body);
-    // Carol (7w), Bob (5w/1l), Alice (5w/4l)
-    expect(body.players[0].name).toBe('Carol');
-    expect(body.players[1].name).toBe('Bob');
-    expect(body.players[2].name).toBe('Alice');
+    expect(body.rankedBy).toBe('points');
+    expect(body.players.map((p: { name: string }) => p.name)).toEqual(['Bob', 'Alice', 'Aaron']);
+    expect(body.players[0]).toMatchObject({ points: 3, wins: 1, rank: 1 });
+    expect(body.players[1]).toMatchObject({ points: 0, losses: 1, rank: 2 });
+    // No season matches: 0-0-0 and last.
+    expect(body.players[2]).toMatchObject({ points: 0, wins: 0, losses: 0, draws: 0, rank: 3 });
   });
 
   it('returns empty players when no players exist for a season', async () => {

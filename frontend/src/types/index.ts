@@ -44,6 +44,14 @@ export interface Player {
   divisionJoinedAt?: string;
   /** Standings only (PRL-09): record since the player joined their current division. */
   divisionRecord?: DivisionRecord;
+  /** Standings only (STR-03): league points for the season or all-time view. */
+  points?: number;
+  qualityWins?: number;
+  streakBonuses?: number;
+  /** Strength of schedule: mean points per match of the opponents faced. */
+  sos?: number;
+  /** 1-based league rank in the standings response; tied rows share a rank. */
+  rank?: number;
   /** Sent only to staff and to the player themselves. */
   discipline?: PlayerDisciplineSummary;
 }
@@ -57,6 +65,13 @@ export interface DivisionRecord {
   currentStreak: { type: 'W' | 'L' | 'D'; count: number };
   /** The join time the record counts from; absent when the player has never moved division. */
   since?: string;
+  /** League points (STR-03) counting only results since joining, judged within the division. */
+  points?: number;
+  qualityWins?: number;
+  streakBonuses?: number;
+  sos?: number;
+  /** 1-based rank within the division. */
+  rank?: number;
 }
 
 export type DisciplineStatus = 'clear' | 'warned' | 'signup-blocked' | 'cooldown' | 'deactivated';
@@ -348,6 +363,9 @@ export interface RoundRobinStanding {
 export interface Standings {
   players: Player[];
   seasonId?: string;
+  /** Present from STR-03: rows are in league points order. */
+  rankedBy?: 'points';
+  /** Always false from STR-03; kept for one release. */
   sortedByWins: boolean;
 }
 

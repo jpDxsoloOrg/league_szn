@@ -347,6 +347,73 @@ describe('computeLeagueTable: opponents and SOS', () => {
   });
 });
 
+describe('computeLeagueTable: countsFor', () => {
+  const onlyFrom = (day: number) => (playerId: string, match: LeagueMatchInput): boolean =>
+    playerId !== 'mover' || match.date >= `2026-01-${String(day).padStart(2, '0')}`;
+
+  it('gives a player no row and no record from matches they are not credited for', () => {
+    const rows = computeLeagueTable([win(1, ['mover'], ['b']), win(2, ['mover'], ['b'])], {
+      countsFor: (playerId) => playerId !== 'mover',
+    });
+
+    expect(rows.map((candidate) => candidate.playerId)).toEqual(['b']);
+    expect(rowOf(rows, 'b')).toMatchObject({ losses: 2, points: 0 });
+  });
+
+  it('restarts points and streak from the first credited match', () => {
+    const rows = computeLeagueTable(
+      [win(1, ['mover'], ['b']), win(2, ['mover'], ['b']), win(3, ['mover'], ['b']), win(4, ['mover'], ['b'])],
+      { countsFor: onlyFrom(3), playerIds: ['mover'] },
+    );
+
+    // Only days 3 and 4 count: two wins, no streak bonus yet, and b's running
+    // points stay at 0 so neither is a quality win.
+    expect(rowOf(rows, 'mover')).toMatchObject({
+      wins: 2,
+      points: 2 * POINTS_WIN,
+      streakBonuses: 0,
+      qualityWins: 0,
+    });
+  });
+
+  it('keeps a 0-0-0 row for a listed player with nothing credited', () => {
+    const rows = computeLeagueTable([win(1, ['mover'], ['b'])], {
+      countsFor: onlyFrom(5),
+      playerIds: ['mover'],
+    });
+
+    expect(rowOf(rows, 'mover')).toMatchObject({ matchesPlayed: 0, points: 0, sos: 0 });
+  });
+
+  it("judges a quality win on the opponent's credited points only", () => {
+    // b beats c twice (6 points), then the mover beats b: a quality win.
+    const matches = [win(1, ['b'], ['c']), win(2, ['b'], ['c']), win(3, ['mover'], ['b'])];
+    expect(rowOf(computeLeagueTable(matches), 'mover').qualityWins).toBe(1);
+
+    // When b is not credited in this table, b's running points are 0 here.
+    const rows = computeLeagueTable(matches, { countsFor: (playerId) => playerId !== 'b' });
+    expect(rowOf(rows, 'mover').qualityWins).toBe(0);
+  });
+
+  it('still grants a quality win for beating a champion who is not credited', () => {
+    const rows = computeLeagueTable([win(1, ['a'], ['champ'])], {
+      countsFor: (playerId) => playerId !== 'champ',
+      isChampionAt: (playerId) => playerId === 'champ',
+    });
+
+    expect(rowOf(rows, 'a').qualityWins).toBe(1);
+  });
+
+  it('leaves opponents with no credited match out of sos', () => {
+    const rows = computeLeagueTable([win(1, ['b'], ['a']), win(2, ['a'], ['outsider'])], {
+      countsFor: (playerId) => playerId !== 'outsider',
+    });
+
+    // a faced outsider (not judged) and b (3 points per match).
+    expect(rowOf(rows, 'a').sos).toBe(POINTS_WIN);
+  });
+});
+
 describe('headToHeadWithinGroup', () => {
   it('counts only matches against members of the group', () => {
     const rows = computeLeagueTable([

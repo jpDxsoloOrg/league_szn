@@ -57,6 +57,15 @@ export interface LeaguePointsOptions {
   isChampionAt?: (playerId: string, at: string) => boolean;
   /** Players who get a row even if they have no matches in the input. */
   playerIds?: readonly string[];
+  /**
+   * Whether `playerId` is credited for `match`. Defaults to everyone. A player
+   * who is not credited gets no points, record, streak or row from that match,
+   * but still counts as an opponent: a credited winner can earn a quality win
+   * off them (their running points in this table, or a title), and they enter
+   * strength of schedule only if they have a credited match of their own.
+   * Used for division tables, where only results since a player joined count.
+   */
+  countsFor?: (playerId: string, match: LeagueMatchInput) => boolean;
 }
 
 /** One match a player took part in, kept for head-to-head tiebreaks. */
@@ -115,9 +124,8 @@ function emptyTally(): PlayerTally {
   };
 }
 
-/** Final points per match. Only called for opponents, who have played. */
-function pointsPerMatch(tally: PlayerTally): number {
-  return tally.points / (tally.wins + tally.losses + tally.draws);
+function matchesPlayedOf(tally: PlayerTally): number {
+  return tally.wins + tally.losses + tally.draws;
 }
 
 function roundRatio(value: number): number {
@@ -159,6 +167,10 @@ function opponentsOf(playerId: string, sides: readonly string[][], players: read
 /**
  * Replay the matches and build one unranked row per player.
  * Matches that are neither a draw nor have a winner are skipped.
+ *
+ * With `countsFor`, sos averages only opponents who were credited for at least
+ * one match in this table; an opponent never credited here has no points per
+ * match to judge, so they are left out rather than counted as 0.
  */
 export function computeLeagueTable(
   matches: readonly LeagueMatchInput[],
@@ -177,6 +189,7 @@ export function computeLeagueTable(
     tallyFor(playerId);
   }
 
+  const { countsFor } = options;
   const ordered = [...matches].sort(compareMatchOrder);
   for (const match of ordered) {
     const winners = matchWinners(match);
@@ -187,8 +200,11 @@ export function computeLeagueTable(
     const players = isDraw
       ? [...new Set([...match.participants, ...match.winners])]
       : [...new Set([...winners, ...losers])];
+    const credited = countsFor ? players.filter((playerId) => countsFor(playerId, match)) : players;
+    if (credited.length === 0) continue;
     const sides = matchSides(match, players);
     const resultTime = matchResultTime(match);
+    const runningPoints = (playerId: string): number => tallies.get(playerId)?.points ?? 0;
 
     // Judge quality wins on the standings *before* this match.
     const loserIsChampion = losers.some(
@@ -196,12 +212,12 @@ export function computeLeagueTable(
     );
     const qualityWinners = new Set(
       winners.filter((winnerId) => {
-        const ownPoints = tallyFor(winnerId).points;
-        return loserIsChampion || losers.some((loserId) => tallyFor(loserId).points > ownPoints);
+        const ownPoints = runningPoints(winnerId);
+        return loserIsChampion || losers.some((loserId) => runningPoints(loserId) > ownPoints);
       }),
     );
 
-    for (const playerId of players) {
+    for (const playerId of credited) {
       const tally = tallyFor(playerId);
       const opponentIds = opponentsOf(playerId, sides, players);
       let resultPoints: number;
@@ -235,12 +251,23 @@ export function computeLeagueTable(
     }
   }
 
+  // Final points per match of every opponent who played in this table.
+  const pointsPerMatchById = new Map<string, number>();
+  for (const [playerId, tally] of tallies) {
+    const played = matchesPlayedOf(tally);
+    if (played > 0) pointsPerMatchById.set(playerId, tally.points / played);
+  }
+
   return [...tallies].map(([playerId, tally]) => {
-    const matchesPlayed = tally.wins + tally.losses + tally.draws;
-    const opponentTotal = tally.opponentIds.reduce(
-      (sum, opponentId) => sum + pointsPerMatch(tallyFor(opponentId)),
-      0,
-    );
+    const matchesPlayed = matchesPlayedOf(tally);
+    let opponentTotal = 0;
+    let opponentsJudged = 0;
+    for (const opponentId of tally.opponentIds) {
+      const opponentPointsPerMatch = pointsPerMatchById.get(opponentId);
+      if (opponentPointsPerMatch === undefined) continue;
+      opponentTotal += opponentPointsPerMatch;
+      opponentsJudged += 1;
+    }
     return {
       playerId,
       points: tally.points,
@@ -252,7 +279,7 @@ export function computeLeagueTable(
       draws: tally.draws,
       matchesPlayed,
       winPct: matchesPlayed === 0 ? 0 : roundRatio(tally.wins / matchesPlayed),
-      sos: tally.opponentIds.length === 0 ? 0 : roundRatio(opponentTotal / tally.opponentIds.length),
+      sos: opponentsJudged === 0 ? 0 : roundRatio(opponentTotal / opponentsJudged),
       headToHead: tally.headToHead,
     };
   });
