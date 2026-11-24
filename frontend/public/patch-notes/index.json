@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.3.0",
+      "date": "2026-11-24",
+      "title": "A Fresh Start After Every Move",
+      "titleDe": "Neustart nach jedem Wechsel",
+      "file": "v1.3.0.md",
+      "summary": "Goals, one division's table and that division's title contender rankings now count from the day you join, GMs can reset a wrestler's goals, and progress cards show where the count starts. Your career record never changes.",
+      "summaryDe": "Ziele, die Tabelle einer Division und die Herausforderer-Ranglisten ihrer Titel zählen jetzt ab deinem Wechsel, GMs können die Ziele eines Wrestlers zurücksetzen, und die Fortschrittskarten zeigen, ab wann gezählt wird. Deine Karriere-Bilanz ändert sich nie."
+    },
+    {
       "version": "1.2.0",
       "date": "2026-11-17",
       "title": "Promotion & Relegation and League Wire Upgrades",
