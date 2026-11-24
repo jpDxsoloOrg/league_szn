@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { ConcurrencyError, NotFoundError } from '../errors';
+import { divisionMovePatch } from '../../divisionMove';
 import type {
   RosterRepository,
   PlayerCreateInput,
@@ -77,9 +78,11 @@ export class InMemoryRosterRepository implements RosterRepository {
         ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {}),
         ...(input.psnId !== undefined ? { psnId: input.psnId } : {}),
         ...(input.divisionId !== undefined ? { divisionId: input.divisionId } : {}),
+        // Mirrors DynamoRosterRepository: created into a division (PRL-04).
         ...(input.divisionId !== undefined
-          ? { divisionJoinedAt: input.divisionJoinedAt ?? now }
+          ? divisionMovePatch(input.divisionJoinedAt ?? now)
           : {}),
+        ...(input.progressionEpochAt !== undefined ? { progressionEpochAt: input.progressionEpochAt } : {}),
         ...(input.companyId !== undefined ? { companyId: input.companyId } : {}),
         ...(input.alignment !== undefined ? { alignment: input.alignment } : {}),
         wins: 0,

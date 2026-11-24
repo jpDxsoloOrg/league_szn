@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
+  divisionMovePatch,
   findDefaultDivisionForNewWrestlers,
   findDevelopmentalDivisions,
   validateDivisionFlags,
@@ -84,5 +85,12 @@ describe('validateDivisionFlags', () => {
     const result = validateDivisionFlags({ isDefaultForNewWrestlers: 'true' });
     expect(result?.statusCode).toBe(400);
     expect(JSON.parse(result!.body).message).toBe('isDefaultForNewWrestlers must be a boolean');
+  });
+});
+
+describe('divisionMovePatch (PRL-04)', () => {
+  it('stamps the join time and the progression epoch, and nothing else', () => {
+    const now = '2026-11-24T12:00:00.000Z';
+    expect(divisionMovePatch(now)).toEqual({ divisionJoinedAt: now, progressionEpochAt: now });
   });
 });

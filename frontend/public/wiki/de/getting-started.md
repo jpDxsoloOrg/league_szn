@@ -22,7 +22,7 @@ Die Leiste am oberen Rand zeigt, in welchem Bereich und auf welcher Seite du bis
 
 Die Suche in der oberen Leiste findet Wrestler, Events, Titel und Seiten. Angemeldete Mitglieder sehen dort auch die Benachrichtigungsglocke.
 
-Das Laufband unter der oberen Leiste ist der **Liga-Ticker**: die Shows des Tages, neue Champions, Schlagzeilen und die neuesten Ergebnisse. Siehe [News und der Liga-Ticker](news).
+Das Laufband am unteren Bildschirmrand ist der **Liga-Ticker**: die Shows des Tages, neue Champions, Schlagzeilen und die neuesten Ergebnisse. Siehe [News und der Liga-Ticker](news).
 
 ## Der Liga beitreten
 

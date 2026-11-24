@@ -5,6 +5,8 @@ import { getAuthContext, requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { createNotification } from '../../lib/notifications';
 import { triggerProgressionRecompute } from '../../lib/progression/trigger';
+import { triggerContenderRecalculation } from '../../lib/contenderTrigger';
+import { divisionMovePatch } from '../../lib/divisions';
 
 interface ReviewTransferBody {
   status: 'approved' | 'rejected';
@@ -55,12 +57,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // If approved, update the player's divisionId
     if (status === 'approved') {
       const toDivisionId = transferRequest.toDivisionId;
+      // The move restarts goals and streaks; win/loss/draw totals are untouched.
       await repos.roster.players.update(playerId, {
         divisionId: toDivisionId,
-        divisionJoinedAt: new Date().toISOString(),
+        ...divisionMovePatch(new Date().toISOString()),
       });
       // New division: score the new tracks and drop the old division's rows.
       await triggerProgressionRecompute([playerId], 'transferApproved');
+      // Division-locked titles: new eligibility, and the contender window restarts.
+      await triggerContenderRecalculation('divisionMove');
     }
 
     // Look up the player's userId to send a notification

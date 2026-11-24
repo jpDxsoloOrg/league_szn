@@ -304,6 +304,12 @@
   font-size: 0.9375rem;
 }
 
+.standings-division-since {
+  margin: 0.75rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
 .standings-zone-legend__item {
   display: inline-flex;
   align-items: center;

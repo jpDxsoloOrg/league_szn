@@ -34,6 +34,8 @@ import type {
 } from '../repositories';
 import { createNotification } from '../notifications';
 import { invokeAsync } from '../asyncLambda';
+import { divisionMovePatch } from '../divisionMove';
+import { triggerProgressionRecompute } from './trigger';
 import { championIdsOf } from '../disciplineGates';
 import { isConcurrentWriteError } from '../repositories/errors';
 import { getDivisionAbove, getDivisionBelow, getDivisionRank } from '../divisionTiers';
@@ -65,6 +67,8 @@ export interface ExecuteMoveResult {
   fromDivisionId: string;
   toDivisionId: string;
   divisionJoinedAt: string;
+  /** Equal to `divisionJoinedAt`: the move restarts every track (PRL-04). */
+  progressionEpochAt: string;
   event: ProgressionEvent;
   /** Set when `announce` was requested and the announcement was created. */
   announcementId?: string;
@@ -312,6 +316,7 @@ export async function executeProgressionMove(input: ExecuteMoveInput): Promise<E
   ]);
   const resets = rowsToReset(playerRows, oldDivisionTracks, track);
   const now = new Date().toISOString();
+  const movePatch = divisionMovePatch(now);
   const baseEvent = {
     playerId,
     kind: track.kind,
@@ -332,7 +337,8 @@ export async function executeProgressionMove(input: ExecuteMoveInput): Promise<E
   try {
     await runInTransaction(async (tx) => {
       // Guard on the source division so two concurrent moves cannot both apply.
-      tx.updatePlayer(playerId, { divisionId: toDivisionId, divisionJoinedAt: now }, { divisionId: fromDivisionId });
+      // The move restarts goals and streaks; win/loss/draw totals are untouched.
+      tx.updatePlayer(playerId, { divisionId: toDivisionId, ...movePatch }, { divisionId: fromDivisionId });
       // Always delete the executed track's row (a no-op when it is missing).
       if (!resets.some(({ row }) => row.trackId === trackId)) tx.deletePlayerProgression(playerId, trackId);
       for (const { row, track: rowTrack } of resets) {
@@ -364,7 +370,7 @@ export async function executeProgressionMove(input: ExecuteMoveInput): Promise<E
     kind: track.kind,
     fromDivisionId,
     toDivisionId,
-    divisionJoinedAt: now,
+    ...movePatch,
     event: executedEvent,
   };
 
@@ -423,7 +429,8 @@ async function runFollowUps(params: FollowUpParams): Promise<void> {
   }
 
   // Score the player against the new division's tracks.
-  await bestEffort('progression recompute', () => invokeAsync('progression', { playerIds: [player.playerId] }));
+  // triggerProgressionRecompute never throws, so it needs no bestEffort wrapper.
+  await triggerProgressionRecompute([player.playerId], 'progressionExecuted');
   if (params.recalculateContenders) {
     // Division-restricted titles change eligibility, so rank every title again.
     await bestEffort('contender recalculation', () => invokeAsync('contenders', { source: 'progressionExecute' }));

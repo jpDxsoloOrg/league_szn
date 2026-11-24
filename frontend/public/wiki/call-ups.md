@@ -43,7 +43,7 @@ Being under consideration is a compliment, not a promise. It means the GMs are w
 
 ## Call-up watch on the League Wire
 
-The League Wire is the moving news strip under the top bar. While you're under consideration, your name runs there under the **Call-up watch** tag, next to anyone else the GMs are watching. Anyone can choose your name to open your profile.
+The League Wire is the moving news strip along the bottom of the screen. While you're under consideration, your name runs there under the **Call-up watch** tag, next to anyone else the GMs are watching. Anyone can choose your name to open your profile.
 
 - Only your name shows. Your progress bar and goals stay on your profile.
 - Your name comes off once you're called up or the GM takes the mark away.

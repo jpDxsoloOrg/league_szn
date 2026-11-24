@@ -188,11 +188,29 @@ describe('createPlayer', () => {
 
     const body = JSON.parse(result!.body);
     expect(body.divisionJoinedAt).toBe(body.createdAt);
+    expect(body.progressionEpochAt).toBe(body.createdAt);
+    expect(mockInvokeAsync).toHaveBeenCalledWith('progression', {
+      playerIds: [body.playerId],
+      source: 'playerCreated',
+    });
+  });
+
+  it('honours an explicit join time on create for both move timestamps (PRL-04)', async () => {
+    const division = await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const player = await repos.roster.players.create({
+      name: 'John',
+      currentWrestler: 'Rock',
+      divisionId: division.divisionId,
+      divisionJoinedAt: '2026-01-01T00:00:00.000Z',
+    });
+    expect(player.divisionJoinedAt).toBe('2026-01-01T00:00:00.000Z');
+    expect(player.progressionEpochAt).toBe('2026-01-01T00:00:00.000Z');
   });
 
   it('leaves divisionJoinedAt unset on a player created without a division', async () => {
     const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
     expect(player.divisionJoinedAt).toBeUndefined();
+    expect(player.progressionEpochAt).toBeUndefined();
   });
 
   it('returns 400 for missing body', async () => {
@@ -478,11 +496,59 @@ describe('updatePlayer', () => {
 
     const same = JSON.parse((await update(raw.divisionId))!.body);
     expect(same.divisionJoinedAt).toBe('2026-01-01T00:00:00.000Z');
+    expect(same.progressionEpochAt).toBe('2026-01-01T00:00:00.000Z');
 
     const moved = JSON.parse((await update(smackdown.divisionId))!.body);
     expect(moved.divisionId).toBe(smackdown.divisionId);
     expect(moved.divisionJoinedAt).not.toBe('2026-01-01T00:00:00.000Z');
     expect(Date.parse(moved.divisionJoinedAt)).not.toBeNaN();
+    expect(moved.progressionEpochAt).toBe(moved.divisionJoinedAt);
+  });
+
+  it('writes only the division and both move timestamps on a division change (PRL-04)', async () => {
+    const raw = await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const smackdown = await repos.leagueOps.divisions.create({ name: 'SmackDown' });
+    const player = await repos.roster.players.create({
+      name: 'John', currentWrestler: 'Rock', divisionId: raw.divisionId,
+    });
+    const updateSpy = vi.spyOn(repos.roster.players, 'update');
+
+    const result = await updatePlayer(
+      withAuth(makeEvent({ pathParameters: { playerId: player.playerId }, body: JSON.stringify({ divisionId: smackdown.divisionId }) }), 'Admin'),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(200);
+    expect(updateSpy).toHaveBeenCalledWith(player.playerId, {
+      divisionId: smackdown.divisionId,
+      divisionJoinedAt: expect.any(String),
+      progressionEpochAt: expect.any(String),
+    });
+    const [, patch] = updateSpy.mock.calls[0];
+    expect(patch.progressionEpochAt).toBe(patch.divisionJoinedAt);
+  });
+
+  it('restarts goals when the division is cleared, but not when it was already empty (PRL-04)', async () => {
+    const raw = await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const placed = await repos.roster.players.create({
+      name: 'John', currentWrestler: 'Rock', divisionId: raw.divisionId, divisionJoinedAt: '2026-01-01T00:00:00.000Z',
+    });
+    const unplaced = await repos.roster.players.create({ name: 'Jane', currentWrestler: 'Lita' });
+    const clear = (playerId: string) => updatePlayer(
+      withAuth(makeEvent({ pathParameters: { playerId }, body: JSON.stringify({ divisionId: '' }) }), 'Admin'),
+      ctx,
+      cb,
+    );
+
+    const cleared = JSON.parse((await clear(placed.playerId))!.body);
+    expect(cleared.divisionId).toBeUndefined();
+    expect(cleared.progressionEpochAt).not.toBe('2026-01-01T00:00:00.000Z');
+    expect(cleared.divisionJoinedAt).toBe(cleared.progressionEpochAt);
+
+    const untouched = JSON.parse((await clear(unplaced.playerId))!.body);
+    expect(untouched.progressionEpochAt).toBeUndefined();
+    expect(untouched.divisionJoinedAt).toBeUndefined();
   });
 
   describe('progression recompute on division change', () => {
@@ -505,8 +571,10 @@ describe('updatePlayer', () => {
       const result = await update(player.playerId, { divisionId: raw.divisionId });
 
       expect(result!.statusCode).toBe(200);
-      expect(mockInvokeAsync).toHaveBeenCalledTimes(1);
+      expect(mockInvokeAsync).toHaveBeenCalledTimes(2);
       expect(mockInvokeAsync).toHaveBeenCalledWith('progression', expect.objectContaining({ playerIds: [player.playerId] }));
+      // PRL-10: division-locked titles rank from the new join date.
+      expect(mockInvokeAsync).toHaveBeenCalledWith('contenders', { source: 'divisionMove' });
     });
 
     it('recomputes the player when the division is cleared', async () => {
@@ -517,6 +585,7 @@ describe('updatePlayer', () => {
 
       expect(result!.statusCode).toBe(200);
       expect(mockInvokeAsync).toHaveBeenCalledWith('progression', expect.objectContaining({ playerIds: [player.playerId] }));
+      expect(mockInvokeAsync).toHaveBeenCalledWith('contenders', { source: 'divisionMove' });
     });
 
     it('does not recompute when the division is unchanged or not sent', async () => {

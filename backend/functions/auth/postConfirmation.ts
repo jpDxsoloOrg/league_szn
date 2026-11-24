@@ -6,6 +6,7 @@ import {
 import { getRepositories } from '../../lib/repositories';
 import { NEEDS_WRESTLER, newPlayerName } from '../../lib/needsWrestler';
 import { findDefaultDivisionForNewWrestlers } from '../../lib/divisions';
+import { triggerProgressionRecompute } from '../../lib/progression/trigger';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 
@@ -119,6 +120,11 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
           `Player record created for user ${username}: ${newPlayer.playerId}` +
             (divisionId ? ` (division=${divisionId})` : ' (no default division)')
         );
+        // Created into a division (the repository stamps the move timestamps):
+        // put the player on that division's progression tracks. Never throws.
+        if (newPlayer.divisionId) {
+          await triggerProgressionRecompute([newPlayer.playerId], 'playerSignedUp');
+        }
       }
     }
   } catch (error) {

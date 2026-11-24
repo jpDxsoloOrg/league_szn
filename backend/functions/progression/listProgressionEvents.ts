@@ -28,12 +28,15 @@ export interface ProgressionEventEntry {
   /** The actor's linked player name; null for 'system' and for staff with no linked player. */
   actorName: string | null;
   createdAt: string;
+  /** PRL-05: the GM's note on a `goals_reset` event. */
+  note?: string;
 }
 
 /**
  * GET /progression/events?trackId=&kind=&limit= (Moderator+).
  *
- * The call-up history: consideration added/removed and executed moves, newest
+ * The call-up history: consideration added/removed, executed moves and GM
+ * goal resets (`goals_reset`, PRL-05; no toDivisionId), newest
  * first, joined with player, track and division names. `limit` defaults to 50
  * (max 200). The events table is scanned; it holds one row per GM action, so
  * it stays small.
@@ -96,6 +99,7 @@ export const listProgressionEvents: APIGatewayProxyHandler = async (event) => {
         actorName: row.actorUserId === SYSTEM_ACTOR ? null : nameByUserId.get(row.actorUserId) ?? null,
         createdAt: row.createdAt,
       };
+      if (row.note) entry.note = row.note;
       if (row.toDivisionId) {
         entry.toDivisionId = row.toDivisionId;
         entry.toDivisionName = divisionName.get(row.toDivisionId) ?? null;

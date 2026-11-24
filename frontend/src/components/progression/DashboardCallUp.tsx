@@ -1,7 +1,9 @@
+import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import HomeSection from '../home/HomeSection';
 import Card from '../ui/Card';
+import CountingSince from './CountingSince';
 import ProgressionMeter from './ProgressionMeter';
 import { usePlayerProgression } from './usePlayerProgression';
 import './CallUpProgress.css';
@@ -29,15 +31,17 @@ export default function DashboardCallUp() {
         {tracks.map((track) => {
           const goals = track.goals ?? [];
           return (
-            <ProgressionMeter
-              key={track.trackId}
-              pct={track.progressPct}
-              kind={track.kind}
-              size="sm"
-              caption={goals.length > 0
-                ? t('progression.goals.summary', { met: goals.filter((goal) => goal.met).length, total: goals.length })
-                : track.trackName}
-            />
+            <Fragment key={track.trackId}>
+              <ProgressionMeter
+                pct={track.progressPct}
+                kind={track.kind}
+                size="sm"
+                caption={goals.length > 0
+                  ? t('progression.goals.summary', { met: goals.filter((goal) => goal.met).length, total: goals.length })
+                  : track.trackName}
+              />
+              <CountingSince since={track.countingSince} reason={track.countingSinceReason} />
+            </Fragment>
           );
         })}
       </Card>

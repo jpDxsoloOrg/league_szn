@@ -7,6 +7,11 @@ import type { Division } from './repositories/types';
 import { validateDivisionTier, validateZoneSize } from './divisionTiers';
 import { ensureDefaultLadderTracks } from './progression/ladderTemplates';
 
+// PRL-04: the one way to build a division-change patch. Defined in a leaf
+// module so the roster repositories can use it without an import cycle.
+export { divisionMovePatch } from './divisionMove';
+export type { DivisionMovePatch } from './divisionMove';
+
 /**
  * Name the signup lookup used before divisions carried an explicit flag.
  * Only consulted as a fallback when no division is flagged as the default.

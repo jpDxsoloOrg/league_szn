@@ -1,5 +1,6 @@
 import { dynamoDb, TableNames } from './dynamodb';
 import { matchWinners } from './matchResult';
+import { matchResultTime } from './matchTime';
 import { isPlayerVisible } from './needsWrestler';
 import { getRepositories } from './repositories';
 import type { TagTeam } from './repositories/types';
@@ -67,6 +68,7 @@ interface MatchRecord {
   teams?: string[][];
   matchFormat?: string;
   matchType?: string;
+  completedAt?: string;
 }
 
 /** Aggregate win/loss totals for one entity (player or team) in the period. */
@@ -91,6 +93,32 @@ interface PlayerRow {
   deletedAt?: string;
   currentWrestler?: string;
   deactivatedAt?: string;
+  divisionJoinedAt?: string;
+}
+
+/**
+ * When each player joined their current division, for players that record it.
+ * Empty unless the title is division-locked: only then does the contender
+ * window start at the move.
+ */
+type DivisionJoinedAtMap = ReadonlyMap<string, string>;
+
+/**
+ * Whether a match counts toward an entity whose window opens at `cutoff`
+ * (PRL-10). No cut-off means every match in the season counts.
+ */
+function countsSince(match: MatchRecord, cutoff: string | undefined): boolean {
+  if (!cutoff) return true;
+  return Date.parse(matchResultTime(match)) >= Date.parse(cutoff);
+}
+
+/** The later of the given timestamps, ignoring missing ones. */
+function latestOf(timestamps: ReadonlyArray<string | undefined>): string | undefined {
+  let latest: string | undefined;
+  for (const timestamp of timestamps) {
+    if (timestamp && (!latest || Date.parse(timestamp) > Date.parse(latest))) latest = timestamp;
+  }
+  return latest;
 }
 
 // ---------------------------------------------------------------------------
@@ -133,10 +161,11 @@ export async function calculateRankingsForChampionship(
   // ------------------------------------------------------------------
   const allPlayers = await dynamoDb.scanAll({
     TableName: TableNames.PLAYERS,
-    ProjectionExpression: 'playerId, divisionId, deletedAt, currentWrestler, deactivatedAt',
+    ProjectionExpression: 'playerId, divisionId, deletedAt, currentWrestler, deactivatedAt, divisionJoinedAt',
   });
+  const playerRows = allPlayers as unknown as PlayerRow[];
   const eligiblePlayerIds = new Set(
-    (allPlayers as unknown as PlayerRow[])
+    playerRows
       .filter((p) => (
         !p.deletedAt
         && isPlayerVisible({
@@ -147,6 +176,15 @@ export async function calculateRankingsForChampionship(
       ))
       .map((p) => p.playerId),
   );
+
+  // On a division-locked title a player's window opens when they joined the
+  // division (PRL-10), so wins from a previous division don't carry over.
+  const divisionJoinedAt = new Map<string, string>();
+  if (divisionId) {
+    for (const row of playerRows) {
+      if (row.divisionJoinedAt) divisionJoinedAt.set(row.playerId, row.divisionJoinedAt);
+    }
+  }
 
   // ------------------------------------------------------------------
   // 1b. Fetch all completed matches in the active season
@@ -167,10 +205,10 @@ export async function calculateRankingsForChampionship(
 
   if (params.championshipType === 'tag') {
     const teams = await getRepositories().roster.tagTeams.listAll();
-    return calculateTagTeamRankings(params, matches, teams, eligiblePlayerIds);
+    return calculateTagTeamRankings(params, matches, teams, eligiblePlayerIds, divisionJoinedAt);
   }
 
-  return calculatePlayerRankings(params, matches, eligiblePlayerIds);
+  return calculatePlayerRankings(params, matches, eligiblePlayerIds, divisionJoinedAt);
 }
 
 /** Ranks individual players for a singles title. */
@@ -178,6 +216,7 @@ function calculatePlayerRankings(
   params: RankingCalculationParams,
   matches: MatchRecord[],
   eligiblePlayerIds: ReadonlySet<string>,
+  divisionJoinedAt: DivisionJoinedAtMap,
 ): RankingResult[] {
   const {
     currentChampion,
@@ -187,7 +226,11 @@ function calculatePlayerRankings(
   } = params;
 
   // ------------------------------------------------------------------
-  // 2. Build per-player match lists and aggregate stats
+  // 2. Build per-player match lists and aggregate stats. A player's own
+  //    list holds only matches since they joined the title's division, so
+  //    the minimum, streak and recency all follow. The aggregate stats stay
+  //    season-wide: they rate beaten opponents (quality of wins), and an
+  //    opponent's strength doesn't depend on who moved division.
   // ------------------------------------------------------------------
   const playerMatchMap = new Map<string, MatchRecord[]>();
   const playerStats = new Map<string, PlayerStats>();
@@ -197,10 +240,12 @@ function calculatePlayerRankings(
 
     for (const playerId of involvedPlayers) {
       // Accumulate match list
-      if (!playerMatchMap.has(playerId)) {
-        playerMatchMap.set(playerId, []);
+      if (countsSince(match, divisionJoinedAt.get(playerId))) {
+        if (!playerMatchMap.has(playerId)) {
+          playerMatchMap.set(playerId, []);
+        }
+        playerMatchMap.get(playerId)!.push(match);
       }
-      playerMatchMap.get(playerId)!.push(match);
 
       // Accumulate aggregate stats used for quality-of-wins scoring
       if (!playerStats.has(playerId)) {
@@ -284,6 +329,7 @@ function calculateTagTeamRankings(
   matches: readonly MatchRecord[],
   teams: readonly TagTeam[],
   eligiblePlayerIds: ReadonlySet<string>,
+  divisionJoinedAt: DivisionJoinedAtMap,
 ): RankingResult[] {
   const {
     currentChampion,
@@ -298,6 +344,11 @@ function calculateTagTeamRankings(
   //    The index holds teams of every status so older matches still resolve.
   // ------------------------------------------------------------------
   const index = buildTagTeamIndex(teams);
+  // A team's window opens when its later member joined the title's division.
+  const teamCutoff = new Map<string, string | undefined>(teams.map((team) => [
+    team.tagTeamId,
+    latestOf([divisionJoinedAt.get(team.player1Id), divisionJoinedAt.get(team.player2Id)]),
+  ]));
   const teamResults = new Map<string, EntityMatchResult[]>();
   const teamStats = new Map<string, PlayerStats>();
 
@@ -314,9 +365,13 @@ function calculateTagTeamRankings(
           .map((other) => other.tagTeamId as string)
         : [];
 
-      const results = teamResults.get(side.tagTeamId) ?? [];
-      results.push({ date: match.date, outcome, beatenIds });
-      teamResults.set(side.tagTeamId, results);
+      // Stats stay season-wide for quality of wins; only the team's own
+      // results are cut at its division cut-off.
+      if (countsSince(match, teamCutoff.get(side.tagTeamId))) {
+        const results = teamResults.get(side.tagTeamId) ?? [];
+        results.push({ date: match.date, outcome, beatenIds });
+        teamResults.set(side.tagTeamId, results);
+      }
 
       const stats = teamStats.get(side.tagTeamId) ?? { wins: 0, losses: 0, total: 0 };
       stats.total += 1;

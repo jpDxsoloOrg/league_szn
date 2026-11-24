@@ -14,7 +14,7 @@ Ein Team erscheint nur dann in der Rangliste eines Tag-Titels, wenn alles Folgen
 
 ## Welche Matches zählen
 
-Es zählen nur abgeschlossene Tag-Matches der aktiven Saison, und nur für registrierte Teams.
+Es zählen nur abgeschlossene Tag-Matches der aktiven Saison, und nur für registrierte Teams. Bei einem Tag-Titel, der zu einer Division gehört, zählen die Matches eines Teams ab dem Wechsel seines zweiten Mitglieds in diese Division.
 
 - Ein Match zählt für ein Team, wenn die zwei Spieler einer Seite **am Tag des Matches** dieses Team bilden. Matches, die das Paar vor der Gründung oder nach der Auflösung des Teams bestritten hat, zählen nicht für das Team.
 - **Zufällige Paarungen zählen nicht.** Treten zwei Spieler zusammen an, die kein registriertes Team sind, bringt das Match keinem Team Punkte. Für die Einzelbilanz der Spieler zählt es trotzdem.

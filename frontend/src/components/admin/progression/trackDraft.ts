@@ -33,6 +33,8 @@ export const PROGRESSION_METRICS: ProgressionMetric[] = [
   'daysSinceLastMatch',
   'avgStarRatingBelow',
   'contenderRankBest',
+  'losses',
+  'currentWinlessStreak',
 ];
 
 export type MetricParam = 'minRatedMatches' | 'minReactions' | 'lastMatches';

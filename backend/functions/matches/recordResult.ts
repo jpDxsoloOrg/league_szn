@@ -110,10 +110,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // ── Core transaction: match + player standings + season standings ──
+    // completedAt is written once: the notCompleted guard below rejects a
+    // re-record, so a stored completion time is never overwritten.
+    const completedAt = new Date().toISOString();
     const matchPatch: Record<string, unknown> = {
       winners: body.winners,
       losers: body.losers,
       status: 'completed',
+      completedAt,
     };
     if (isDraw) matchPatch.isDraw = true;
 
@@ -195,6 +199,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       winners: body.winners,
       losers: body.losers,
       status: 'completed' as const,
+      completedAt,
       ...(isDraw && { isDraw: true }),
     };
     return success({

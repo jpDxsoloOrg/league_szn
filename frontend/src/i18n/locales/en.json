@@ -547,6 +547,7 @@
     "loadFailed": "Could not load the standings.",
     "noMatchesTitle": "No wrestlers match these filters",
     "noMatchesHint": "Try a different division or alignment.",
+    "divisionSince": "Records count from when each wrestler joined this division.",
     "topThree": "Top three",
     "restOfTable": "The chase pack",
     "ranksRange": "Ranks {{from}} - {{to}}",
@@ -3835,7 +3836,9 @@
       "currentLossStreak": "Losing streak",
       "daysSinceLastMatch": "Days since last match",
       "avgStarRatingBelow": "Low star rating",
-      "contenderRankBest": "Best contender rank"
+      "contenderRankBest": "Best contender rank",
+      "losses": "Losses",
+      "currentWinlessStreak": "Winless streak"
     },
     "goals": {
       "title": "Call-up goals",
@@ -3877,6 +3880,10 @@
       "avgStarRatingBelow": "Average {{threshold}} or less in rated matches",
       "avgStarRatingBelowMin": "Average {{threshold}} or less over at least {{minRatedMatches}} rated matches",
       "contenderRankBest": "Rank in the top {{threshold}} contenders for a division title",
+      "losses_one": "Lose {{threshold}} match",
+      "losses_other": "Lose {{threshold}} matches",
+      "currentWinlessStreak_one": "Go {{threshold}} match without a win",
+      "currentWinlessStreak_other": "Go {{threshold}} matches in a row without a win",
       "titleKind": {
         "promotion": "Promotion goals",
         "relegation": "Relegation criteria"
@@ -3924,9 +3931,9 @@
         "relegation": "Relegation"
       },
       "windowModes": {
-        "allTime": "All time",
-        "season": "Current season",
-        "sinceJoinedDivision": "Since joining the division"
+        "allTime": "Since last move (any season)",
+        "season": "This season (since last move)",
+        "sinceJoinedDivision": "Since last move"
       },
       "directions": {
         "atLeast": "At least",
@@ -3955,6 +3962,7 @@
         "pickDivision": "Search divisions…",
         "developmentalHint": "Developmental",
         "windowMode": "Count stats from",
+        "windowHint": "Goals restart whenever a player changes division or a GM resets them. Win-loss records are never affected.",
         "active": "Active",
         "goals": "Goals",
         "goalNumber": "Goal {{number}}",
@@ -4018,6 +4026,14 @@
         "flagFor": "Flag {{name}} for consideration",
         "unflag": "Unflag",
         "unflagFor": "Remove {{name}} from consideration",
+        "reset": "Reset goals",
+        "resetFor": "Reset goals for {{name}}",
+        "resetTitle": "Reset goals for {{name}}?",
+        "resetDescription": "Their goals on every track out of this division restart from 0% now, and any consideration flag is removed. They stay in the division and their win-loss record is untouched. The wrestler is notified.",
+        "resetConfirm": "Reset goals",
+        "resetNote": "GM note (optional)",
+        "resetNotePlaceholder": "Why the goals restart",
+        "resetDone": "{{name}}'s goals were reset. Progress refills as they compete.",
         "flagTitle": "Flag {{name}}",
         "flagDescription": "The wrestler is told they are under consideration. The note stays with staff.",
         "note": "GM note (optional)",
@@ -4090,6 +4106,7 @@
         "system": "System",
         "unknownStaff": "Staff member",
         "unknownPlayer": "Removed player",
+        "resetBy": "Goals reset by {{actor}}",
         "columns": {
           "date": "Date",
           "event": "Event",
@@ -4112,6 +4129,11 @@
             "callup": "Called up",
             "promotion": "Promoted",
             "relegation": "Relegated"
+          },
+          "goals_reset": {
+            "callup": "Call-up goals reset",
+            "promotion": "Promotion goals reset",
+            "relegation": "Relegation criteria reset"
           }
         }
       },
@@ -4228,6 +4250,18 @@
         "transfer": "Transferred"
       }
     },
+    "countingSince": {
+      "dateOnly": "Counting since {{date}}",
+      "callup": "Counting since your call-up to {{division}} on {{date}}",
+      "callupUnnamed": "Counting since your call-up on {{date}}",
+      "promotion": "Counting since your promotion to {{division}} on {{date}}",
+      "promotionUnnamed": "Counting since your promotion on {{date}}",
+      "divisionChange": "Counting since you joined {{division}} on {{date}}",
+      "divisionChangeUnnamed": "Counting since you joined your division on {{date}}",
+      "goalsReset": "Counting since your goals were reset on {{date}}",
+      "infoLabel": "About this count",
+      "tooltip": "Your record still includes every match. Only this goal restarted."
+    },
     "division": {
       "title": "Division Movement",
       "gmNote": "GM note: {{note}}"
@@ -4238,6 +4272,8 @@
       "tips": {
         "wins": "Chase a few more wins in your upcoming matches.",
         "winColumn": "Your next win is a great reset. Go get it!",
+        "stackWins": "Every win adds up. Keep stacking them.",
+        "nextWin": "One win turns things around. Your next one is right there.",
         "active": "Stay active: request a match or answer a challenge.",
         "quality": "Aim to steal the show with your next match.",
         "momentum": "Keep building momentum. The GMs notice the effort."

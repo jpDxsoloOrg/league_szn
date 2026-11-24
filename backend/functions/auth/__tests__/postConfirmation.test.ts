@@ -34,6 +34,9 @@ vi.mock('@aws-sdk/client-cognito-identity-provider', () => ({
   AdminAddUserToGroupCommand: vi.fn((params: any) => ({ input: params })),
 }));
 
+const { mockInvokeAsync } = vi.hoisted(() => ({ mockInvokeAsync: vi.fn() }));
+vi.mock('../../../lib/asyncLambda', () => ({ invokeAsync: mockInvokeAsync }));
+
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
     roster: { players: mockPlayers, wrestlers: mockWrestlers },
@@ -315,6 +318,30 @@ describe('postConfirmation handler', () => {
     );
     expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('falling back to name match'));
     warn.mockRestore();
+  });
+
+  it('puts a player created into a division on its progression tracks (PRL-04)', async () => {
+    mockSend.mockResolvedValue({});
+    mockInvokeAsync.mockResolvedValue(undefined);
+    mockDivisions.list.mockResolvedValue([
+      { divisionId: 'div-dojo', name: 'The Dojo', isDefaultForNewWrestlers: true },
+    ]);
+    mockPlayers.create.mockResolvedValue({ playerId: 'p-new', divisionId: 'div-dojo' });
+
+    await handler(makePostConfirmationEvent(), dummyContext, dummyCallback);
+
+    expect(mockInvokeAsync).toHaveBeenCalledWith('progression', {
+      playerIds: ['p-new'],
+      source: 'playerSignedUp',
+    });
+  });
+
+  it('does not recompute progression for a player created without a division', async () => {
+    mockSend.mockResolvedValue({});
+
+    await handler(makePostConfirmationEvent(), dummyContext, dummyCallback);
+
+    expect(mockInvokeAsync).not.toHaveBeenCalled();
   });
 
   it('falls back to the Young Boys name match (case-insensitive) with a warning when nothing is flagged', async () => {

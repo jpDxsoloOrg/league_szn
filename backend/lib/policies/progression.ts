@@ -15,14 +15,20 @@
  *   - A metric that is not yet computable (`current === null`) fills 0 and is
  *     never met, whatever the direction.
  *
+ * Progression epoch (PRL-01): every window mode is clipped to the player's
+ * epoch, the moment their goals last started over (a division move or a GM
+ * reset). Totals, rates and streaks only see activity on or after it, so a
+ * streak never carries across a move. See `ProgressionWindow`.
+ *
  * Overall progress is the weighted mean of goal fills, scaled to 0–100.
  * Weights do not need to sum to 1: they are normalised by their total.
  * On a relegation track that number is the player's "danger".
  *
  * House rule (DMV-02): a wrestler is never punished for losing a match that
  * is part of a hot angle. Matches tagged `isHotAngle` that the player LOST
- * are skipped by the loss metrics (`lossPct`, `currentLossStreak`): they are
- * not counted, and they neither extend nor break a loss streak.
+ * are skipped by the loss metrics (`lossPct`, `currentLossStreak`, `losses`,
+ * `currentWinlessStreak`): they are not counted, and they neither extend nor
+ * break a loss or winless streak.
  */
 
 import type {
@@ -34,6 +40,7 @@ import type {
   ProgressionWindowMode,
   ReactionType,
 } from '../repositories/types';
+import { matchResultTime } from '../matchTime';
 
 // ─── Tunables ───────────────────────────────────────────────────────
 
@@ -61,8 +68,13 @@ export type ProgressionMatchResult = 'win' | 'loss' | 'draw';
 /** One completed match the player took part in, from that player's point of view. */
 export interface ProgressionMatchInput {
   matchId: string;
-  /** ISO date of the match; used for window filtering and win-streak order. */
+  /** ISO date the match was booked for; orders the win/loss streaks. */
   date: string;
+  /**
+   * ISO time the result was recorded. Window bounds use it, falling back to
+   * `date` for matches recorded before it existed (see `matchResultTime`).
+   */
+  completedAt?: string;
   seasonId?: string;
   result: ProgressionMatchResult;
   /** Raw (un-rounded) mean of user ratings. */
@@ -107,12 +119,21 @@ export interface ProgressionInputs {
 /**
  * The time window a metric is measured over.
  *
- * - `allTime`: everything.
- * - `season`: matches whose `seasonId` equals `seasonId`; promos and
- *   challenges created within [`since`, `until`] (the season's start/end).
+ * The progression epoch (PRL-01) clips EVERY mode: `resolveProgressionWindow`
+ * sets `since` to the player's epoch (their last division move or goal
+ * reset), or to the season start when that is later. Nothing from before it
+ * counts, so goals and streaks are tracked per division. Win/loss/draw totals
+ * and season standings are separate and never affected.
+ *
+ * - `allTime`: everything on or after `since` (no `since` = everything).
+ * - `season`: matches whose `seasonId` equals `seasonId` AND recorded on or
+ *   after `since`; promos and challenges created within [`since`, `until`].
  *   With no `seasonId` (no active season) the window is empty.
- * - `sinceJoinedDivision`: everything dated on or after `since` (the
- *   division join date). With no `since` there is no lower bound.
+ * - `sinceJoinedDivision`: everything dated on or after `since`. With no
+ *   `since` there is no lower bound.
+ *
+ * Bounds are inclusive. A match is placed by when its result was recorded
+ * (`matchResultTime`), not the date it was booked for.
  */
 export interface ProgressionWindow {
   mode: ProgressionWindowMode;
@@ -153,16 +174,21 @@ function withinBounds(timestamp: string, window: ProgressionWindow): boolean {
 
 /** Returns the subset of `inputs` that falls inside `window`. */
 export function applyWindow(inputs: ProgressionInputs, window: ProgressionWindow): ProgressionInputs {
-  if (window.mode === 'allTime') return inputs;
+  if (window.mode === 'allTime' && window.since === undefined && window.until === undefined) return inputs;
 
   if (window.mode === 'season') {
     const { seasonId } = window;
     if (seasonId === undefined) {
       return { ...inputs, matches: [], promos: [], challenges: [] };
     }
+    // Matches belong to the season by `seasonId`, so only the lower bound
+    // (season start or the epoch, whichever is later) applies to them: a
+    // season match recorded after the season's end date still counts.
+    const lowerBound: ProgressionWindow = { mode: window.mode, since: window.since };
     return {
       ...inputs,
-      matches: inputs.matches.filter((match) => match.seasonId === seasonId),
+      matches: inputs.matches.filter((match) =>
+        match.seasonId === seasonId && withinBounds(matchResultTime(match), lowerBound)),
       promos: inputs.promos.filter((promo) => withinBounds(promo.createdAt, window)),
       challenges: inputs.challenges.filter((challenge) => withinBounds(challenge.createdAt, window)),
     };
@@ -170,7 +196,7 @@ export function applyWindow(inputs: ProgressionInputs, window: ProgressionWindow
 
   return {
     ...inputs,
-    matches: inputs.matches.filter((match) => withinBounds(match.date, window)),
+    matches: inputs.matches.filter((match) => withinBounds(matchResultTime(match), window)),
     promos: inputs.promos.filter((promo) => withinBounds(promo.createdAt, window)),
     challenges: inputs.challenges.filter((challenge) => withinBounds(challenge.createdAt, window)),
   };
@@ -245,6 +271,19 @@ function currentLossStreak(matches: ProgressionMatchInput[]): number {
 }
 
 /**
+ * Consecutive matches without a win (losses and draws) from the newest match
+ * back; a win breaks it. Hot-angle losses are skipped.
+ */
+function currentWinlessStreak(matches: ProgressionMatchInput[]): number {
+  let streak = 0;
+  for (const match of newestFirst(relegationMatches(matches))) {
+    if (match.result === 'win') break;
+    streak += 1;
+  }
+  return streak;
+}
+
+/**
  * Whole days from the latest match (or, with none, from `fallbackSince`)
  * to `asOf`. Null when there is nothing to measure from.
  */
@@ -288,7 +327,8 @@ function bestContenderRank(ranks: readonly number[] | undefined): number | null 
  * direction. `contenderRankBest` is a rank (lower = better), so promotion
  * goals pair it with 'atMost'.
  *
- * `lossPct` and `currentLossStreak` skip hot-angle losses (house rule).
+ * `lossPct`, `currentLossStreak`, `losses` and `currentWinlessStreak` skip
+ * hot-angle losses (house rule).
  */
 export function computeMetric(
   metric: ProgressionMetric,
@@ -309,6 +349,10 @@ export function computeMetric(
       return resultPct(rateSample(relegationMatches(matches), params.lastMatches), 'loss');
     case 'currentLossStreak':
       return currentLossStreak(matches);
+    case 'losses':
+      return relegationMatches(matches).filter((match) => match.result === 'loss').length;
+    case 'currentWinlessStreak':
+      return currentWinlessStreak(matches);
     case 'daysSinceLastMatch':
       return daysSinceLastMatch(matches, inputs.asOf, window.since);
     case 'avgStarRatingBelow': {

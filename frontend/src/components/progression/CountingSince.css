@@ -1,0 +1,79 @@
+.counting-since {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.5rem 0 0;
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.counting-since__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.counting-since__hint {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.counting-since__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* A 24px hit area keeps the icon small without a hard-to-tap target. */
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: help;
+}
+
+.counting-since__trigger:hover {
+  color: var(--color-text);
+}
+
+.counting-since__trigger:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.counting-since__tooltip {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.375rem);
+  z-index: 2;
+  width: max-content;
+  max-width: min(16rem, 70vw);
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-overlay);
+  color: var(--color-text);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.counting-since__hint:hover .counting-since__tooltip,
+.counting-since__trigger:focus-visible + .counting-since__tooltip,
+.counting-since__trigger:focus + .counting-since__tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .counting-since__tooltip {
+    transition: none;
+  }
+}

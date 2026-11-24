@@ -48,16 +48,19 @@ describe('reviewTransferRequest', () => {
     mockInvokeAsync.mockResolvedValue(undefined);
   });
 
-  it('moves the player and stamps divisionJoinedAt on approval', async () => {
+  it('moves the player and stamps both move timestamps on approval (PRL-04)', async () => {
     const result = await reviewTransferRequest(event('approved'), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
+    // Exact patch: records (wins/losses/draws) and season standings stay out.
     expect(mockPlayers.update).toHaveBeenCalledWith('p1', {
       divisionId: 'd2',
       divisionJoinedAt: expect.any(String),
+      progressionEpochAt: expect.any(String),
     });
     const [, patch] = mockPlayers.update.mock.calls[0];
     expect(Date.parse(patch.divisionJoinedAt)).not.toBeNaN();
+    expect(patch.progressionEpochAt).toBe(patch.divisionJoinedAt);
   });
 
   it('leaves the player alone on rejection', async () => {
@@ -67,14 +70,16 @@ describe('reviewTransferRequest', () => {
     expect(mockPlayers.update).not.toHaveBeenCalled();
   });
 
-  it('recomputes progression for the moved player on approval', async () => {
+  it('recomputes progression and contenders for the moved player on approval', async () => {
     await reviewTransferRequest(event('approved'), ctx, cb);
 
-    expect(mockInvokeAsync).toHaveBeenCalledTimes(1);
+    expect(mockInvokeAsync).toHaveBeenCalledTimes(2);
     expect(mockInvokeAsync).toHaveBeenCalledWith('progression', expect.objectContaining({ playerIds: ['p1'] }));
+    // PRL-10: the new division's titles rank from the join date.
+    expect(mockInvokeAsync).toHaveBeenCalledWith('contenders', { source: 'divisionMove' });
   });
 
-  it('does not recompute progression on rejection', async () => {
+  it('does not recompute progression or contenders on rejection', async () => {
     await reviewTransferRequest(event('rejected'), ctx, cb);
 
     expect(mockInvokeAsync).not.toHaveBeenCalled();

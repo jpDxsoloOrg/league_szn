@@ -32,3 +32,9 @@ Hier erscheinen nur Spieler mit einem Wrestler-Namen. Siehe [Erste Schritte](get
 Spieler werden nach den meisten Siegen sortiert, dann nach den wenigsten Niederlagen. Spieler ohne Match in der gewählten Saison stehen am Ende. Unentschieden zählen für die Bilanz und für Sieg %, entscheiden aber nicht über die Reihenfolge.
 
 **Formel:** Sieg % = Siege ÷ (Siege + Niederlagen + Unentschieden) × 100
+
+## Die Tabelle einer Division
+
+Wählst du eine einzelne Division, zählen Bilanz, Sieg %, Letzte 5 und Serie jedes Spielers nur Matches seit seinem Wechsel in diese Division (innerhalb der gewählten Saison). Wer gerade auf- oder abgestiegen ist oder die Division gewechselt hat, startet unten bei 0-0-0 und arbeitet sich hoch. Spieler, die nie die Division gewechselt haben, behalten ihre komplette Bilanz.
+
+Die Ansicht **Alle** und die Spielerprofile zeigen immer die komplette Karriere-Bilanz. Ein Wechsel ändert sie nie. Mehr dazu unter [Auf- und Abstieg](division-movement).

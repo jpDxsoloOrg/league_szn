@@ -35,6 +35,8 @@ const METRICS: Record<ProgressionMetric, true> = {
   daysSinceLastMatch: true,
   avgStarRatingBelow: true,
   contenderRankBest: true,
+  losses: true,
+  currentWinlessStreak: true,
 };
 
 const WINDOW_MODES: Record<ProgressionWindowMode, true> = {

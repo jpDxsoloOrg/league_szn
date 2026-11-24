@@ -238,6 +238,14 @@ export interface Player {
    * `windowMode: 'sinceJoinedDivision'` count activity from this instant.
    */
   divisionJoinedAt?: string;
+  /**
+   * The progression epoch (PRL-01): when this player's promotion, relegation
+   * and call-up goals last started over (a division move or a GM reset).
+   * Every progression track ignores activity from before it. Absent on rows
+   * written before the field shipped; readers fall back to `divisionJoinedAt`.
+   * Never touches win/loss/draw totals or season standings.
+   */
+  progressionEpochAt?: string;
   companyId?: string;
   stableId?: string;
   tagTeamId?: string;
@@ -717,6 +725,11 @@ export interface Match {
   /** Number of user ratings submitted for this match. */
   ratingsCount?: number;
   matchOfTheNight?: boolean;
+  /**
+   * ISO time the result was recorded (PRL-02). Set once by recordResult;
+   * older matches are backfilled from `updatedAt`. Read via `matchResultTime`.
+   */
+  completedAt?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -807,7 +820,10 @@ export type ProgressionMetric =
   | 'currentLossStreak'
   | 'daysSinceLastMatch'
   | 'avgStarRatingBelow'
-  | 'contenderRankBest';
+  | 'contenderRankBest'
+  // PRL-03: relegation metrics. Both skip hot-angle losses.
+  | 'losses'
+  | 'currentWinlessStreak';
 
 export type ProgressionWindowMode = 'allTime' | 'season' | 'sinceJoinedDivision';
 
@@ -881,7 +897,11 @@ export interface PlayerProgression {
   notifiedGoalIds?: string[];
 }
 
-export type ProgressionEventType = 'consideration_added' | 'consideration_removed' | 'executed';
+/**
+ * `goals_reset` (PRL-05): a GM restarted the player's goals without moving
+ * them. One event is logged per track out of the player's current division.
+ */
+export type ProgressionEventType = 'consideration_added' | 'consideration_removed' | 'executed' | 'goals_reset';
 
 export interface ProgressionEvent {
   eventId: string;
@@ -898,6 +918,8 @@ export interface ProgressionEvent {
    * announcement. A relegation reaches the public activity feed only then.
    */
   announced?: boolean;
+  /** PRL-05: the GM's optional note on a `goals_reset` event. */
+  note?: string;
 }
 
 /** DMV-03: what a GM can do with a player at the end of a season. */

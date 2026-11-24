@@ -18,6 +18,7 @@
   text-transform: uppercase;
 }
 
-.callup-dashboard__card .progression-meter + .progression-meter {
+.callup-dashboard__card .progression-meter + .progression-meter,
+.callup-dashboard__card .counting-since + .progression-meter {
   margin-top: 1rem;
 }

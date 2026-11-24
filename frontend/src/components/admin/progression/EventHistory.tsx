@@ -19,13 +19,14 @@ const TYPE_TONE: Record<ProgressionEventType, BadgeTone> = {
   consideration_added: 'warning',
   consideration_removed: 'neutral',
   executed: 'win',
+  goals_reset: 'violet',
 };
 
 export interface EventHistoryProps {
   tracks: ProgressionTrack[];
 }
 
-/** Recent ProgressionEvents: who was flagged, unflagged or moved, and by whom. */
+/** Recent ProgressionEvents: who was flagged, unflagged, moved or reset, and by whom. */
 export default function EventHistory({ tracks }: EventHistoryProps) {
   const { t, i18n } = useTranslation();
   const [trackId, setTrackId] = useState('');
@@ -126,11 +127,21 @@ export default function EventHistory({ tracks }: EventHistoryProps) {
             {
               key: 'type',
               header: t('progression.admin.history.columns.event'),
-              render: (event) => (
-                <Badge tone={TYPE_TONE[event.type]}>
-                  {t(`progression.admin.history.types.${event.type}.${event.kind}`)}
-                </Badge>
-              ),
+              render: (event) => {
+                const badge = (
+                  <Badge tone={TYPE_TONE[event.type]}>
+                    {t(`progression.admin.history.types.${event.type}.${event.kind}`)}
+                  </Badge>
+                );
+                if (event.type !== 'goals_reset') return badge;
+                return (
+                  <span className="ac-cell__text">
+                    {badge}
+                    <span className="ac-cell__sub">{t('progression.admin.history.resetBy', { actor: actorLabel(event) })}</span>
+                    {event.note && <span className="ac-cell__sub">{event.note}</span>}
+                  </span>
+                );
+              },
             },
             {
               key: 'player',

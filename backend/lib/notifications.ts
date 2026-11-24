@@ -21,7 +21,8 @@ export type NotificationType =
   | 'account_reactivated'
   | 'progression_consideration'
   | 'progression_executed'
-  | 'progression_milestone';
+  | 'progression_milestone'
+  | 'progression_goals_reset';
 
 /** Set of notification types scoped to a rivalry source. */
 export type RivalryNotificationType =

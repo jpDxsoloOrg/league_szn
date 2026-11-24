@@ -114,7 +114,9 @@ async function recalculateChampionship(
   const existingRankings = await contenders.listByChampionship(championshipId);
   const existingMap = new Map(existingRankings.map((existing) => [existing.playerId, existing]));
 
-  // Calculate new rankings (division-locked if championship has divisionId)
+  // Calculate new rankings (division-locked if championship has divisionId).
+  // Only a division-locked run counts each player's matches from their
+  // divisionJoinedAt (PRL-10); with divisionRestricted off, the whole season counts.
   const useDivisionId = configOverrides?.divisionRestricted === false
     ? undefined
     : championship.divisionId;

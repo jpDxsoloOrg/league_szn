@@ -195,12 +195,14 @@ export default function TrackEditor({ open, track, divisions, candidateCount, on
           <select
             id={fieldId('window')}
             value={draft.windowMode}
+            aria-describedby={fieldId('window-hint')}
             onChange={(event) => update({ windowMode: event.target.value as ProgressionWindowMode })}
           >
             {WINDOW_MODES.map((mode) => (
               <option key={mode} value={mode}>{t(`progression.admin.windowModes.${mode}`)}</option>
             ))}
           </select>
+          <span id={fieldId('window-hint')} className="ac-field__hint">{t('progression.admin.editor.windowHint')}</span>
         </div>
         <div className="ac-field mp-editor__active">
           <label className="ac-check am-toggle-row">

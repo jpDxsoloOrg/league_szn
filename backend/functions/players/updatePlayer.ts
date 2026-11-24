@@ -6,6 +6,8 @@ import { parseBody } from '../../lib/parseBody';
 import { NEEDS_WRESTLER, isNeedsWrestler } from '../../lib/needsWrestler';
 import { requireRole } from '../../lib/auth';
 import { triggerProgressionRecompute } from '../../lib/progression/trigger';
+import { triggerContenderRecalculation } from '../../lib/contenderTrigger';
+import { divisionMovePatch } from '../../lib/divisions';
 import { applyMovesetFields } from './movesetFields';
 import type { PlayerPatch } from '../../lib/repositories';
 import {
@@ -82,22 +84,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     if (body.divisionId !== undefined) {
-      if (body.divisionId === '' || body.divisionId === null) {
-        patch.divisionId = undefined;
-        hasChanges = true;
-      } else {
+      const clearing = body.divisionId === '' || body.divisionId === null;
+      if (!clearing) {
         const division = await leagueOps.divisions.findById(
           body.divisionId as string,
         );
         if (!division) {
           return notFound(`Division ${body.divisionId} not found`);
         }
-        patch.divisionId = body.divisionId as string;
-        if (patch.divisionId !== player.divisionId) {
-          patch.divisionJoinedAt = new Date().toISOString();
-        }
-        hasChanges = true;
       }
+      const nextDivisionId = clearing ? undefined : (body.divisionId as string);
+      patch.divisionId = nextDivisionId;
+      // Any real change, clearing included, restarts goals and streaks.
+      if (nextDivisionId !== player.divisionId) {
+        Object.assign(patch, divisionMovePatch(new Date().toISOString()));
+      }
+      hasChanges = true;
     }
 
     const clearCurrent = body.clearCurrentWrestler === true;
@@ -206,9 +208,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // A division change (including clearing it) moves the player onto other
     // progression tracks: score the new ones and drop the old division's rows.
+    // Division-locked titles change eligibility and the contender window
+    // restarts at divisionJoinedAt, so contender rankings are refreshed too.
     const divisionChanged = 'divisionId' in patch && patch.divisionId !== player.divisionId;
     const recomputeOnDivisionChange = async (): Promise<void> => {
-      if (divisionChanged) await triggerProgressionRecompute([playerId], 'playerDivisionChanged');
+      if (!divisionChanged) return;
+      await triggerProgressionRecompute([playerId], 'playerDivisionChanged');
+      await triggerContenderRecalculation('divisionMove');
     };
 
     // If any FK transition happened, stage the player update + wrestler

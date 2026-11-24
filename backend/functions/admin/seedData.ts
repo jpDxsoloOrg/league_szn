@@ -18,6 +18,7 @@ import { buildProgressionInputs, resolveProgressionWindow } from '../../lib/prog
 import { PROGRESS_MILESTONE_THRESHOLDS } from '../../lib/progression/milestones';
 import { computeProgress } from '../../lib/policies/progression';
 import { planDefaultLadderTracks } from '../../lib/progression/ladderTemplates';
+import { divisionMovePatch } from '../../lib/divisions';
 import { toProgressionEventItem, toSeasonReviewItem } from '../../lib/repositories/dynamo/progressionRows';
 import { rankBySeasonRecord, recommendMovement } from '../progression/seasonSnapshot';
 import type { Rivalry, RivalryHeat, RivalryStatus } from '../../lib/repositories';
@@ -444,7 +445,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       losses: Math.floor(Math.random() * 12) + 2,
       draws: Math.floor(Math.random() * 3),
       divisionId: divisions[index % divisions.length].divisionId,
-      divisionJoinedAt: now,
+      ...divisionMovePatch(now),
       ...(seededMovesets[index] ?? {}),
       createdAt: now,
       updatedAt: now,
@@ -1508,7 +1509,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         losses: 0,
         draws: 0,
         divisionId: youngBoysDivision.divisionId,
-        divisionJoinedAt: youngBoysJoinedAt,
+        ...divisionMovePatch(youngBoysJoinedAt),
         createdAt: daysAgo(45).toISOString(),
         updatedAt: now,
       }))
@@ -1709,7 +1710,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       [player.wins, player.losses] = record.allTime;
       player.draws = 0;
       // Joined when the season started, so the `sinceJoinedDivision` window sees it.
-      player.divisionJoinedAt = season.startDate;
+      Object.assign(player, divisionMovePatch(season.startDate));
       const standing = seasonStandingsItems.find((row) => row.playerId === player.playerId);
       if (standing) {
         [standing.wins, standing.losses] = record.season;
@@ -1728,7 +1729,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       updatedAt: daysAgo(31).toISOString(),
     };
     const promotedAt = daysAgo(30).toISOString();
-    edge.divisionJoinedAt = promotedAt;
+    Object.assign(edge, divisionMovePatch(promotedAt));
 
     const ladderTracks = planDefaultLadderTracks(divisions, [], now, uuidv4);
     const ladderTrack = (kind: ProgressionKind, divisionId: string): ProgressionTrack | undefined =>

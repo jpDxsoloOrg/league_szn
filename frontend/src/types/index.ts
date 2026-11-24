@@ -40,8 +40,23 @@ export interface Player {
   recentForm?: ('W' | 'L' | 'D')[];
   /** Current consecutive result streak from most recent match */
   currentStreak?: { type: 'W' | 'L' | 'D'; count: number };
+  /** When the player joined their current division (set on promotion/relegation). */
+  divisionJoinedAt?: string;
+  /** Standings only (PRL-09): record since the player joined their current division. */
+  divisionRecord?: DivisionRecord;
   /** Sent only to staff and to the player themselves. */
   discipline?: PlayerDisciplineSummary;
+}
+
+/** A player's W-L-D, form and streak counting only results since they joined their division. */
+export interface DivisionRecord {
+  wins: number;
+  losses: number;
+  draws: number;
+  recentForm: ('W' | 'L' | 'D')[];
+  currentStreak: { type: 'W' | 'L' | 'D'; count: number };
+  /** The join time the record counts from; absent when the player has never moved division. */
+  since?: string;
 }
 
 export type DisciplineStatus = 'clear' | 'warned' | 'signup-blocked' | 'cooldown' | 'deactivated';
@@ -585,7 +600,7 @@ export interface Video {
   updatedAt: string;
 }
 
-export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'tag_team_formed' | 'transfer_reviewed' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change' | 'strike_issued' | 'strike_removed' | 'account_reactivated' | 'progression_consideration' | 'progression_executed' | 'progression_milestone';
+export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'tag_team_formed' | 'transfer_reviewed' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change' | 'strike_issued' | 'strike_removed' | 'account_reactivated' | 'progression_consideration' | 'progression_executed' | 'progression_milestone' | 'progression_goals_reset';
 
 export interface AppNotification {
   notificationId: string;

@@ -223,6 +223,27 @@ describe('recordResult — core transaction', () => {
     expect(b.match.winners).toEqual(['p1']);
   });
 
+  it('stamps completedAt with the time the result was recorded', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-06-03T18:30:00.000Z'));
+    try {
+      stubSuccess();
+      const r = await recordResult(ev({
+        pathParameters: { matchId: 'm1' },
+        body: JSON.stringify({ winners: ['p1'], losers: ['p2'] }),
+      }), ctx, cb);
+
+      const tx = { updateMatch: vi.fn(), incrementPlayerRecord: vi.fn(), incrementStanding: vi.fn() };
+      await mockRunInTransaction.mock.calls[0][0](tx);
+      expect(tx.updateMatch).toHaveBeenCalledWith('m1', '2024-06-01', expect.objectContaining({
+        completedAt: '2024-06-03T18:30:00.000Z',
+      }), { kind: 'notCompleted' });
+      expect(JSON.parse(r!.body).match.completedAt).toBe('2024-06-03T18:30:00.000Z');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('calls transaction with match update + winner wins + loser losses', async () => {
     stubSuccess();
     await recordResult(ev({
@@ -248,6 +269,7 @@ describe('recordResult — core transaction', () => {
       status: 'completed',
       winners: ['p1'],
       losers: ['p2'],
+      completedAt: expect.any(String),
     }), { kind: 'notCompleted' });
     // Winner gets +1 win
     expect(tx.incrementPlayerRecord).toHaveBeenCalledWith('p1', { wins: 1 });

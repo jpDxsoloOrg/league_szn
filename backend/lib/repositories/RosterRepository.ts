@@ -34,6 +34,8 @@ export interface PlayerCreateInput {
   divisionId?: string;
   /** Defaults to the create time when `divisionId` is set. */
   divisionJoinedAt?: string;
+  /** Progression epoch (PRL-01); see `Player.progressionEpochAt`. */
+  progressionEpochAt?: string;
   companyId?: string;
   alignment?: 'face' | 'heel' | 'neutral';
   bio?: string;
@@ -52,6 +54,8 @@ export interface PlayerPatch {
   divisionId?: string;
   /** Set alongside `divisionId` whenever the division actually changes. */
   divisionJoinedAt?: string;
+  /** Restarts every progression track for the player (PRL-01). */
+  progressionEpochAt?: string;
   companyId?: string;
   stableId?: string | null;
   tagTeamId?: string | null;

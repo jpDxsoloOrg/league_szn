@@ -10,6 +10,7 @@ import {
   divisionJoinedAt,
   loadProgressionBatch,
   loadProgressionInputs,
+  progressionEpoch,
   reactionCountsFromOthers,
   resolveProgressionWindow,
 } from '../loadInputs';
@@ -54,6 +55,7 @@ describe('loadProgressionBatch', () => {
       ratingsCount: 4,
       starRating: 4,
       matchOfTheNight: true,
+      completedAt: '2026-03-04T21:00:00.000Z',
     }) });
     await repos.competition.matches.create({ ...completedMatch('m2', {
       participants: [alice.playerId, bob.playerId],
@@ -95,7 +97,16 @@ describe('loadProgressionBatch', () => {
     const aliceInputs = batch.inputs.get(alice.playerId)!;
     expect(aliceInputs.matches.map((m) => [m.matchId, m.result]).sort()).toEqual([['m1', 'win'], ['m2', 'draw']]);
     const m1 = aliceInputs.matches.find((m) => m.matchId === 'm1')!;
-    expect(m1).toMatchObject({ seasonId: 's1', ratingAverage: 3.75, ratingsCount: 4, matchOfTheNight: true });
+    expect(m1).toMatchObject({
+      date: '2026-03-01T00:00:00.000Z',
+      completedAt: '2026-03-04T21:00:00.000Z',
+      seasonId: 's1',
+      ratingAverage: 3.75,
+      ratingsCount: 4,
+      matchOfTheNight: true,
+    });
+    // A match recorded before completedAt existed carries none.
+    expect(aliceInputs.matches.find((m) => m.matchId === 'm2')!.completedAt).toBeUndefined();
     // Falls back to starRating when there is no raw average.
     expect(aliceInputs.matches.find((m) => m.matchId === 'm2')!.ratingAverage).toBe(2.5);
     // Self-reaction from user-alice stripped; hidden promo excluded.
@@ -154,8 +165,38 @@ describe('window resolution', () => {
     expect(divisionJoinedAt({ ...player, divisionJoinedAt: '2026-05-01T00:00:00.000Z' } as Player)).toBe('2026-05-01T00:00:00.000Z');
   });
 
+  it('progressionEpoch falls back to divisionJoinedAt, then to createdAt (PRL-01)', () => {
+    const joined = '2026-05-01T00:00:00.000Z';
+    const reset = '2026-06-01T00:00:00.000Z';
+    expect(progressionEpoch(player)).toBe(player.createdAt);
+    expect(progressionEpoch({ ...player, divisionJoinedAt: joined })).toBe(joined);
+    expect(progressionEpoch({ ...player, divisionJoinedAt: joined, progressionEpochAt: '' })).toBe(joined);
+    expect(progressionEpoch({ ...player, divisionJoinedAt: joined, progressionEpochAt: reset })).toBe(reset);
+  });
+
+  it('clips every mode to the epoch (PRL-01)', () => {
+    const epoch = '2026-03-15T00:00:00.000Z';
+    const moved = { ...player, divisionJoinedAt: '2026-03-01T00:00:00.000Z', progressionEpochAt: epoch };
+    expect(resolveProgressionWindow('allTime', moved, season)).toEqual({ mode: 'allTime', since: epoch });
+    expect(resolveProgressionWindow('sinceJoinedDivision', moved, season)).toEqual({
+      mode: 'sinceJoinedDivision',
+      since: epoch,
+    });
+    // Season started before the epoch: the epoch is the lower bound.
+    expect(resolveProgressionWindow('season', moved, { ...season, endDate: '2026-09-01T00:00:00.000Z' })).toEqual({
+      mode: 'season',
+      seasonId: 's1',
+      since: epoch,
+      until: '2026-09-01T00:00:00.000Z',
+    });
+    // Epoch earlier than the season start: the season start wins.
+    const lateSeason = { ...season, startDate: '2026-04-01T00:00:00.000Z' };
+    expect(resolveProgressionWindow('season', moved, lateSeason)).toMatchObject({ since: lateSeason.startDate });
+  });
+
   it('resolves each mode', () => {
-    expect(resolveProgressionWindow('allTime', player, season)).toEqual({ mode: 'allTime' });
+    expect(resolveProgressionWindow('allTime', player, season)).toEqual({ mode: 'allTime', since: player.createdAt });
+    expect(resolveProgressionWindow('allTime', undefined, season)).toEqual({ mode: 'allTime' });
     expect(resolveProgressionWindow('season', player, season)).toEqual({
       mode: 'season',
       seasonId: 's1',

@@ -137,3 +137,47 @@ describe('house rule: hot-angle losses never count towards relegation', () => {
     expect(computeProgress(relegationTrack, inputs([...before, ...coldLosses])).progressPct).toBeGreaterThan(dangerBefore);
   });
 });
+
+describe('currentWinlessStreak (PRL-03)', () => {
+  it('counts losses and draws from the newest match back until a win', () => {
+    const lossDrawLoss = [match(1, 'win'), match(2, 'loss'), match(3, 'draw'), match(4, 'loss')];
+    expect(computeMetric('currentWinlessStreak', inputs(lossDrawLoss))).toBe(3);
+    expect(computeMetric('currentWinlessStreak', inputs([...lossDrawLoss, match(5, 'win')]))).toBe(0);
+    expect(computeMetric('currentWinlessStreak', inputs([]))).toBe(0);
+  });
+
+  it('fills a relegation goal proportionally', () => {
+    const track = {
+      ...relegationTrack,
+      goals: [{ goalId: 'winless', metric: 'currentWinlessStreak' as const, threshold: 5, weight: 1 }],
+    };
+    const matches = [match(1, 'loss'), match(2, 'draw'), match(3, 'loss')];
+    const result = computeProgress(track, inputs(matches));
+    expect(result.goals[0]).toMatchObject({ current: 3, met: false });
+    expect(result.progressPct).toBe(60);
+  });
+});
+
+describe('losses (PRL-03)', () => {
+  it('counts every loss in the window', () => {
+    const matches = [match(1, 'loss'), match(2, 'win'), match(3, 'draw'), match(4, 'loss')];
+    expect(computeMetric('losses', inputs(matches))).toBe(2);
+    expect(computeMetric('losses', inputs([]))).toBe(0);
+  });
+});
+
+describe('house rule: hot-angle losses in losses and currentWinlessStreak (PRL-03)', () => {
+  it('L L L with two hot-angle losses counts as a single loss everywhere', () => {
+    const matches = [match(1, 'loss', { isHotAngle: true }), match(2, 'loss'), match(3, 'loss', { isHotAngle: true })];
+    expect(computeMetric('losses', inputs(matches))).toBe(1);
+    expect(computeMetric('currentWinlessStreak', inputs(matches))).toBe(1);
+    expect(computeMetric('currentLossStreak', inputs(matches))).toBe(1);
+  });
+
+  it('a hot-angle loss neither extends nor breaks a winless streak', () => {
+    const breaking = [match(1, 'draw'), match(2, 'loss', { isHotAngle: true }), match(3, 'loss')];
+    expect(computeMetric('currentWinlessStreak', inputs(breaking))).toBe(2);
+    const afterWin = [match(1, 'win'), match(2, 'loss', { isHotAngle: true })];
+    expect(computeMetric('currentWinlessStreak', inputs(afterWin))).toBe(0);
+  });
+});

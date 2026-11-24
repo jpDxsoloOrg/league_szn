@@ -7,6 +7,29 @@ import { computeRecentFormAndStreak } from '../../lib/recentForm';
 import { getVerifiedCaller } from '../../lib/optionalCaller';
 import { toPublicPlayer } from '../../lib/publicPlayer';
 import { rejectOverlongQuery } from '../../lib/router';
+import {
+  computeDivisionRecord,
+  divisionRecordLowerBound,
+  type DivisionRecord,
+  type MatchForDivisionRecord,
+} from '../../lib/divisionRecord';
+
+type ShownRecord = Omit<DivisionRecord, 'since'>;
+
+/**
+ * Record in the player's current division (PRL-09). A player who has never
+ * moved has no join time, so their division record is the record shown beside
+ * it (career or season); otherwise only results since joining count.
+ */
+function divisionRecordFor(
+  player: { playerId: string; divisionJoinedAt?: string },
+  shownRecord: ShownRecord,
+  matchesInWindow: ReadonlyArray<MatchForDivisionRecord>,
+): DivisionRecord {
+  const since = divisionRecordLowerBound(player.divisionJoinedAt);
+  if (!since) return { ...shownRecord };
+  return computeDivisionRecord(player.playerId, since, matchesInWindow);
+}
 
 export const handler: APIGatewayProxyHandler = rejectOverlongQuery(async (event) => {
   try {
@@ -49,6 +72,8 @@ export const handler: APIGatewayProxyHandler = rejectOverlongQuery(async (event)
 
       // Form and streak cover the same season as the record beside them.
       const seasonMatches = completedMatches.filter((m) => m.seasonId === seasonId);
+      // Division records count every completed result in the season.
+      const allSeasonMatches = rawMatches.filter((m) => m.seasonId === seasonId);
 
       // Show ALL players - those with standings get season W-L-D, others get 0-0-0
       const standings = filteredPlayers.map((player) => {
@@ -58,13 +83,17 @@ export const handler: APIGatewayProxyHandler = rejectOverlongQuery(async (event)
           seasonMatches
         );
         const mainOverall = overallsByPlayerId.get(player.playerId);
-        return {
-          ...toPublicPlayer(player, caller),
+        const seasonRecord: ShownRecord = {
           wins: standing ? (standing.wins || 0) : 0,
           losses: standing ? (standing.losses || 0) : 0,
           draws: standing ? (standing.draws || 0) : 0,
           recentForm,
           currentStreak,
+        };
+        return {
+          ...toPublicPlayer(player, caller),
+          ...seasonRecord,
+          divisionRecord: divisionRecordFor(player, seasonRecord, allSeasonMatches),
           ...(mainOverall !== undefined ? { mainOverall } : {}),
         };
       });
@@ -112,7 +141,20 @@ export const handler: APIGatewayProxyHandler = rejectOverlongQuery(async (event)
         completedMatches
       );
       const mainOverall = overallsByPlayerId.get(player.playerId);
-      return { ...toPublicPlayer(player, caller), recentForm, currentStreak, ...(mainOverall !== undefined ? { mainOverall } : {}) };
+      const careerRecord: ShownRecord = {
+        wins: player.wins || 0,
+        losses: player.losses || 0,
+        draws: player.draws || 0,
+        recentForm,
+        currentStreak,
+      };
+      return {
+        ...toPublicPlayer(player, caller),
+        recentForm,
+        currentStreak,
+        divisionRecord: divisionRecordFor(player, careerRecord, rawMatches),
+        ...(mainOverall !== undefined ? { mainOverall } : {}),
+      };
     });
 
     return success({

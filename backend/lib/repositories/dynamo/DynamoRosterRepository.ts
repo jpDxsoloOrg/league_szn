@@ -3,6 +3,7 @@ import { dynamoDb, TableNames } from '../../dynamodb';
 import { ConcurrencyError, NotFoundError } from '../errors';
 import { buildUpdateExpression } from './util';
 import { DynamoCrudRepository } from './DynamoCrudRepository';
+import { divisionMovePatch } from '../../divisionMove';
 import type {
   RosterRepository,
   PlayerCreateInput,
@@ -59,9 +60,12 @@ export class DynamoRosterRepository implements RosterRepository {
       ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {}),
       ...(input.psnId !== undefined ? { psnId: input.psnId } : {}),
       ...(input.divisionId !== undefined ? { divisionId: input.divisionId } : {}),
+      // Created into a division: its windows start there (PRL-04). An explicit
+      // join time (seed, imports) wins over the create time.
       ...(input.divisionId !== undefined
-        ? { divisionJoinedAt: input.divisionJoinedAt ?? now }
+        ? divisionMovePatch(input.divisionJoinedAt ?? now)
         : {}),
+      ...(input.progressionEpochAt !== undefined ? { progressionEpochAt: input.progressionEpochAt } : {}),
       ...(input.companyId !== undefined ? { companyId: input.companyId } : {}),
       ...(input.alignment !== undefined ? { alignment: input.alignment } : {}),
       wins: 0,

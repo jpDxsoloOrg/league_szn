@@ -92,6 +92,56 @@ components:
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
 
+    FormResult:
+      type: string
+      enum: [W, L, D]
+
+    Streak:
+      type: object
+      required: [type, count]
+      properties:
+        type: { $ref: '#/components/schemas/FormResult' }
+        count: { type: integer }
+
+    DivisionRecord:
+      type: object
+      description: >-
+        Record in the player's current division. Counts only completed matches
+        whose result time (completedAt, else date) is on or after divisionJoinedAt,
+        within the requested season when seasonId is given. A player with no
+        divisionJoinedAt gets the same record as the row (career or season).
+      required: [wins, losses, draws, recentForm, currentStreak]
+      properties:
+        wins: { type: integer }
+        losses: { type: integer }
+        draws: { type: integer }
+        recentForm:
+          type: array
+          maxItems: 5
+          description: Newest first.
+          items: { $ref: '#/components/schemas/FormResult' }
+        currentStreak: { $ref: '#/components/schemas/Streak' }
+        since:
+          type: string
+          format: date-time
+          description: The divisionJoinedAt the record counts from. Omitted when the player has never moved division.
+
+    StandingsPlayer:
+      allOf:
+        - $ref: '#/components/schemas/Player'
+        - type: object
+          required: [divisionRecord]
+          properties:
+            divisionJoinedAt: { type: string, format: date-time }
+            mainOverall: { type: integer }
+            recentForm:
+              type: array
+              maxItems: 5
+              description: Newest first.
+              items: { $ref: '#/components/schemas/FormResult' }
+            currentStreak: { $ref: '#/components/schemas/Streak' }
+            divisionRecord: { $ref: '#/components/schemas/DivisionRecord' }
+
     Refusal:
       type: object
       required: [message, code]
@@ -1122,10 +1172,11 @@ components:
         goalId: { type: string, description: Generated when omitted on create. }
         metric:
           type: string
-          enum: [matchesCompeted, wins, winPct, avgStarRating, promosCut, promosWithReactions, totalPromoReactions, matchOfTheNight, challengesIssued, currentWinStreak, lossPct, currentLossStreak, daysSinceLastMatch, avgStarRatingBelow, contenderRankBest]
+          enum: [matchesCompeted, wins, winPct, avgStarRating, promosCut, promosWithReactions, totalPromoReactions, matchOfTheNight, challengesIssued, currentWinStreak, lossPct, currentLossStreak, daysSinceLastMatch, avgStarRatingBelow, contenderRankBest, losses, currentWinlessStreak]
           description: >-
-            lossPct and currentLossStreak skip losses in hot-angle matches (linked to an active rivalry
-            at hot heat or above). daysSinceLastMatch counts whole days since the latest match.
+            lossPct, currentLossStreak, losses and currentWinlessStreak skip losses in hot-angle matches
+            (linked to an active rivalry at hot heat or above): they neither count nor break a streak.
+            currentWinlessStreak counts losses and draws from the newest match back until a win. daysSinceLastMatch counts whole days since the latest match.
             avgStarRatingBelow is 5 minus the average star rating. contenderRankBest is the best
             contender rank on the titles of the player's division (lower is better; use direction atMost).
         threshold: { type: number, description: Must be greater than 0. }
@@ -1209,6 +1260,26 @@ components:
         considerationDetail:
           allOf: [{ $ref: '#/components/schemas/ProgressionConsideration' }]
           description: Who marked the player, and the GM note. Moderator+ only.
+        countingSince:
+          type: string
+          format: date-time
+          description: >-
+            Start of the track's counting window: the player's progression epoch (last
+            division move or goal reset), or the season start for a season track when that
+            is later. Absent for a season track when no season is active.
+        countingSinceReason:
+          type: object
+          description: >-
+            Why the count restarted at countingSince. Only for the player themselves, and only
+            when a promotion, call-up, division move or goal reset is recorded at that instant.
+            Relegations and transfers read as divisionChange.
+          required: [type]
+          properties:
+            type: { type: string, enum: [callup, promotion, divisionChange, goalsReset] }
+            divisionName:
+              type: string
+              nullable: true
+              description: The division moved to. Absent for goalsReset; null when the division was deleted.
 
 paths:
   /auth/setup:
@@ -1587,12 +1658,28 @@ paths:
     get:
       tags: [Standings]
       summary: Get standings
+      description: >-
+        Career (or season, with seasonId) W-L-D per visible player, plus a
+        divisionRecord counting only results since the player joined their
+        current division.
       parameters:
         - name: seasonId
           in: query
           schema: { type: string }
       responses:
-        '200': { description: Standings }
+        '200':
+          description: Standings
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [players, sortedByWins]
+                properties:
+                  players:
+                    type: array
+                    items: { $ref: '#/components/schemas/StandingsPlayer' }
+                  seasonId: { type: string }
+                  sortedByWins: { type: boolean }
 
   /seasons:
     get:
@@ -4213,6 +4300,7 @@ paths:
                   fromDivisionId: { type: string }
                   toDivisionId: { type: string }
                   divisionJoinedAt: { type: string, format: date-time }
+                  progressionEpochAt: { type: string, format: date-time, description: Same as divisionJoinedAt; the move restarts every progression track }
                   event: { type: object, description: The executed ProgressionEvent }
                   announcementId: { type: string }
         '400':
@@ -4256,6 +4344,51 @@ paths:
                       properties:
                         championshipId: { type: string }
                         name: { type: string }
+
+  /progression/players/{playerId}/reset-goals:
+    post:
+      tags: [Progression]
+      summary: Reset a player's progression goals (Admin, Moderator)
+      description: >-
+        Restarts the player's call-up, promotion and relegation goals without
+        moving them. One transaction sets \`progressionEpochAt\` to now, deletes
+        every PlayerProgression row for the player (logging
+        \`consideration_removed\` for any row under consideration) and appends one
+        \`goals_reset\` event per track out of the player's current division.
+        \`divisionJoinedAt\`, win/loss/draw totals and season standings are never
+        touched. Then, best-effort: recomputes the player's progression and
+        notifies them.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string, maxLength: 500 }
+      responses:
+        '200':
+          description: Goals reset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  playerId: { type: string }
+                  progressionEpochAt: { type: string, format: date-time }
+                  deletedTrackIds: { type: array, items: { type: string } }
+                  events: { type: array, items: { type: object }, description: The goals_reset ProgressionEvents }
+        '400': { description: 'Bad request, or the player has no progression tracks in their current division', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Another request moved the player first; reload', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   # ── Storyline Requests ─────────────────────────────────────────────
 
@@ -4523,7 +4656,8 @@ paths:
       tags: [Progression]
       summary: Call-up history (Moderator+)
       description: >
-        ProgressionEvents (consideration added or removed, executed moves) across every
+        ProgressionEvents (consideration added or removed, executed moves, GM goal
+        resets) across every
         player, newest first, joined with player, track and division names. \`actorName\`
         is the linked player name of the staff member who acted; it is null for
         system actions (\`actorUserId: system\`) and for staff with no linked player.
@@ -4545,7 +4679,7 @@ paths:
                   required: [eventId, type, kind, trackId, playerId, fromDivisionId, actorUserId, createdAt]
                   properties:
                     eventId: { type: string }
-                    type: { type: string, enum: [consideration_added, consideration_removed, executed] }
+                    type: { type: string, enum: [consideration_added, consideration_removed, executed, goals_reset] }
                     kind: { type: string, enum: [callup, promotion, relegation] }
                     trackId: { type: string }
                     trackName: { type: string, nullable: true }
@@ -4559,6 +4693,7 @@ paths:
                     actorUserId: { type: string, description: "Cognito sub, or 'system'" }
                     actorName: { type: string, nullable: true }
                     createdAt: { type: string, format: date-time }
+                    note: { type: string, description: "The GM's note on a goals_reset event" }
         '400': { description: 'Bad limit or kind', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

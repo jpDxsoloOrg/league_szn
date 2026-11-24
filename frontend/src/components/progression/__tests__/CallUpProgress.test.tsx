@@ -121,6 +121,77 @@ describe('CallUpProgress', () => {
   });
 });
 
+describe('counting since note (PRL-07)', () => {
+  const since = '2026-06-01T12:00:00.000Z';
+
+  it('shows the owner the date and why the count restarted', async () => {
+    mockProgressionApi.getForPlayer.mockResolvedValue([
+      { ...ownerView, countingSince: since, countingSinceReason: { type: 'callup', divisionName: 'Young Boys' } },
+    ]);
+    render(<CallUpProgress playerId="p1" />);
+
+    expect(await screen.findByText('Counting since your call-up to Young Boys on Jun 1, 2026')).toBeInTheDocument();
+    const hint = screen.getByRole('button', { name: 'About this count' });
+    expect(hint).toHaveAccessibleDescription('Your record still includes every match. Only this goal restarted.');
+  });
+
+  it('says when the goals were reset', async () => {
+    mockProgressionApi.getForPlayer.mockResolvedValue([
+      { ...ownerView, countingSince: since, countingSinceReason: { type: 'goalsReset' } },
+    ]);
+    render(<CallUpProgress playerId="p1" />);
+
+    expect(await screen.findByText('Counting since your goals were reset on Jun 1, 2026')).toBeInTheDocument();
+  });
+
+  it('falls back to the date alone when no reason came back', async () => {
+    mockProgressionApi.getForPlayer.mockResolvedValue([{ ...publicView, countingSince: since }]);
+    render(<CallUpProgress playerId="p1" showGoals={false} />);
+
+    expect(await screen.findByText('Counting since Jun 1, 2026')).toBeInTheDocument();
+  });
+
+  it('leaves the division out when it no longer exists', async () => {
+    mockProgressionApi.getForPlayer.mockResolvedValue([
+      { ...ownerView, countingSince: since, countingSinceReason: { type: 'divisionChange', divisionName: null } },
+    ]);
+    render(<CallUpProgress playerId="p1" />);
+
+    expect(await screen.findByText('Counting since you joined your division on Jun 1, 2026')).toBeInTheDocument();
+  });
+
+  it('renders no note without a window start', async () => {
+    mockProgressionApi.getForPlayer.mockResolvedValue([ownerView]);
+    render(<CallUpProgress playerId="p1" />);
+
+    await screen.findByRole('heading', { name: 'Road to the Main Roster' });
+    expect(screen.queryByTestId('counting-since')).not.toBeInTheDocument();
+  });
+
+  it('shows the note on the dashboard card too', async () => {
+    mockProgressionApi.getForPlayer.mockResolvedValue([
+      { ...ownerView, countingSince: since, countingSinceReason: { type: 'promotion', divisionName: 'Raw' } },
+    ]);
+    render(<MemoryRouter><DashboardCallUp /></MemoryRouter>);
+
+    expect(await screen.findByText('Counting since your promotion to Raw on Jun 1, 2026')).toBeInTheDocument();
+  });
+
+  it('reads naturally in German', async () => {
+    await i18n.changeLanguage('de');
+    mockProgressionApi.getForPlayer.mockResolvedValue([
+      { ...ownerView, countingSince: since, countingSinceReason: { type: 'promotion', divisionName: 'Raw' } },
+    ]);
+    const { unmount } = render(<CallUpProgress playerId="p1" />);
+    try {
+      expect(await screen.findByText('Gezählt wird seit deinem Aufstieg in Raw am 01.06.2026')).toBeInTheDocument();
+    } finally {
+      unmount();
+      await i18n.changeLanguage('en');
+    }
+  });
+});
+
 describe('DashboardCallUp', () => {
   it('shows the card with a link to the profile for a Young Boy', async () => {
     mockProgressionApi.getForPlayer.mockResolvedValue([ownerView]);

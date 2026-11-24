@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import Card from '../ui/Card';
 import type { PlayerProgressionSummary } from '../../types/progression';
+import CountingSince from './CountingSince';
 import GoalChecklist from './GoalChecklist';
 import ProgressionMeter from './ProgressionMeter';
 import './CallUpProgress.css';
@@ -22,6 +23,7 @@ export default function ProgressionTrackCard({ track, showGoals = true, children
   return (
     <Card className="callup-progress__card" data-testid={`progression-track-${track.kind}`}>
       <ProgressionMeter pct={track.progressPct} kind={track.kind} caption={track.trackName} />
+      <CountingSince since={track.countingSince} reason={track.countingSinceReason} />
       {children}
       {goals.length > 0 && (
         <div className="callup-progress__goals">

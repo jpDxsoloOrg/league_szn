@@ -206,4 +206,13 @@ describe('divisionProgressVisibility', () => {
       .toEqual(['wins', 'winColumn']);
     expect(staySharpTips([promotion])).toEqual([]);
   });
+
+  it('gives the PRL-03 losses and winless-streak goals their own tips', () => {
+    const tripped = (goalId: string, metric: 'losses' | 'currentWinlessStreak') => ({
+      goalId, metric, threshold: 5, weight: 1, direction: 'atLeast' as const, current: 6, met: true,
+    });
+    expect(staySharpTips([{ ...relegation, goals: [tripped('l', 'losses'), tripped('w', 'currentWinlessStreak')] }]))
+      .toEqual(['stackWins', 'nextWin']);
+    expect(i18n.t('progression.staySharp.tips.nextWin')).toBe('One win turns things around. Your next one is right there.');
+  });
 });
