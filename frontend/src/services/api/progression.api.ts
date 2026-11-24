@@ -14,6 +14,7 @@ import type {
   ProgressionTrackFilter,
   RecomputeProgressionInput,
   RecomputeProgressionResult,
+  ResetGoalsResult,
   SeasonReviewApplyResponse,
   SeasonReviewDecisionInput,
   SeasonReviewList,
@@ -109,6 +110,17 @@ export const progressionApi = {
     return fetchWithAuth(`${API_BASE_URL}/progression/players/${enc(playerId)}/execute`, {
       method: 'POST',
       body: JSON.stringify(input),
+    });
+  },
+
+  /**
+   * Moderator+ (PRL-05). Restart the player's goals on every track out of their
+   * current division without moving them. Records are never touched.
+   */
+  resetGoals: async (playerId: string, note?: string): Promise<ResetGoalsResult> => {
+    return fetchWithAuth(`${API_BASE_URL}/progression/players/${enc(playerId)}/reset-goals`, {
+      method: 'POST',
+      body: JSON.stringify(note ? { note } : {}),
     });
   },
 

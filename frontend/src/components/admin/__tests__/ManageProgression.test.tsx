@@ -18,6 +18,7 @@ const { mockProgressionApi, mockDivisionsApi } = vi.hoisted(() => ({
     execute: vi.fn(),
     recompute: vi.fn(),
     getEvents: vi.fn(),
+    resetGoals: vi.fn(),
   },
   mockDivisionsApi: { getAll: vi.fn() },
 }));
@@ -245,6 +246,23 @@ describe('TrackEditor', () => {
     expect(within(dialog).queryByLabelText('Minimum rated matches')).not.toBeInTheDocument();
   });
 
+  it('labels the windows by the last move, explains resets and offers the PRL-03 metrics', async () => {
+    const { dialog } = renderEditor();
+
+    const windowSelect = within(dialog).getByLabelText('Count stats from');
+    expect(within(windowSelect).getAllByRole('option').map((option) => option.textContent)).toEqual([
+      'Since last move',
+      'This season (since last move)',
+      'Since last move (any season)',
+    ]);
+    expect(windowSelect).toHaveAccessibleDescription(
+      'Goals restart whenever a player changes division or a GM resets them. Win-loss records are never affected.',
+    );
+    const metricSelect = within(dialog).getByLabelText('Metric');
+    expect(within(metricSelect).getByRole('option', { name: 'Losses' })).toHaveValue('losses');
+    expect(within(metricSelect).getByRole('option', { name: 'Winless streak' })).toHaveValue('currentWinlessStreak');
+  });
+
   it('sends the edited goals and shows a 409 inline', async () => {
     const user = userEvent.setup();
     mockProgressionApi.updateTrack.mockRejectedValue(new ApiError('Track "Other" is already the active callup track', 409));
@@ -315,6 +333,48 @@ describe('ManageProgression board', () => {
     await user.click(within(rows[1]).getByRole('button', { name: 'Remove Mid Mo from consideration' }));
     expect(mockProgressionApi.setConsideration).toHaveBeenLastCalledWith('p-mid', { trackId: 't1', considering: false });
     expect(await within(rows[1]).findByText('Not flagged')).toBeInTheDocument();
+  });
+
+  it('resets a candidate\'s goals with a note and shows them at 0% without a flag', async () => {
+    const user = userEvent.setup();
+    mockProgressionApi.getBoard.mockResolvedValue({
+      track,
+      players: [{
+        ...entry('p-high', 'High Hana', 90, [true, true]),
+        consideration: { status: 'considering', markedBy: 'gm', markedAt: '2026-11-12T00:00:00.000Z' },
+      }],
+    });
+    mockProgressionApi.resetGoals.mockResolvedValue({
+      playerId: 'p-high', progressionEpochAt: '2026-11-24T00:00:00.000Z', deletedTrackIds: ['t1'], events: [],
+    });
+    const [row] = await renderBoard();
+    expect(within(row).getByText('Under consideration')).toBeInTheDocument();
+
+    await user.click(within(row).getByRole('button', { name: 'Reset goals for High Hana' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Reset goals for High Hana?' });
+    await user.type(within(dialog).getByLabelText('GM note (optional)'), 'Fresh start');
+    await user.click(within(dialog).getByRole('button', { name: 'Reset goals' }));
+
+    expect(mockProgressionApi.resetGoals).toHaveBeenCalledWith('p-high', 'Fresh start');
+    await waitFor(() => expect(within(row).getByTestId('progression-meter-pct')).toHaveTextContent('0%'));
+    expect(within(row).getByText('0/2 goals')).toBeInTheDocument();
+    expect(within(row).getByText('Not flagged')).toBeInTheDocument();
+    expect(showToast).toHaveBeenCalledWith("High Hana's goals were reset. Progress refills as they compete.", 'success');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('keeps the reset dialog open with the error when the API refuses', async () => {
+    const user = userEvent.setup();
+    mockProgressionApi.resetGoals.mockRejectedValue(new ApiError('Player has no progression tracks in their current division', 400));
+    const rows = await renderBoard();
+
+    await user.click(within(rows[0]).getByRole('button', { name: 'Reset goals for High Hana' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Reset goals' }));
+
+    expect(mockProgressionApi.resetGoals).toHaveBeenCalledWith('p-high', undefined);
+    expect(await within(dialog).findByText('Player has no progression tracks in their current division')).toBeInTheDocument();
+    expect(within(rows[0]).getByTestId('progression-meter-pct')).toHaveTextContent('90%');
   });
 
   it('retries a call-up with force after HOLDS_DIVISION_TITLE, then removes the row', async () => {
@@ -451,6 +511,32 @@ describe('ManageProgression history', () => {
     expect(within(rows[2]).getByText('Removed player')).toBeInTheDocument();
     expect(within(rows[2]).getByText('Staff member')).toBeInTheDocument();
     expect(screen.getByText('3 events')).toBeInTheDocument();
+  });
+
+  it('shows a goals reset with who did it and the GM note', async () => {
+    mockProgressionApi.getEvents.mockResolvedValue([{
+      eventId: 'e4',
+      type: 'goals_reset',
+      kind: 'promotion',
+      trackId: 't2',
+      trackName: 'Raw to SmackDown',
+      playerId: 'p-mid',
+      playerName: 'Mid Mo',
+      wrestlerName: null,
+      fromDivisionId: 'raw',
+      fromDivisionName: 'Raw',
+      actorUserId: 'sub-gm',
+      actorName: 'GM Gina',
+      createdAt: '2026-11-12T18:00:00.000Z',
+      note: 'Fresh start',
+    } satisfies ProgressionEventEntry]);
+    const { table } = await openHistory();
+
+    const [row] = within(table).getAllByRole('row').slice(1);
+    expect(within(row).getByText('Promotion goals reset')).toBeInTheDocument();
+    expect(within(row).getByText('Goals reset by GM Gina')).toBeInTheDocument();
+    expect(within(row).getByText('Fresh start')).toBeInTheDocument();
+    expect(within(row).getByText('Raw')).toBeInTheDocument();
   });
 
   it('reloads for the chosen track', async () => {

@@ -18,7 +18,10 @@ export type ProgressionMetric =
   | 'currentLossStreak'
   | 'daysSinceLastMatch'
   | 'avgStarRatingBelow'
-  | 'contenderRankBest';
+  | 'contenderRankBest'
+  // PRL-03: relegation metrics. Both skip hot-angle losses.
+  | 'losses'
+  | 'currentWinlessStreak';
 
 export type ProgressionWindowMode = 'allTime' | 'season' | 'sinceJoinedDivision';
 
@@ -182,7 +185,11 @@ export interface ExecuteProgressionInput {
   force?: boolean;
 }
 
-export type ProgressionEventType = 'consideration_added' | 'consideration_removed' | 'executed';
+/**
+ * `goals_reset` (PRL-05): a GM restarted the player's goals without moving
+ * them. One event is logged per track out of the player's current division.
+ */
+export type ProgressionEventType = 'consideration_added' | 'consideration_removed' | 'executed' | 'goals_reset';
 
 export interface ProgressionEvent {
   eventId: string;
@@ -194,6 +201,8 @@ export interface ProgressionEvent {
   toDivisionId?: string;
   actorUserId: string;
   createdAt: string;
+  /** The GM's optional note on a `goals_reset` event. */
+  note?: string;
 }
 
 /** Query for GET /progression/events. */
@@ -225,6 +234,19 @@ export interface ProgressionEventEntry {
   /** The actor's linked player name; null for 'system' and for staff with no linked player. */
   actorName: string | null;
   createdAt: string;
+  /** The GM's optional note on a `goals_reset` event. */
+  note?: string;
+}
+
+/** POST /progression/players/{playerId}/reset-goals 200 response (PRL-05). */
+export interface ResetGoalsResult {
+  playerId: string;
+  /** Goals count from this moment on. */
+  progressionEpochAt: string;
+  /** Tracks whose PlayerProgression row was deleted. */
+  deletedTrackIds: string[];
+  /** The `goals_reset` events, one per track out of the player's division. */
+  events: ProgressionEvent[];
 }
 
 /** POST /progression/players/{playerId}/execute 200 response. */

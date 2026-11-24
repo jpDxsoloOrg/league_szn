@@ -3836,7 +3836,9 @@
       "currentLossStreak": "Niederlagenserie",
       "daysSinceLastMatch": "Tage seit dem letzten Match",
       "avgStarRatingBelow": "Niedrige Sternebewertung",
-      "contenderRankBest": "Bester Herausfordererrang"
+      "contenderRankBest": "Bester Herausfordererrang",
+      "losses": "Niederlagen",
+      "currentWinlessStreak": "Serie ohne Sieg"
     },
     "goals": {
       "title": "Call-Up-Ziele",
@@ -3878,6 +3880,10 @@
       "avgStarRatingBelow": "Durchschnitt von {{threshold}} oder weniger in bewerteten Matches",
       "avgStarRatingBelowMin": "Durchschnitt von {{threshold}} oder weniger über mindestens {{minRatedMatches}} bewertete Matches",
       "contenderRankBest": "Gehöre zu den Top {{threshold}} Herausforderern auf einen Divisionstitel",
+      "losses_one": "Verliere {{threshold}} Match",
+      "losses_other": "Verliere {{threshold}} Matches",
+      "currentWinlessStreak_one": "Bleibe {{threshold}} Match ohne Sieg",
+      "currentWinlessStreak_other": "Bleibe {{threshold}} Matches in Folge ohne Sieg",
       "titleKind": {
         "promotion": "Aufstiegsziele",
         "relegation": "Abstiegskriterien"
@@ -3925,9 +3931,9 @@
         "relegation": "Abstieg"
       },
       "windowModes": {
-        "allTime": "Gesamte Zeit",
-        "season": "Aktuelle Saison",
-        "sinceJoinedDivision": "Seit Eintritt in die Division"
+        "allTime": "Seit dem letzten Wechsel (saisonübergreifend)",
+        "season": "Diese Saison (seit dem letzten Wechsel)",
+        "sinceJoinedDivision": "Seit dem letzten Wechsel"
       },
       "directions": {
         "atLeast": "Mindestens",
@@ -3956,6 +3962,7 @@
         "pickDivision": "Divisionen suchen…",
         "developmentalHint": "Entwicklung",
         "windowMode": "Statistiken zählen ab",
+        "windowHint": "Die Ziele starten neu, sobald ein Spieler die Division wechselt oder ein GM sie zurücksetzt. Die Sieg-Niederlage-Bilanz bleibt davon immer unberührt.",
         "active": "Aktiv",
         "goals": "Ziele",
         "goalNumber": "Ziel {{number}}",
@@ -4019,6 +4026,14 @@
         "flagFor": "{{name}} für die engere Wahl markieren",
         "unflag": "Markierung entfernen",
         "unflagFor": "{{name}} aus der engeren Wahl nehmen",
+        "reset": "Ziele zurücksetzen",
+        "resetFor": "Ziele von {{name}} zurücksetzen",
+        "resetTitle": "Ziele von {{name}} zurücksetzen?",
+        "resetDescription": "Die Ziele auf allen Tracks aus dieser Division starten jetzt wieder bei 0 %, und eine Markierung für die engere Wahl wird entfernt. Der Wrestler bleibt in der Division, seine Bilanz bleibt unverändert. Er wird benachrichtigt.",
+        "resetConfirm": "Ziele zurücksetzen",
+        "resetNote": "GM-Notiz (optional)",
+        "resetNotePlaceholder": "Warum die Ziele neu starten",
+        "resetDone": "Die Ziele von {{name}} wurden zurückgesetzt. Der Fortschritt füllt sich mit den nächsten Matches wieder.",
         "flagTitle": "{{name}} markieren",
         "flagDescription": "Der Wrestler erfährt, dass er in der engeren Wahl ist. Die Notiz bleibt beim Staff.",
         "note": "GM-Notiz (optional)",
@@ -4091,6 +4106,7 @@
         "system": "System",
         "unknownStaff": "Staff-Mitglied",
         "unknownPlayer": "Entfernter Spieler",
+        "resetBy": "Ziele zurückgesetzt von {{actor}}",
         "columns": {
           "date": "Datum",
           "event": "Ereignis",
@@ -4113,6 +4129,11 @@
             "callup": "Hochgezogen",
             "promotion": "Aufgestiegen",
             "relegation": "Abgestiegen"
+          },
+          "goals_reset": {
+            "callup": "Call-Up-Ziele zurückgesetzt",
+            "promotion": "Aufstiegsziele zurückgesetzt",
+            "relegation": "Abstiegskriterien zurückgesetzt"
           }
         }
       },

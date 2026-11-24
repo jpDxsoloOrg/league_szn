@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, ChevronUp, Flag, Rocket, Users } from 'lucide-react';
+import { ChevronDown, ChevronUp, Flag, Rocket, RotateCcw, Users } from 'lucide-react';
 import type { Division } from '../../../types';
 import type {
   ExecuteProgressionResult,
@@ -41,6 +41,20 @@ function goalsMet(entry: ProgressionBoardEntry): number {
   return entry.goals.filter((goal) => goal.met).length;
 }
 
+/**
+ * The row right after a goals reset (PRL-05). The server deletes the player's
+ * progression rows and recomputes in the background, so a reload would drop the
+ * player until that lands; show them at 0% with no values and no flag instead.
+ */
+function resetEntry(entry: ProgressionBoardEntry): ProgressionBoardEntry {
+  return {
+    ...entry,
+    progressPct: 0,
+    consideration: undefined,
+    goals: entry.goals.map((goal) => ({ ...goal, current: null, met: false })),
+  };
+}
+
 function sortCandidates(rows: ProgressionBoardEntry[], sort: CandidateSort): ProgressionBoardEntry[] {
   const sorted = [...rows];
   if (sort === 'name') return sorted.sort((first, second) => first.name.localeCompare(second.name));
@@ -50,11 +64,12 @@ function sortCandidates(rows: ProgressionBoardEntry[], sort: CandidateSort): Pro
   return sorted.sort((first, second) => second.progressPct - first.progressPct || first.name.localeCompare(second.name));
 }
 
-/** The track's candidates ranked by progress, with flag and call-up actions. */
+/** The track's candidates ranked by progress, with flag, reset and call-up actions. */
 export default function CandidateBoard({ track, divisions, reloadKey = 0, onLoaded }: CandidateBoardProps) {
   const { t, i18n } = useTranslation();
   const { showToast } = useToast();
   const noteId = useId();
+  const resetNoteId = useId();
   const [rows, setRows] = useState<ProgressionBoardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -67,6 +82,10 @@ export default function CandidateBoard({ track, divisions, reloadKey = 0, onLoad
   const [note, setNote] = useState('');
   const [flagError, setFlagError] = useState<string | null>(null);
   const [executeTarget, setExecuteTarget] = useState<ProgressionBoardEntry | null>(null);
+  const [resetTarget, setResetTarget] = useState<ProgressionBoardEntry | null>(null);
+  const [resetNote, setResetNote] = useState('');
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
@@ -153,6 +172,30 @@ export default function CandidateBoard({ track, divisions, reloadKey = 0, onLoad
     if (!flagTarget) return;
     const saved = await saveConsideration(flagTarget, true, note.trim() || undefined);
     if (saved) setFlagTarget(null);
+  };
+
+  const openReset = (entry: ProgressionBoardEntry) => {
+    setResetNote('');
+    setResetError(null);
+    setResetTarget(entry);
+  };
+
+  const handleResetSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!resetTarget) return;
+    const target = resetTarget;
+    setResetting(true);
+    setResetError(null);
+    try {
+      await progressionApi.resetGoals(target.playerId, resetNote.trim() || undefined);
+      setRows((previous) => previous.map((row) => (row.playerId === target.playerId ? resetEntry(row) : row)));
+      setResetTarget(null);
+      showToast(t('progression.admin.board.resetDone', { name: target.name }), 'success');
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setResetting(false);
+    }
   };
 
   const handleExecuted = (entry: ProgressionBoardEntry, result: ExecuteProgressionResult) => {
@@ -321,6 +364,15 @@ export default function CandidateBoard({ track, divisions, reloadKey = 0, onLoad
                         </Button>
                       )}
                       <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={<RotateCcw aria-hidden="true" size={16} />}
+                        onClick={() => openReset(entry)}
+                        aria-label={t('progression.admin.board.resetFor', { name: entry.name })}
+                      >
+                        {t('progression.admin.board.reset')}
+                      </Button>
+                      <Button
                         size="sm"
                         icon={<Rocket aria-hidden="true" size={16} />}
                         onClick={() => setExecuteTarget(entry)}
@@ -364,6 +416,32 @@ export default function CandidateBoard({ track, divisions, reloadKey = 0, onLoad
             value={note}
             placeholder={t('progression.admin.board.notePlaceholder')}
             onChange={(event) => setNote(event.target.value)}
+          />
+          <span className="ac-field__hint">{t('progression.admin.board.noteHint')}</span>
+        </div>
+      </AdminFormModal>
+
+      <AdminFormModal
+        open={resetTarget !== null}
+        onClose={() => setResetTarget(null)}
+        title={t('progression.admin.board.resetTitle', { name: resetTarget?.name ?? '' })}
+        description={t('progression.admin.board.resetDescription')}
+        size="sm"
+        className="am-sheet"
+        submitLabel={t('progression.admin.board.resetConfirm')}
+        onSubmit={handleResetSubmit}
+        busy={resetting}
+        error={resetError}
+      >
+        <div className="ac-field">
+          <label className="ac-field__label" htmlFor={resetNoteId}>{t('progression.admin.board.resetNote')}</label>
+          <textarea
+            id={resetNoteId}
+            rows={3}
+            maxLength={MAX_NOTE_LENGTH}
+            value={resetNote}
+            placeholder={t('progression.admin.board.resetNotePlaceholder')}
+            onChange={(event) => setResetNote(event.target.value)}
           />
           <span className="ac-field__hint">{t('progression.admin.board.noteHint')}</span>
         </div>
