@@ -236,6 +236,13 @@ export interface SlotInput {
   teamLabel?: string;
 }
 
+/** The registered tag team a side was on the match date (TTB-01). */
+export interface SideTagTeam {
+  tagTeamId: string;
+  name: string;
+  imageUrl?: string;
+}
+
 export interface Match {
   matchId: string;
   date: string;
@@ -243,6 +250,8 @@ export interface Match {
   stipulationId?: string; // References Stipulations table
   participants: string[]; // playerIds
   teams?: string[][]; // Array of teams, each team is an array of playerIds (for tag team matches)
+  /** Tag team per side, aligned with `teams`; null for a side that is not a team (TTB-01). */
+  sideTagTeams?: (SideTagTeam | null)[];
   winners?: string[]; // playerIds
   losers?: string[]; // playerIds
   isDraw?: boolean;
@@ -410,6 +419,12 @@ export interface DashboardMatch {
   /** Everyone in a drawn match, as "A vs B". Only set when `isDraw` is true. */
   participantsName?: string;
   eventId?: string;
+  /** Player ids per side, as booked. Only set when the match has sides. */
+  teams?: string[][];
+  /** Winning player ids. Only set with `teams`, to tell which side won (TTB-02). */
+  winners?: string[];
+  /** Tag team per side, aligned with `teams` (TTB-01). */
+  sideTagTeams?: (SideTagTeam | null)[];
 }
 
 export interface DashboardSeason {

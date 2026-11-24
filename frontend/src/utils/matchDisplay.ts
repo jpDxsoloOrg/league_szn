@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import type { Match } from '../types';
+import type { Match, SideTagTeam } from '../types';
 
 export type FormResult = 'W' | 'L' | 'D';
 
@@ -89,10 +89,69 @@ export function groupMatchSides<Participant>(
   return participants.map((participant) => [participant]);
 }
 
-/** "A & B vs C & D" for two sides, "A, B, C" for a multi-man match. */
-export function describeSides(sides: string[][], versus: string): string {
-  const labels = sides.map((side) => side.join(' & '));
+/** The tag team name billed for side `sideIndex` of `match.teams`, if that side was a team (TTB-02). */
+export function sideLabel(sideIndex: number, match: { sideTagTeams?: (SideTagTeam | null)[] }): string | undefined {
+  return match.sideTagTeams?.[sideIndex]?.name;
+}
+
+/**
+ * The tag team billed for a side from `groupMatchSides`. Sides there can be
+ * reordered or padded with leftovers, so look the side up by its members in
+ * `teams` rather than by position.
+ */
+export function sideTagTeamFor(
+  memberIds: string[],
+  teams?: string[][],
+  sideTagTeams?: (SideTagTeam | null)[],
+): SideTagTeam | null {
+  if (!teams || !sideTagTeams || memberIds.length === 0) return null;
+  const teamIndex = teams.findIndex((team) => memberIds.every((memberId) => team.includes(memberId)));
+  return teamIndex === -1 ? null : sideTagTeams[teamIndex] ?? null;
+}
+
+/** "A & B", or "The Usos (A & B)" when the side was billed as a tag team. */
+export function describeSide(names: string[], teamName?: string | null): string {
+  const members = names.join(' & ');
+  return teamName ? `${teamName} (${members})` : members;
+}
+
+/**
+ * "A & B vs C & D" for two sides, "A, B, C" for a multi-man match. A side with
+ * a tag team in `teamNames` (aligned with `sides`) reads "The Usos (A & B)".
+ */
+export function describeSides(sides: string[][], versus: string, teamNames?: (string | null | undefined)[]): string {
+  const labels = sides.map((side, index) => describeSide(side, teamNames?.[index]));
   return labels.length === 2 ? labels.join(` ${versus} `) : labels.join(', ');
+}
+
+/** A match's sides as one line, each tag side billed by its team: "The Usos (A & B) vs C & D". */
+export function describeMatchSides(
+  match: { participants: string[]; teams?: string[][]; sideTagTeams?: (SideTagTeam | null)[]; matchFormat?: string | null },
+  nameOf: (playerId: string) => string,
+  versus: string,
+): string {
+  const sides = groupMatchSides(match.participants, (playerId) => playerId, match.teams, match.matchFormat);
+  return describeSides(
+    sides.map((side) => side.map(nameOf)),
+    versus,
+    sides.map((side) => sideTagTeamFor(side, match.teams, match.sideTagTeams)?.name),
+  );
+}
+
+/** Winning and losing tag teams of a decided two-sided match, when either side was a team. */
+export function resultTagTeams(match: {
+  teams?: string[][];
+  sideTagTeams?: (SideTagTeam | null)[];
+  winners?: string[];
+  isDraw?: boolean;
+}): { winner: SideTagTeam | null; loser: SideTagTeam | null } | null {
+  const { teams, sideTagTeams, winners } = match;
+  if (match.isDraw || !teams || teams.length !== 2 || !sideTagTeams || !winners || winners.length === 0) return null;
+  const winningIndex = teams.findIndex((team) => team.some((memberId) => winners.includes(memberId)));
+  if (winningIndex === -1) return null;
+  const winner = sideTagTeams[winningIndex] ?? null;
+  const loser = sideTagTeams[1 - winningIndex] ?? null;
+  return winner || loser ? { winner, loser } : null;
 }
 
 export function getMatchResult(match: Pick<Match, 'winners' | 'losers' | 'isDraw'>, playerId: string): FormResult | null {

@@ -524,8 +524,10 @@ describe('getDashboard', () => {
     const tag = body.recentResults.find((m: { matchId: string }) => m.matchId === 'tag');
     const singles = body.recentResults.find((m: { matchId: string }) => m.matchId === 'singles');
     expect(tag.teams).toEqual([['p1', 'p2'], ['p3', 'p4']]);
+    expect(tag.winners).toEqual(['p1', 'p2']);
     expect(tag.sideTagTeams).toEqual([{ tagTeamId: 'usos', name: 'The Usos' }, null]);
     expect(singles).not.toHaveProperty('sideTagTeams');
+    expect(singles).not.toHaveProperty('winners');
     expect(mockTagTeamsListAll).toHaveBeenCalledTimes(1);
   });
 });

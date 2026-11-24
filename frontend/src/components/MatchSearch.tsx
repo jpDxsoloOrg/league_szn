@@ -22,7 +22,8 @@ import { RateMatchWidget } from './matches/RateMatchWidget';
 import { MotnToggleButton } from './matches/MotnToggleButton';
 import { useAuth } from '../contexts/AuthContext';
 import { formatMatchDate } from '../utils/dateUtils';
-import { formatMatchType, groupMatchSides } from '../utils/matchDisplay';
+import { formatMatchType, groupMatchSides, sideTagTeamFor } from '../utils/matchDisplay';
+import MatchSideLabel from './matches/MatchSideLabel';
 import './MatchSearch.css';
 
 const STATUS_TONES: Partial<Record<Match['status'], BadgeTone>> = {
@@ -222,10 +223,11 @@ export default function MatchSearch() {
     if (!query) return matches;
     return matches.filter((match) => {
       const participantNames = match.participants.map((pid) => getPlayerName(match, pid)).join(' ');
+      const teamNames = (match.sideTagTeams ?? []).map((team) => team?.name ?? '').join(' ');
       const stipulationName = match.stipulationId
         ? stipulationMap.get(match.stipulationId)?.name ?? ''
         : '';
-      return `${participantNames} ${match.matchFormat} ${formatMatchType(match.matchFormat, t)} ${stipulationName}`
+      return `${participantNames} ${teamNames} ${match.matchFormat} ${formatMatchType(match.matchFormat, t)} ${stipulationName}`
         .toLowerCase()
         .includes(query);
     });
@@ -291,6 +293,11 @@ export default function MatchSearch() {
         {getPlayerName(match, pid)}
       </span>
     );
+    const sideTeamClass = (side: string[]) => {
+      if (isDraw) return '';
+      if (side.some((pid) => match.winners?.includes(pid))) return 'match-winner';
+      return side.some((pid) => match.losers?.includes(pid)) ? 'match-loser' : '';
+    };
     return (
       <span className="match-row__names">
         {sides.map((side, sideIndex) => (
@@ -298,12 +305,18 @@ export default function MatchSearch() {
             {/* One vs between two sides; a bigger field reads as a plain list. */}
             {sideIndex > 0 && sides.length === 2 && <span className="match-vs">{t('common.vs')}</span>}
             <span>
-              {side.map((pid, memberIndex) => (
-                <span key={pid}>
-                  {memberIndex > 0 && ' & '}
-                  {renderName(pid)}
-                </span>
-              ))}
+              {/* TTB-02: a tag side leads with its team name, members underneath. */}
+              <MatchSideLabel
+                team={sideTagTeamFor(side, match.teams, match.sideTagTeams)}
+                teamClassName={sideTeamClass(side)}
+              >
+                {side.map((pid, memberIndex) => (
+                  <span key={pid}>
+                    {memberIndex > 0 && ' & '}
+                    {renderName(pid)}
+                  </span>
+                ))}
+              </MatchSideLabel>
               {sides.length > 2 && sideIndex < sides.length - 1 && ','}
             </span>
           </span>

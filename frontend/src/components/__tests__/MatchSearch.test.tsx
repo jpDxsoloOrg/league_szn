@@ -280,6 +280,33 @@ describe('MatchSearch', () => {
     });
   });
 
+  it('leads a tag side with its team name, in the winner colour, and finds it by that name (TTB-02)', async () => {
+    mockGetAllMatches.mockResolvedValue([
+      {
+        ...mockMatches[0],
+        matchFormat: 'tag-team',
+        participants: ['p1', 'p2', 'p3', 'p4'],
+        teams: [['p1', 'p2'], ['p3', 'p4']],
+        winners: ['p1', 'p2'],
+        losers: ['p3', 'p4'],
+        sideTagTeams: [{ tagTeamId: 'tt1', name: 'Cenation' }, null],
+      },
+      mockMatches[1],
+    ]);
+    renderWithRouter();
+
+    const team = await screen.findByText('Cenation');
+    expect(team).toHaveClass('match-winner');
+    const side = team.closest('.match-side-label');
+    expect(side).toHaveTextContent('John Cena');
+    expect(side).toHaveTextContent('The Rock');
+    // The other side has no team, so it stays plain names.
+    expect(document.querySelectorAll('.match-side-label')).toHaveLength(1);
+
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'cenation' } });
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+  });
+
   it('narrows the list with the quick search', async () => {
     mockGetAllMatches.mockResolvedValue([
       mockMatches[0],

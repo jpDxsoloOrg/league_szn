@@ -3,11 +3,15 @@ import type { TFunction } from 'i18next';
 import type { Match } from '../../types';
 import {
   computePlayerForm,
+  describeMatchSides,
   describeSides,
   formatMatchType,
   getMatchResult,
   groupMatchSides,
   matchFormatKey,
+  resultTagTeams,
+  sideLabel,
+  sideTagTeamFor,
 } from '../matchDisplay';
 
 const t = ((_key: string, fallback: string) => fallback) as unknown as TFunction;
@@ -115,5 +119,42 @@ describe('form', () => {
 
   it('has no streak before the first match', () => {
     expect(computePlayerForm('p1', [])).toEqual({ recentForm: [] });
+  });
+});
+
+describe('tag team billing (TTB-02)', () => {
+  const usos = { tagTeamId: 'usos', name: 'The Usos' };
+  const teams = [['p1', 'p2'], ['p3', 'p4']];
+  const sideTagTeams = [usos, null];
+
+  it('names a side by its team, by position in teams', () => {
+    expect(sideLabel(0, { sideTagTeams })).toBe('The Usos');
+    expect(sideLabel(1, { sideTagTeams })).toBeUndefined();
+    expect(sideLabel(0, {})).toBeUndefined();
+  });
+
+  it('finds a side by its members, whatever their order', () => {
+    expect(sideTagTeamFor(['p2', 'p1'], teams, sideTagTeams)).toEqual(usos);
+    expect(sideTagTeamFor(['p3', 'p4'], teams, sideTagTeams)).toBeNull();
+    expect(sideTagTeamFor(['p1', 'p2'], teams, undefined)).toBeNull();
+  });
+
+  it('puts the team name before its members and leaves other sides alone', () => {
+    expect(describeSides([['Jey', 'Jimmy'], ['C', 'D']], 'vs', ['The Usos', null])).toBe('The Usos (Jey & Jimmy) vs C & D');
+    const names: Record<string, string> = { p1: 'Jey', p2: 'Jimmy', p3: 'C', p4: 'D' };
+    expect(
+      describeMatchSides({ participants: ['p1', 'p2', 'p3', 'p4'], teams, sideTagTeams, matchFormat: 'tag' }, (id) => names[id], 'vs'),
+    ).toBe('The Usos (Jey & Jimmy) vs C & D');
+  });
+
+  it('bills the result by team when a side was one', () => {
+    expect(resultTagTeams({ teams, sideTagTeams, winners: ['p3', 'p4'] })).toEqual({ winner: null, loser: usos });
+    expect(resultTagTeams({ teams, sideTagTeams, winners: ['p1', 'p2'] })).toEqual({ winner: usos, loser: null });
+  });
+
+  it('has no billing for a draw, an undecided match or sides without teams', () => {
+    expect(resultTagTeams({ teams, sideTagTeams, winners: ['p1', 'p2', 'p3', 'p4'], isDraw: true })).toBeNull();
+    expect(resultTagTeams({ teams, sideTagTeams })).toBeNull();
+    expect(resultTagTeams({ teams, sideTagTeams: [null, null], winners: ['p1', 'p2'] })).toBeNull();
   });
 });

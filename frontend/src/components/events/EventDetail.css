@@ -248,6 +248,32 @@
   list-style: none;
 }
 
+/* TTB-02: a tag side billed as its team; the team leads, members sit under it. */
+.event-match__team {
+  font-size: 1.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.event-match__team.is-winner {
+  color: var(--color-win);
+}
+
+.event-match--main .event-match__team {
+  font-size: 1.5rem;
+}
+
+.event-match__side .match-side-label__members {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  font-size: 1em;
+}
+
+.event-match__side .match-side-label__members .event-match__wrestler {
+  font-size: 1rem;
+}
+
 .event-match__participant {
   display: flex;
   flex-direction: column;

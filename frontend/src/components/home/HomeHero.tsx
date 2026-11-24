@@ -6,7 +6,7 @@ import { eventsApi, showsApi } from '../../services/api';
 import type { DashboardEvent } from '../../types';
 import type { EventWithMatches } from '../../types/event';
 import { formatCalendarDate } from '../../utils/dateUtils';
-import { describeSides, groupMatchSides } from '../../utils/matchDisplay';
+import { describeSides, groupMatchSides, sideTagTeamFor } from '../../utils/matchDisplay';
 import { getPlannedShows } from '../../utils/showSchedule';
 import type { PlannedShow } from '../../utils/showSchedule';
 import Badge from '../ui/Badge';
@@ -39,10 +39,12 @@ interface MainEvent {
 function getMainEvent(event: EventWithMatches | null, versus: string): MainEvent | null {
   const match = event?.enrichedMatches?.find((entry) => entry.designation === 'main-event')?.matchData;
   if (!match?.participants?.length) return null;
-  const sides = groupMatchSides(match.participants, (participant) => participant.playerId, match.teams, match.matchFormat)
-    .map((side) => side.map((participant) => participant.wrestlerName || participant.playerName).filter(Boolean));
+  const sides = groupMatchSides(match.participants, (participant) => participant.playerId, match.teams, match.matchFormat);
+  // TTB-02: a tag side reads "The Usos (Jey Uso & Jimmy Uso)".
+  const teamNames = sides.map((side) => sideTagTeamFor(side.map((participant) => participant.playerId), match.teams, match.sideTagTeams)?.name);
+  const names = sides.map((side) => side.map((participant) => participant.wrestlerName || participant.playerName).filter(Boolean));
   return {
-    matchup: describeSides(sides, versus),
+    matchup: describeSides(names, versus, teamNames),
     detail: [match.isChampionship ? match.championshipName : undefined, match.stipulationName].filter(Boolean).join(' · '),
   };
 }

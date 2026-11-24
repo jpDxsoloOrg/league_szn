@@ -11,7 +11,7 @@ import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import { StarRating } from '../matches/StarRating';
 import { DESIGNATION_LABEL_KEYS } from './eventDisplay';
-import { formatMatchType } from '../../utils/matchDisplay';
+import { formatMatchType, resultTagTeams } from '../../utils/matchDisplay';
 import './EventResults.css';
 
 export default function EventResults() {
@@ -130,6 +130,10 @@ export default function EventResults() {
               .map((p) => p.wrestlerName);
             // A draw is stored with every participant as a winner and no losers.
             const isDraw = loserNames.length === 0;
+            // TTB-02: a side billed as a tag team reads by its team name.
+            const billedTeams = isDraw ? null : resultTagTeams(matchData);
+            const winnerLabel = billedTeams?.winner?.name ?? winnerNames.join(' & ');
+            const loserLabel = billedTeams?.loser?.name ?? loserNames.join(' & ');
 
             return (
               <li
@@ -155,9 +159,9 @@ export default function EventResults() {
                 ) : (
                   <p className="event-result__outcome">
                     <span className="sr-only">{t('events.results.winnersLabel')}: </span>
-                    <span className="event-result__winners">{winnerNames.join(' & ')}</span>
+                    <span className="event-result__winners">{winnerLabel}</span>
                     <span className="event-result__def">{t('events.results.defeatedLabel')}</span>
-                    <span className="event-result__losers">{loserNames.join(' & ')}</span>
+                    <span className="event-result__losers">{loserLabel}</span>
                   </p>
                 )}
 

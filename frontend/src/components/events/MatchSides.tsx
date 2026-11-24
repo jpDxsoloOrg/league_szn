@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next';
-import { groupMatchSides } from '../../utils/matchDisplay';
+import type { SideTagTeam } from '../../types';
+import { groupMatchSides, sideTagTeamFor } from '../../utils/matchDisplay';
+import MatchSideLabel from '../matches/MatchSideLabel';
 import Badge from '../ui/Badge';
 
 export interface MatchSideParticipant {
@@ -13,6 +15,8 @@ export interface MatchSideParticipant {
 interface MatchSidesProps {
   participants: MatchSideParticipant[];
   teams?: string[][];
+  /** Tag team per side, aligned with `teams`; a team side is billed by its name (TTB-02). */
+  sideTagTeams?: (SideTagTeam | null)[];
   matchFormat: string;
   /** Set once the result stands. A draw names no winner or loser. */
   winners?: string[];
@@ -20,7 +24,7 @@ interface MatchSidesProps {
 }
 
 /** Two sides face off around one "vs"; bigger fields are a compact list of names. */
-export default function MatchSides({ participants, teams, matchFormat, winners, losers }: MatchSidesProps) {
+export default function MatchSides({ participants, teams, sideTagTeams, matchFormat, winners, losers }: MatchSidesProps) {
   const { t } = useTranslation();
   const sides = groupMatchSides(participants, (participant) => participant.playerId, teams, matchFormat);
   if (sides.length === 0) return null;
@@ -45,12 +49,22 @@ export default function MatchSides({ participants, teams, matchFormat, winners, 
     );
   };
 
+  const renderSide = (side: MatchSideParticipant[], align: 'start' | 'end' = 'start') => {
+    const team = sideTagTeamFor(side.map((participant) => participant.playerId), teams, sideTagTeams);
+    const sideWon = side.some((participant) => winners?.includes(participant.playerId));
+    return (
+      <MatchSideLabel team={team} align={align} teamClassName={sideWon ? 'event-match__team is-winner' : 'event-match__team'}>
+        {side.map(renderPerson)}
+      </MatchSideLabel>
+    );
+  };
+
   if (sides.length === 2) {
     return (
       <div className="event-match__faceoff">
         {sides.map((side, index) => (
           <div key={side[0]?.playerId ?? index} className="event-match__side">
-            {side.map(renderPerson)}
+            {renderSide(side, index === 1 ? 'end' : 'start')}
           </div>
         ))}
         <span className="event-match__vs">{t('common.vs')}</span>
@@ -62,7 +76,7 @@ export default function MatchSides({ participants, teams, matchFormat, winners, 
     <ul className="event-match__field">
       {sides.map((side, index) => (
         <li key={side[0]?.playerId ?? index} className="event-match__side">
-          {side.map(renderPerson)}
+          {renderSide(side)}
         </li>
       ))}
     </ul>

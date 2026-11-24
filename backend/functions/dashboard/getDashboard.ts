@@ -54,6 +54,8 @@ interface DashboardMatch {
   eventId?: string;
   /** Player ids per side, as booked. Only set when the match has sides. */
   teams?: string[][];
+  /** Winning player ids, so a client can tell which side in `teams` won. Only set with `teams` (TTB-02). */
+  winners?: string[];
   /** The tag team each side in `teams` was on the match date, aligned with `teams` (TTB-01). */
   sideTagTeams?: (SideTagTeam | null)[];
   /** True iff the calling user has rated this match. False for guests (RIV-24). */
@@ -337,7 +339,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         isDraw,
         participantsName: participantsName || undefined,
         eventId: m.eventId,
-        ...(hasSides && { teams: m.teams }),
+        ...(hasSides && { teams: m.teams, winners: winnerIds }),
         ...(sideTagTeams && { sideTagTeams }),
         userHasRated: userRatingForMatch !== undefined,
         userRating: userRatingForMatch ?? null,
