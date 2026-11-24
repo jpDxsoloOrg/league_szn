@@ -7,6 +7,8 @@ import { authenticate } from '../../lib/authenticate';
 import { getAuthContext } from '../../lib/auth';
 import { bookablePsnId } from '../../lib/disciplineGates';
 import { hydrateMatchSlots } from '../matches/hydrateSlots';
+import type { TagTeamIndex } from '../../lib/tagTeams/resolveTagTeams';
+import { loadTagTeamIndex, sideTagTeamsField } from '../../lib/tagTeams/sideBilling';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -63,6 +65,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         console.warn('getEvent: user-rating lookup failed, falling back to no ratings', ratingsErr);
       }
     }
+
+    // TTB-01: the tag team index is loaded at most once per request, and only
+    // when a card actually has sides to bill.
+    let tagTeamIndexPromise: Promise<TagTeamIndex | null> | undefined;
+    const getTagTeamIndex = (): Promise<TagTeamIndex | null> => {
+      tagTeamIndexPromise ??= loadTagTeamIndex();
+      return tagTeamIndexPromise;
+    };
 
     // Build enrichedMatches array matching the EventWithMatches frontend type
     const enrichedMatches = await Promise.all(
@@ -145,6 +155,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }
 
         const userRatingForMatch = userRatingsByMatchId.get(match.matchId);
+        const tagTeamIndex = match.teams && match.teams.length > 0 ? await getTagTeamIndex() : null;
 
         return {
           position: card.position,
@@ -158,6 +169,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             stipulationName,
             participants: participantData,
             ...(match.teams && { teams: match.teams }),
+            ...sideTagTeamsField(match, tagTeamIndex),
             winners: match.winners,
             losers: match.losers,
             isChampionship: match.isChampionship || false,

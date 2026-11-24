@@ -353,6 +353,17 @@ components:
         stipulationId: { type: string }
         participants: { type: array, items: { type: string } }
         teams: { type: array, items: { type: array, items: { type: string } } }
+        sideTagTeams:
+          type: array
+          description: >-
+            Read-only, set when the match has \`teams\`. One entry per side, aligned
+            with \`teams\`: the tag team that side's pair was on the match date, or
+            null for a side that isn't a registered pair. Resolved at read time, so
+            a renamed team shows its current name. Also set on event
+            \`enrichedMatches[].matchData\` and dashboard \`recentResults[]\`.
+          items:
+            nullable: true
+            allOf: [{ $ref: '#/components/schemas/SideTagTeam' }]
         winners: { type: array, items: { type: string } }
         losers: { type: array, items: { type: string } }
         winningTeam: { type: integer }
@@ -365,6 +376,14 @@ components:
         createdAt: { type: string }
         challengeId: { type: string }
         promoId: { type: string }
+
+    SideTagTeam:
+      type: object
+      required: [tagTeamId, name]
+      properties:
+        tagTeamId: { type: string }
+        name: { type: string }
+        imageUrl: { type: string }
 
     ScheduleMatchInput:
       type: object

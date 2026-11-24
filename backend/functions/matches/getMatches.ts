@@ -5,6 +5,7 @@ import { success, serverError } from '../../lib/response';
 import { authenticate } from '../../lib/authenticate';
 import { getAuthContext } from '../../lib/auth';
 import { collectSlotPlayerIds, hydrateMatchSlots } from './hydrateSlots';
+import { anyMatchHasTeams, loadTagTeamIndex, sideTagTeamsField } from '../../lib/tagTeams/sideBilling';
 
 const MATCH_TYPE_ALIAS_GROUPS: string[][] = [
   ['single', 'singles'],
@@ -129,10 +130,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       playerLookup = new Map(fetched.filter((entry): entry is readonly [string, Player] => entry !== null));
     }
 
+    // TTB-01: bill each side by its tag team. One index load per request,
+    // skipped when no match has sides.
+    const tagTeamIndex = anyMatchHasTeams(sortedMatches) ? await loadTagTeamIndex() : null;
+
     const hydratedMatches = sortedMatches.map((m) => {
+      const billed: Record<string, unknown> = { ...m, ...sideTagTeamsField(m, tagTeamIndex) };
       const slots = m.slots as MatchSlot[] | undefined;
-      if (!slots || slots.length === 0) return m;
-      return { ...m, slots: hydrateMatchSlots(slots, playerLookup) };
+      if (!slots || slots.length === 0) return billed;
+      return { ...billed, slots: hydrateMatchSlots(slots, playerLookup) };
     });
 
     // RIV-24: surface the calling user's rating per match so the FE rating

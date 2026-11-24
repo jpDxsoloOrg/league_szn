@@ -12,6 +12,7 @@ const {
   mockChampionshipsFindCurrentReign,
   mockSeasonStandingsListBySeason,
   mockGetByMatchIdsForUser,
+  mockTagTeamsListAll,
 } = vi.hoisted(() => ({
   mockChampionshipsList: vi.fn(),
   mockPlayersList: vi.fn(),
@@ -23,6 +24,7 @@ const {
   mockChampionshipsFindCurrentReign: vi.fn(),
   mockSeasonStandingsListBySeason: vi.fn(),
   mockGetByMatchIdsForUser: vi.fn(),
+  mockTagTeamsListAll: vi.fn(),
 }));
 
 vi.mock('../../../lib/repositories', () => ({
@@ -34,6 +36,7 @@ vi.mock('../../../lib/repositories', () => ({
     },
     roster: {
       players: { listWithDeleted: mockPlayersList },
+      tagTeams: { listAll: mockTagTeamsListAll },
     },
     season: {
       seasons: { list: mockSeasonsList },
@@ -69,6 +72,7 @@ describe('getDashboard', () => {
     mockChampionshipsFindCurrentReign.mockResolvedValue(null);
     mockSeasonStandingsListBySeason.mockResolvedValue([]);
     mockGetByMatchIdsForUser.mockResolvedValue([]);
+    mockTagTeamsListAll.mockResolvedValue([]);
   });
 
   it('returns 200 with all dashboard sections', async () => {
@@ -492,5 +496,36 @@ describe('getDashboard', () => {
       // Unauthenticated path must not hit the ratings repo.
       expect(mockGetByMatchIdsForUser).not.toHaveBeenCalled();
     });
+  });
+
+  it('bills recent tag results by team, aligned with teams (TTB-01)', async () => {
+    const recent = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    mockMatchesList.mockResolvedValue([
+      {
+        matchId: 'tag', date: recent, updatedAt: recent, status: 'completed', matchFormat: 'tag',
+        participants: ['p1', 'p2', 'p3', 'p4'], teams: [['p1', 'p2'], ['p3', 'p4']],
+        winners: ['p1', 'p2'], losers: ['p3', 'p4'],
+      },
+      {
+        matchId: 'singles', date: recent, updatedAt: recent, status: 'completed', matchFormat: 'singles',
+        participants: ['p1', 'p3'], winners: ['p1'], losers: ['p3'],
+      },
+    ]);
+    mockTagTeamsListAll.mockResolvedValue([
+      {
+        tagTeamId: 'usos', name: 'The Usos', player1Id: 'p2', player2Id: 'p1', status: 'active',
+        wins: 0, losses: 0, draws: 0, createdAt: '2020-01-01T00:00:00.000Z', updatedAt: '2020-01-01T00:00:00.000Z',
+      },
+    ]);
+
+    const result = await getDashboard({} as never, ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    const tag = body.recentResults.find((m: { matchId: string }) => m.matchId === 'tag');
+    const singles = body.recentResults.find((m: { matchId: string }) => m.matchId === 'singles');
+    expect(tag.teams).toEqual([['p1', 'p2'], ['p3', 'p4']]);
+    expect(tag.sideTagTeams).toEqual([{ tagTeamId: 'usos', name: 'The Usos' }, null]);
+    expect(singles).not.toHaveProperty('sideTagTeams');
+    expect(mockTagTeamsListAll).toHaveBeenCalledTimes(1);
   });
 });
