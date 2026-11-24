@@ -95,18 +95,131 @@
   list-style: none;
 }
 
+/* The card is the list item: the profile link and the points button sit side by side. */
+.standings-list__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  background-color: var(--color-surface);
+}
+
 .standings-row {
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
   min-height: var(--touch-target);
   padding: 0.75rem;
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-card);
-  background-color: var(--color-surface);
   color: var(--color-text);
   text-decoration: none;
+}
+
+.standings-list__points {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.25rem;
+  padding: 0.5rem 0.75rem 0.5rem 0.5rem;
+  border-inline-start: 1px solid var(--color-hairline);
+}
+
+.standings-list__points-label {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* STR-04: league points and their breakdown. */
+.standings-points {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 1.0625rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.standings-points--empty {
+  color: var(--color-text-muted);
+}
+
+.standings-points__button {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.5rem;
+  border: 1px dashed transparent;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted var(--color-text-muted);
+  text-underline-offset: 0.25em;
+}
+
+.standings-points__button:hover,
+.standings-points__button[aria-expanded='true'] {
+  border-color: var(--color-hairline);
+  background-color: var(--color-surface-raised);
+}
+
+.standings-points__button:focus-visible {
+  outline: 2px solid var(--color-cyan);
+  outline-offset: 2px;
+}
+
+.standings-points__breakdown {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  inset-inline-end: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: min(18rem, calc(100vw - 2rem));
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  background-color: var(--color-surface-raised);
+  box-shadow: var(--shadow-overlay);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: start;
+  white-space: normal;
+}
+
+.standings-points__breakdown[hidden] {
+  display: none;
+}
+
+/* In the table the cell is centred, so centre the popover under it too. */
+.standings-table .standings-points__breakdown {
+  inset-inline-end: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.standings-podium-points {
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.standings-how-it-works {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+}
+
+.standings-how-it-works a {
+  color: var(--color-cyan);
 }
 
 .standings-row__names {
@@ -179,6 +292,12 @@
   .standings-select {
     flex-basis: 100%;
   }
+
+  /* Leave the name room beside the points column on narrow phones. */
+  .standings-row {
+    gap: 0.5rem;
+    padding-inline: 0.625rem;
+  }
 }
 
 /*
@@ -249,12 +368,12 @@
 
 /* DMV-07: promotion / relegation zones, league-table style. */
 .standings-table tr.standings-zone--promotion td:first-child,
-.standings-row.standings-zone--promotion {
+.standings-list__item.standings-zone--promotion {
   box-shadow: inset 4px 0 0 var(--color-win);
 }
 
 .standings-table tr.standings-zone--relegation td:first-child,
-.standings-row.standings-zone--relegation {
+.standings-list__item.standings-zone--relegation {
   box-shadow: inset 4px 0 0 var(--color-loss);
 }
 

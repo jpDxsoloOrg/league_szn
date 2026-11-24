@@ -526,6 +526,7 @@
       "rank": "Rank",
       "image": "Image",
       "player": "Player",
+      "points": "Pts",
       "wrestler": "Wrestler",
       "overall": "OVR",
       "overallTitle": "WWE 2K Overall Rating",
@@ -566,7 +567,19 @@
       "promotionLegend_other": "Promotion zone: top {{count}} places",
       "relegationLegend_one": "Relegation zone: bottom {{count}} place",
       "relegationLegend_other": "Relegation zone: bottom {{count}} places"
-    }
+    },
+    "points": {
+      "value_one": "{{count}} pt",
+      "value_other": "{{count}} pts",
+      "showBreakdown": "{{name}}: {{points}} points. Show the breakdown",
+      "breakdown": "{{total}} = {{parts}}",
+      "fromResults": "{{count}} from results",
+      "qualityWins_one": "{{count}} quality win",
+      "qualityWins_other": "{{count}} quality wins",
+      "streakBonuses_one": "{{count}} streak bonus",
+      "streakBonuses_other": "{{count}} streak bonuses"
+    },
+    "howItWorks": "How standings work"
   },
   "championships": {
     "title": "Championships",

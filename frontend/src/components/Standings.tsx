@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Link } from 'react-router-dom';
 import { standingsApi, seasonsApi, divisionsApi } from '../services/api';
 import { logger } from '../utils/logger';
@@ -29,7 +30,11 @@ import './rankPodium.css';
 import './Standings.css';
 
 interface RankedPlayer extends Player {
+  /** Position in the visible table; level rows share it. */
   rank: number;
+  points: number;
+  qualityWins: number;
+  streakBonuses: number;
   matchesPlayed: number;
   winRate: number;
   /** DMV-07: promotion or relegation zone, only when filtered to one division. */
@@ -44,6 +49,9 @@ const ZONE_ICONS: Record<StandingsZone, string> = {
 };
 
 const PODIUM_SIZE = 3;
+/** What one quality win or one streak bonus adds (STR-01 policy). */
+const BONUS_POINTS = 1;
+const HOW_STANDINGS_WORK_PATH = '/guide/wiki/how-standings-work';
 const ROWS_PER_PAGE = 50;
 
 const STREAK_TITLE_KEYS = {
@@ -76,6 +84,69 @@ function Streak({ streak }: { streak: Player['currentStreak'] }) {
   return (
     <span className={`standings-streak standings-streak--${streak.type.toLowerCase()}`} title={t(STREAK_TITLE_KEYS[streak.type])}>
       {streak.type}{streak.count}
+    </span>
+  );
+}
+
+/**
+ * "18 = 15 from results + 2 quality wins + 1 streak bonus". Each bonus is
+ * worth one point (QUALITY_WIN_BONUS and STREAK_BONUS in the backend policy),
+ * so the result points are what is left. Bonuses at zero are left out.
+ */
+function pointsBreakdownText(t: TFunction, player: RankedPlayer): string {
+  const resultPoints = player.points - player.qualityWins * BONUS_POINTS - player.streakBonuses * BONUS_POINTS;
+  const parts = [t('standings.points.fromResults', { count: resultPoints })];
+  if (player.qualityWins > 0) parts.push(t('standings.points.qualityWins', { count: player.qualityWins }));
+  if (player.streakBonuses > 0) parts.push(t('standings.points.streakBonuses', { count: player.streakBonuses }));
+  return t('standings.points.breakdown', { total: player.points, parts: parts.join(' + ') });
+}
+
+/**
+ * The points total as a button that opens its breakdown. Click, tap, Enter or
+ * Space toggles it; Escape or a press elsewhere closes it.
+ */
+function PointsCell({ player }: { player: RankedPlayer }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLSpanElement>(null);
+  const breakdownId = useId();
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      if (event.target instanceof Node && wrapperRef.current?.contains(event.target)) return;
+      setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutsidePress);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePress);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [open]);
+
+  if (player.matchesPlayed === 0) {
+    return <span className="standings-points standings-points--empty">{player.points}</span>;
+  }
+
+  return (
+    <span className="standings-points" ref={wrapperRef}>
+      <button
+        type="button"
+        className="standings-points__button"
+        aria-expanded={open}
+        aria-controls={breakdownId}
+        aria-label={t('standings.points.showBreakdown', { name: player.name, points: player.points })}
+        onClick={() => setOpen((isOpen) => !isOpen)}
+      >
+        {player.points}
+      </button>
+      <span id={breakdownId} className="standings-points__breakdown" role="status" hidden={!open}>
+        {open ? pointsBreakdownText(t, player) : null}
+      </span>
     </span>
   );
 }
@@ -115,16 +186,16 @@ function isSingleDivision(selectedDivision: string): boolean {
   return selectedDivision !== 'all' && selectedDivision !== 'none';
 }
 
-/** Swap in the record since the player joined their division, when the API sent one. */
+/** The division table's record and league points since the player joined, when the API sent them. */
 function withDivisionRecord(player: Player): Player {
   if (!player.divisionRecord) return player;
-  const { wins, losses, draws, recentForm, currentStreak } = player.divisionRecord;
-  return { ...player, wins, losses, draws, recentForm, currentStreak };
+  const { wins, losses, draws, recentForm, currentStreak, points, qualityWins, streakBonuses, sos, rank } = player.divisionRecord;
+  return { ...player, wins, losses, draws, recentForm, currentStreak, points, qualityWins, streakBonuses, sos, rank };
 }
 
-/** Wins descending, then losses ascending — the order the API uses for the career table. */
-function compareByRecord(first: Player, second: Player): number {
-  return second.wins - first.wins || first.losses - second.losses;
+/** The API rank in this scope; a row without one goes after every ranked row. */
+function scopeRank(player: Player): number {
+  return player.rank || Number.MAX_SAFE_INTEGER;
 }
 
 function zoneClass(player: RankedPlayer): string | undefined {
@@ -222,21 +293,34 @@ export default function Standings() {
 
     const hasPlayed = (player: Player) => player.wins + player.losses + player.draws > 0;
     const filtered = (standings?.players ?? []).filter((player) => matchesDivision(player) && matchesAlignment(player));
-    // PRL-09: one division's table counts only results since each player joined
-    // it, so a wrestler who just moved starts at 0-0-0. All divisions keeps the career record.
+    // The API order is the all-divisions ranking (league points). One division's
+    // table uses its own points and rank, counting only results since each
+    // player joined it (PRL-09), so a wrestler who just moved starts at 0.
     const shown = isSingleDivision(selectedDivision)
-      ? filtered.map(withDivisionRecord).sort(compareByRecord)
+      ? filtered.map(withDivisionRecord).sort((first, second) => scopeRank(first) - scopeRank(second))
       : filtered;
 
-    // The API sorts on wins, which puts 0-0-0 above 0-2-0. Players who have
-    // wrestled rank first, so the podium is always the top of the table.
+    // Safety net: players who have wrestled come first, so the podium is
+    // always the top of the table even if the API mixes in unplayed rows.
     const played = shown.filter(hasPlayed);
+    const ordered = [...played, ...shown.filter((player) => !hasPlayed(player))];
+    // Filters renumber the visible rows; rows the API ranks level share a number.
+    let shownRank = 0;
     // Zones cover only players who have wrestled; an unbooked 0-0-0 is in no zone.
-    return [...played, ...shown.filter((player) => !hasPlayed(player))].map((player, index) => {
+    return ordered.map((player, index) => {
+      const previous = ordered[index - 1];
+      const tiedWithPrevious = previous !== undefined
+        && player.rank !== undefined
+        && player.rank === previous.rank
+        && hasPlayed(player) === hasPlayed(previous);
+      shownRank = tiedWithPrevious ? shownRank : index + 1;
       const matchesPlayed = player.wins + player.losses + player.draws;
       return {
         ...player,
-        rank: index + 1,
+        rank: shownRank,
+        points: player.points ?? 0,
+        qualityWins: player.qualityWins ?? 0,
+        streakBonuses: player.streakBonuses ?? 0,
         zone: matchesPlayed > 0 ? getStandingsZone(index + 1, played.length, zoneSizes) : undefined,
         matchesPlayed,
         winRate: matchesPlayed > 0 ? (player.wins / matchesPlayed) * 100 : 0,
@@ -262,6 +346,9 @@ export default function Standings() {
     to: `/player/${player.playerId}`,
     badge: (
       <>
+        <span className="standings-podium-points" title={pointsBreakdownText(t, player)}>
+          {t('standings.points.value', { count: player.points })}
+        </span>
         {player.zone && (
           <span className={`standings-zone-pill standings-zone-pill--${player.zone}`}>
             <span aria-hidden="true">{ZONE_ICONS[player.zone]}</span> {t(`standings.zones.${player.zone}`)}
@@ -304,6 +391,13 @@ export default function Standings() {
         </div>
       ),
       sortValue: (player) => player.name,
+    },
+    {
+      key: 'points',
+      header: t('standings.table.points'),
+      render: (player) => <PointsCell player={player} />,
+      align: 'center',
+      sortValue: (player) => player.points,
     },
     {
       key: 'record',
@@ -391,11 +485,8 @@ export default function Standings() {
             {isMobile ? (
               <ol className="standings-list">
                 {listedPlayers.slice(0, visibleCount).map((player) => (
-                  <li key={player.playerId}>
-                    <Link
-                      to={`/player/${player.playerId}`}
-                      className={['standings-row', zoneClass(player)].filter(Boolean).join(' ')}
-                    >
+                  <li key={player.playerId} className={['standings-list__item', zoneClass(player)].filter(Boolean).join(' ')}>
+                    <Link to={`/player/${player.playerId}`} className="standings-row">
                       <span className="standings-rank">
                         {player.zone && <ZoneIcon zone={player.zone} />}#{player.rank}
                       </span>
@@ -416,6 +507,11 @@ export default function Standings() {
                         </span>
                       </span>
                     </Link>
+                    {/* Outside the link: a button cannot sit inside one. */}
+                    <span className="standings-list__points">
+                      <PointsCell player={player} />
+                      <span className="standings-list__points-label" aria-hidden="true">{t('standings.table.points')}</span>
+                    </span>
                   </li>
                 ))}
               </ol>
@@ -443,6 +539,9 @@ export default function Standings() {
         {isSingleDivision(selectedDivision) && (
           <p className="standings-division-since">{t('standings.divisionSince')}</p>
         )}
+        <p className="standings-how-it-works">
+          <Link to={HOW_STANDINGS_WORK_PATH}>{t('standings.howItWorks')}</Link>
+        </p>
       </>
     );
   };

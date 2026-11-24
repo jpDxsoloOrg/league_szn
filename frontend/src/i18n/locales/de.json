@@ -526,6 +526,7 @@
       "rank": "Rang",
       "image": "Bild",
       "player": "Spieler",
+      "points": "Pkt.",
       "wrestler": "Wrestler",
       "overall": "OVR",
       "overallTitle": "WWE 2K Gesamtwertung",
@@ -566,7 +567,19 @@
       "promotionLegend_other": "Aufstiegszone: die obersten {{count}} Plätze",
       "relegationLegend_one": "Abstiegszone: der unterste Platz",
       "relegationLegend_other": "Abstiegszone: die untersten {{count}} Plätze"
-    }
+    },
+    "points": {
+      "value_one": "{{count}} Pkt.",
+      "value_other": "{{count}} Pkt.",
+      "showBreakdown": "{{name}}: {{points}} Punkte. Aufschlüsselung anzeigen",
+      "breakdown": "{{total}} = {{parts}}",
+      "fromResults": "{{count}} aus Ergebnissen",
+      "qualityWins_one": "{{count}} Qualitätssieg",
+      "qualityWins_other": "{{count}} Qualitätssiege",
+      "streakBonuses_one": "{{count}} Serienbonus",
+      "streakBonuses_other": "{{count}} Serienboni"
+    },
+    "howItWorks": "So funktioniert die Tabelle"
   },
   "championships": {
     "title": "Meisterschaften",

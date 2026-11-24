@@ -24,8 +24,16 @@ vi.mock('../../utils/logger', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => {
+    t: (key: string, options?: Record<string, unknown>) => {
       const map: Record<string, string> = {
+        'standings.table.points': 'Pts',
+        'standings.howItWorks': 'How standings work',
+        'standings.points.value': '{{count}} pts',
+        'standings.points.showBreakdown': '{{name}}: {{points}} points',
+        'standings.points.breakdown': '{{total}} = {{parts}}',
+        'standings.points.fromResults': '{{count}} from results',
+        'standings.points.qualityWins': '{{count}} quality wins',
+        'standings.points.streakBonuses': '{{count}} streak bonus',
         'standings.title': 'Standings',
         'standings.pageTitle': 'Standings',
         'standings.loading': 'Loading standings...',
@@ -62,7 +70,8 @@ vi.mock('react-i18next', () => ({
         'common.retry': 'Retry',
         'common.active': 'Active',
       };
-      return map[key] || key;
+      const text = map[key] || key;
+      return text.replace(/\{\{(\w+)\}\}/g, (_match, name: string) => String(options?.[name] ?? ''));
     },
   }),
 }));
@@ -205,7 +214,7 @@ describe('Standings', () => {
     expect(within(screen.getByRole('table')).getAllByTestId('consideration-badge')).toHaveLength(1);
   });
 
-  it('puts the top three on the podium and the rest in a six column table', async () => {
+  it('puts the top three on the podium and the rest in a seven column table', async () => {
     renderStandings();
 
     const podium = await screen.findByRole('list', { name: 'Top three' });
@@ -216,7 +225,7 @@ describe('Standings', () => {
     expect(within(podium).getByText('65.8%')).toBeInTheDocument();
 
     const table = screen.getByRole('table');
-    expect(within(table).getAllByRole('columnheader')).toHaveLength(6);
+    expect(within(table).getAllByRole('columnheader')).toHaveLength(7);
     expect(within(table).queryByText('John Cena')).not.toBeInTheDocument();
     expect(within(table).getByText('#4')).toBeInTheDocument();
     expect(within(table).getByText('The Rattlesnake')).toBeInTheDocument();
@@ -630,7 +639,7 @@ describe('Standings', () => {
       await showDivision('NXT');
 
       const row = screen.getByRole('link', { name: /NXT 6/ });
-      expect(row).toHaveClass('standings-zone--relegation');
+      expect(row.closest('li')).toHaveClass('standings-zone--relegation');
       expect(within(row).getByRole('img', { name: 'standings.zones.relegation' })).toBeInTheDocument();
     });
   });
@@ -693,7 +702,7 @@ describe('Standings', () => {
       expect(screen.getByText('standings.divisionSince')).toBeInTheDocument();
     });
 
-    it('ranks by career record across all divisions', async () => {
+    it('ranks by the API order across all divisions', async () => {
       const user = userEvent.setup();
       renderStandings();
       await user.click(await screen.findByRole('button', { name: 'All' }));
@@ -703,6 +712,158 @@ describe('Standings', () => {
       expect(within(first).getByText('Promoted Star')).toBeInTheDocument();
       expect(within(first).getByText('20 - 0 - 0')).toBeInTheDocument();
       expect(screen.queryByText('standings.divisionSince')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('league points (STR-04)', () => {
+    function pointsPlayer(playerId: string, name: string, points: number, wins: number, losses: number, rank: number) {
+      return {
+        playerId,
+        name,
+        currentWrestler: `Wrestler ${playerId}`,
+        wins,
+        losses,
+        draws: 0,
+        divisionId: 'div1',
+        createdAt: '2024-01-01',
+        updatedAt: '2024-06-01',
+        points,
+        qualityWins: 0,
+        streakBonuses: 0,
+        rank,
+      };
+    }
+
+    // API order is by points: Leader has fewer wins than Grinder but more points.
+    const rankedPlayers = [
+      { ...pointsPlayer('a', 'Leader', 18, 5, 1, 1), qualityWins: 2, streakBonuses: 1 },
+      pointsPlayer('b', 'Grinder', 15, 6, 5, 2),
+      { ...pointsPlayer('c', 'Third', 12, 4, 2, 3), divisionId: 'div2' },
+      pointsPlayer('d', 'Fourth', 9, 3, 3, 4),
+      { ...pointsPlayer('e', 'Fifth', 9, 7, 9, 4), divisionId: 'div2' },
+      pointsPlayer('f', 'Sixth', 3, 1, 4, 6),
+    ];
+
+    beforeEach(() => {
+      mockGetAllSeasons.mockResolvedValue([]);
+      mockGetAllDivisions.mockResolvedValue(mockDivisions);
+      mockGetStandings.mockResolvedValue({ players: rankedPlayers, rankedBy: 'points', sortedByWins: false });
+    });
+
+    const tableRows = () => within(screen.getByRole('table')).getAllByRole('row').slice(1);
+
+    it('keeps the API points order and shows points on the podium', async () => {
+      renderStandings();
+
+      const podium = await screen.findByRole('list', { name: 'Top three' });
+      const [first, second] = within(podium).getAllByRole('listitem');
+      expect(within(first).getByText('Leader')).toBeInTheDocument();
+      expect(within(first).getByText('18 pts')).toBeInTheDocument();
+      expect(within(second).getByText('Grinder')).toBeInTheDocument();
+      expect(within(second).getByText('15 pts')).toBeInTheDocument();
+
+      expect(within(tableRows()[0]).getByText('Fourth')).toBeInTheDocument();
+      expect(within(tableRows()[0]).getByRole('button', { name: 'Fourth: 9 points' })).toHaveTextContent('9');
+      // Level on points with Fourth, so they share #4.
+      expect(within(tableRows()[1]).getByText('#4')).toBeInTheDocument();
+      expect(within(tableRows()[2]).getByText('#6')).toBeInTheDocument();
+    });
+
+    it('opens the points breakdown on click and closes it with Escape', async () => {
+      const user = userEvent.setup();
+      mockGetStandings.mockResolvedValue({
+        players: [rankedPlayers[1], rankedPlayers[2], rankedPlayers[3], rankedPlayers[0]].map((player, index) => ({ ...player, rank: index + 1 })),
+        rankedBy: 'points',
+        sortedByWins: false,
+      });
+      renderStandings();
+
+      const button = await screen.findByRole('button', { name: 'Leader: 18 points' });
+      expect(button).toHaveAttribute('aria-expanded', 'false');
+      await user.click(button);
+
+      expect(button).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByRole('status')).toHaveTextContent('18 = 15 from results + 2 quality wins + 1 streak bonus');
+
+      await user.keyboard('{Escape}');
+      expect(button).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('leaves zero bonuses out of the breakdown', async () => {
+      const user = userEvent.setup();
+      renderStandings();
+
+      await user.click(await screen.findByRole('button', { name: 'Sixth: 3 points' }));
+
+      expect(screen.getByRole('status')).toHaveTextContent(/^3 = 3 from results$/);
+    });
+
+    it('opens the breakdown on tap from the phone list', async () => {
+      mockMobile.value = true;
+      const user = userEvent.setup();
+      renderStandings();
+
+      const button = await screen.findByRole('button', { name: 'Fourth: 9 points' });
+      expect(button.closest('a')).toBeNull();
+      await user.click(button);
+
+      expect(screen.getByRole('status')).toHaveTextContent('9 = 9 from results');
+    });
+
+    it('still sorts by wins from the record column', async () => {
+      const user = userEvent.setup();
+      renderStandings();
+      await screen.findByRole('table');
+
+      await user.click(screen.getByRole('button', { name: 'Record' }));
+      await user.click(screen.getByRole('button', { name: 'Record' }));
+
+      expect(within(tableRows()[0]).getByText('Fifth')).toBeInTheDocument();
+      expect(within(tableRows()[2]).getByText('Sixth')).toBeInTheDocument();
+    });
+
+    it('ranks one division by its own points and renumbers from one', async () => {
+      const user = userEvent.setup();
+      mockGetStandings.mockResolvedValue({
+        rankedBy: 'points',
+        sortedByWins: false,
+        players: rankedPlayers.map((player) => ({
+          ...player,
+          // In Raw since joining: Sixth leads, Leader has not wrestled yet.
+          divisionRecord: {
+            wins: player.playerId === 'a' ? 0 : player.wins,
+            losses: player.playerId === 'a' ? 0 : player.losses,
+            draws: 0,
+            recentForm: [],
+            currentStreak: { type: 'W', count: 0 },
+            points: { a: 0, b: 6, d: 4, f: 9 }[player.playerId] ?? player.points,
+            qualityWins: 0,
+            streakBonuses: 0,
+            rank: { a: 4, b: 2, d: 3, f: 1 }[player.playerId] ?? player.rank,
+          },
+        })),
+      });
+      renderStandings();
+
+      await user.click(await screen.findByRole('button', { name: 'Raw' }));
+
+      const podium = await screen.findByRole('list', { name: 'Top three' });
+      const [first, second, third] = within(podium).getAllByRole('listitem');
+      expect(within(first).getByText('Sixth')).toBeInTheDocument();
+      expect(within(second).getByText('Grinder')).toBeInTheDocument();
+      expect(within(third).getByText('Fourth')).toBeInTheDocument();
+      expect(within(podium).getByText('9 pts')).toBeInTheDocument();
+      // Leader has not wrestled in Raw yet, so they sit last at 0 points.
+      expect(tableRows()).toHaveLength(1);
+      expect(within(tableRows()[0]).getByText('Leader')).toBeInTheDocument();
+      expect(within(tableRows()[0]).getByText('#4')).toBeInTheDocument();
+      expect(within(tableRows()[0]).queryByRole('button', { name: /Leader/ })).not.toBeInTheDocument();
+    });
+
+    it('links to how standings work', async () => {
+      renderStandings();
+
+      expect(await screen.findByRole('link', { name: 'How standings work' })).toHaveAttribute('href', '/guide/wiki/how-standings-work');
     });
   });
 });
