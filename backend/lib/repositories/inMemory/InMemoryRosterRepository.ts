@@ -80,6 +80,7 @@ export class InMemoryRosterRepository implements RosterRepository {
         ...(input.divisionId !== undefined
           ? { divisionJoinedAt: input.divisionJoinedAt ?? now }
           : {}),
+        ...(input.progressionEpochAt !== undefined ? { progressionEpochAt: input.progressionEpochAt } : {}),
         ...(input.companyId !== undefined ? { companyId: input.companyId } : {}),
         ...(input.alignment !== undefined ? { alignment: input.alignment } : {}),
         wins: 0,

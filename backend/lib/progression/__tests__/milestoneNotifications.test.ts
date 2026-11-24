@@ -39,8 +39,16 @@ function track(partial: Partial<ProgressionTrack> = {}): ProgressionTrack {
   };
 }
 
+/** Before every fixture match, so the progression epoch (PRL-01) keeps them all. */
+const JOINED_DIVISION_AT = '2026-01-01T00:00:00.000Z';
+
 async function addPlayer(name: string, divisionId: string, userId?: string): Promise<Player> {
-  const player = await repos.roster.players.create({ name, currentWrestler: name, divisionId });
+  const player = await repos.roster.players.create({
+    name,
+    currentWrestler: name,
+    divisionId,
+    divisionJoinedAt: JOINED_DIVISION_AT,
+  });
   if (!userId) return player;
   return repos.roster.players.update(player.playerId, { userId });
 }

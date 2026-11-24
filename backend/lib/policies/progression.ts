@@ -15,6 +15,11 @@
  *   - A metric that is not yet computable (`current === null`) fills 0 and is
  *     never met, whatever the direction.
  *
+ * Progression epoch (PRL-01): every window mode is clipped to the player's
+ * epoch, the moment their goals last started over (a division move or a GM
+ * reset). Totals, rates and streaks only see activity on or after it, so a
+ * streak never carries across a move. See `ProgressionWindow`.
+ *
  * Overall progress is the weighted mean of goal fills, scaled to 0–100.
  * Weights do not need to sum to 1: they are normalised by their total.
  * On a relegation track that number is the player's "danger".
@@ -114,14 +119,21 @@ export interface ProgressionInputs {
 /**
  * The time window a metric is measured over.
  *
- * - `allTime`: everything.
- * - `season`: matches whose `seasonId` equals `seasonId`; promos and
- *   challenges created within [`since`, `until`] (the season's start/end).
+ * The progression epoch (PRL-01) clips EVERY mode: `resolveProgressionWindow`
+ * sets `since` to the player's epoch (their last division move or goal
+ * reset), or to the season start when that is later. Nothing from before it
+ * counts, so goals and streaks are tracked per division. Win/loss/draw totals
+ * and season standings are separate and never affected.
+ *
+ * - `allTime`: everything on or after `since` (no `since` = everything).
+ * - `season`: matches whose `seasonId` equals `seasonId` AND recorded on or
+ *   after `since`; promos and challenges created within [`since`, `until`].
  *   With no `seasonId` (no active season) the window is empty.
- * - `sinceJoinedDivision`: everything dated on or after `since` (the
- *   division join date). With no `since` there is no lower bound. A match
- *   is placed by when its result was recorded (`matchResultTime`), not the
- *   date it was booked for.
+ * - `sinceJoinedDivision`: everything dated on or after `since`. With no
+ *   `since` there is no lower bound.
+ *
+ * Bounds are inclusive. A match is placed by when its result was recorded
+ * (`matchResultTime`), not the date it was booked for.
  */
 export interface ProgressionWindow {
   mode: ProgressionWindowMode;
@@ -162,16 +174,21 @@ function withinBounds(timestamp: string, window: ProgressionWindow): boolean {
 
 /** Returns the subset of `inputs` that falls inside `window`. */
 export function applyWindow(inputs: ProgressionInputs, window: ProgressionWindow): ProgressionInputs {
-  if (window.mode === 'allTime') return inputs;
+  if (window.mode === 'allTime' && window.since === undefined && window.until === undefined) return inputs;
 
   if (window.mode === 'season') {
     const { seasonId } = window;
     if (seasonId === undefined) {
       return { ...inputs, matches: [], promos: [], challenges: [] };
     }
+    // Matches belong to the season by `seasonId`, so only the lower bound
+    // (season start or the epoch, whichever is later) applies to them: a
+    // season match recorded after the season's end date still counts.
+    const lowerBound: ProgressionWindow = { mode: window.mode, since: window.since };
     return {
       ...inputs,
-      matches: inputs.matches.filter((match) => match.seasonId === seasonId),
+      matches: inputs.matches.filter((match) =>
+        match.seasonId === seasonId && withinBounds(matchResultTime(match), lowerBound)),
       promos: inputs.promos.filter((promo) => withinBounds(promo.createdAt, window)),
       challenges: inputs.challenges.filter((challenge) => withinBounds(challenge.createdAt, window)),
     };

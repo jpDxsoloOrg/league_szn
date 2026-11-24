@@ -10,6 +10,7 @@ import {
   divisionJoinedAt,
   loadProgressionBatch,
   loadProgressionInputs,
+  progressionEpoch,
   reactionCountsFromOthers,
   resolveProgressionWindow,
 } from '../loadInputs';
@@ -164,8 +165,38 @@ describe('window resolution', () => {
     expect(divisionJoinedAt({ ...player, divisionJoinedAt: '2026-05-01T00:00:00.000Z' } as Player)).toBe('2026-05-01T00:00:00.000Z');
   });
 
+  it('progressionEpoch falls back to divisionJoinedAt, then to createdAt (PRL-01)', () => {
+    const joined = '2026-05-01T00:00:00.000Z';
+    const reset = '2026-06-01T00:00:00.000Z';
+    expect(progressionEpoch(player)).toBe(player.createdAt);
+    expect(progressionEpoch({ ...player, divisionJoinedAt: joined })).toBe(joined);
+    expect(progressionEpoch({ ...player, divisionJoinedAt: joined, progressionEpochAt: '' })).toBe(joined);
+    expect(progressionEpoch({ ...player, divisionJoinedAt: joined, progressionEpochAt: reset })).toBe(reset);
+  });
+
+  it('clips every mode to the epoch (PRL-01)', () => {
+    const epoch = '2026-03-15T00:00:00.000Z';
+    const moved = { ...player, divisionJoinedAt: '2026-03-01T00:00:00.000Z', progressionEpochAt: epoch };
+    expect(resolveProgressionWindow('allTime', moved, season)).toEqual({ mode: 'allTime', since: epoch });
+    expect(resolveProgressionWindow('sinceJoinedDivision', moved, season)).toEqual({
+      mode: 'sinceJoinedDivision',
+      since: epoch,
+    });
+    // Season started before the epoch: the epoch is the lower bound.
+    expect(resolveProgressionWindow('season', moved, { ...season, endDate: '2026-09-01T00:00:00.000Z' })).toEqual({
+      mode: 'season',
+      seasonId: 's1',
+      since: epoch,
+      until: '2026-09-01T00:00:00.000Z',
+    });
+    // Epoch earlier than the season start: the season start wins.
+    const lateSeason = { ...season, startDate: '2026-04-01T00:00:00.000Z' };
+    expect(resolveProgressionWindow('season', moved, lateSeason)).toMatchObject({ since: lateSeason.startDate });
+  });
+
   it('resolves each mode', () => {
-    expect(resolveProgressionWindow('allTime', player, season)).toEqual({ mode: 'allTime' });
+    expect(resolveProgressionWindow('allTime', player, season)).toEqual({ mode: 'allTime', since: player.createdAt });
+    expect(resolveProgressionWindow('allTime', undefined, season)).toEqual({ mode: 'allTime' });
     expect(resolveProgressionWindow('season', player, season)).toEqual({
       mode: 'season',
       seasonId: 's1',

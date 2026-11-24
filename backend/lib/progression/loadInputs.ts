@@ -341,29 +341,56 @@ export async function loadProgressionInputs(
   return inputs;
 }
 
-/**
- * When the player joined their current division. Reads `divisionJoinedAt`
- * defensively (a parallel ticket adds it) and falls back to `createdAt`.
- */
+/** When the player joined their current division, falling back to `createdAt`. */
 export function divisionJoinedAt(player: Player): string {
-  const joined: unknown = (player as Player & { divisionJoinedAt?: unknown }).divisionJoinedAt;
+  const joined = player.divisionJoinedAt;
   return typeof joined === 'string' && joined.length > 0 ? joined : player.createdAt;
 }
 
-/** Builds the window for a track's mode for one player. */
+/**
+ * The player's progression epoch (PRL-01): the instant their goals last
+ * started over. Uses `progressionEpochAt` (written on a division move or a
+ * GM reset) and falls back to `divisionJoinedAt`, then `createdAt`, for
+ * players who have not been moved since the field shipped.
+ */
+export function progressionEpoch(player: Player): string {
+  const epoch = player.progressionEpochAt;
+  return typeof epoch === 'string' && epoch.length > 0 ? epoch : divisionJoinedAt(player);
+}
+
+/** The later of two ISO instants. An unparseable value loses to a parseable one. */
+function laterOf(first: string, second: string): string {
+  const firstTime = Date.parse(first);
+  const secondTime = Date.parse(second);
+  if (Number.isNaN(firstTime)) return second;
+  if (Number.isNaN(secondTime)) return first;
+  return secondTime > firstTime ? second : first;
+}
+
+/**
+ * Builds the window for a track's mode for one player. Every mode is clipped
+ * to the player's progression epoch (PRL-01), so nothing from before the last
+ * division move or reset counts:
+ *   - `allTime` → since the epoch;
+ *   - `season` → since the later of the season start and the epoch;
+ *   - `sinceJoinedDivision` → since the epoch.
+ * Without a player there is no epoch and the mode's own bounds apply.
+ */
 export function resolveProgressionWindow(
   mode: ProgressionWindowMode,
   player: Player | undefined,
   activeSeason: Season | null,
 ): ProgressionWindow {
+  const epoch = player ? progressionEpoch(player) : undefined;
   switch (mode) {
     case 'allTime':
-      return { mode };
-    case 'season':
-      return activeSeason
-        ? { mode, seasonId: activeSeason.seasonId, since: activeSeason.startDate, until: activeSeason.endDate }
-        : { mode };
+      return epoch ? { mode, since: epoch } : { mode };
+    case 'season': {
+      if (!activeSeason) return { mode };
+      const since = epoch ? laterOf(activeSeason.startDate, epoch) : activeSeason.startDate;
+      return { mode, seasonId: activeSeason.seasonId, since, until: activeSeason.endDate };
+    }
     case 'sinceJoinedDivision':
-      return player ? { mode, since: divisionJoinedAt(player) } : { mode };
+      return epoch ? { mode, since: epoch } : { mode };
   }
 }

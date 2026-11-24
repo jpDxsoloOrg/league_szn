@@ -29,8 +29,15 @@ function track(trackId: string, fromDivisionId: string, partial: Partial<Progres
   };
 }
 
+/** Before every fixture match, so the progression epoch (PRL-01) keeps them all. */
+const JOINED_DIVISION_AT = '2026-01-01T00:00:00.000Z';
+
 async function addPlayer(name: string, divisionId?: string): Promise<Player> {
-  return repos.roster.players.create({ name, currentWrestler: name, ...(divisionId ? { divisionId } : {}) });
+  return repos.roster.players.create({
+    name,
+    currentWrestler: name,
+    ...(divisionId ? { divisionId, divisionJoinedAt: JOINED_DIVISION_AT } : {}),
+  });
 }
 
 async function addWin(winnerId: string, loserId: string, matchId: string): Promise<void> {
@@ -237,6 +244,42 @@ describe('recomputeProgression', () => {
 
     expect(result.dropped).toEqual([expect.objectContaining({ playerId: player.playerId, trackId: 't-dojo' })]);
     expect(await repos.progression.listByPlayer(player.playerId)).toEqual([]);
+  });
+
+  it('a moved epoch restarts goals but never touches win/loss/draw totals or season standings (PRL-01)', async () => {
+    const youngBoy = await addPlayer('Young Boy', 'div-dojo');
+    const other = await addPlayer('Other', 'div-dojo');
+    await repos.progression.putTrack(track('t-dojo', 'div-dojo'));
+    const season = await repos.season.seasons.create({ name: 'S1', startDate: '2026-01-01T00:00:00.000Z' });
+    await addWin(youngBoy.playerId, other.playerId, 'm1');
+    await addWin(youngBoy.playerId, other.playerId, 'm2');
+    await repos.runInTransaction(async (tx) => {
+      tx.incrementPlayerRecord(youngBoy.playerId, { wins: 2 });
+      tx.incrementPlayerRecord(other.playerId, { losses: 2 });
+    });
+    await repos.season.standings.increment(season.seasonId, youngBoy.playerId, { wins: 2 });
+
+    const beforeMove = await recomputeProgression({ playerIds: [youngBoy.playerId] });
+    expect(beforeMove.changes[0].after.goals[0].current).toBe(2);
+
+    const recordBefore = await repos.roster.players.findById(youngBoy.playerId);
+    const standingsBefore = await repos.season.standings.listByPlayer(youngBoy.playerId);
+
+    // Both wins (2026-03-01) are before the new epoch.
+    await repos.roster.players.update(youngBoy.playerId, { progressionEpochAt: '2026-04-01T00:00:00.000Z' });
+    const afterMove = await recomputeProgression({ playerIds: [youngBoy.playerId] });
+
+    expect(afterMove.changes[0].after.goals[0].current).toBe(0);
+    expect(afterMove.changes[0].after.progressPct).toBe(0);
+    const recordAfter = await repos.roster.players.findById(youngBoy.playerId);
+    expect(recordAfter).toMatchObject({
+      wins: recordBefore?.wins,
+      losses: recordBefore?.losses,
+      draws: recordBefore?.draws,
+    });
+    expect(recordAfter?.wins).toBe(2);
+    expect(await repos.season.standings.listByPlayer(youngBoy.playerId)).toEqual(standingsBefore);
+    expect(standingsBefore).toEqual([expect.objectContaining({ seasonId: season.seasonId, wins: 2 })]);
   });
 
   it('does nothing for an empty request', async () => {

@@ -189,9 +189,9 @@ describe('applyWindow', () => {
     expect(applyWindow(data, ALL_TIME_WINDOW)).toBe(data);
   });
 
-  it('season keeps matches by seasonId and promos/challenges inside the season dates', () => {
+  it('season keeps matches by seasonId from `since` on and promos/challenges inside the season dates', () => {
     const result = applyWindow(data, { mode: 'season', seasonId: 's2', since: D2, until: D3 });
-    expect(result.matches).toHaveLength(3);
+    expect(result.matches.map((m) => m.date)).toEqual([D2, D3]);
     expect(result.promos.map((p) => p.createdAt)).toEqual([D2, D3]);
     expect(result.challenges).toEqual([]);
   });
@@ -250,6 +250,101 @@ describe('applyWindow', () => {
       );
       expect(bounded.matches.map((m) => m.completedAt)).toEqual([D2]);
     });
+  });
+});
+
+describe('progression epoch clips every window (PRL-01)', () => {
+  const EPOCH = '2026-03-01T00:00:00.000Z';
+  const day = (dayOfMonth: number, month = '02'): string =>
+    `2026-${month}-${String(dayOfMonth).padStart(2, '0')}T00:00:00.000Z`;
+  const beforeEpoch = (dayOfMonth: number): string => day(dayOfMonth, '02');
+  const afterEpoch = (dayOfMonth: number): string => day(dayOfMonth, '03');
+  const allTimeSinceEpoch = { mode: 'allTime' as const, since: EPOCH };
+
+  it('5 wins before the epoch and none after count as 0 wins and no win streak', () => {
+    const data = inputs({ matches: [1, 2, 3, 4, 5].map((dayOfMonth) => match('win', beforeEpoch(dayOfMonth))) });
+    expect(computeMetric('wins', data, {}, allTimeSinceEpoch)).toBe(0);
+    expect(computeMetric('currentWinStreak', data, {}, allTimeSinceEpoch)).toBe(0);
+  });
+
+  it('a win streak does not carry across the epoch', () => {
+    const data = inputs({
+      matches: [
+        match('win', beforeEpoch(1)),
+        match('win', beforeEpoch(2)),
+        match('win', beforeEpoch(3)),
+        match('win', afterEpoch(2)),
+        match('win', afterEpoch(3)),
+      ],
+    });
+    expect(computeMetric('currentWinStreak', data, {}, allTimeSinceEpoch)).toBe(2);
+  });
+
+  it('loss and winless streaks are cut at a division move too', () => {
+    const data = inputs({
+      matches: [
+        match('loss', beforeEpoch(1)),
+        match('draw', beforeEpoch(2)),
+        match('loss', beforeEpoch(3)),
+        match('loss', afterEpoch(2)),
+        match('draw', afterEpoch(3)),
+        match('loss', afterEpoch(4)),
+      ],
+    });
+    const sinceMove = { mode: 'sinceJoinedDivision' as const, since: EPOCH };
+    expect(computeMetric('currentLossStreak', data, {}, sinceMove)).toBe(1);
+    expect(computeMetric('currentWinlessStreak', data, {}, sinceMove)).toBe(3);
+    expect(computeMetric('currentWinlessStreak', data, {}, allTimeSinceEpoch)).toBe(3);
+    expect(computeMetric('losses', data, {}, allTimeSinceEpoch)).toBe(2);
+    // Without the epoch the whole history would count.
+    expect(computeMetric('currentWinlessStreak', data, {}, ALL_TIME_WINDOW)).toBe(6);
+  });
+
+  it('season track: a season that started before the epoch only counts post-epoch matches', () => {
+    const data = inputs({
+      matches: [
+        match('win', beforeEpoch(10), { seasonId: 's1' }),
+        match('win', afterEpoch(10), { seasonId: 's1' }),
+        match('win', afterEpoch(11), { seasonId: 'other' }),
+      ],
+    });
+    const window = { mode: 'season' as const, seasonId: 's1', since: EPOCH };
+    expect(computeMetric('wins', data, {}, window)).toBe(1);
+  });
+
+  it('season track: when the epoch is earlier than the season start, the season start wins', () => {
+    // resolveProgressionWindow passes the later bound (the season start) as `since`.
+    const seasonStart = afterEpoch(15);
+    const data = inputs({
+      matches: [
+        match('win', afterEpoch(5), { seasonId: 's1' }),
+        match('win', afterEpoch(20), { seasonId: 's1' }),
+      ],
+      promos: [promo(afterEpoch(5)), promo(afterEpoch(20))],
+    });
+    const window = { mode: 'season' as const, seasonId: 's1', since: seasonStart };
+    expect(computeMetric('wins', data, {}, window)).toBe(1);
+    expect(computeMetric('promosCut', data, {}, window)).toBe(1);
+  });
+
+  it('excludes promos and challenges from before the epoch', () => {
+    const data = inputs({
+      promos: [promo(beforeEpoch(1), { fire: 3 }), promo(afterEpoch(1), { fire: 2 })],
+      challenges: [
+        { challengeId: 'old', createdAt: beforeEpoch(1) },
+        { challengeId: 'new', createdAt: afterEpoch(1) },
+      ],
+    });
+    expect(computeMetric('promosCut', data, {}, allTimeSinceEpoch)).toBe(1);
+    expect(computeMetric('totalPromoReactions', data, {}, allTimeSinceEpoch)).toBe(2);
+    expect(computeMetric('challengesIssued', data, {}, allTimeSinceEpoch)).toBe(1);
+  });
+
+  it('counts a match recorded exactly at the epoch (inclusive bound)', () => {
+    const data = inputs({
+      matches: [match('win', beforeEpoch(1), { completedAt: EPOCH }), match('win', beforeEpoch(2))],
+    });
+    expect(computeMetric('wins', data, {}, allTimeSinceEpoch)).toBe(1);
   });
 });
 

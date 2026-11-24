@@ -238,6 +238,14 @@ export interface Player {
    * `windowMode: 'sinceJoinedDivision'` count activity from this instant.
    */
   divisionJoinedAt?: string;
+  /**
+   * The progression epoch (PRL-01): when this player's promotion, relegation
+   * and call-up goals last started over (a division move or a GM reset).
+   * Every progression track ignores activity from before it. Absent on rows
+   * written before the field shipped; readers fall back to `divisionJoinedAt`.
+   * Never touches win/loss/draw totals or season standings.
+   */
+  progressionEpochAt?: string;
   companyId?: string;
   stableId?: string;
   tagTeamId?: string;
