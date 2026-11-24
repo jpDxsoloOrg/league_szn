@@ -72,6 +72,7 @@ function toMatchInput(match: Match, playerId: string, hotRivalryIds: ReadonlySet
   const input: ProgressionMatchInput = {
     matchId: match.matchId,
     date: match.date,
+    completedAt: match.completedAt,
     seasonId: match.seasonId,
     result: matchResult(match, playerId),
     // ratingAverage is the raw mean; older rated matches may only carry starRating.

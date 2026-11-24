@@ -34,6 +34,7 @@ import type {
   ProgressionWindowMode,
   ReactionType,
 } from '../repositories/types';
+import { matchResultTime } from '../matchTime';
 
 // ─── Tunables ───────────────────────────────────────────────────────
 
@@ -61,8 +62,13 @@ export type ProgressionMatchResult = 'win' | 'loss' | 'draw';
 /** One completed match the player took part in, from that player's point of view. */
 export interface ProgressionMatchInput {
   matchId: string;
-  /** ISO date of the match; used for window filtering and win-streak order. */
+  /** ISO date the match was booked for; orders the win/loss streaks. */
   date: string;
+  /**
+   * ISO time the result was recorded. Window bounds use it, falling back to
+   * `date` for matches recorded before it existed (see `matchResultTime`).
+   */
+  completedAt?: string;
   seasonId?: string;
   result: ProgressionMatchResult;
   /** Raw (un-rounded) mean of user ratings. */
@@ -112,7 +118,9 @@ export interface ProgressionInputs {
  *   challenges created within [`since`, `until`] (the season's start/end).
  *   With no `seasonId` (no active season) the window is empty.
  * - `sinceJoinedDivision`: everything dated on or after `since` (the
- *   division join date). With no `since` there is no lower bound.
+ *   division join date). With no `since` there is no lower bound. A match
+ *   is placed by when its result was recorded (`matchResultTime`), not the
+ *   date it was booked for.
  */
 export interface ProgressionWindow {
   mode: ProgressionWindowMode;
@@ -170,7 +178,7 @@ export function applyWindow(inputs: ProgressionInputs, window: ProgressionWindow
 
   return {
     ...inputs,
-    matches: inputs.matches.filter((match) => withinBounds(match.date, window)),
+    matches: inputs.matches.filter((match) => withinBounds(matchResultTime(match), window)),
     promos: inputs.promos.filter((promo) => withinBounds(promo.createdAt, window)),
     challenges: inputs.challenges.filter((challenge) => withinBounds(challenge.createdAt, window)),
   };

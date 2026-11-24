@@ -220,6 +220,37 @@ describe('applyWindow', () => {
     expect(result.matches).toHaveLength(3);
     expect(result.promos).toHaveLength(3);
   });
+
+  describe('places matches by completion time (PRL-02)', () => {
+    const bookedEarlyRecordedLate = match('win', D1, { completedAt: D3 });
+    const bookedLateRecordedEarly = match('win', D3, { completedAt: D1 });
+    const legacyNoCompletedAt = match('win', D3);
+    const windowed = applyWindow(
+      inputs({ matches: [bookedEarlyRecordedLate, bookedLateRecordedEarly, legacyNoCompletedAt] }),
+      { mode: 'sinceJoinedDivision', since: D2 },
+    );
+    const keptIds = windowed.matches.map((m) => m.matchId);
+
+    it('counts a match booked before the epoch but completed after it', () => {
+      expect(keptIds).toContain(bookedEarlyRecordedLate.matchId);
+    });
+
+    it('drops a match booked after the epoch but completed before it', () => {
+      expect(keptIds).not.toContain(bookedLateRecordedEarly.matchId);
+    });
+
+    it('falls back to the booked date when completedAt is missing', () => {
+      expect(keptIds).toContain(legacyNoCompletedAt.matchId);
+    });
+
+    it('applies the upper bound to the completion time too', () => {
+      const bounded = applyWindow(
+        inputs({ matches: [bookedEarlyRecordedLate, match('win', D3, { completedAt: D2 })] }),
+        { mode: 'sinceJoinedDivision', since: D1, until: D2 },
+      );
+      expect(bounded.matches.map((m) => m.completedAt)).toEqual([D2]);
+    });
+  });
 });
 
 describe('goal helpers', () => {

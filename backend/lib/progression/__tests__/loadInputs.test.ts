@@ -54,6 +54,7 @@ describe('loadProgressionBatch', () => {
       ratingsCount: 4,
       starRating: 4,
       matchOfTheNight: true,
+      completedAt: '2026-03-04T21:00:00.000Z',
     }) });
     await repos.competition.matches.create({ ...completedMatch('m2', {
       participants: [alice.playerId, bob.playerId],
@@ -95,7 +96,16 @@ describe('loadProgressionBatch', () => {
     const aliceInputs = batch.inputs.get(alice.playerId)!;
     expect(aliceInputs.matches.map((m) => [m.matchId, m.result]).sort()).toEqual([['m1', 'win'], ['m2', 'draw']]);
     const m1 = aliceInputs.matches.find((m) => m.matchId === 'm1')!;
-    expect(m1).toMatchObject({ seasonId: 's1', ratingAverage: 3.75, ratingsCount: 4, matchOfTheNight: true });
+    expect(m1).toMatchObject({
+      date: '2026-03-01T00:00:00.000Z',
+      completedAt: '2026-03-04T21:00:00.000Z',
+      seasonId: 's1',
+      ratingAverage: 3.75,
+      ratingsCount: 4,
+      matchOfTheNight: true,
+    });
+    // A match recorded before completedAt existed carries none.
+    expect(aliceInputs.matches.find((m) => m.matchId === 'm2')!.completedAt).toBeUndefined();
     // Falls back to starRating when there is no raw average.
     expect(aliceInputs.matches.find((m) => m.matchId === 'm2')!.ratingAverage).toBe(2.5);
     // Self-reaction from user-alice stripped; hidden promo excluded.

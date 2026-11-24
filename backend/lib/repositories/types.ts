@@ -717,6 +717,11 @@ export interface Match {
   /** Number of user ratings submitted for this match. */
   ratingsCount?: number;
   matchOfTheNight?: boolean;
+  /**
+   * ISO time the result was recorded (PRL-02). Set once by recordResult;
+   * older matches are backfilled from `updatedAt`. Read via `matchResultTime`.
+   */
+  completedAt?: string;
   createdAt: string;
   updatedAt?: string;
 }
