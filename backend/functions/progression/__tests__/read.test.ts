@@ -160,6 +160,7 @@ describe('GET /progression/players/{playerId}', () => {
         progressPct: 40,
         consideration: true,
         computedAt: expect.any(String),
+        countingSince: expect.any(String),
       },
     ]);
   });
@@ -222,6 +223,73 @@ describe('GET /progression/players/{playerId}', () => {
       await repos.user.siteConfig.updateTickerSettings({ publicRelegationWatch: true });
       expect(relegationRow(await read('anon'))).toMatchObject({ progressPct: 60, consideration: true });
       expect(relegationRow(await read('owner'))).toMatchObject({ consideration: true });
+    });
+  });
+
+  describe('countingSince (PRL-07)', () => {
+    const epoch = '2026-06-01T12:00:00.000Z';
+    const appendEvent = (type: 'executed' | 'goals_reset', kind: 'callup' | 'promotion' | 'relegation', createdAt: string) =>
+      repos.progression.appendEvent({
+        eventId: `${type}-${kind}-${createdAt}`,
+        playerId: ownerPlayerId,
+        trackId: 'track-1',
+        kind,
+        type,
+        fromDivisionId: rawId,
+        ...(type === 'executed' ? { toDivisionId: youngBoysId } : {}),
+        actorUserId: 'user-mod',
+        createdAt,
+      });
+
+    it('is the window start for everyone, with no reason for other callers', async () => {
+      await repos.roster.players.update(ownerPlayerId, { divisionJoinedAt: epoch, progressionEpochAt: epoch });
+      await appendEvent('executed', 'promotion', epoch);
+      for (const caller of ['anon', 'other', 'mod'] as const) {
+        const [row] = await read(caller);
+        expect(row.countingSince).toBe(epoch);
+        expect(row.countingSinceReason).toBeUndefined();
+      }
+    });
+
+    it('tells the owner they were promoted to the division', async () => {
+      await repos.roster.players.update(ownerPlayerId, { divisionJoinedAt: epoch, progressionEpochAt: epoch });
+      await appendEvent('executed', 'promotion', epoch);
+      const [row] = await read('owner');
+      expect(row.countingSinceReason).toEqual({ type: 'promotion', divisionName: 'Young Boys' });
+    });
+
+    it('words a relegation as a neutral division change', async () => {
+      await repos.roster.players.update(ownerPlayerId, { divisionJoinedAt: epoch, progressionEpochAt: epoch });
+      await appendEvent('executed', 'relegation', epoch);
+      const [row] = await read('owner');
+      expect(row.countingSinceReason).toEqual({ type: 'divisionChange', divisionName: 'Young Boys' });
+    });
+
+    it('tells the owner their goals were reset', async () => {
+      await repos.roster.players.update(ownerPlayerId, { divisionJoinedAt: '2026-01-01T00:00:00.000Z', progressionEpochAt: epoch });
+      await appendEvent('executed', 'callup', '2026-01-01T00:00:00.000Z');
+      await appendEvent('goals_reset', 'callup', epoch);
+      const [row] = await read('owner');
+      expect(row.countingSince).toBe(epoch);
+      expect(row.countingSinceReason).toEqual({ type: 'goalsReset' });
+    });
+
+    it('sends the date alone when no event started the epoch', async () => {
+      await repos.roster.players.update(ownerPlayerId, { divisionJoinedAt: epoch, progressionEpochAt: epoch });
+      await appendEvent('executed', 'promotion', '2026-01-01T00:00:00.000Z');
+      const [row] = await read('owner');
+      expect(row.countingSince).toBe(epoch);
+      expect(row.countingSinceReason).toBeUndefined();
+    });
+
+    it('starts a season track at the season start when that is later, without a reason', async () => {
+      await repos.roster.players.update(ownerPlayerId, { divisionJoinedAt: epoch, progressionEpochAt: epoch });
+      await appendEvent('executed', 'promotion', epoch);
+      const season = await repos.season.seasons.create({ name: 'S1', startDate: '2026-07-01T00:00:00.000Z' });
+      await repos.progression.putTrack({ ...track, windowMode: 'season' });
+      const [row] = await read('owner');
+      expect(row.countingSince).toBe(season.startDate);
+      expect(row.countingSinceReason).toBeUndefined();
     });
   });
 

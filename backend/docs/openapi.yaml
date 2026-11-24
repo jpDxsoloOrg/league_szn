@@ -1258,6 +1258,26 @@ components:
         considerationDetail:
           allOf: [{ $ref: '#/components/schemas/ProgressionConsideration' }]
           description: Who marked the player, and the GM note. Moderator+ only.
+        countingSince:
+          type: string
+          format: date-time
+          description: >-
+            Start of the track's counting window: the player's progression epoch (last
+            division move or goal reset), or the season start for a season track when that
+            is later. Absent for a season track when no season is active.
+        countingSinceReason:
+          type: object
+          description: >-
+            Why the count restarted at countingSince. Only for the player themselves, and only
+            when a promotion, call-up, division move or goal reset is recorded at that instant.
+            Relegations and transfers read as divisionChange.
+          required: [type]
+          properties:
+            type: { type: string, enum: [callup, promotion, divisionChange, goalsReset] }
+            divisionName:
+              type: string
+              nullable: true
+              description: The division moved to. Absent for goalsReset; null when the division was deleted.
 
 paths:
   /auth/setup:

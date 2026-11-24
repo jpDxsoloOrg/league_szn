@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import type { ProgressionGoalDetail, ProgressionMetric } from '../../types/progression';
+import type { CountingSinceReason, ProgressionGoalDetail, ProgressionMetric } from '../../types/progression';
 
 /** Mirrors DEFAULT_MIN_RATED_MATCHES / DEFAULT_MIN_REACTIONS in backend/lib/policies/progression.ts. */
 const DEFAULT_MIN_RATED_MATCHES = 1;
@@ -86,4 +86,17 @@ export function goalProgressText(t: TFunction, goal: ProgressionGoalDetail): str
     current: formatMetricValue(t, goal.metric, goal.current),
     threshold,
   });
+}
+
+/**
+ * "Counting since your promotion to Raw on Jun 1, 2026", or the date alone
+ * when no reason is known. `date` is already formatted for the locale.
+ */
+export function countingSinceText(t: TFunction, date: string, reason?: CountingSinceReason): string {
+  if (!reason) return t('progression.countingSince.dateOnly', { date });
+  if (reason.type === 'goalsReset') return t('progression.countingSince.goalsReset', { date });
+  if (reason.divisionName) {
+    return t(`progression.countingSince.${reason.type}`, { date, division: reason.divisionName });
+  }
+  return t(`progression.countingSince.${reason.type}Unnamed`, { date });
 }

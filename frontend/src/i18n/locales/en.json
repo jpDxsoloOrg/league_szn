@@ -4250,6 +4250,18 @@
         "transfer": "Transferred"
       }
     },
+    "countingSince": {
+      "dateOnly": "Counting since {{date}}",
+      "callup": "Counting since your call-up to {{division}} on {{date}}",
+      "callupUnnamed": "Counting since your call-up on {{date}}",
+      "promotion": "Counting since your promotion to {{division}} on {{date}}",
+      "promotionUnnamed": "Counting since your promotion on {{date}}",
+      "divisionChange": "Counting since you joined {{division}} on {{date}}",
+      "divisionChangeUnnamed": "Counting since you joined your division on {{date}}",
+      "goalsReset": "Counting since your goals were reset on {{date}}",
+      "infoLabel": "About this count",
+      "tooltip": "Your record still includes every match. Only this goal restarted."
+    },
     "division": {
       "title": "Division Movement",
       "gmNote": "GM note: {{note}}"
@@ -4260,6 +4272,8 @@
       "tips": {
         "wins": "Chase a few more wins in your upcoming matches.",
         "winColumn": "Your next win is a great reset. Go get it!",
+        "stackWins": "Every win adds up. Keep stacking them.",
+        "nextWin": "One win turns things around. Your next one is right there.",
         "active": "Stay active: request a match or answer a challenge.",
         "quality": "Aim to steal the show with your next match.",
         "momentum": "Keep building momentum. The GMs notice the effort."

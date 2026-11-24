@@ -46,12 +46,14 @@ export function canSeeRelegationFlag(viewer: ProfileViewer, publicRelegationWatc
 }
 
 /** Friendly tip keys under `progression.staySharp.tips`. None mention a loss or a storyline. */
-export type StaySharpTip = 'wins' | 'winColumn' | 'active' | 'quality' | 'momentum';
+export type StaySharpTip = 'wins' | 'winColumn' | 'stackWins' | 'nextWin' | 'active' | 'quality' | 'momentum';
 
 const TIP_BY_METRIC: Partial<Record<ProgressionMetric, StaySharpTip>> = {
   lossPct: 'wins',
   winPct: 'wins',
   currentLossStreak: 'winColumn',
+  losses: 'stackWins',
+  currentWinlessStreak: 'nextWin',
   daysSinceLastMatch: 'active',
   matchesCompeted: 'active',
   avgStarRatingBelow: 'quality',

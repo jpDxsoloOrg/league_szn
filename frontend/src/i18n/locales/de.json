@@ -4250,6 +4250,18 @@
         "transfer": "Transfer"
       }
     },
+    "countingSince": {
+      "dateOnly": "Gezählt wird seit dem {{date}}",
+      "callup": "Gezählt wird seit deinem Call-up zu {{division}} am {{date}}",
+      "callupUnnamed": "Gezählt wird seit deinem Call-up am {{date}}",
+      "promotion": "Gezählt wird seit deinem Aufstieg in {{division}} am {{date}}",
+      "promotionUnnamed": "Gezählt wird seit deinem Aufstieg am {{date}}",
+      "divisionChange": "Gezählt wird seit deinem Wechsel zu {{division}} am {{date}}",
+      "divisionChangeUnnamed": "Gezählt wird seit deinem Divisionswechsel am {{date}}",
+      "goalsReset": "Gezählt wird seit dem Zurücksetzen deiner Ziele am {{date}}",
+      "infoLabel": "Mehr zu dieser Zählung",
+      "tooltip": "Deine Bilanz enthält weiterhin jedes Match. Nur dieses Ziel startet neu."
+    },
     "division": {
       "title": "Divisionswechsel",
       "gmNote": "GM-Notiz: {{note}}"
@@ -4260,6 +4272,8 @@
       "tips": {
         "wins": "Hol dir in deinen nächsten Matches ein paar Siege mehr.",
         "winColumn": "Dein nächster Sieg ist ein toller Neustart. Hol ihn dir!",
+        "stackWins": "Jeder Sieg zählt. Sammle weiter fleißig welche.",
+        "nextWin": "Ein Sieg dreht alles. Dein nächster ist schon in Reichweite.",
         "active": "Bleib aktiv: Fordere ein Match an oder nimm eine Herausforderung an.",
         "quality": "Versuch, mit deinem nächsten Match die Show zu stehlen.",
         "momentum": "Bau weiter Schwung auf. Die GMs sehen deinen Einsatz."

@@ -123,7 +123,16 @@ export interface PlayerProgressionSummary {
   computedAt: string;
   goals?: ProgressionGoalDetail[];
   considerationDetail?: ProgressionConsideration;
+  /** Start of the track's counting window (the last division move or goal reset, or the season start). */
+  countingSince?: string;
+  /** Why the count restarted. Only sent to the player themselves. */
+  countingSinceReason?: CountingSinceReason;
 }
+
+/** Why a track's count restarted (PRL-07). Relegations and transfers read as `divisionChange`. */
+export type CountingSinceReason =
+  | { type: 'callup' | 'promotion' | 'divisionChange'; divisionName: string | null }
+  | { type: 'goalsReset' };
 
 export interface ProgressionBoardEntry {
   playerId: string;
