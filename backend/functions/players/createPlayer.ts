@@ -10,6 +10,7 @@ import {
 } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
+import { triggerProgressionRecompute } from '../../lib/progression/trigger';
 import type { PlayerCreateInput } from '../../lib/repositories';
 import {
   rejectDuplicateSlotAssignment,
@@ -148,6 +149,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         });
         throw assignErr;
       }
+    }
+
+    // Created into a division (the repository stamps the move timestamps):
+    // put the player on that division's progression tracks.
+    if (player.divisionId) {
+      await triggerProgressionRecompute([player.playerId], 'playerCreated');
     }
 
     return created(player);

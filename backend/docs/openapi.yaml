@@ -4278,6 +4278,7 @@ paths:
                   fromDivisionId: { type: string }
                   toDivisionId: { type: string }
                   divisionJoinedAt: { type: string, format: date-time }
+                  progressionEpochAt: { type: string, format: date-time, description: Same as divisionJoinedAt; the move restarts every progression track }
                   event: { type: object, description: The executed ProgressionEvent }
                   announcementId: { type: string }
         '400':

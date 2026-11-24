@@ -48,16 +48,19 @@ describe('reviewTransferRequest', () => {
     mockInvokeAsync.mockResolvedValue(undefined);
   });
 
-  it('moves the player and stamps divisionJoinedAt on approval', async () => {
+  it('moves the player and stamps both move timestamps on approval (PRL-04)', async () => {
     const result = await reviewTransferRequest(event('approved'), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
+    // Exact patch: records (wins/losses/draws) and season standings stay out.
     expect(mockPlayers.update).toHaveBeenCalledWith('p1', {
       divisionId: 'd2',
       divisionJoinedAt: expect.any(String),
+      progressionEpochAt: expect.any(String),
     });
     const [, patch] = mockPlayers.update.mock.calls[0];
     expect(Date.parse(patch.divisionJoinedAt)).not.toBeNaN();
+    expect(patch.progressionEpochAt).toBe(patch.divisionJoinedAt);
   });
 
   it('leaves the player alone on rejection', async () => {

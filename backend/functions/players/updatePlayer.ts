@@ -6,6 +6,7 @@ import { parseBody } from '../../lib/parseBody';
 import { NEEDS_WRESTLER, isNeedsWrestler } from '../../lib/needsWrestler';
 import { requireRole } from '../../lib/auth';
 import { triggerProgressionRecompute } from '../../lib/progression/trigger';
+import { divisionMovePatch } from '../../lib/divisions';
 import { applyMovesetFields } from './movesetFields';
 import type { PlayerPatch } from '../../lib/repositories';
 import {
@@ -82,22 +83,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     if (body.divisionId !== undefined) {
-      if (body.divisionId === '' || body.divisionId === null) {
-        patch.divisionId = undefined;
-        hasChanges = true;
-      } else {
+      const clearing = body.divisionId === '' || body.divisionId === null;
+      if (!clearing) {
         const division = await leagueOps.divisions.findById(
           body.divisionId as string,
         );
         if (!division) {
           return notFound(`Division ${body.divisionId} not found`);
         }
-        patch.divisionId = body.divisionId as string;
-        if (patch.divisionId !== player.divisionId) {
-          patch.divisionJoinedAt = new Date().toISOString();
-        }
-        hasChanges = true;
       }
+      const nextDivisionId = clearing ? undefined : (body.divisionId as string);
+      patch.divisionId = nextDivisionId;
+      // Any real change, clearing included, restarts goals and streaks.
+      if (nextDivisionId !== player.divisionId) {
+        Object.assign(patch, divisionMovePatch(new Date().toISOString()));
+      }
+      hasChanges = true;
     }
 
     const clearCurrent = body.clearCurrentWrestler === true;

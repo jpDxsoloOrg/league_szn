@@ -110,6 +110,8 @@ describe('executeProgression', () => {
     const player = await state.repos.roster.players.findById(fx.playerId);
     expect(player?.divisionId).toBe(fx.rawId);
     expect(player?.divisionJoinedAt).toBe(body.divisionJoinedAt);
+    expect(player?.progressionEpochAt).toBe(body.divisionJoinedAt);
+    expect(body.progressionEpochAt).toBe(body.divisionJoinedAt);
     expect(await state.repos.progression.getPlayerProgression(fx.playerId, fx.track.trackId)).toBeNull();
 
     const events = await state.repos.progression.listEvents(fx.playerId);
@@ -124,7 +126,10 @@ describe('executeProgression', () => {
     const [announcement] = await state.repos.content.announcements.list();
     expect(announcement.title).toBe('Kenta has been called up to Raw!');
 
-    expect(mockInvokeAsync).toHaveBeenCalledWith('progression', { playerIds: [fx.playerId] });
+    expect(mockInvokeAsync).toHaveBeenCalledWith('progression', {
+      playerIds: [fx.playerId],
+      source: 'progressionExecuted',
+    });
     expect(mockInvokeAsync).toHaveBeenCalledWith('contenders', { source: 'progressionExecute' });
   });
 
@@ -158,11 +163,14 @@ describe('executeProgression', () => {
       'appendProgressionEvent',
       'appendProgressionEvent',
     ]);
+    // Exact patch (PRL-04): both move timestamps, never records or standings.
     expect(calls[0][1]).toEqual([
       fx.playerId,
-      { divisionId: fx.rawId, divisionJoinedAt: expect.any(String) },
+      { divisionId: fx.rawId, divisionJoinedAt: expect.any(String), progressionEpochAt: expect.any(String) },
       { divisionId: fx.youngBoysId },
     ]);
+    const movePatch = calls[0][1][1] as { divisionJoinedAt: string; progressionEpochAt: string };
+    expect(movePatch.progressionEpochAt).toBe(movePatch.divisionJoinedAt);
     expect(calls[1][1]).toEqual([fx.playerId, fx.track.trackId]);
     expect((calls[2][1][0] as { type: string }).type).toBe('consideration_removed');
     expect((calls[3][1][0] as { type: string }).type).toBe('executed');
@@ -367,7 +375,7 @@ describe('executeProgression: promotion and relegation (DMV-05)', () => {
     const [announcement] = await state.repos.content.announcements.list();
     expect(announcement.title).toBe('Bron promoted to Raw');
     expect(mockCreateNotification).toHaveBeenCalledWith(expect.objectContaining({ message: 'You have been promoted to Raw!' }));
-    expect(mockInvokeAsync).toHaveBeenCalledWith('progression', { playerIds: [ladder.playerId] });
+    expect(mockInvokeAsync).toHaveBeenCalledWith('progression', expect.objectContaining({ playerIds: [ladder.playerId] }));
     expect(mockInvokeAsync).toHaveBeenCalledWith('contenders', { source: 'progressionExecute' });
   });
 
