@@ -32,3 +32,9 @@ Only players with a wrestler name appear here. See [Getting Started](getting-sta
 Players are ordered by most wins, then by fewest losses. Players who haven't had a match in the selected season come last. Draws count in the record and in Win %, but they don't decide the order.
 
 **Formula:** Win % = Wins ÷ (Wins + Losses + Draws) × 100
+
+## One division's table
+
+When you pick a single division, each player's Record, Win %, Last 5 and Streak count only matches since they joined that division (within the selected season). Someone who has just been promoted, relegated or moved starts at the bottom at 0-0-0 and climbs from there. Players who have never moved division keep their full record.
+
+The **All** view and player profiles always show the full career record. A move never changes it. See [Promotion and Relegation](division-movement) for more.

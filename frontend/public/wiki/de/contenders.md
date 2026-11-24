@@ -8,7 +8,7 @@ Die Ranglisten werden automatisch aus den abgeschlossenen Matches der aktiven Sa
 
 - Der aktuelle Champion steht oben und wird nicht gerankt.
 - Du brauchst mindestens 3 Matches in der Saison, und ein Titel listet bis zu 10 Herausforderer. Das Team kann einen Spieler auch ohne sie auf die Liste setzen.
-- Ein an eine Division gebundener Titel rankt normalerweise nur Spieler dieser Division.
+- Ein an eine Division gebundener Titel rankt normalerweise nur Spieler dieser Division und zählt nur die Matches jedes Spielers seit seinem Wechsel in diese Division. Nach einem Aufstieg, Abstieg oder anderen Wechsel startet die Platzierung für die Titel der neuen Division also neu. Setzt ein GM die Aufstiegsziele eines Spielers zurück, ändert das nichts an seiner Platzierung.
 - Nicht sichtbare und vom Liga-Team entfernte Spieler werden nicht gerankt.
 
 ## Wann die Ranglisten aktualisiert werden
@@ -21,7 +21,7 @@ Die Ranglisten werden nach jedem eingetragenen Ergebnis und alle 6 Stunden neu b
 |-------------|--------------|
 | **Rang** | Position als Herausforderer (#1 ist als Nächster für eine Titelchance an der Reihe) |
 | **Punktzahl** | Die berechnete Ranglisten-Punktzahl |
-| **Sieg %** | Die Siegquote des Spielers in dieser Saison |
+| **Sieg %** | Die Siegquote des Spielers in dieser Saison (bei einem Divisionstitel seit seinem Wechsel in die Division) |
 | **Serie** | Aktuelle Sieges- oder Niederlagenserie, zum Beispiel W3 oder L2 |
 
 Ein Pfeil neben dem Rang zeigt, wie weit sich ein Spieler seit der letzten Rangänderung bewegt hat. **NEU** markiert einen Spieler, der gerade in die Rangliste gekommen ist.

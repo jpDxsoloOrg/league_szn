@@ -14,7 +14,7 @@ A team appears in a tag title's rankings only when all of these are true:
 
 ## Which Matches Count
 
-Only completed tag matches in the active season count, and only for registered teams.
+Only completed tag matches in the active season count, and only for registered teams. On a tag title that belongs to a division, a team's matches count from when its second member joined that division.
 
 - A match counts for a team when the two players on one side form that team **on the match date**. Matches the pair wrestled before the team was created, or after it was dissolved, don't count for it.
 - **Random pairings don't count.** If two players who aren't a registered team wrestle together, that match gives no points to any team. It still counts towards each player's own singles record.

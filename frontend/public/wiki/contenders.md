@@ -8,7 +8,7 @@ Contender rankings are calculated automatically from completed matches in the ac
 
 - The current champion is shown at the top and isn't ranked.
 - You need at least 3 matches in the season to qualify, and a title lists up to 10 contenders. Staff can place a player on the list without them.
-- A title tied to a division normally ranks only players in that division.
+- A title tied to a division normally ranks only players in that division, and counts only each player's matches since they joined it. After a promotion, relegation or other move, a player's ranking for their new division's titles starts fresh. A GM resetting someone's promotion goals doesn't affect their ranking.
 - Hidden players and players removed by staff aren't ranked.
 
 ## When Rankings Update
@@ -21,7 +21,7 @@ Rankings recalculate after each recorded result and every 6 hours. The time of t
 |-------|-------------|
 | **Rank** | The player's contender position (#1 is next in line for a title shot) |
 | **Score** | The calculated ranking score |
-| **Win %** | The player's win percentage this season |
+| **Win %** | The player's win percentage this season (on a division title, since they joined the division) |
 | **Streak** | Current winning or losing streak, such as W3 or L2 |
 
 An arrow beside the rank shows how far a player has moved since their rank last changed. **NEW** marks a player who has just entered the rankings.
