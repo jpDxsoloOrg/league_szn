@@ -847,6 +847,110 @@
       "promoMaxReactionCount": "Gezählte Reaktionen pro Typ",
       "promoMaxReactionCountHint": "Nur die ersten N Feuer/Müll-Reaktionen wirken sich auf den Bonus aus."
     },
+    "economyConfig": {
+      "title": "Wirtschaftseinstellungen",
+      "subtitle": "Lege die Ligawährung, Vertragsgehälter, Strafen und Shoppreise fest. Änderungen gelten für neue Angebote, Strafen und Käufe.",
+      "featureOff": "Die Wirtschaft ist ausgeschaltet, Spieler sehen davon also noch nichts. Ein Admin kann sie in der Funktionsverwaltung einschalten.",
+      "readOnly": "Du kannst diese Einstellungen ansehen. Nur Admins können sie ändern.",
+      "loadFailed": "Die Wirtschaftseinstellungen konnten nicht geladen werden.",
+      "retry": "Erneut versuchen",
+      "version": "Version {{version}}, gespeichert von {{user}} am {{date}}.",
+      "notSaved": "Noch nicht gespeichert: Das sind die Startwerte.",
+      "save": "Wirtschaftseinstellungen speichern",
+      "discard": "Änderungen verwerfen",
+      "saved": "Wirtschaftseinstellungen gespeichert.",
+      "saveFailed": "Die Wirtschaftseinstellungen konnten nicht gespeichert werden",
+      "conflict": "Jemand anderes hat diese Einstellungen gespeichert, nachdem du die Seite geöffnet hast. Lade neu, um diese Version zu sehen, und nimm deine Änderungen dann erneut vor.",
+      "reload": "Neu laden",
+      "problems": {
+        "currency": "Gib der Währung einen Namen und ein Symbol.",
+        "amounts": "Trag überall eine ganze Zahl ab 0 ein. Anzahlen wie Matches, Wochen und Angebotstage beginnen bei 1, und der Schutz liegt zwischen 0 und 100 %.",
+        "presetLabels": "Gib jeder Strafvorlage eine Bezeichnung.",
+        "tooManyPresets": "Es sind höchstens {{max}} Strafvorlagen möglich."
+      },
+      "currency": {
+        "title": "Währung",
+        "name": "Name der Währung",
+        "symbol": "Symbol"
+      },
+      "contracts": {
+        "title": "Standardverträge",
+        "description": "Jedes neue Angebot startet mit diesen Bedingungen. GMs können sie bei jedem einzelnen Angebot ändern.",
+        "types": {
+          "tryout": "Probevertrag",
+          "matches": "Match-Vertrag",
+          "season": "Saisonvertrag"
+        },
+        "tryoutMatches": "Dauer des Probevertrags (Matches)",
+        "perMatchPay": "Gage pro Match",
+        "weeklySalary": "Wochengehalt",
+        "winBonus": "Siegprämie"
+      },
+      "general": {
+        "title": "Prämien, Angebote und Strafen",
+        "freeAgentWinBonus": "Siegprämie für Free Agents",
+        "freeAgentWinBonusHint": "Wird bei einem Sieg an Wrestler ohne Vertrag gezahlt.",
+        "offerExpiryDays": "Angebot läuft ab nach (Tagen)",
+        "offerExpiryDaysHint": "So lange bleibt ein Vertragsangebot offen.",
+        "noShowFine": "Strafe fürs Nichterscheinen",
+        "noShowFineHint": "Wird fällig, wenn ein angesetztes Match verpasst wird."
+      },
+      "fines": {
+        "title": "Strafvorlagen",
+        "description": "Strafen, die GMs mit einem Klick verhängen können.",
+        "empty": "Noch keine Strafvorlagen.",
+        "label": "Bezeichnung",
+        "amount": "Betrag",
+        "remove": "Entfernen",
+        "removeNamed": "Strafvorlage {{number}} entfernen",
+        "add": "Strafvorlage hinzufügen"
+      },
+      "shop": {
+        "title": "Shop-Artikel",
+        "description": "Schalte Artikel an oder aus und lege Preis und Wirkung fest. Ausgeschaltete Artikel erscheinen nicht im Shop.",
+        "enabled": "Im Shop",
+        "price": "Preis",
+        "chanceReduction": "Weniger Verletzungsrisiko (%)",
+        "shieldMatches": "Hält (Matches)",
+        "weeksOff": "Wochen weniger Verletzungspause",
+        "staminaAmount": "Zusätzliche Ausdauer",
+        "ratingBoost": "Rating-Bonus",
+        "items": {
+          "injuryShield": {
+            "name": "Verletzungsschutz",
+            "description": "Senkt für ein paar Matches das Risiko, sich zu verletzen."
+          },
+          "rehab": {
+            "name": "Reha",
+            "description": "Verkürzt eine laufende Verletzungspause."
+          },
+          "staminaTopUp": {
+            "name": "Ausdauer-Boost",
+            "description": "Füllt Ausdauer wieder auf."
+          },
+          "simInterference": {
+            "name": "Sim-Einmischung",
+            "description": "Erhöht das Rating des Käufers in einem simulierten Match."
+          },
+          "gmInterference": {
+            "name": "GM-Einmischung",
+            "description": "Bezahlt den GM dafür, in ein Match einzugreifen."
+          }
+        }
+      },
+      "budget": {
+        "title": "Saisonbudget-Check",
+        "description": "Was ein Saisonvertrag mit den Bedingungen oben einbringt, um Shoppreise und Strafen zu prüfen.",
+        "weeks": "Wochen",
+        "matches": "Matches",
+        "wins": "Siege",
+        "salary": "Gehalt",
+        "matchPay": "Match-Gagen",
+        "winBonuses": "Siegprämien",
+        "total": "Summe der Saison",
+        "incomplete": "Trag die Bedingungen des Saisonvertrags und die Zahlen oben ein, um eine Summe zu sehen."
+      }
+    },
     "hub": {
       "back": "Admin-Bereich",
       "superAdminOnly": "Nur Super-Admins",
@@ -892,6 +996,7 @@
         "storylineRequests": "Storyline-Anfragen",
         "rivalries": "Rivalitäten",
         "heatConfig": "Heat-Einstellungen",
+        "economyConfig": "Wirtschaft",
         "dangerZone": "Gefahrenzone"
       },
       "groups": {

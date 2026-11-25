@@ -847,6 +847,110 @@
       "promoMaxReactionCount": "Reactions counted per type",
       "promoMaxReactionCountHint": "Only the first N fire / trash reactions affect the bonus."
     },
+    "economyConfig": {
+      "title": "Economy Settings",
+      "subtitle": "Set the league currency, contract pay, fines and shop prices. Changes apply to new offers, fines and purchases.",
+      "featureOff": "The economy is turned off, so players don't see any of this yet. An Admin can turn it on in Feature Management.",
+      "readOnly": "You can view these settings. Only Admins can change them.",
+      "loadFailed": "Could not load the economy settings.",
+      "retry": "Try again",
+      "version": "Version {{version}}, saved by {{user}} on {{date}}.",
+      "notSaved": "Not saved yet: these are the starting values.",
+      "save": "Save Economy Settings",
+      "discard": "Discard changes",
+      "saved": "Economy settings saved.",
+      "saveFailed": "Failed to save the economy settings",
+      "conflict": "Someone else saved these settings after you opened the page. Reload to see their version, then make your changes again.",
+      "reload": "Reload",
+      "problems": {
+        "currency": "Give the currency a name and a symbol.",
+        "amounts": "Fill in every amount with a whole number of 0 or more. Counts such as matches, weeks and offer days start at 1, and the shield reduction runs from 0 to 100%.",
+        "presetLabels": "Give every fine preset a label.",
+        "tooManyPresets": "There can be at most {{max}} fine presets."
+      },
+      "currency": {
+        "title": "Currency",
+        "name": "Currency name",
+        "symbol": "Symbol"
+      },
+      "contracts": {
+        "title": "Contract defaults",
+        "description": "Each new offer starts from these terms. GMs can change them on any single offer.",
+        "types": {
+          "tryout": "Tryout",
+          "matches": "Match contract",
+          "season": "Season contract"
+        },
+        "tryoutMatches": "Tryout length (matches)",
+        "perMatchPay": "Pay per match",
+        "weeklySalary": "Weekly salary",
+        "winBonus": "Win bonus"
+      },
+      "general": {
+        "title": "Bonuses, offers and fines",
+        "freeAgentWinBonus": "Free agent win bonus",
+        "freeAgentWinBonusHint": "Paid for a win to a wrestler without a contract.",
+        "offerExpiryDays": "Offer expiry (days)",
+        "offerExpiryDaysHint": "How long a contract offer stays open.",
+        "noShowFine": "No-show fine",
+        "noShowFineHint": "Charged for missing a booked match."
+      },
+      "fines": {
+        "title": "Fine presets",
+        "description": "One-click fines GMs can hand out.",
+        "empty": "No fine presets yet.",
+        "label": "Label",
+        "amount": "Amount",
+        "remove": "Remove",
+        "removeNamed": "Remove fine preset {{number}}",
+        "add": "Add fine preset"
+      },
+      "shop": {
+        "title": "Shop items",
+        "description": "Turn items on or off and set their price and effect. Turned-off items stay out of the shop.",
+        "enabled": "In the shop",
+        "price": "Price",
+        "chanceReduction": "Injury chance cut (%)",
+        "shieldMatches": "Lasts (matches)",
+        "weeksOff": "Weeks taken off the injury",
+        "staminaAmount": "Stamina added",
+        "ratingBoost": "Rating boost",
+        "items": {
+          "injuryShield": {
+            "name": "Injury shield",
+            "description": "Lowers the chance of getting injured for a few matches."
+          },
+          "rehab": {
+            "name": "Rehab",
+            "description": "Takes time off an active injury."
+          },
+          "staminaTopUp": {
+            "name": "Stamina top-up",
+            "description": "Adds stamina back."
+          },
+          "simInterference": {
+            "name": "Sim interference",
+            "description": "Boosts the buyer's rating in a simulated match."
+          },
+          "gmInterference": {
+            "name": "GM interference",
+            "description": "Pays the GM to step into a match."
+          }
+        }
+      },
+      "budget": {
+        "title": "Season budget check",
+        "description": "What a season contract pays with the terms above, to sanity-check shop prices and fines.",
+        "weeks": "Weeks",
+        "matches": "Matches",
+        "wins": "Wins",
+        "salary": "Salary",
+        "matchPay": "Match pay",
+        "winBonuses": "Win bonuses",
+        "total": "Season total",
+        "incomplete": "Fill in the season contract terms and the numbers above to see a total."
+      }
+    },
     "hub": {
       "back": "Admin Panel",
       "superAdminOnly": "Super-admin only",
@@ -892,6 +996,7 @@
         "storylineRequests": "Storyline Requests",
         "rivalries": "Rivalries",
         "heatConfig": "Heat Tunables",
+        "economyConfig": "Economy Settings",
         "dangerZone": "Danger Zone"
       },
       "groups": {

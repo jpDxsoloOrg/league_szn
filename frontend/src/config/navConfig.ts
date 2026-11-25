@@ -17,6 +17,7 @@ import {
   ChartColumn,
   CircleHelp,
   ClipboardList,
+  Coins,
   Crown,
   FileText,
   Film,
@@ -296,6 +297,8 @@ export const ADMIN_TABS = [
   'companies',
   'shows',
   'locations',
+  // ECO-11
+  'economy-config',
   'features',
   'danger',
 ] as const;
@@ -376,6 +379,8 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { tab: 'companies', labelKey: 'admin.panel.tabs.companies', icon: Building2, minRole: 'Moderator' },
       { tab: 'shows', labelKey: 'admin.panel.tabs.shows', icon: Tv, minRole: 'Moderator' },
       { tab: 'locations', labelKey: 'admin.panel.tabs.locations', icon: MapPin, minRole: 'Moderator' },
+      // ECO-11: Moderators view, only Admins save. Not gated on the economy flag so GMs can set prices first.
+      { tab: 'economy-config', labelKey: 'admin.panel.tabs.economyConfig', icon: Coins, minRole: 'Moderator' },
       { tab: 'features', labelKey: 'admin.panel.tabs.features', icon: Flag, minRole: 'Admin' },
       { tab: 'danger', labelKey: 'admin.panel.tabs.dangerZone', icon: TriangleAlert, minRole: 'Admin', danger: true },
     ],

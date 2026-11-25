@@ -53,6 +53,7 @@ const TAB_COMPONENTS: Record<AdminTab, LazyExoticComponent<ComponentType>> = {
   companies: lazy(() => import('./ManageCompanies')),
   shows: lazy(() => import('./ManageShows')),
   locations: lazy(() => import('./ManageLocations')),
+  'economy-config': lazy(() => import('./AdminEconomyConfig')),
   features: lazy(() => import('./ManageFeatures')),
   danger: lazy(() => import('./ClearAllData')),
 };
