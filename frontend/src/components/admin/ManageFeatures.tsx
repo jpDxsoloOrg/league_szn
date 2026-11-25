@@ -50,6 +50,10 @@ const FEATURE_LABELS: Record<keyof SiteFeatures, { name: string; description: st
     name: 'Economy',
     description: 'Contracts, wallets, fines and the shop. Off until the league economy launches.',
   },
+  injuries: {
+    name: 'Stamina & Injuries',
+    description: 'Stamina, injuries and their effect on the match sim. Off until the injury system launches.',
+  },
 };
 
 export default function ManageFeatures() {

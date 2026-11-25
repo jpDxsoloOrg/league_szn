@@ -9,6 +9,7 @@ import type {
 } from './types';
 import type { FeatureFlags, RivalryHeatTunables, TickerSettings } from './SiteConfigRepository';
 import type { EconomySettings, EconomySettingsInput } from '../policies/economyDefaults';
+import type { InjuryTunables, InjuryTunablesInput } from '../policies/fatigueDefaults'; // INJ-01
 
 // ─── Notification types ─────────────────────────────────────────────
 
@@ -114,6 +115,18 @@ export interface SiteConfigMethods {
   saveEconomySettings(input: EconomySettingsInput, updatedBy: string, expectedVersion?: number): Promise<EconomySettings>;
   /** Saved versions, newest first (empty if never saved). */
   listEconomySettingsVersions(): Promise<EconomySettings[]>;
+
+  // INJ-01: stamina and injury tunables, versioned like the economy settings.
+  /** The current injury tunables, merged over the defaults (version 0 if never saved). */
+  getInjuryTunables(): Promise<InjuryTunables>;
+  /**
+   * Saves validated tunables as the next version and keeps the last
+   * INJURY_TUNABLES_VERSIONS_KEPT versions. With `expectedVersion`, throws
+   * ConflictError when the stored version has moved on.
+   */
+  saveInjuryTunables(input: InjuryTunablesInput, updatedBy: string, expectedVersion?: number): Promise<InjuryTunables>;
+  /** Saved versions, newest first (empty if never saved). */
+  listInjuryTunablesVersions(): Promise<InjuryTunables[]>;
 }
 
 // ─── Aggregate interface ────────────────────────────────────────────

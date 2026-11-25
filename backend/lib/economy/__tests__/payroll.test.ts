@@ -177,6 +177,18 @@ describe('runPayroll', () => {
     expect(await salaryEntries(perMatchPlayer)).toHaveLength(0);
   });
 
+  // INJ-01: moving the league time zone west can put "now" back in the paid week.
+  it('does not pay an earlier week again after a later one ran', async () => {
+    const playerId = await makePlayer('Ace');
+    await signContract(playerId);
+    await repos.user.siteConfig.markWeeklyJobWeek('payroll', '2026-11-29');
+
+    const result = await runPayroll(SUNDAY_TICK);
+
+    expect(result.status).toBe('alreadyRun');
+    expect(await salaryEntries(playerId)).toHaveLength(0);
+  });
+
   it('pays nothing while the economy flag is off and does not back-pay that week', async () => {
     await repos.user.siteConfig.updateFeatures({ economy: false });
     const playerId = await makePlayer('Ace');

@@ -1,5 +1,6 @@
-import { leagueWeekOf, type LeagueWeek } from '../../lib/leagueWeek';
+import { DEFAULT_LEAGUE_TIME_ZONE, leagueWeekOf, type LeagueWeek } from '../../lib/leagueWeek';
 import { runPayroll } from '../../lib/economy/payroll';
+import { getRepositories } from '../../lib/repositories';
 
 /**
  * Shared weekly jobs (ECO-06), run every hour. The league week starts Sunday
@@ -25,9 +26,23 @@ export interface WeeklyJobsResult {
   jobs: Record<string, string>;
 }
 
+/**
+ * The league time zone from the injury tunables (INJ-01). If site config
+ * can't be read, the default zone keeps the jobs running.
+ */
+async function leagueTimeZone(): Promise<string> {
+  try {
+    const { user: { siteConfig } } = getRepositories();
+    return (await siteConfig.getInjuryTunables()).timezone;
+  } catch (err) {
+    console.error(`Could not read the league time zone; using ${DEFAULT_LEAGUE_TIME_ZONE}:`, err);
+    return DEFAULT_LEAGUE_TIME_ZONE;
+  }
+}
+
 export const handler = async (): Promise<WeeklyJobsResult> => {
   const now = new Date();
-  const week = leagueWeekOf(now);
+  const week = leagueWeekOf(now, await leagueTimeZone());
   const result: WeeklyJobsResult = { weekKey: week.weekKey, jobs: {} };
 
   for (const job of WEEKLY_JOBS) {

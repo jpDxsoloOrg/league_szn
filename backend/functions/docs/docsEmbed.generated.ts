@@ -1181,6 +1181,7 @@ components:
         transfers: { type: boolean }
         ticker: { type: boolean, description: 'League ticker. Off removes it everywhere and GET /ticker returns no segments.' }
         economy: { type: boolean, description: 'Contracts, wallets, fines and the shop. Off by default.' }
+        injuries: { type: boolean, description: 'Stamina, injuries and their sim effects (INJ). Off by default.' }
 
     TickerSettings:
       type: object
@@ -1286,6 +1287,87 @@ components:
           description: >-
             A full or partial EconomySettings (without version, updatedAt, updatedBy). Nested objects
             merge into the current settings; finePresets replaces the list. The merged result is validated.
+        expectedVersion:
+          type: integer
+          minimum: 0
+          description: The version the edit was based on. A save over a newer version returns 409.
+
+    # INJ-01
+    SimCategoryNumbers:
+      type: object
+      description: One number per sim category.
+      required: [standard, highRisk, technical, endurance, hardcore, cage]
+      properties:
+        standard: { type: number }
+        highRisk: { type: number }
+        technical: { type: number }
+        endurance: { type: number }
+        hardcore: { type: number }
+        cage: { type: number }
+
+    InjuryTunables:
+      type: object
+      description: >-
+        Stamina and injury tunables. Every value is a placeholder for GMs to tune. Injury rolls record
+        the version they used; the last 20 versions are kept.
+      properties:
+        maxStamina: { type: integer, minimum: 1, maximum: 1000, example: 100 }
+        drainByCategory:
+          allOf: [{ $ref: '#/components/schemas/SimCategoryNumbers' }]
+          description: Stamina one match takes per sim category (integers, 0 to maxStamina).
+        formatMultiplier:
+          type: object
+          additionalProperties: { type: number, exclusiveMinimum: 0, maximum: 10 }
+          description: Drain multiplier per match format key (singles, tag, multiPerson, battleRoyal). Unknown formats use 1.
+        enduranceDrainReduction:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: k in drain × (1 − k × (endurance − 40) / 60).
+        injuryChanceBands:
+          type: array
+          description: Sorted by minStamina, highest first; the last band starts at 0.
+          items:
+            type: object
+            properties:
+              minStamina: { type: integer, minimum: 0 }
+              chance: { type: number, minimum: 0, maximum: 1 }
+        categoryRisk:
+          allOf: [{ $ref: '#/components/schemas/SimCategoryNumbers' }]
+          description: Injury chance multiplier per sim category (above 0, at most 10).
+        severities:
+          type: array
+          description: Exactly minor, moderate, major in that order.
+          items:
+            type: object
+            properties:
+              key: { type: string, enum: [minor, moderate, major] }
+              weight: { type: number, exclusiveMinimum: 0 }
+              minWeeks: { type: integer, minimum: 1, maximum: 52 }
+              maxWeeks: { type: integer, minimum: 1, maximum: 52 }
+        lowStaminaSeverityShift: { type: integer, minimum: 0, description: Below this stamina, injuries lean towards worse severities. }
+        weeklyRecovery:
+          description: Stamina restored each Sunday 00:00 league time, "full" or a fixed amount.
+          oneOf:
+            - { type: string, enum: [full] }
+            - { type: integer, minimum: 1 }
+        timezone: { type: string, example: America/New_York, description: League time zone (IANA). The league week starts Sunday 00:00 here. }
+        simStaminaFloor: { type: number, minimum: 0, maximum: 1, description: Sim rating multiplier at 0 stamina. }
+        simInjuredPenalty: { type: number, minimum: 0, maximum: 1, description: Extra sim rating multiplier when injured. }
+        version: { type: integer, description: '0 until first saved; each save adds 1.' }
+        updatedAt: { type: string, format: date-time, nullable: true }
+        updatedBy: { type: string, nullable: true }
+
+    UpdateInjuryTunablesInput:
+      type: object
+      required: [settings]
+      properties:
+        settings:
+          type: object
+          description: >-
+            A full or partial InjuryTunables (without version, updatedAt, updatedBy). Nested objects merge
+            into the current tunables; injuryChanceBands, severities and formatMultiplier replace them.
+            The merged result is validated.
         expectedVersion:
           type: integer
           minimum: 0
@@ -2066,6 +2148,53 @@ paths:
                 properties:
                   settings: { $ref: '#/components/schemas/EconomySettings' }
         '400': { description: 'Invalid settings: negative or fractional amount, duplicate preset key, shield reduction outside [0, 1], unknown key', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'expectedVersion is stale, or another save won the race', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # INJ-01
+  /admin/injury-config:
+    get:
+      tags: [Site Config]
+      summary: Get the stamina and injury tunables (Moderator, Admin)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Current tunables merged over the defaults, and who saved each kept version (newest first)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings: { $ref: '#/components/schemas/InjuryTunables' }
+                  history:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        version: { type: integer }
+                        updatedAt: { type: string, format: date-time, nullable: true }
+                        updatedBy: { type: string, nullable: true }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    put:
+      tags: [Site Config]
+      summary: Save the stamina and injury tunables as a new version (Admin)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateInjuryTunablesInput' }
+      responses:
+        '200':
+          description: The saved tunables
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings: { $ref: '#/components/schemas/InjuryTunables' }
+        '400': { description: 'Invalid tunables: chance outside [0, 1], unsorted bands, weight not above 0, minWeeks above maxWeeks, unknown time zone, unknown key', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '409': { description: 'expectedVersion is stale, or another save won the race', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

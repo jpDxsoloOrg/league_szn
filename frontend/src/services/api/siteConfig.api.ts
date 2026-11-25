@@ -13,6 +13,8 @@ export interface SiteFeatures {
   ticker: boolean;
   /** Contracts, wallets, fines and the shop. Off by default. */
   economy: boolean;
+  /** Stamina, injuries and their sim effects (INJ-01). Off by default. */
+  injuries: boolean;
 }
 
 /** Ticker segment keys, in the order the feed shows them. Mirrors `TICKER_PRIORITY` on the backend. */

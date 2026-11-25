@@ -35,6 +35,7 @@ const ALL_ENABLED = {
   transfers: false,
   ticker: true,
   economy: false,
+  injuries: false,
 };
 
 describe('SiteConfigContext', () => {
@@ -54,6 +55,7 @@ describe('SiteConfigContext', () => {
       transfers: true,
       ticker: false,
       economy: true,
+      injuries: true,
     };
     mockGetFeatures.mockResolvedValue({ features: serverFeatures });
 
@@ -99,6 +101,7 @@ describe('SiteConfigContext', () => {
       transfers: false,
       ticker: true,
       economy: false,
+      injuries: false,
     });
   });
 

@@ -3839,6 +3839,10 @@
       },
       "enable": "Enable {{name}}",
       "enabled": "Enabled",
+      "injuries": {
+        "description": "Stamina, injuries and their effect on the match sim. Off until the injury system launches.",
+        "name": "Stamina & Injuries"
+      },
       "notifications": {
         "description": "Announcements banner and in-app notification bell for users",
         "name": "Notifications"

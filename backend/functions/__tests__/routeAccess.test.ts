@@ -73,6 +73,7 @@ const ADMIN_ONLY_ROUTES = new Set([
   'GET /admin/heat-config',
   'PUT /admin/heat-config',
   'PUT /admin/economy-config',
+  'PUT /admin/injury-config', // INJ-01
   'GET /admin/users',
   'POST /admin/users/role',
   'POST /admin/users/toggle-enabled',

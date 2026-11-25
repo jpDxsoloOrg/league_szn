@@ -1,10 +1,8 @@
 /**
  * The league week (ECO-06): it starts Sunday 00:00 in the league's time zone.
  *
- * There is no configurable league time zone yet. INJ-01 adds one
- * (`InjuryTunables.timezone`, default `America/New_York`); until then every
- * weekly job uses that same default, so the boundary will not move when the
- * setting arrives with its default value.
+ * The zone is `InjuryTunables.timezone` in site config (INJ-01), default
+ * `America/New_York`; the weekly jobs handler reads it on every tick.
  *
  * Scheduled jobs run hourly rather than on an EventBridge cron, because cron
  * is UTC and ignores DST; checking the local week every hour is always right.

@@ -382,6 +382,18 @@ functions:
           path: economy/catalog
           method: get
           cors: *corsConfig
+
+      # INJ-01: stamina and injury tunables
+      - http:
+          path: admin/injury-config
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/injury-config
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
       # ECO-08
       - http:
           path: shop/purchase

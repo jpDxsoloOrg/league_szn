@@ -8,6 +8,13 @@ import {
   type EconomySettings,
   type EconomySettingsInput,
 } from '../../policies/economyDefaults';
+// INJ-01
+import {
+  appendInjuryTunablesVersion,
+  mergeInjuryTunables,
+  type InjuryTunables,
+  type InjuryTunablesInput,
+} from '../../policies/fatigueDefaults';
 import { buildUpdateExpression } from './util';
 import type {
   UserRepository,
@@ -492,6 +499,7 @@ class FantasyDelegate implements FantasyMethods {
 // ─── Site config sub-object ────────────────────────────────────────
 
 const ECONOMY_CONFIG_KEY = 'economySettings';
+const INJURY_CONFIG_KEY = 'injuryTunables'; // INJ-01
 const weeklyJobConfigKey = (job: string): string => `weeklyJob#${job}`; // ECO-06
 
 class SiteConfigDelegate implements SiteConfigMethods {
@@ -658,6 +666,61 @@ class SiteConfigDelegate implements SiteConfigMethods {
   async listEconomySettingsVersions(): Promise<EconomySettings[]> {
     const versions = await this.readEconomyVersions();
     return versions.map((version) => mergeEconomySettings(version));
+  }
+
+  // INJ-01: injury tunables, one row holding the last versions (same shape as economy).
+  private async readInjuryVersions(): Promise<InjuryTunables[]> {
+    const result = await dynamoDb.get({
+      TableName: TableNames.SITE_CONFIG,
+      Key: { configKey: INJURY_CONFIG_KEY },
+    });
+    const versions = result.Item?.versions;
+    return Array.isArray(versions) ? (versions as InjuryTunables[]) : [];
+  }
+
+  async getInjuryTunables(): Promise<InjuryTunables> {
+    const [current] = await this.readInjuryVersions();
+    return mergeInjuryTunables(current);
+  }
+
+  async saveInjuryTunables(
+    input: InjuryTunablesInput,
+    updatedBy: string,
+    expectedVersion?: number,
+  ): Promise<InjuryTunables> {
+    const versions = await this.readInjuryVersions();
+    const currentVersion = versions[0]?.version ?? 0;
+    if (expectedVersion !== undefined && expectedVersion !== currentVersion) {
+      throw new ConflictError(`Injury settings are at version ${currentVersion}, not ${expectedVersion}`);
+    }
+    const now = new Date().toISOString();
+    const updatedVersions = appendInjuryTunablesVersion(versions, input, updatedBy, now);
+
+    try {
+      await dynamoDb.put({
+        TableName: TableNames.SITE_CONFIG,
+        Item: {
+          configKey: INJURY_CONFIG_KEY,
+          currentVersion: updatedVersions[0].version,
+          versions: updatedVersions,
+          updatedAt: now,
+        },
+        ConditionExpression: 'attribute_not_exists(configKey) OR currentVersion = :readVersion',
+        ExpressionAttributeValues: { ':readVersion': currentVersion },
+      });
+    } catch (err) {
+      if (err instanceof Error && err.name === 'ConditionalCheckFailedException') {
+        throw new ConflictError('Injury settings were changed by another save; reload and try again');
+      }
+      throw err;
+    }
+
+    return mergeInjuryTunables(updatedVersions[0]);
+  }
+
+  async listInjuryTunablesVersions(): Promise<InjuryTunables[]> {
+    const versions = await this.readInjuryVersions();
+    return versions.map((version) => mergeInjuryTunables(version));
   }
 }
 

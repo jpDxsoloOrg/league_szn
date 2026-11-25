@@ -3839,6 +3839,10 @@
       },
       "enable": "{{name}} aktivieren",
       "enabled": "Aktiviert",
+      "injuries": {
+        "description": "Ausdauer, Verletzungen und ihre Wirkung auf die Match-Simulation. Aus, bis das Verletzungssystem startet.",
+        "name": "Ausdauer & Verletzungen"
+      },
       "notifications": {
         "description": "Ankündigungsbanner und Benachrichtigungsglocke in der App",
         "name": "Benachrichtigungen"
