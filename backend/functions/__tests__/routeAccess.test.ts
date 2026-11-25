@@ -114,6 +114,8 @@ const STAFF_ROUTES = [
   'DELETE /matches/{matchId}/no-show/{playerId}',
   // BLD-08: GM preview sim, no writes
   'POST /simulate',
+  // BLD-10: official sim, records the result
+  'POST /matches/{matchId}/simulate',
   'POST /players/{playerId}/fines',
   'POST /fines/{entryId}/rescind',
   // ECO-14

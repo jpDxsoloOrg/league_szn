@@ -221,6 +221,36 @@ components:
         inputsDigest: { type: string, description: Same digest and seed give the same result }
         rulesVersion: { type: integer }
 
+    # BLD-10: official sim stored on a match
+    MatchSimulation:
+      type: object
+      description: >-
+        The official sim that settled a match. Staff see every field. Public
+        payloads (GET /matches for anyone who is not Admin or Moderator) carry
+        only seed, category, rulesVersion, winnerSideId, playByPlay,
+        specialtyHits and simulatedAt: the odds and audit fields are staff only.
+      required: [seed, category, rulesVersion, winnerSideId, playByPlay, specialtyHits, simulatedAt]
+      properties:
+        seed: { type: integer }
+        category: { $ref: '#/components/schemas/SimCategory' }
+        rulesVersion: { type: integer, description: Sim rules the result was drawn under }
+        winnerSideId: { type: string }
+        playByPlay: { type: array, items: { $ref: '#/components/schemas/SimBeat' } }
+        specialtyHits: { type: array, items: { type: string } }
+        simulatedAt: { type: string, format: date-time }
+        probabilities: { type: array, description: Staff only, items: { type: object, properties: { sideId: { type: string }, playerIds: { type: array, items: { type: string } }, pct: { type: number } } } }
+        inputsDigest: { type: string, description: 'Staff only. Same digest, seed and rulesVersion replay the same result.' }
+        scaledPlayerIds: { type: array, items: { type: string }, description: Staff only }
+        formWindow: { type: object, description: Staff only, properties: { kind: { type: string, enum: [season, recent] }, seasonId: { type: string }, matchLimit: { type: integer } } }
+        simulatedBy: { type: string, description: Staff only. The GM who ran it. }
+    SimulateOfficialResult:
+      type: object
+      required: [message, match, simulation]
+      properties:
+        message: { type: string }
+        match: { $ref: '#/components/schemas/Match' }
+        simulation: { $ref: '#/components/schemas/SimulateResult' }
+
     BuildValidationError:
       type: object
       required: [code, field, message]
@@ -704,6 +734,8 @@ components:
           type: array
           description: No-show marks (ECO-07), oldest first; active ones have no `undoneAt`.
           items: { $ref: '#/components/schemas/MatchNoShow' }
+        resultSource: { type: string, enum: [manual, simulation], description: 'BLD-10. How the result was settled; unset means manual.' }
+        simulation: { $ref: '#/components/schemas/MatchSimulation' }
         createdAt: { type: string }
         challengeId: { type: string }
         promoId: { type: string }
@@ -3982,6 +4014,40 @@ paths:
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden (not Admin or Moderator)', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Match not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # BLD-10: official sim
+  /matches/{matchId}/simulate:
+    post:
+      tags: [Matches]
+      summary: Settle a scheduled match with the sim (Admin, Moderator)
+      description: >-
+        Runs the sim with a fresh seed (it cannot be chosen) and records the
+        result like a hand-entered one: the winning side are the winners,
+        everyone else the losers; records, season standings, match pay,
+        championships and tournaments all update. Bought sim boosts are not
+        refunded. The match stores `resultSource: simulation` and
+        `simulation` (seed, odds, play-by-play, rulesVersion, inputs digest)
+        for replay and audit. The response includes the odds; public match
+        payloads never do.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: matchId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [commit]
+              properties:
+                commit: { type: boolean, enum: [true], description: Must be true. Use POST /simulate to preview. }
+      responses:
+        '200': { description: Result recorded, content: { application/json: { schema: { $ref: '#/components/schemas/SimulateOfficialResult' } } } }
+        '400': { description: 'commit is not true, a seed was sent, or the result is invalid (e.g. a player no longer exists)', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden (not Admin or Moderator)', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Match not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'The match is not scheduled (already decided, open signups or cancelled), or another result was recorded first', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /players/{playerId}/fines:
     post:

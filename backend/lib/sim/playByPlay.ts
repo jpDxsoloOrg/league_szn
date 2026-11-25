@@ -136,13 +136,24 @@ function pickWeighted<T>(items: readonly T[], weights: readonly number[], rng: R
   return items[items.length - 1];
 }
 
-/** Commentary name of a move: the custom name, falling back to the game name. */
-export function moveDisplayName(move: WrestlerMove): string {
-  return move.customName.trim() || move.gameName.trim();
+/** A stored move. Older or hand-edited movesets may lack either name. */
+type StoredMove = Partial<Pick<WrestlerMove, 'gameName' | 'customName'>> | null | undefined;
+
+function trimmedName(name: unknown): string {
+  return typeof name === 'string' ? name.trim() : '';
 }
 
-function usableMoves(moves: readonly WrestlerMove[] | undefined): WrestlerMove[] {
-  return (moves ?? []).filter((move) => moveDisplayName(move).length > 0);
+/**
+ * Commentary name of a move: the custom name, falling back to the game name.
+ * Empty when the move has neither; callers then use a generic beat.
+ */
+export function moveDisplayName(move: StoredMove): string {
+  if (!move) return '';
+  return trimmedName(move.customName) || trimmedName(move.gameName);
+}
+
+function usableMoves(moves: readonly StoredMove[] | undefined): WrestlerMove[] {
+  return (moves ?? []).filter((move): move is WrestlerMove => moveDisplayName(move).length > 0);
 }
 
 /** The competitor's stat with the biggest stat × category weight (ties: CORE_STATS order). */

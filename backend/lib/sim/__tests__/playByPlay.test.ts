@@ -187,6 +187,26 @@ describe('buildPlayByPlay', () => {
     expect(signatureMoves).toEqual(new Set(['sig', 'sig2']));
   });
 
+  it('tolerates stored moves missing a name', () => {
+    const partial = (fields: Record<string, unknown>): WrestlerMove => fields as unknown as WrestlerMove;
+    expect(moveDisplayName(partial({ gameName: 'RKO' }))).toBe('RKO');
+    expect(moveDisplayName(partial({ customName: 'Outta Nowhere' }))).toBe('Outta Nowhere');
+    expect(moveDisplayName(partial({ gameName: 'RKO', customName: null }))).toBe('RKO');
+    expect(moveDisplayName(partial({}))).toBe('');
+
+    const sides = singlesEven();
+    const legacyMoves: PlayByPlayMoves = {
+      p1: { signatures: [partial({ gameName: 'p1-sig' })], finishers: [partial({ gameName: 'p1-fin' })] },
+      p2: { signatures: [partial({})], finishers: [partial({ customName: '' })] },
+    };
+    for (let seed = 0; seed < 50; seed += 1) {
+      const { beats } = run(sides, seed, 'standard', legacyMoves);
+      for (const beat of beats) {
+        if (beat.params.move !== undefined) expect(['p1-sig', 'p1-fin']).toContain(beat.params.move);
+      }
+    }
+  });
+
   it('uses generic beats for wrestlers with no moves', () => {
     const sides = singlesEven();
     const noMoves: PlayByPlayMoves = { p1: { signatures: [], finishers: [move('  ', '')] } };

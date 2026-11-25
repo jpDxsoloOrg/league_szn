@@ -815,8 +815,58 @@ export interface Match {
   /** Sim interference bought by participants; one per player. Consumed by the sim (ECO-10). */
   simBoosts?: SimBoost[];
 
+  // BLD-10
+  /** How the result was settled. Unset means a hand-entered (manual) result. */
+  resultSource?: StoredResultSource;
+  /** The official sim that settled the match, when `resultSource` is `simulation`. */
+  simulation?: MatchSimulation;
+
   createdAt: string;
   updatedAt?: string;
+}
+
+// BLD-10
+export type StoredResultSource = 'manual' | 'simulation';
+
+/** One play-by-play beat: an i18n key (`sim.beats.*`) and its params. */
+export interface MatchSimulationBeat {
+  key: string;
+  params: Record<string, string>;
+}
+
+/** A side's win chance in the sim. Staff only: never in public payloads. */
+export interface MatchSimulationOdds {
+  sideId: string;
+  playerIds: string[];
+  /** Percent, one decimal place. */
+  pct: number;
+}
+
+/**
+ * The official sim stored on a match (BLD-10), enough to replay and audit it:
+ * the same `seed` with inputs matching `inputsDigest` under the same
+ * `rulesVersion` gives the same winner and play-by-play. Public payloads get
+ * `toPublicMatchSimulation` (lib/sim/publicSimulation.ts), which drops the odds
+ * and the audit fields.
+ */
+export interface MatchSimulation {
+  seed: number;
+  category: SimCategory;
+  rulesVersion: number;
+  inputsDigest: string;
+  winnerSideId: string;
+  /** Staff only. */
+  probabilities: MatchSimulationOdds[];
+  playByPlay: MatchSimulationBeat[];
+  /** Players fighting in their specialty. */
+  specialtyHits: string[];
+  /** Staff only: players whose over-budget build was scaled down. */
+  scaledPlayerIds: string[];
+  /** Staff only: the matches the form score was read from. */
+  formWindow: { kind: 'season'; seasonId: string } | { kind: 'recent'; matchLimit: number };
+  simulatedAt: string;
+  /** Staff only: the GM who ran it (Cognito sub). */
+  simulatedBy?: string;
 }
 
 // ECO-07

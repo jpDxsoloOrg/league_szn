@@ -618,6 +618,12 @@ functions:
           method: post
           cors: *corsConfig
 
+      # Official sim (BLD-10). Staff only, records the result; access is declared in functions/matches/handler.ts.
+      - http:
+          path: matches/{matchId}/simulate
+          method: post
+          cors: *corsConfig
+
       - http:
           path: matches/{matchId}
           method: any
