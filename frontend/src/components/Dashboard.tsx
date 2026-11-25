@@ -10,6 +10,7 @@ import DashboardRivalries from './rivalries/DashboardRivalries';
 import DashboardCallUp from './progression/DashboardCallUp';
 import DashboardBuildNudge from './builds/DashboardBuildNudge';
 import DashboardWallet from './economy/DashboardWallet';
+import DashboardStamina from './injuries/DashboardStamina';
 import HomeHero from './home/HomeHero';
 import LatestResults from './home/LatestResults';
 import SeasonSummary from './home/SeasonSummary';
@@ -83,6 +84,8 @@ export default function Dashboard() {
       <DashboardBuildNudge />
       {/* ECO-13: gates itself to wrestlers while the economy is on. */}
       <DashboardWallet />
+      {/* INJ-12: gates itself to wrestlers while injuries are on. */}
+      <DashboardStamina />
       <SeasonSummary season={data.seasonInfo} stats={data.quickStats} />
     </div>
   );

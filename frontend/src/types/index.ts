@@ -1,5 +1,6 @@
 import type { SimCategory } from '../constants/simCategories';
 import type { MatchResultSource, StoredMatchSimulation } from './sim';
+import type { PublicCurrentInjury } from './injury'; // INJ-12
 
 export interface Player {
   playerId: string;
@@ -57,6 +58,12 @@ export interface Player {
   rank?: number;
   /** Sent only to staff and to the player themselves. */
   discipline?: PlayerDisciplineSummary;
+
+  // INJ-12
+  /** Sent only to staff and to the player themselves; missing means full. */
+  stamina?: number;
+  /** Public: the open injury. Can still be set after `returnsAt` until the weekly recovery clears it. */
+  currentInjury?: PublicCurrentInjury;
 }
 
 /** A player's W-L-D, form and streak counting only results since they joined their division. */
@@ -334,6 +341,10 @@ export interface ScheduleMatchInput {
   status: 'scheduled';
   challengeId?: string;
   promoId?: string;
+
+  // INJ-11
+  /** Staff only: book injured players anyway (the save then returns `injuryWarnings`). */
+  allowInjured?: boolean;
 }
 
 export interface Championship {
@@ -674,8 +685,15 @@ export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_s
   | 'contract_offer' | 'contract_offer_accepted' | 'contract_offer_declined' | 'contract_offer_expired' | 'contract_released' | 'contract_completed'
   | 'no_show_marked' | 'fine_issued' | 'fine_rescinded' | 'balance_negative'
   | 'progression_consideration' | 'progression_executed' | 'progression_milestone' | 'progression_goals_reset'
+  // INJ-04: a recorded result injured the player
+  | 'injury_sustained'
+  // INJ-12: the Sunday recovery cleared the player (INJ-05); GM injury and stamina changes (INJ-08)
+  | 'injury_recovered' | 'injury_healed' | 'injury_updated' | 'injury_added' | 'stamina_adjusted'
   // BLD-04: a division move left the build over a smaller budget
-  | 'build_over_budget';
+  | 'build_over_budget'
+
+  // INJ-11: staff notice that an injury affects scheduled matches or titles
+  | 'injury_staff_notice';
 
 export interface AppNotification {
   notificationId: string;
@@ -683,7 +701,9 @@ export interface AppNotification {
   type: NotificationType | GmInterferenceNotificationType;
   message: string;
   sourceId: string;
-  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'rivalry' | 'storyline_request' | 'discipline' | 'progression' | 'contract' | 'economy' | 'build';
+  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'rivalry' | 'storyline_request' | 'discipline' | 'progression' | 'contract' | 'economy' | 'build'
+    // INJ-11, INJ-12
+    | 'injury';
   isRead: boolean;
   createdAt: string;
 }

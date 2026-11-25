@@ -5,8 +5,10 @@
  *
  * Order of work, unchanged from the original handler:
  *   1. validate the result against the match, its players and its season
- *   2. one transaction: match + all-time records + season standings
- *   3. match pay (ECO-05), then the sim boost refund for manual results (ECO-08)
+ *   2. one transaction: match + all-time records + season standings, plus
+ *      stamina drain and injury rolls while the `injuries` flag is on (INJ-04)
+ *   3. injury shield use (ECO-10), match pay (ECO-05), then the sim boost
+ *      refund for manual results (ECO-08); a simulated result uses its boosts
  *   4. championship, tournament, event auto-complete, group stats,
  *      contender rankings, progression recompute
  *
@@ -23,6 +25,16 @@ import { updateGroupStats } from '../../functions/matches/updateGroupStats';
 import { resolveChampionTagTeamId } from '../tagTeams/championTagTeam';
 import { settleMatchPay } from '../economy/matchPay';
 import { refundSimBoosts } from '../economy/refundSimBoosts';
+// INJ-04
+import {
+  loadMatchConditionPlan,
+  matchConditionFields,
+  notifyInjuredPlayers,
+  stageMatchCondition,
+} from '../injuries/applyMatchCondition';
+import { notifyStaffOfInjuries } from '../injuries/notifyStaff'; // INJ-07
+// ECO-10
+import { consumeInjuryShields, injuryShieldReduction } from '../economy/applyEffects';
 
 /**
  * Who settled the match. Only a `manual` result refunds bought sim boosts:
@@ -191,6 +203,19 @@ export async function recordMatchResult(
     completedAt,
   };
   if (isDraw) resultFields.isDraw = true;
+
+  // INJ-04: every participant drains and rolls for injury, in the same
+  // transaction. Draws and DQs count the same. A sim result drains by the
+  // category the sim used.
+  const simulation = input.extraMatchFields?.simulation as { category?: unknown } | undefined;
+  // ECO-10: an injury shield from the shop cuts the chance.
+  const conditionPlan = await loadMatchConditionPlan(match, {
+    now: completedAt,
+    category: simulation?.category,
+    chanceReductionFor: injuryShieldReduction,
+  });
+  if (conditionPlan) Object.assign(resultFields, matchConditionFields(conditionPlan));
+
   // Extra fields first so they can never override the result itself.
   const matchPatch: Record<string, unknown> = { ...input.extraMatchFields, ...resultFields };
 
@@ -220,6 +245,9 @@ export async function recordMatchResult(
           }
         }
       }
+
+      // Stamina drain and new injuries (INJ-04)
+      if (conditionPlan) stageMatchCondition(tx, conditionPlan);
     });
   } catch (transactError: unknown) {
     if (isConcurrentWriteError(transactError)) {
@@ -227,6 +255,20 @@ export async function recordMatchResult(
     }
     throw transactError;
   }
+
+  // INJ-04: tell each newly injured player. Never fails the result.
+  if (conditionPlan) await notifyInjuredPlayers(conditionPlan, match);
+
+  // INJ-07: tell staff who is out and which bookings and titles that affects.
+  if (conditionPlan && conditionPlan.injured.length > 0) {
+    await notifyStaffOfInjuries(
+      conditionPlan.injured.map(({ player, injury }) => ({ player, returnsAt: injury.returnsAt })),
+      { timeZone: conditionPlan.timezone },
+    );
+  }
+  // ECO-10: count one match off each injury shield the rolls used. It writes
+  // the player rows, so it runs in its own unit of work; it never throws.
+  if (conditionPlan?.shieldedPlayerIds.length) await consumeInjuryShields(conditionPlan.shieldedPlayerIds);
 
   // ── Match pay (ECO-05) ─────────────────────────────────────────────
   // Its own unit of work right after the result: a ledger posting cannot
@@ -298,6 +340,7 @@ export async function recordMatchResult(
       status: 'completed' as const,
       completedAt,
       ...(isDraw && { isDraw: true }),
+      ...(conditionPlan && matchConditionFields(conditionPlan)),
     },
   };
 }

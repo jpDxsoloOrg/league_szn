@@ -1,5 +1,7 @@
-import { leagueWeekOf, type LeagueWeek } from '../../lib/leagueWeek';
+import { DEFAULT_LEAGUE_TIME_ZONE, leagueWeekOf, type LeagueWeek } from '../../lib/leagueWeek';
 import { runPayroll } from '../../lib/economy/payroll';
+import { RECOVERY_JOB, runRecovery } from '../../lib/injuries/recovery'; // INJ-05
+import { getRepositories } from '../../lib/repositories';
 
 /**
  * Shared weekly jobs (ECO-06), run every hour. The league week starts Sunday
@@ -9,7 +11,8 @@ import { runPayroll } from '../../lib/economy/payroll';
  * the next tick. A missed Sunday (the function was down) runs on the first tick
  * back and logs a warning; never more than once per week.
  *
- * INJ-05's stamina recovery joins this list instead of adding its own schedule.
+ * INJ-05's stamina recovery is not idempotent, so it claims its week before
+ * doing any work and is never retried within the week.
  */
 interface WeeklyJob {
   name: string;
@@ -18,6 +21,10 @@ interface WeeklyJob {
 
 const WEEKLY_JOBS: WeeklyJob[] = [
   { name: 'payroll', run: runPayroll },
+
+  // INJ-05: Sunday stamina recovery and injury returns.
+  { name: RECOVERY_JOB, run: runRecovery },
+
 ];
 
 export interface WeeklyJobsResult {
@@ -25,9 +32,23 @@ export interface WeeklyJobsResult {
   jobs: Record<string, string>;
 }
 
+/**
+ * The league time zone from the injury tunables (INJ-01). If site config
+ * can't be read, the default zone keeps the jobs running.
+ */
+async function leagueTimeZone(): Promise<string> {
+  try {
+    const { user: { siteConfig } } = getRepositories();
+    return (await siteConfig.getInjuryTunables()).timezone;
+  } catch (err) {
+    console.error(`Could not read the league time zone; using ${DEFAULT_LEAGUE_TIME_ZONE}:`, err);
+    return DEFAULT_LEAGUE_TIME_ZONE;
+  }
+}
+
 export const handler = async (): Promise<WeeklyJobsResult> => {
   const now = new Date();
-  const week = leagueWeekOf(now);
+  const week = leagueWeekOf(now, await leagueTimeZone());
   const result: WeeklyJobsResult = { weekKey: week.weekKey, jobs: {} };
 
   for (const job of WEEKLY_JOBS) {

@@ -151,7 +151,10 @@ export async function runPayroll(now: Date = new Date(), week: LeagueWeek = leag
     failed: 0,
   };
 
-  if ((await siteConfig.getWeeklyJobWeek(PAYROLL_JOB)) === week.weekKey) {
+  // `>=`, not `===`: a GM moving the league time zone west (INJ-01) can put
+  // "now" back in a week that has already been paid. Week keys sort as dates.
+  const lastWeek = await siteConfig.getWeeklyJobWeek(PAYROLL_JOB);
+  if (lastWeek !== null && lastWeek >= week.weekKey) {
     return { ...result, status: 'alreadyRun' };
   }
 

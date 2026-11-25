@@ -29,6 +29,13 @@ import AdminNotice from './AdminNotice';
 import { BookingDisciplineBadge } from './DisciplineBadge';
 import SourceLoadNotice from './SourceLoadNotice';
 import { settleSources } from './loadSources';
+// INJ-11
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import AllowInjuredToggle from '../injuries/AllowInjuredToggle';
+import InjuryPickerTags from '../injuries/InjuryPickerTags';
+import InjuryWarningsNotice from '../injuries/InjuryWarningsNotice';
+import type { InjuryWarning } from '../../types/injuryReport';
+import { buildBookingCondition, injuryRefusalMessage, isPickBlocked } from '../../utils/injuryBooking';
 import './adminRoster.css';
 import './ScheduleMatch.css';
 
@@ -67,7 +74,11 @@ const challengeTeamMembers = (team: TagTeamChallengeInfo | undefined, fallbackPl
 };
 
 export default function ScheduleMatch() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // INJ-11: injured players need the override while the injuries feature is on.
+  const { features } = useSiteConfig();
+  const [allowInjured, setAllowInjured] = useState(false);
+  const [injuryWarnings, setInjuryWarnings] = useState<InjuryWarning[]>([]);
   const location = useLocation();
   const navigate = useNavigate();
   const state = (location.state as ScheduleLocationState | undefined) ?? undefined;
@@ -400,6 +411,7 @@ export default function ScheduleMatch() {
 
     setError(null);
     setSuccess(null);
+    setInjuryWarnings([]);
 
     const participantPayload = buildParticipantPayload();
     if (!participantPayload) return;
@@ -411,7 +423,7 @@ export default function ScheduleMatch() {
     const matchDate = selectedEvent?.date || state?.fromEvent?.date || new Date().toISOString();
 
     try {
-      await matchesApi.schedule({
+      const saved = await matchesApi.schedule({
         date: matchDate,
         matchFormat: formData.matchFormat,
         stipulationId: formData.stipulationId || undefined,
@@ -425,9 +437,12 @@ export default function ScheduleMatch() {
         status: 'scheduled',
         ...(linkChallengeId ? { challengeId: linkChallengeId } : {}),
         ...(linkPromoId ? { promoId: linkPromoId } : {}),
+        ...(bookingCondition && allowInjured ? { allowInjured: true } : {}),
       });
 
       setSuccess(t('scheduleMatch.success'));
+      setInjuryWarnings(saved?.injuryWarnings ?? []);
+      setAllowInjured(false);
       setLinkChallengeId(null);
       setLinkPromoId(null);
       setLinkedTitleGone(false);
@@ -440,7 +455,12 @@ export default function ScheduleMatch() {
       resetForm();
     } catch (err) {
       const translationKey = err instanceof Error ? SCHEDULE_ERROR_KEYS[err.message] : undefined;
-      if (translationKey) setError(t(translationKey));
+      const injuryMessage = injuryRefusalMessage(err, t, (playerId) => {
+        const player = players.find((candidate) => candidate.playerId === playerId);
+        return player ? displayName(player) : undefined;
+      }, i18n.language);
+      if (injuryMessage) setError(injuryMessage);
+      else if (translationKey) setError(t(translationKey));
       else setError(err instanceof Error ? err.message : t('scheduleMatch.error'));
     } finally {
       setSubmitting(false);
@@ -532,6 +552,12 @@ export default function ScheduleMatch() {
   const signupBlockedPicks = selectedPlayers.filter((player) => player.discipline?.status === 'signup-blocked');
   const deactivatedEntrantPicks = selectedPlayers.filter(
     (player) => player.discipline?.status === 'deactivated' && tournamentEntrantIds.includes(player.playerId),
+  );
+
+  // INJ-11
+  const bookingCondition = useMemo(
+    () => buildBookingCondition(players, features.injuries, allowInjured),
+    [players, features.injuries, allowInjured],
   );
 
   const filteredPlayers = divisionFilter === 'all'
@@ -642,6 +668,14 @@ export default function ScheduleMatch() {
       />
       {error && <AdminNotice tone="error">{error}</AdminNotice>}
       {success && <AdminNotice tone="success">{success}</AdminNotice>}
+      <InjuryWarningsNotice
+        warnings={injuryWarnings}
+        nameOf={(playerId) => {
+          const player = players.find((candidate) => candidate.playerId === playerId);
+          return player ? displayName(player) : undefined;
+        }}
+        onDismiss={() => setInjuryWarnings([])}
+      />
       {linkedTitleGone && <AdminNotice tone="warning">{t('scheduleMatch.linkedTitleGone')}</AdminNotice>}
       {signupBlockedPicks.length > 0 && (
         <AdminNotice tone="warning">
@@ -959,13 +993,14 @@ export default function ScheduleMatch() {
                             const playerTeamIndex = getPlayerTeamIndex(player.playerId);
                             const isInOtherTeam = playerTeamIndex !== -1 && playerTeamIndex !== teamIndex;
                             const status = statusOf(player.playerId);
+                            const injuryBlocked = isPickBlocked(bookingCondition, player.playerId, false);
                             return (
                               <button
                                 key={player.playerId}
                                 type="button"
                                 aria-pressed={false}
-                                disabled={isInOtherTeam}
-                                className={`participant-card participant-card--${status} ${isInOtherTeam ? 'in-other-team' : ''}`}
+                                disabled={isInOtherTeam || injuryBlocked}
+                                className={`participant-card participant-card--${status} ${isInOtherTeam ? 'in-other-team' : ''}${injuryBlocked ? ' injury-pick--blocked' : ''}`}
                                 onClick={() => handleTeamMemberToggle(teamIndex, player.playerId)}
                               >
                                 <span className="participant-name">
@@ -977,6 +1012,7 @@ export default function ScheduleMatch() {
                                   <span className="participant-wrestler">{player.currentWrestler}</span>
                                 )}
                                 <BookingDisciplineBadge discipline={player.discipline} />
+                                <InjuryPickerTags condition={bookingCondition} playerId={player.playerId} />
                                 {isInOtherTeam && (
                                   <span className="other-team-label">
                                     {t('scheduleMatch.tagTeam.team', 'Team')} {playerTeamIndex + 1}
@@ -1020,6 +1056,7 @@ export default function ScheduleMatch() {
                         checkInStatusByPlayerId={checkInStatusByPlayerId}
                         bookedPlayerIds={slotRowPlayerIds}
                         bookingInfoByPlayerId={bookingInfo}
+                        condition={bookingCondition}
                       />
                     </div>
                     <label className="slot-mode-row-lock">
@@ -1057,6 +1094,7 @@ export default function ScheduleMatch() {
                 onToggle={handleParticipantToggle}
                 checkInStatusByPlayerId={checkInStatusByPlayerId}
                 bookingInfoByPlayerId={bookingInfo}
+                condition={bookingCondition}
                 placeholder={t('matches.slots.picker.addParticipants', {
                   defaultValue: 'Add participants…',
                 })}
@@ -1082,6 +1120,7 @@ export default function ScheduleMatch() {
                           {!player && playerId}
                         </span>
                         <BookingDisciplineBadge discipline={player?.discipline} />
+                        <InjuryPickerTags condition={bookingCondition} playerId={playerId} />
                         <button
                           type="button"
                           className="selected-participant-remove"
@@ -1102,6 +1141,9 @@ export default function ScheduleMatch() {
                 {t('scheduleMatch.selected')}: {formData.participants.length}
               </div>
             </div>
+          )}
+          {bookingCondition && (
+            <AllowInjuredToggle checked={allowInjured} onChange={setAllowInjured} disabled={submitting} />
           )}
         </fieldset>
 

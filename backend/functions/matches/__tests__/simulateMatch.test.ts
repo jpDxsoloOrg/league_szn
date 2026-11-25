@@ -215,6 +215,58 @@ describe('POST /simulate with matchId', () => {
   it('returns 404 for an unknown match', async () => {
     expect((await simulateRequest({ matchId: 'missing' })).statusCode).toBe(404);
   });
+
+  // ECO-10
+  it('applies and shows a bought sim boost for the GM', async () => {
+    await createMatch();
+    const before = await simulateRequest({ matchId: MATCH_ID, seed: 5 });
+    expect(before.body.boosts).toBeUndefined();
+
+    await repos.competition.matches.update(MATCH_ID, '2026-11-30T20:00:00.000Z', {
+      simBoosts: [{ playerId: austinId, boost: 10, purchasedAt: '2026-11-24T00:00:00.000Z', purchaseKey: 'k1' }],
+    });
+    const { statusCode, body } = await simulateRequest({ matchId: MATCH_ID, seed: 5 });
+
+    expect(statusCode).toBe(200);
+    expect(body.boosts).toEqual([{ playerId: austinId, boost: 10, multiplier: 1.1 }]);
+    expect(body.probabilities[1].pct).toBeGreaterThan(before.body.probabilities[1].pct);
+  });
+});
+
+// INJ-09
+describe('POST /simulate stamina and injuries', () => {
+  it('leaves conditions out while the injuries feature is off', async () => {
+    await repos.runInTransaction(async (tx) => tx.updatePlayerCondition(austinId, { stamina: 10 }));
+    const { statusCode, body } = await simulateRequest({ sides: [[rockId], [austinId]], seed: 5 });
+    expect(statusCode).toBe(200);
+    expect(body.conditions).toBeUndefined();
+  });
+
+  it('shows each competitor\'s stamina, injury and multiplier, and the tired side loses odds', async () => {
+    const before = await simulateRequest({ sides: [[rockId], [austinId]], seed: 5 });
+    await repos.user.siteConfig.updateFeatures({ injuries: true });
+    await repos.runInTransaction(async (tx) => tx.updatePlayerCondition(austinId, {
+      stamina: 20,
+      currentInjury: {
+        injuryId: 'inj-1',
+        startedAt: '2020-01-01T00:00:00.000Z',
+        returnsAt: '2999-01-01T00:00:00.000Z',
+        severity: 'minor',
+        weeks: 1,
+        source: 'match',
+      },
+    }));
+
+    const { statusCode, body } = await simulateRequest({ sides: [[rockId], [austinId]], seed: 5 });
+    expect(statusCode).toBe(200);
+    expect(body.conditions).toEqual([
+      { playerId: rockId, stamina: 100, maxStamina: 100, injured: false, multiplier: 1 },
+      { playerId: austinId, stamina: 20, maxStamina: 100, injured: true, multiplier: expect.any(Number) },
+    ]);
+    expect(body.conditions?.[1].multiplier).toBeLessThan(1);
+    expect(body.probabilities[1].pct).toBeLessThan(before.body.probabilities[1].pct);
+    expect(body.inputsDigest).not.toBe(before.body.inputsDigest);
+  });
 });
 
 describe('POST /simulate writes nothing', () => {

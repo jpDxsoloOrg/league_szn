@@ -204,6 +204,35 @@ export {
   toPlayerGmInterferenceView,
 } from './gmInterference';
 
+// INJ-03
+export type {
+  CurrentInjury,
+  InjuriesRepository,
+  Injury,
+  InjuryChange,
+  InjuryChangeKind,
+  InjuryEndedReason,
+  InjuryPatch,
+  InjurySeverity,
+  InjurySource,
+  PlayerConditionGuard,
+  PlayerConditionPatch,
+  PublicCurrentInjury,
+  PublicInjury,
+} from './injuries';
+export {
+  INJURY_ENDED_REASONS,
+  INJURY_SEVERITIES,
+  InvalidInjuryWriteError,
+  hasGmEdits,
+  injuryRowId,
+  isInjurySeverity,
+  toCurrentInjury,
+  toPublicCurrentInjury,
+  toPublicInjury,
+  toPublicInjuryHistory,
+} from './injuries';
+
 export type {
   ContractsRepository,
   ContractCreateInput,

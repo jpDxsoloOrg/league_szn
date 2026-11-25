@@ -31,6 +31,7 @@ import GmInterferenceSection from './GmInterferenceSection';
 import {
   boostableMatches,
   formatMoney,
+  injuryWeeksLeft,
   PENDING_EFFECT_ITEMS,
   shopBlockReason,
   type ShopBlockReason,
@@ -42,6 +43,8 @@ interface ShopData {
   playerId: string;
   balance: number;
   effects: PlayerEffect[];
+  /** When the active injury ends (INJ-03 `currentInjury.returnsAt`); unset when not injured. */
+  injuryReturnsAt?: string;
   matches: Match[];
   names: Map<string, string>;
   requests: PlayerGmInterferenceRequest[];
@@ -94,12 +97,13 @@ export default function Shop() {
         playersApi.getDirectory(signal),
       ]);
       if (signal?.aborted) return;
-      const own = profile as typeof profile & OwnEconomyFields;
+      const own = profile as typeof profile & OwnEconomyFields & { currentInjury?: { returnsAt?: string } };
       setData({
         catalog,
         playerId: profile.playerId,
         balance: own.balance ?? 0,
         effects: own.effects ?? [],
+        injuryReturnsAt: own.currentInjury?.returnsAt,
         matches,
         names: new Map(directory.map((entry) => [entry.playerId, entry.name])),
         requests: mine.requests,
@@ -202,7 +206,7 @@ export default function Shop() {
     effects,
     boostableMatchCount: boostable.length,
     hasPendingRequest,
-    injuryWeeksLeft: null,
+    injuryWeeksLeft: injuryWeeksLeft(data.injuryReturnsAt),
     pendingItems: PENDING_EFFECT_ITEMS,
   });
   const gmItem = catalog.items.find((item) => item.key === 'gmInterference');

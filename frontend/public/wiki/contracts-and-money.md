@@ -66,7 +66,7 @@ Prices are set by the GMs, and an item only shows up if the GMs have put it in t
 | **Sim interference** | Boosts your rating in one of your scheduled matches when it's simulated. One per match. |
 | **GM interference** | Pay the GM and ask for anything you like. See below. |
 
-Injuries, stamina and the match sim arrive later. Until they do, the injury shield, rehab, stamina top-up and sim interference show **Coming soon** and can't be bought yet. GM interference is open for business right now.
+Every item works now. The injury shield, rehab and stamina top-up do their job while the GMs have stamina and injuries switched on; see [Stamina and Injuries](stamina-and-injuries) for how they fit in. Rehab needs an injury with at least two weeks left, and you can only have one injury shield active at a time.
 
 Your purchases are private. Nobody else will see that you bought sim interference for a match. If a GM records that match by hand instead of simulating it, or the match is deleted, you get your money back.
 

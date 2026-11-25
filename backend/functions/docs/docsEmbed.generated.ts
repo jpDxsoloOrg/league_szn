@@ -211,6 +211,32 @@ components:
         winnerSideId: { type: string }
         playByPlay: { type: array, items: { $ref: '#/components/schemas/SimBeat' } }
         specialtyHits: { type: array, items: { type: string }, description: Players fighting in their specialty }
+        # INJ-09
+        conditions:
+          type: array
+          description: Each competitor's stamina and injury state and the rating multiplier it gave. Only while the injuries feature is on. Staff only.
+          items:
+            type: object
+            required: [playerId, stamina, maxStamina, injured, multiplier]
+            properties:
+              playerId: { type: string }
+              stamina: { type: number }
+              maxStamina: { type: number }
+              injured: { type: boolean }
+              multiplier: { type: number, description: '1 = no effect' }
+
+        # ECO-10
+        boosts:
+          type: array
+          description: Sim interference bought for the match and applied as a rating multiplier of 1 + boost%. Only when there are any. Staff only.
+          items:
+            type: object
+            required: [playerId, boost, multiplier]
+            properties:
+              playerId: { type: string }
+              boost: { type: number, description: Percentage added to the rating }
+              multiplier: { type: number }
+
         matchId: { type: string, description: Set when a match was simulated }
         scaledPlayerIds: { type: array, items: { type: string }, description: Players whose over-budget build was scaled down }
         formWindow:
@@ -410,6 +436,7 @@ components:
             - SIGNUP_BLOCKED
             - PLAYER_DEACTIVATED
             - PLAYER_UNAVAILABLE
+            - PLAYER_INJURED
             - ALREADY_DEACTIVATED
             - NOT_DEACTIVATED
             - STAFF_PROTECTED
@@ -419,6 +446,8 @@ components:
             - PSN_ID_UNAVAILABLE
             - PSN_ID_LOCKED
         blockedUntil: { type: string, format: date-time }
+        playerId: { type: string, description: 'PLAYER_INJURED only (INJ-06). The injured player.' }
+        returnsAt: { type: string, format: date-time, description: 'PLAYER_INJURED only (INJ-06). When the player is back.' }
 
     StrikeOutcome:
       type: string
@@ -554,6 +583,51 @@ components:
         isStaffAccount: { type: boolean, nullable: true, description: False when unlinked. Null on a Cognito error. }
         accountEnabled: { type: boolean, nullable: true, description: Null when unlinked or on a Cognito error. }
         holdings: { $ref: '#/components/schemas/DisciplineHoldings' }
+
+    # INJ-08: injury rows as staff see them, and the public view.
+    InjuryChange:
+      type: object
+      required: [kind, at, by]
+      properties:
+        kind: { type: string, enum: [extended, shortened, healed, rehab] }
+        at: { type: string, format: date-time }
+        by: { type: string, description: Cognito sub of whoever made the change }
+        note: { type: string }
+        returnsAtBefore: { type: string, format: date-time }
+        returnsAtAfter: { type: string, format: date-time }
+        weeksBefore: { type: integer }
+        weeksAfter: { type: integer }
+
+    Injury:
+      type: object
+      description: A row in the Injuries table (staff view, notes and change log included).
+      required: [playerId, startedAt, injuryId, source, severity, weeks, returnsAt, changes]
+      properties:
+        playerId: { type: string }
+        startedAt: { type: string, format: date-time }
+        injuryId: { type: string }
+        source: { type: string, enum: [match, storyline] }
+        severity: { type: string, enum: [minor, moderate, major] }
+        weeks: { type: integer }
+        returnsAt: { type: string, format: date-time, description: 'The player is out until this instant (exclusive)' }
+        matchId: { type: string }
+        note: { type: string, description: Staff only }
+        createdBy: { type: string, description: 'Staff only: the GM who put on a storyline injury' }
+        endedAt: { type: string, format: date-time }
+        endedReason: { type: string, enum: [recovered, healedByGm, reverted] }
+        changes: { type: array, items: { $ref: '#/components/schemas/InjuryChange' }, description: Oldest first }
+
+    PublicInjury:
+      type: object
+      required: [injuryId, startedAt, returnsAt, severity, weeks]
+      properties:
+        injuryId: { type: string }
+        startedAt: { type: string, format: date-time }
+        returnsAt: { type: string, format: date-time }
+        severity: { type: string, enum: [minor, moderate, major] }
+        weeks: { type: integer }
+        matchId: { type: string }
+        endedAt: { type: string, format: date-time }
 
     LedgerEntry:
       type: object
@@ -738,9 +812,92 @@ components:
           items: { $ref: '#/components/schemas/MatchNoShow' }
         resultSource: { type: string, enum: [manual, simulation], description: 'BLD-10. How the result was settled; unset means manual.' }
         simulation: { $ref: '#/components/schemas/MatchSimulation' }
+        # INJ-04
+        conditionReport:
+          type: array
+          description: >-
+            INJ-04. Staff only (public reads drop it): what the result did to each
+            participant's stamina, and the seeded injury roll. Written with the
+            result while the \`injuries\` flag is on.
+          items:
+            type: object
+            required: [playerId, staminaBefore, staminaAfter, drain, chance, roll]
+            properties:
+              playerId: { type: string }
+              staminaBefore: { type: number }
+              staminaAfter: { type: number }
+              drain: { type: number }
+              chance: { type: number }
+              roll: { type: number }
+              injuryId: { type: string }
+              severity: { type: string, enum: [minor, moderate, major] }
+              weeks: { type: integer }
+              returnsAt: { type: string }
+              alreadyInjured: { type: boolean, description: 'The roll came up but the player was already injured, so no second injury.' }
+        tunablesVersion: { type: integer, description: 'INJ-04. Staff only. Injury tunables version the condition report used.' }
+
+        # INJ-07
+        injuredParticipants:
+          type: array
+          description: >-
+            INJ-07. Scheduled matches only, computed on read while the \`injuries\`
+            flag is on: participants whose injury still keeps them out on the
+            match date. Absent when nobody is. Nothing is cancelled automatically.
+          items: { $ref: '#/components/schemas/InjuredParticipant' }
+
+        injuryOverrides:
+          type: array
+          description: INJ-06. Injured players a GM booked anyway with \`allowInjured\`, oldest first.
+          items: { $ref: '#/components/schemas/InjuryOverride' }
+        injuryWarnings:
+          type: array
+          description: >-
+            INJ-06. Only in the response of a booking that used \`allowInjured\`
+            (schedule, edit, slot assign); never stored.
+          items: { $ref: '#/components/schemas/InjuryWarning' }
         createdAt: { type: string }
         challengeId: { type: string }
         promoId: { type: string }
+
+    # INJ-06
+    InjuryOverride:
+      type: object
+      required: [playerId, at]
+      properties:
+        playerId: { type: string }
+        by:
+          type: string
+          description: >-
+            Cognito sub of the GM. Staff only: left out of GET /matches,
+            GET /tournaments and slot claim/release responses for everyone else.
+        at: { type: string, format: date-time }
+
+    InjuryWarning:
+      type: object
+      required: [code, playerId, name, returnsAt, message]
+      properties:
+        code: { type: string, enum: [PLAYER_INJURED] }
+        playerId: { type: string }
+        name: { type: string }
+        returnsAt: { type: string, format: date-time }
+        message: { type: string, description: 'English, e.g. "Hurt is injured until 2026-12-06".' }
+
+    # INJ-07
+    InjuredParticipant:
+      type: object
+      required: [playerId, returnsAt]
+      description: Public. Only the return date; never severity, GM notes or stamina.
+      properties:
+        playerId: { type: string }
+        returnsAt: { type: string, format: date-time }
+
+    EventInjuredParticipant:
+      allOf:
+        - { $ref: '#/components/schemas/InjuredParticipant' }
+        - type: object
+          required: [matchId]
+          properties:
+            matchId: { type: string, description: The scheduled card match the player is booked in. }
 
     SideTagTeam:
       type: object
@@ -768,6 +925,7 @@ components:
         status: { type: string, enum: [scheduled] }
         challengeId: { type: string }
         promoId: { type: string }
+        allowInjured: { type: boolean, description: 'INJ-06. Staff only: book injured players anyway. Ignored for anyone else.' }
 
     RecordResultInput:
       type: object
@@ -814,6 +972,15 @@ components:
         brackets: { $ref: '#/components/schemas/TournamentBracket' }
         standings: { type: object }
         winner: { type: string }
+        injuryOverrides:
+          type: array
+          description: INJ-06. Injured entrants a GM entered anyway.
+          items: { $ref: '#/components/schemas/InjuryOverride' }
+        allowInjured: { type: boolean, description: 'INJ-06. Create request only, staff only: enter injured players anyway.' }
+        injuryWarnings:
+          type: array
+          description: INJ-06. Create response only, when \`allowInjured\` was used.
+          items: { $ref: '#/components/schemas/InjuryWarning' }
         createdAt: { type: string }
 
     TournamentBracket:
@@ -936,6 +1103,14 @@ components:
         status: { type: string, enum: [upcoming, in-progress, completed, cancelled] }
         seasonId: { type: string }
         matchCards: { type: array, items: { $ref: '#/components/schemas/MatchCardEntry' } }
+        # INJ-07
+        injuredParticipants:
+          type: array
+          description: >-
+            INJ-07. GET /events and the dashboard's upcoming and in-progress
+            events only: injured participants across the card's scheduled
+            matches, one entry per match. Absent when nobody is.
+          items: { $ref: '#/components/schemas/EventInjuredParticipant' }
         attendance: { type: integer }
         rating: { type: number }
         createdAt: { type: string }
@@ -1181,6 +1356,7 @@ components:
         transfers: { type: boolean }
         ticker: { type: boolean, description: 'League ticker. Off removes it everywhere and GET /ticker returns no segments.' }
         economy: { type: boolean, description: 'Contracts, wallets, fines and the shop. Off by default.' }
+        injuries: { type: boolean, description: 'Stamina, injuries and their sim effects (INJ). Off by default.' }
 
     TickerSettings:
       type: object
@@ -1291,6 +1467,87 @@ components:
           minimum: 0
           description: The version the edit was based on. A save over a newer version returns 409.
 
+    # INJ-01
+    SimCategoryNumbers:
+      type: object
+      description: One number per sim category.
+      required: [standard, highRisk, technical, endurance, hardcore, cage]
+      properties:
+        standard: { type: number }
+        highRisk: { type: number }
+        technical: { type: number }
+        endurance: { type: number }
+        hardcore: { type: number }
+        cage: { type: number }
+
+    InjuryTunables:
+      type: object
+      description: >-
+        Stamina and injury tunables. Every value is a placeholder for GMs to tune. Injury rolls record
+        the version they used; the last 20 versions are kept.
+      properties:
+        maxStamina: { type: integer, minimum: 1, maximum: 1000, example: 100 }
+        drainByCategory:
+          allOf: [{ $ref: '#/components/schemas/SimCategoryNumbers' }]
+          description: Stamina one match takes per sim category (integers, 0 to maxStamina).
+        formatMultiplier:
+          type: object
+          additionalProperties: { type: number, exclusiveMinimum: 0, maximum: 10 }
+          description: Drain multiplier per match format key (singles, tag, multiPerson, battleRoyal). Unknown formats use 1.
+        enduranceDrainReduction:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: k in drain × (1 − k × (endurance − 40) / 60).
+        injuryChanceBands:
+          type: array
+          description: Sorted by minStamina, highest first; the last band starts at 0.
+          items:
+            type: object
+            properties:
+              minStamina: { type: integer, minimum: 0 }
+              chance: { type: number, minimum: 0, maximum: 1 }
+        categoryRisk:
+          allOf: [{ $ref: '#/components/schemas/SimCategoryNumbers' }]
+          description: Injury chance multiplier per sim category (above 0, at most 10).
+        severities:
+          type: array
+          description: Exactly minor, moderate, major in that order.
+          items:
+            type: object
+            properties:
+              key: { type: string, enum: [minor, moderate, major] }
+              weight: { type: number, exclusiveMinimum: 0 }
+              minWeeks: { type: integer, minimum: 1, maximum: 52 }
+              maxWeeks: { type: integer, minimum: 1, maximum: 52 }
+        lowStaminaSeverityShift: { type: integer, minimum: 0, description: Below this stamina, injuries lean towards worse severities. }
+        weeklyRecovery:
+          description: Stamina restored each Sunday 00:00 league time, "full" or a fixed amount.
+          oneOf:
+            - { type: string, enum: [full] }
+            - { type: integer, minimum: 1 }
+        timezone: { type: string, example: America/New_York, description: League time zone (IANA). The league week starts Sunday 00:00 here. }
+        simStaminaFloor: { type: number, minimum: 0, maximum: 1, description: Sim rating multiplier at 0 stamina. }
+        simInjuredPenalty: { type: number, minimum: 0, maximum: 1, description: Extra sim rating multiplier when injured. }
+        version: { type: integer, description: '0 until first saved; each save adds 1.' }
+        updatedAt: { type: string, format: date-time, nullable: true }
+        updatedBy: { type: string, nullable: true }
+
+    UpdateInjuryTunablesInput:
+      type: object
+      required: [settings]
+      properties:
+        settings:
+          type: object
+          description: >-
+            A full or partial InjuryTunables (without version, updatedAt, updatedBy). Nested objects merge
+            into the current tunables; injuryChanceBands, severities and formatMultiplier replace them.
+            The merged result is validated.
+        expectedVersion:
+          type: integer
+          minimum: 0
+          description: The version the edit was based on. A save over a newer version returns 409.
+
     EconomyCatalog:
       type: object
       properties:
@@ -1359,6 +1616,10 @@ components:
               properties:
                 matchId: { type: string }
         alreadyApplied: { type: boolean }
+        # ECO-10
+        used:
+          type: boolean
+          description: rehab and staminaTopUp only. True once the effect was applied (it is then gone from \`effects\`); false while a rehab waits for an active injury.
 
     # ECO-09
     GmInterferenceInput:
@@ -2070,6 +2331,81 @@ paths:
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '409': { description: 'expectedVersion is stale, or another save won the race', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  # INJ-01
+  /admin/injury-config:
+    get:
+      tags: [Site Config]
+      summary: Get the stamina and injury tunables (Moderator, Admin)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Current tunables merged over the defaults, and who saved each kept version (newest first)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings: { $ref: '#/components/schemas/InjuryTunables' }
+                  history:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        version: { type: integer }
+                        updatedAt: { type: string, format: date-time, nullable: true }
+                        updatedBy: { type: string, nullable: true }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    put:
+      tags: [Site Config]
+      summary: Save the stamina and injury tunables as a new version (Admin)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateInjuryTunablesInput' }
+      responses:
+        '200':
+          description: The saved tunables
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings: { $ref: '#/components/schemas/InjuryTunables' }
+        '400': { description: 'Invalid tunables: chance outside [0, 1], unsorted bands, weight not above 0, minWeeks above maxWeeks, unknown time zone, unknown key', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'expectedVersion is stale, or another save won the race', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # INJ-05
+  /admin/injury-recovery:
+    post:
+      tags: [Site Config]
+      summary: Run this league week's stamina recovery now (Admin)
+      description: >-
+        Same once-per-week claim as the hourly weekly job: recovers every player's
+        stamina and ends injuries whose returnsAt has passed, unless this week has
+        already been run (status alreadyRun) or the injuries feature is off
+        (status injuriesOff, and the week is recorded as skipped).
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: What the run did
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [recovered, alreadyRun, injuriesOff, incomplete] }
+                  weekKey: { type: string, description: 'Local date of the Sunday the league week starts on (YYYY-MM-DD)' }
+                  staminaRecovered: { type: integer, description: 'Players whose stamina went up' }
+                  injuriesEnded: { type: array, items: { type: string }, description: 'Injury ids ended by this run' }
+                  failed: { type: integer }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '500': { description: 'Server error', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   /economy/catalog:
     get:
       tags: [Site Config]
@@ -2097,6 +2433,12 @@ paths:
         are 409 with a \`code\`: ITEM_DISABLED, IN_DEBT, INSUFFICIENT_FUNDS,
         SHIELD_ACTIVE, NO_ACTIVE_INJURY, INJURY_TOO_SHORT, MATCH_NOT_SCHEDULED,
         NOT_IN_MATCH, BOOST_ALREADY_BOUGHT. GM interference is not sold here.
+        Rehab and staminaTopUp apply right after the purchase: rehab moves the
+        active injury's return earlier by \`weeksOff\` league weeks (never less
+        than one week from its start) and logs a \`rehab\` change; staminaTopUp
+        adds stamina up to the maximum. The injury shield cuts the injury
+        chance of the buyer's next matches, and sim interference raises the
+        buyer's rating by \`boost\`% in the official sim, which uses it.
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true
@@ -2328,10 +2670,11 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/ScheduleMatchInput' }
       responses:
-        '201': { description: Match scheduled }
+        '201': { description: 'Match scheduled. Has \`injuryWarnings\` when \`allowInjured\` booked an injured player.' }
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'PLAYER_INJURED - a participant is injured and \`allowInjured\` was not set (INJ-06)', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
 
   /matches/{matchId}/result:
     put:
@@ -2473,6 +2816,7 @@ paths:
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'PLAYER_INJURED - an entrant is injured and \`allowInjured\` was not set (INJ-06)', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
 
   /tournaments/{tournamentId}:
     put:
@@ -2788,7 +3132,8 @@ paths:
         Public. Each \`enrichedMatches[].matchData\` of a sim-settled match carries
         \`resultSource: simulation\` and its \`simulation\` (BLD-14). Staff get the
         whole sim; everyone else gets the public view without the odds and
-        audit fields.
+        audit fields. INJ-11: staff also get a completed match's
+        \`conditionReport\` (see Match).
       parameters:
         - name: eventId
           in: path
@@ -3018,6 +3363,7 @@ paths:
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'PLAYER_INJURED - the caller or anyone on either side is injured. No override (INJ-06)', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
 
   /challenges/{challengeId}:
     get:
@@ -3066,6 +3412,7 @@ paths:
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'PLAYER_INJURED - accepting or countering while anyone who would wrestle is injured. Declining is never refused. No override (INJ-06)', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
 
   /challenges/{challengeId}/cancel:
     post:
@@ -3222,7 +3569,7 @@ paths:
       tags: [Dashboard]
       summary: Get dashboard overview
       responses:
-        '200': { description: Dashboard data with current champions, upcoming events, recent results, season info, quick stats }
+        '200': { description: 'Dashboard data with current champions, upcoming events (with \`injuredParticipants\`, INJ-07), recent results, season info, quick stats' }
 
   /ticker:
     get:
@@ -3945,6 +4292,269 @@ paths:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/Player' } }
 
+  # ── Injuries (INJ-08) ────────────────────────────────────────────
+
+  /injuries:
+    get:
+      tags: [Players]
+      summary: Injury board, every injury that has not ended (Moderator, Admin)
+      description: >-
+        Soonest return first, with the player and the full row (notes and the
+        change log). pastReturnDate is true for an injury whose return date
+        has passed but that the weekly recovery has not ended yet.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: active, in: query, required: false, schema: { type: string, enum: ['true'] }, description: Only active=true is supported (the default) }
+      responses:
+        '200':
+          description: Open injuries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [injury, player, pastReturnDate, impact]
+                  properties:
+                    injury: { $ref: '#/components/schemas/Injury' }
+                    player:
+                      type: object
+                      nullable: true
+                      properties:
+                        playerId: { type: string }
+                        name: { type: string }
+                        currentWrestler: { type: string }
+                        imageUrl: { type: string }
+                        divisionId: { type: string }
+                        stamina: { type: integer, description: Absent means full }
+                    pastReturnDate: { type: boolean }
+                    # INJ-11
+                    impact:
+                      type: object
+                      description: INJ-11. Scheduled matches the player is booked in before the return date, and active titles held.
+                      required: [scheduledMatchIds, titles]
+                      properties:
+                        scheduledMatchIds: { type: array, items: { type: string } }
+                        titles: { type: array, items: { type: string } }
+        '400': { description: 'active is not true', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not staff, or the injuries feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /players/{playerId}/injuries:
+    get:
+      tags: [Players]
+      summary: A player's injury history, newest first (public)
+      description: >-
+        Everyone gets PublicInjury rows (no source, notes or change log;
+        reverted injuries left out). A verified Moderator or Admin gets the
+        full Injury rows. Empty while the injuries feature is off.
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Injury history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - { $ref: '#/components/schemas/PublicInjury' }
+                    - { $ref: '#/components/schemas/Injury' }
+        '404': { description: 'Player not found or hidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    post:
+      tags: [Players]
+      summary: Put a storyline injury on a player (Moderator, Admin)
+      description: >-
+        Starts now with source storyline; returnsAt is the league week
+        boundary (Sunday 00:00 league time) the given number of weeks out. An
+        earlier injury whose return date has passed but is still open is
+        ended as recovered in the same write. The player is notified.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [weeks, severity]
+              properties:
+                weeks: { type: integer, minimum: 1, maximum: 52 }
+                severity: { type: string, enum: [minor, moderate, major] }
+                note: { type: string, maxLength: 500 }
+      responses:
+        '201':
+          description: The new injury
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Injury' }
+        '400': { description: 'Invalid weeks, severity or note', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not staff, or the injuries feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Already injured, or a concurrent change', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /players/{playerId}/injuries/heal:
+    post:
+      tags: [Players]
+      summary: End the current injury now (Moderator, Admin)
+      description: >-
+        Sets endedAt to now and endedReason healedByGm, appends a healed change
+        (who, when, note) and clears the player's currentInjury. The player is
+        notified. The body is optional.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string, maxLength: 500 }
+      responses:
+        '200':
+          description: The ended injury
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Injury' }
+        '400': { description: 'Invalid note', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not staff, or the injuries feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Not injured, or a concurrent change', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /players/{playerId}/injuries/current:
+    patch:
+      tags: [Players]
+      summary: Extend or shorten the current injury (Moderator, Admin)
+      description: >-
+        Send exactly one of weeks (new total length from the start; returnsAt
+        snaps to the league week boundary) or returnsAt (exact; weeks is
+        recomputed). The new return date must be in the future. Appends an
+        extended or shortened change and notifies the player.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                weeks: { type: integer, minimum: 1, maximum: 52 }
+                returnsAt: { type: string, format: date-time }
+                note: { type: string, maxLength: 500 }
+      responses:
+        '200':
+          description: The updated injury
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Injury' }
+        '400': { description: 'Both or neither of weeks and returnsAt, a past date, no change, or an invalid note', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not staff, or the injuries feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Not injured, or a concurrent change', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /players/{playerId}/stamina:
+    patch:
+      tags: [Players]
+      summary: Set a player's stamina (Moderator, Admin)
+      description: >-
+        Guarded on the stamina read, so a concurrent result returns 409. The
+        audit entry (who, when, before, after, note) is logged; the player is
+        notified.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stamina]
+              properties:
+                stamina: { type: integer, minimum: 0, maximum: 100 }
+                note: { type: string, maxLength: 500 }
+      responses:
+        '200':
+          description: The new stamina
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [playerId, staminaBefore, stamina]
+                properties:
+                  playerId: { type: string }
+                  staminaBefore: { type: integer, nullable: true, description: Null when none was stored (full) }
+                  stamina: { type: integer }
+        '400': { description: 'Invalid stamina or note', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not staff, or the injuries feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'A concurrent change', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # INJ-12
+  /players/{playerId}/condition:
+    get:
+      tags: [Players]
+      summary: The player's stamina meter (the player themselves, Moderator, Admin)
+      description: >-
+        Stamina, the injury-chance band it falls in (0 is the band for the
+        highest stamina), the next weekly recovery (Sunday 00:00 in the league
+        time zone), the open injury (public fields) and the drain of the next
+        scheduled match the player is booked in. Other viewers get 403; the
+        public injury badge reads currentInjury from the player instead.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The player's condition
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [playerId, stamina, maxStamina, band, bandCount, weeklyRecovery, nextRecoveryAt, currentInjury, nextMatch]
+                properties:
+                  playerId: { type: string }
+                  stamina: { type: integer }
+                  maxStamina: { type: integer }
+                  band: { type: integer, minimum: 0 }
+                  bandCount: { type: integer, minimum: 1 }
+                  weeklyRecovery:
+                    oneOf:
+                      - { type: integer }
+                      - { type: string, enum: [full] }
+                  nextRecoveryAt: { type: string, format: date-time }
+                  currentInjury:
+                    type: object
+                    nullable: true
+                    properties:
+                      injuryId: { type: string }
+                      startedAt: { type: string, format: date-time }
+                      returnsAt: { type: string, format: date-time }
+                      severity: { type: string, enum: [minor, moderate, major] }
+                      weeks: { type: integer }
+                      matchId: { type: string }
+                  nextMatch:
+                    type: object
+                    nullable: true
+                    properties:
+                      matchId: { type: string }
+                      date: { type: string }
+                      drain: { type: integer }
+                      staminaAfter: { type: integer }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not the player or staff, or the injuries feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   # ── Fines (ECO-07) ───────────────────────────────────────────────
 
   /matches/{matchId}/no-show:
@@ -4641,7 +5251,7 @@ paths:
         '200': { description: Updated match with claimed slot }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-        '409': { description: 'Conflict – slot taken or match not open', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Conflict – slot taken or match not open; or PLAYER_INJURED (Refusal) when the caller is injured (INJ-06, no override)', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     delete:
       tags: [Matches]
       summary: Release a match slot
@@ -4684,8 +5294,10 @@ paths:
                 lockedByAdmin: { type: boolean }
                 teamLabel: { type: string, nullable: true }
                 wrestlerChoice: { type: string, enum: [main, alternate] }
+                allowInjured: { type: boolean, description: 'INJ-06. Assign an injured player anyway.' }
       responses:
-        '200': { description: Updated match }
+        '200': { description: 'Updated match. Has \`injuryWarnings\` when \`allowInjured\` assigned an injured player.' }
+        '409': { description: 'PLAYER_INJURED - the assigned player is injured and \`allowInjured\` was not set (INJ-06)', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

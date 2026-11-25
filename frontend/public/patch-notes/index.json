@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.7.0",
+      "date": "2026-11-25",
+      "title": "Stamina and Injuries",
+      "titleDe": "Ausdauer und Verletzungen",
+      "file": "v1.7.0.md",
+      "summary": "Every match now costs stamina, which comes back each Sunday, and tired wrestlers are more likely to get hurt. Injuries keep you off new cards until your return date and show a public badge, while your stamina stays private. The GMs switch it on, and the shop's injury shield, rehab, stamina top-up and sim interference now work.",
+      "summaryDe": "Jedes Match kostet jetzt Ausdauer, die jeden Sonntag zurückkommt, und müde Wrestler verletzen sich eher. Verletzungen halten dich bis zu deinem Rückkehrdatum von neuen Cards fern und zeigen ein öffentliches Abzeichen, deine Ausdauer bleibt privat. Die GMs schalten es ein, und Verletzungsschutz, Reha, Ausdauer-Auffüllung und Sim-Eingriff im Shop funktionieren jetzt."
+    },
+    {
       "version": "1.6.0",
       "date": "2026-11-25",
       "title": "Wrestler Builds and the Match Sim",

@@ -2,15 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
-const { mockGetDirectory, mockGetById, mockGetStandings, mockGetMatches, mockGetChampionships, mockListRivalries, authState, features } = vi.hoisted(() => ({
+const { mockGetDirectory, mockGetById, mockGetStandings, mockGetMatches, mockGetChampionships, mockListRivalries, mockInjuriesApi, authState, features } = vi.hoisted(() => ({
   mockGetDirectory: vi.fn(),
   mockGetById: vi.fn(),
   mockGetStandings: vi.fn(),
   mockGetMatches: vi.fn(),
   mockGetChampionships: vi.fn(),
   mockListRivalries: vi.fn(),
-  authState: { isAuthenticated: false, isWrestler: false, playerId: null as string | null },
-  features: { statistics: true, challenges: true },
+  // INJ-12
+  mockInjuriesApi: { getPlayerCondition: vi.fn(), getPlayerHistory: vi.fn() },
+  authState: { isAuthenticated: false, isWrestler: false, isAdminOrModerator: false, playerId: null as string | null },
+  features: { statistics: true, challenges: true, injuries: false },
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -28,6 +30,8 @@ vi.mock('../../../services/api', () => ({
   isApiError: (err: unknown, status: number) => (err as { status?: number }).status === status,
 }));
 
+vi.mock('../../../services/api/injuries.api', () => ({ injuriesApi: mockInjuriesApi }));
+
 vi.mock('../BuildCard', () => ({
   default: ({ playerId, isOwnProfile }: { playerId: string; isOwnProfile?: boolean }) => (
     <div data-testid="build-card-stub">{`${playerId} own:${String(isOwnProfile)}`}</div>
@@ -39,7 +43,7 @@ vi.mock('../../../contexts/SiteConfigContext', () => ({ useSiteConfig: () => ({ 
 
 const stableT = (key: string, options?: Record<string, unknown>) =>
   (options ? `${key} ${Object.values(options).join(' ')}` : key);
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: stableT }) }));
+vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: stableT, i18n: { language: 'en' } }) }));
 
 import PublicProfile from '../PublicProfile';
 
@@ -66,7 +70,8 @@ function renderProfile() {
 describe('PublicProfile', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Object.assign(authState, { isAuthenticated: false, isWrestler: false, playerId: null });
+    Object.assign(authState, { isAuthenticated: false, isWrestler: false, isAdminOrModerator: false, playerId: null });
+    features.injuries = false;
     mockGetById.mockResolvedValue(player);
     mockGetDirectory.mockResolvedValue([{ playerId: 'p2', name: 'Bob', currentWrestler: 'Edge' }]);
     mockGetStandings.mockResolvedValue({ players: [{ playerId: 'p1', mainOverall: 88 }] });
@@ -218,5 +223,60 @@ describe('PublicProfile', () => {
     Object.assign(authState, { isAuthenticated: true, isWrestler: true, playerId: 'p1' });
     renderProfile();
     expect(await screen.findByTestId('build-card-stub')).toHaveTextContent('p1 own:true');
+  });
+
+  // INJ-12: stamina is for the player and staff; the injury badge and history are public.
+  describe('stamina and injuries', () => {
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const returnsAt = new Date(Date.now() + 10 * DAY_MS).toISOString();
+    const condition = {
+      playerId: 'p1', stamina: 35, maxStamina: 100, band: 2, bandCount: 4, weeklyRecovery: 'full',
+      nextRecoveryAt: new Date(Date.now() + 3 * DAY_MS).toISOString(), currentInjury: null, nextMatch: null,
+    };
+
+    beforeEach(() => {
+      features.injuries = true;
+      mockGetById.mockResolvedValue({
+        ...player,
+        currentInjury: { injuryId: 'i1', startedAt: new Date().toISOString(), returnsAt, severity: 'minor', weeks: 1 },
+      });
+      mockInjuriesApi.getPlayerCondition.mockResolvedValue(condition);
+      mockInjuriesApi.getPlayerHistory.mockResolvedValue([
+        { injuryId: 'i1', startedAt: new Date().toISOString(), returnsAt, severity: 'minor', weeks: 1 },
+      ]);
+    });
+
+    it('shows the player their own stamina meter', async () => {
+      Object.assign(authState, { isAuthenticated: true, isWrestler: true, playerId: 'p1' });
+      renderProfile();
+      expect(await screen.findByTestId('stamina-meter')).toBeInTheDocument();
+      expect(mockInjuriesApi.getPlayerCondition).toHaveBeenCalledWith('p1', expect.anything());
+    });
+
+    it('shows staff the stamina meter', async () => {
+      Object.assign(authState, { isAuthenticated: true, isWrestler: false, isAdminOrModerator: true, playerId: null });
+      renderProfile();
+      expect(await screen.findByTestId('stamina-meter')).toBeInTheDocument();
+    });
+
+    it('never asks for or shows stamina to another wrestler, who still sees the injury badge and history', async () => {
+      Object.assign(authState, { isAuthenticated: true, isWrestler: true, playerId: 'me' });
+      renderProfile();
+      expect(await screen.findByTestId('injury-badge')).toBeInTheDocument();
+      expect(await screen.findByText('injuries.history.title')).toBeInTheDocument();
+      expect(screen.queryByTestId('stamina-meter')).not.toBeInTheDocument();
+      expect(mockInjuriesApi.getPlayerCondition).not.toHaveBeenCalled();
+    });
+
+    it('hides the meter, badge and history while the injuries feature is off', async () => {
+      features.injuries = false;
+      Object.assign(authState, { isAuthenticated: true, isWrestler: true, playerId: 'p1' });
+      renderProfile();
+      expect(await screen.findByRole('heading', { level: 1, name: 'Cody Rhodes' })).toBeInTheDocument();
+      expect(screen.queryByTestId('injury-badge')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('stamina-meter')).not.toBeInTheDocument();
+      expect(mockInjuriesApi.getPlayerCondition).not.toHaveBeenCalled();
+      expect(mockInjuriesApi.getPlayerHistory).not.toHaveBeenCalled();
+    });
   });
 });

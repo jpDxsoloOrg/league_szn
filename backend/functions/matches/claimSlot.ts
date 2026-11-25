@@ -9,11 +9,12 @@ import {
   forbidden,
   serverError,
 } from '../../lib/response';
-import { getAuthContext, requireRole } from '../../lib/auth';
+import { getAuthContext, hasRole, requireRole } from '../../lib/auth';
 import { isConcurrentWriteError } from '../../lib/repositories/errors';
 import { isPlayerVisible, realWrestlerName, SET_WRESTLER_NAME_MESSAGE } from '../../lib/needsWrestler';
 import { callerRefusal } from '../../lib/discipline';
 import { playerSimBoostViewer, withVisibleSimBoosts } from '../../lib/economy/simBoostVisibility';
+import { checkInjuryGate, withoutInjuryOverrideActors } from '../../lib/injuries/bookingGate';
 
 interface ClaimSlotBody {
   wrestlerChoice?: 'main' | 'alternate';
@@ -55,7 +56,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Invalid JSON in request body');
     }
 
-    const { sub } = getAuthContext(event);
+    const authContext = getAuthContext(event);
+    const { sub } = authContext;
+    // INJ-06: only staff see which GM overrode an injury on this match.
+    const visible = (row: Match): Match => (hasRole(authContext, 'Moderator') ? row : withoutInjuryOverrideActors(row));
     const {
       competition: { matches },
       leagueOps: { events: eventsRepo },
@@ -69,6 +73,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
     const refusal = callerRefusal(callerPlayer);
     if (refusal) return refusal;
+    // INJ-06: no override here; only staff can book an injured player.
+    const injuryGate = await checkInjuryGate([callerPlayer], { selfPlayerId: callerPlayer.playerId });
+    if (injuryGate.refusal) return injuryGate.refusal;
     if (!isPlayerVisible(callerPlayer)) {
       return badRequest(SET_WRESTLER_NAME_MESSAGE);
     }
@@ -118,7 +125,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     if (slot.playerId === callerPlayerId) {
       // Idempotent re-claim — no-op success
-      return success(withVisibleSimBoosts(match, boostViewer));
+      return success(withVisibleSimBoosts(visible(match), boostViewer));
     }
 
     if (slot.lockedByAdmin) {
@@ -240,7 +247,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       updatedAt: now,
     };
 
-    return success(withVisibleSimBoosts(updated, boostViewer));
+    return success(withVisibleSimBoosts(visible(updated), boostViewer));
   } catch (err) {
     console.error('Error claiming slot:', err);
     return serverError('Failed to claim slot');

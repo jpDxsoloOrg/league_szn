@@ -19,6 +19,7 @@ const DEFAULT_FEATURES: SiteFeatures = {
   transfers: false,
   ticker: true,
   economy: false,
+  injuries: false,
 };
 
 const DEFAULT_TICKER_SETTINGS: TickerSettings = {

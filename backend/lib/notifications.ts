@@ -30,15 +30,32 @@ export type NotificationType =
   | 'contract_released'
   // ECO-05: a tryout / match contract ran its course
   | 'contract_completed'
+
+  // INJ-05: the weekly recovery ended an injury
+  | 'injury_recovered'
+
   // ECO-07
   | 'no_show_marked'
   | 'fine_issued'
   | 'fine_rescinded'
   | 'balance_negative'
+
+  // INJ-08: a GM healed, extended or put on an injury, or adjusted stamina
+  | 'injury_healed'
+  | 'injury_updated'
+  | 'injury_added'
+  | 'stamina_adjusted'
+
   | 'progression_consideration'
   | 'progression_executed'
   | 'progression_milestone'
   | 'progression_goals_reset'
+  // INJ-04: a recorded result injured the player
+  | 'injury_sustained'
+
+  // INJ-07: tells GMs a player is out and what that affects
+  | 'injury_staff_notice'
+
   // BLD-04: a division move left the build over a smaller budget
   | 'build_over_budget';
 
@@ -49,7 +66,9 @@ export type RivalryNotificationType =
   | 'rivalry_status_change'
   | 'rivalry_reviewed';
 
-export type NotificationSourceType = 'promo' | 'challenge' | 'contract' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'storyline_request' | 'rivalry' | 'discipline' | 'progression' | 'economy' | 'build';
+export type NotificationSourceType = 'promo' | 'challenge' | 'contract' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'storyline_request' | 'rivalry' | 'discipline' | 'progression' | 'economy' | 'build'
+  // INJ-05
+  | 'injury';
 
 export interface CreateNotificationParams {
   userId: string;

@@ -50,7 +50,7 @@ import {
   toWrestlerEntries,
 } from '../searchIndex';
 
-const FEATURES = { challenges: true, promos: true, contenders: true, statistics: true, stables: true, notifications: true, rivalries: true, transfers: true };
+const FEATURES = { challenges: true, promos: true, contenders: true, statistics: true, stables: true, notifications: true, rivalries: true, transfers: true, ticker: true, economy: true, injuries: true };
 const t = (key: string) => key;
 
 const DIRECTORY = [
@@ -248,7 +248,8 @@ describe('SiteSearch', () => {
     expect(screen.getAllByRole('option')[1]).toHaveAttribute('aria-selected', 'true');
 
     await user.keyboard('{ArrowUp}{ArrowUp}');
-    expect(screen.getAllByRole('option').at(-1)).toHaveAttribute('aria-selected', 'true');
+    const optionsAfterWrap = screen.getAllByRole('option');
+    expect(optionsAfterWrap[optionsAfterWrap.length - 1]).toHaveAttribute('aria-selected', 'true');
   });
 
   it('keeps pages searchable when every data source fails', async () => {

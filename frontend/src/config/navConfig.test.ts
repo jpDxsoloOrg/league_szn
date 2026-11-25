@@ -21,7 +21,7 @@ import {
   type NavSection,
 } from './navConfig';
 
-const ALL_ON = { challenges: true, promos: true, contenders: true, statistics: true, stables: true, notifications: true, rivalries: true, transfers: true, economy: true };
+const ALL_ON = { challenges: true, promos: true, contenders: true, statistics: true, stables: true, notifications: true, rivalries: true, transfers: true, ticker: true, economy: true, injuries: true };
 
 function context(overrides: Partial<NavContext> = {}): NavContext {
   return { features: ALL_ON, isAuthenticated: true, isWrestler: true, isAdminOrModerator: false, isSuperAdmin: false, ...overrides };
@@ -151,6 +151,13 @@ describe('admin registry', () => {
     expect(rankings && getVisibleTabs(rankings, context())).toContainEqual(
       expect.objectContaining({ path: '/free-agents' }),
     );
+  });
+
+  // INJ-10
+  it('lists the injury settings under League Setup for Moderators, even while injuries are off', () => {
+    const leagueSetup = getVisibleAdminGroups(false, ALL_ON).find((group) => group.key === 'leagueSetup');
+    expect(leagueSetup?.entries.map((entry) => entry.tab)).toContain('injury-config');
+    expect(isAdminTab('injury-config')).toBe(true);
   });
 
   it('no longer registers the Match Card Builder', () => {

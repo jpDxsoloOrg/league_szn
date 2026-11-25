@@ -20,6 +20,10 @@ import AdminNotice from './AdminNotice';
 import ConfirmModal from './ConfirmModal';
 import SourceLoadNotice from './SourceLoadNotice';
 import { settleSources } from './loadSources';
+// INJ-11
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import InjuredParticipantsBanner from '../injuries/InjuredParticipantsBanner';
+import type { MatchInjuryFields } from '../../types/injuryReport';
 import './adminRoster.css';
 import './StandaloneMatches.css';
 
@@ -38,7 +42,9 @@ type StandaloneSource = keyof typeof STANDALONE_SOURCES;
 export default function StandaloneMatches() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [scheduledMatches, setScheduledMatches] = useState<Match[]>([]);
+  const { features } = useSiteConfig();
+  // INJ-11: GET /matches flags participants still injured on the match date.
+  const [scheduledMatches, setScheduledMatches] = useState<(Match & MatchInjuryFields)[]>([]);
   const [events, setEvents] = useState<LeagueEvent[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [tagTeams, setTagTeams] = useState<HydratedTagTeam[]>([]);
@@ -204,6 +210,9 @@ export default function StandaloneMatches() {
                       {match.isChampionship && <Badge tone="warning">{t('adminRoster.standalone.championship', 'Championship')}</Badge>}
                       {match.tournamentId && <Badge tone="violet">{t('adminRoster.standalone.tournament', 'Tournament')}</Badge>}
                     </span>
+                    {features.injuries && (
+                      <InjuredParticipantsBanner injuredParticipants={match.injuredParticipants} nameOf={getBilledName} />
+                    )}
                   </div>
                   <div className="ar-row-actions">
                     <Button

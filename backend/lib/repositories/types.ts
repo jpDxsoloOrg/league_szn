@@ -1,4 +1,5 @@
 import type { CoreStat, SimCategory, StyleId } from '../policies/buildRules';
+import type { CurrentInjury, InjurySeverity } from './injuries'; // INJ-03, INJ-04
 
 export interface Division {
   divisionId: string;
@@ -306,6 +307,21 @@ export interface Player {
    * through `tx.setPlayerActiveContract` / `tx.clearPlayerActiveContract`.
    */
   activeContractId?: string;
+
+  // INJ-03
+  /**
+   * Stamina, 0 to the tunable maximum. Missing means full (`currentStamina`
+   * in lib/injuries). Private to staff and the player. Not on `PlayerPatch`:
+   * write it only through `tx.updatePlayerCondition`.
+   */
+  stamina?: number;
+  /**
+   * Copy of the open row in the Injuries table, or absent. The player counts
+   * as injured while `returnsAt` is in the future (`isInjured`). Not on
+   * `PlayerPatch`: write it only through `tx.updatePlayerCondition`.
+   */
+  currentInjury?: CurrentInjury;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -762,6 +778,36 @@ export interface MatchPaySettlement {
   players: Record<string, MatchPaySettlementPlayer>;
 }
 
+// INJ-04
+/**
+ * What one result did to one participant's condition (`lib/injuries/applyMatchCondition.ts`).
+ * Staff only: stamina is private, so public match reads drop the report.
+ */
+export interface MatchConditionEntry {
+  playerId: string;
+  staminaBefore: number;
+  staminaAfter: number;
+  drain: number;
+  /** Injury chance used, after band, category risk, cap and any reduction. */
+  chance: number;
+  /** The seeded draw in [0, 1); an injury when roll < chance. */
+  roll: number;
+  /** The injury this result caused, if any. */
+  injuryId?: string;
+  severity?: InjurySeverity;
+  weeks?: number;
+  returnsAt?: string;
+  /**
+   * The roll came up but the player was already injured (e.g. a GM storyline
+   * injury), so no second injury was created.
+   */
+  alreadyInjured?: boolean;
+
+  // ECO-10
+  /** An injury shield from the shop cut `chance`; one of its matches was used. */
+  shielded?: boolean;
+}
+
 export interface Match {
   matchId: string;
   date: string;
@@ -821,8 +867,25 @@ export interface Match {
   /** The official sim that settled the match, when `resultSource` is `simulation`. */
   simulation?: MatchSimulation;
 
+  // INJ-04
+  /** Drain and injury roll per participant, written with the result. Staff only. */
+  conditionReport?: MatchConditionEntry[];
+  /** The injury tunables version the report was computed under. */
+  tunablesVersion?: number;
+  // INJ-06
+  /** Injured players a GM booked anyway with `allowInjured`, oldest first. */
+  injuryOverrides?: InjuryOverride[];
+
   createdAt: string;
   updatedAt?: string;
+}
+
+// INJ-06
+/** A GM booking an injured player on purpose. `by` is the GM's Cognito sub. */
+export interface InjuryOverride {
+  playerId: string;
+  by: string;
+  at: string;
 }
 
 // BLD-10
@@ -862,6 +925,11 @@ export interface MatchSimulation {
   specialtyHits: string[];
   /** Staff only: players whose over-budget build was scaled down. */
   scaledPlayerIds: string[];
+
+  // ECO-10
+  /** Staff only: players whose bought sim boost (`Match.simBoosts`) this sim used. */
+  simBoostedPlayerIds?: string[];
+
   /** Staff only: the matches the form score was read from. */
   formWindow: { kind: 'season'; seasonId: string } | { kind: 'recent'; matchLimit: number };
   simulatedAt: string;
@@ -972,6 +1040,8 @@ export interface Tournament {
   brackets?: unknown;
   standings?: unknown;
   winner?: string;
+  /** INJ-06: injured entrants a GM entered anyway with `allowInjured`. */
+  injuryOverrides?: InjuryOverride[];
   createdAt: string;
   updatedAt?: string;
 }

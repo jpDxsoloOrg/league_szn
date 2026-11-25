@@ -30,6 +30,8 @@ import {
   type PurchasableItem,
   type PurchaseRefusal,
 } from '../../lib/economy/effects';
+import { applyPendingEffects } from '../../lib/economy/applyEffects';
+import { injuryWeeksLeft } from '../../lib/injuries';
 
 export const PURCHASE_REQUEST_ID_MAX_LENGTH = 100;
 
@@ -51,25 +53,24 @@ export interface PurchaseResult {
   simBoost?: SimBoost & { matchId: string };
   /** True when this requestId was already bought; nothing new was charged. */
   alreadyApplied: boolean;
+  /**
+   * ECO-10: rehab and stamina top-up take effect right away. True once the
+   * effect is used (it is then gone from `Player.effects`); false while it
+   * waits (a rehab whose injury ended before it applied).
+   */
+  used?: boolean;
 }
 
 const refuse = (refusal: PurchaseRefusal) => errorWithDetails(409, refusal.message, { code: refusal.code });
 
 /**
- * Weeks left on the player's active injury, or null when they have none.
- * Injuries are not tracked yet (INJ, Sprint 8), so nobody has one and rehab
- * is refused until they are.
- */
-function activeInjuryWeeksLeft(): number | null {
-  return null;
-}
-
-/**
  * POST /shop/purchase (the player themselves). Charges the item's price as a
  * `purchase` ledger entry and records its effect in the same transaction:
  * injuryShield / rehab / staminaTopUp on `Player.effects`, simInterference on
- * `Match.simBoosts`. Applying the effects is ECO-10. A player in debt or short
- * of money can't buy (409). GM interference has its own route (ECO-09).
+ * `Match.simBoosts`. Rehab and stamina top-up then apply at once in their own
+ * unit of work (ECO-10, `applyPendingEffects`); the shield waits for the next
+ * matches and the boost for the sim. A player in debt or short of money can't
+ * buy (409). GM interference has its own route (ECO-09).
  */
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Wrestler');
@@ -151,7 +152,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         if (refusal) return refuse(refusal);
       }
       if (item === 'rehab') {
-        const refusal = checkRehab(activeInjuryWeeksLeft());
+        const refusal = checkRehab(injuryWeeksLeft(player, new Date()));
         if (refusal) return refuse(refusal);
       }
       effect = buildPlayerEffect(item, shop, { ...meta, effectId: uuidv4() });
@@ -197,6 +198,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const entry = await ledger.getByIdempotencyKey(idempotencyKey);
     if (!entry) throw new Error(`Ledger entry ${idempotencyKey} missing after commit`);
+    const used = effect ? await usePendingEffect(playerId, effect) : undefined;
     const result: PurchaseResult = {
       item,
       entry,
@@ -204,6 +206,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       ...(effect && { effect }),
       ...(boostMatch && simBoost && { simBoost: { ...simBoost, matchId: boostMatch.matchId } }),
       alreadyApplied: false,
+      ...(used !== undefined && { used }),
     };
     return created(result);
   } catch (err) {
@@ -212,15 +215,38 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   }
 };
 
-/** The answer to a resent requestId: the original entry and the effect it bought. */
+// ECO-10
+/**
+ * Applies a just-bought rehab or stamina top-up. Returns whether `effect` is
+ * used; undefined for the shield, which waits for matches. A failure leaves
+ * the effect pending for the next try and never fails the purchase.
+ */
+async function usePendingEffect(playerId: string, effect: PlayerEffect): Promise<boolean | undefined> {
+  if (effect.kind === 'injuryShield') return undefined;
+  try {
+    const applied = await applyPendingEffects(playerId);
+    if (applied.includes(effect.effectId)) return true;
+  } catch (err) {
+    console.error(`Applying ${effect.kind} for ${playerId} failed:`, err);
+  }
+  const current = await getRepositories().roster.players.findById(playerId);
+  return !(current?.effects ?? []).some((candidate) => candidate.effectId === effect.effectId);
+}
+
+/**
+ * The answer to a resent requestId: the original entry and the effect it
+ * bought. A rehab or top-up still waiting is retried here (ECO-10).
+ */
 async function alreadyApplied(item: PurchasableItem, entry: LedgerEntry): Promise<PurchaseResult> {
-  const current = await getRepositories().roster.players.findById(entry.playerId);
-  const effect = current?.effects?.find((candidate) => candidate.purchaseKey === entry.idempotencyKey);
+  const before = await getRepositories().roster.players.findById(entry.playerId);
+  const effect = before?.effects?.find((candidate) => candidate.purchaseKey === entry.idempotencyKey);
+  const used = effect ? await usePendingEffect(entry.playerId, effect) : undefined;
   return {
     item,
     entry,
-    balance: current?.balance ?? 0,
+    balance: before?.balance ?? 0,
     ...(effect && { effect }),
     alreadyApplied: true,
+    ...(used !== undefined && { used }),
   };
 }

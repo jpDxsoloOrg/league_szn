@@ -44,6 +44,16 @@ beforeEach(() => {
 // --- getTournaments ---
 
 describe('getTournaments', () => {
+  it('never says which GM booked an injured player (INJ-06)', async () => {
+    await repos.competition.tournaments.create({
+      tournamentId: 't1', name: 'Cup', createdAt: '2024-01-01T00:00:00Z',
+      injuryOverrides: [{ playerId: 'p1', by: 'gm-sub', at: '2024-01-01T00:00:00Z' }],
+    } as Record<string, unknown>);
+
+    const body = JSON.parse((await getTournaments(makeEvent(), ctx, cb))!.body);
+    expect(body[0].injuryOverrides).toEqual([{ playerId: 'p1', at: '2024-01-01T00:00:00Z' }]);
+  });
+
   it('returns all tournaments sorted by createdAt descending', async () => {
     await repos.competition.tournaments.create({
       tournamentId: 't1', name: 'Old Tournament', createdAt: '2024-01-01T00:00:00Z',

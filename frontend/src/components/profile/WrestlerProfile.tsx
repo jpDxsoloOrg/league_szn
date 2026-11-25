@@ -8,6 +8,8 @@ import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { WRESTLER_NAME_ENTRY_MODE } from '../../config/wrestlerNameEntry';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
 import DisciplineNotice from '../discipline/DisciplineNotice';
+import InjuryHistory from '../injuries/InjuryHistory';
+import StaminaSection from '../injuries/StaminaSection';
 import CallUpProgress from '../progression/CallUpProgress';
 import ConsiderationBanner from '../progression/ConsiderationBanner';
 import DivisionHistory from '../progression/DivisionHistory';
@@ -218,6 +220,9 @@ export default function WrestlerProfile() {
 
           <div hidden={tab !== 'overview'}>
             <RecordSummary record={player} />
+            {/* INJ-12: own stamina meter and injury history. */}
+            {player.playerId && <StaminaSection playerId={player.playerId} canView />}
+            {player.playerId && <InjuryHistory playerId={player.playerId} />}
             <CallUpProgress playerId={player.playerId} />
             <DivisionProgress playerId={player.playerId} viewer="owner" />
             <DivisionHistory playerId={player.playerId} />

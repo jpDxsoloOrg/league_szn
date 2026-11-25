@@ -251,6 +251,8 @@ export default function MatchSimulator() {
             category={result.category}
             winnerSideId={result.winnerSideId}
             specialtyHits={result.specialtyHits}
+            conditions={result.conditions}
+            boosts={result.boosts}
             playByPlay={result.playByPlay}
             seed={result.seed}
           />

@@ -36,10 +36,16 @@ import { leagueWeekOf } from '../../lib/leagueWeek';
 import { ledgerSortKey, type LedgerEntry, type LedgerIdempotencyRecord } from '../../lib/repositories/ledger';
 import { gmInterferenceChargeKey, type GmInterferenceRequest } from '../../lib/repositories/gmInterference';
 
+// INJ-13
+import { DEFAULT_INJURY_TUNABLES, appendInjuryTunablesVersion, toInjuryTunablesInput } from '../../lib/policies/fatigueDefaults';
+import { injuryChance, matchDrain, returnDate } from '../../lib/policies/fatigue';
+import type { Injury } from '../../lib/repositories/injuries';
+
 import type { Rivalry, RivalryHeat, RivalryStatus } from '../../lib/repositories';
 import type {
   Contract,
   Match,
+  MatchConditionEntry,
   MatchSimulation,
   Player,
   PlayerProgression,
@@ -1182,6 +1188,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
           statistics: true,
           // ECO-15: the seed demonstrates the economy, so it starts switched on.
           economy: true,
+          // INJ-13: and stamina and injuries, so the seeded injuries show.
+          injuries: true,
         },
         updatedAt: now,
       },
@@ -2328,12 +2336,153 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     const withEconomy = <TPlayer extends { playerId: string }>(player: TPlayer): TPlayer =>
       ({ ...player, ...economyPatches.get(player.playerId) });
 
+    // ── Stamina & injuries (INJ-13) ──────────────────────────────
+    // The `injuries` flag is switched on in Site Config above, and the default
+    // tunables are stored as version 1. Fixed values, so every seed shows the
+    // same condition:
+    //   Undertaker   → exhausted after eight bouts in three days
+    //   John Cena    → low stamina
+    //   CM Punk      → hurt in his latest bout (moderate, two weeks), with the
+    //                  staff condition report on that match, and still booked
+    //                  in a scheduled match during the injury
+    //   Roman Reigns → a storyline injury a GM put on, then extended (change log)
+    //   Edge         → an old injury he recovered from (history only)
+    //   Stone Cold   → fit, with the injury shield he bought (ECO-15 above)
+    console.log('Creating stamina, injuries and the injury settings...');
+    const injuryActor = 'seed-script';
+    const injuryVersions = appendInjuryTunablesVersion([], toInjuryTunablesInput(DEFAULT_INJURY_TUNABLES), injuryActor, now);
+    const injuryTunables = injuryVersions[0];
+    siteConfigItems.push({
+      configKey: 'injuryTunables',
+      currentVersion: injuryTunables.version,
+      versions: injuryVersions,
+      updatedAt: now,
+    });
+    const injuryCategory: SimCategory = 'standard';
+    const tripleH = players[3];
+    const conditionPatches = new Map<string, Pick<Player, 'stamina' | 'currentInjury'>>();
+    const seededStamina: Array<[string, number]> = [
+      [undertaker.playerId, 6],
+      [cena.playerId, 32],
+      [tripleH.playerId, 48],
+      [theRock.playerId, 55],
+      [stoneCold.playerId, 70],
+      [edge.playerId, 85],
+      [punk.playerId, 18],
+    ];
+    for (const [playerId, stamina] of seededStamina) conditionPatches.set(playerId, { stamina });
+    const injuryRows: Injury[] = [];
+    const injuryMatches: Match[] = [];
+
+    // CM Punk: injured in his latest bout, a loss to Triple H.
+    const punkLatestBout = boutsOf(punk.playerId).at(-1);
+    if (punkLatestBout) {
+      const drainOf = (player: (typeof players)[number]): number => {
+        const division = divisions.find((candidate) => candidate.divisionId === player.divisionId);
+        const endurance = toPlayerBuildView(player, division).effective.stats.endurance;
+        return matchDrain({ category: injuryCategory, format: 'singles', endurance }, injuryTunables);
+      };
+      const injuredAt = minutesAfter(punkLatestBout.date, 30);
+      const weeks = 2;
+      const returnsAt = returnDate(injuredAt, weeks, injuryTunables.timezone).toISOString();
+      const injuryId = uuidv4();
+      const punkAfter = conditionPatches.get(punk.playerId)?.stamina ?? injuryTunables.maxStamina;
+      const punkDrain = drainOf(punk);
+      // Triple H fought once more after this bout, so he has drained twice since.
+      const tripleHDrain = drainOf(tripleH);
+      const tripleHAfter = Math.min(injuryTunables.maxStamina, (conditionPatches.get(tripleH.playerId)?.stamina ?? 0) + tripleHDrain);
+      const conditionReport: MatchConditionEntry[] = [
+        {
+          playerId: tripleH.playerId,
+          staminaBefore: Math.min(injuryTunables.maxStamina, tripleHAfter + tripleHDrain),
+          staminaAfter: tripleHAfter,
+          drain: tripleHDrain,
+          chance: injuryChance(tripleHAfter, injuryCategory, injuryTunables),
+          roll: 0.6184,
+        },
+        {
+          playerId: punk.playerId,
+          staminaBefore: Math.min(injuryTunables.maxStamina, punkAfter + punkDrain),
+          staminaAfter: punkAfter,
+          drain: punkDrain,
+          chance: injuryChance(punkAfter, injuryCategory, injuryTunables),
+          roll: 0.0712,
+          injuryId,
+          severity: 'moderate',
+          weeks,
+          returnsAt,
+        },
+      ];
+      punkLatestBout.conditionReport = conditionReport;
+      punkLatestBout.tunablesVersion = injuryTunables.version;
+      injuryRows.push({
+        playerId: punk.playerId, startedAt: injuredAt, injuryId, source: 'match', severity: 'moderate',
+        weeks, returnsAt, matchId: punkLatestBout.matchId, changes: [],
+      });
+      conditionPatches.set(punk.playerId, {
+        stamina: punkAfter,
+        currentInjury: {
+          injuryId, startedAt: injuredAt, returnsAt, severity: 'moderate', weeks,
+          matchId: punkLatestBout.matchId, source: 'match',
+        },
+      });
+
+      // Booked before he got hurt, so the GMs see the injured-participant warning.
+      const bookedAt = daysAgo(2).toISOString();
+      injuryMatches.push({
+        matchId: uuidv4(),
+        date: daysFromNow(3).toISOString(),
+        matchFormat: 'singles',
+        participants: [punk.playerId, bret.playerId],
+        isChampionship: false,
+        seasonId: season.seasonId,
+        status: 'scheduled',
+        ratingsCount: 0,
+        createdAt: bookedAt,
+        updatedAt: bookedAt,
+      });
+    }
+
+    // Roman Reigns: a storyline injury, first two weeks, then extended to three.
+    {
+      const startedAt = daysAgo(3).toISOString();
+      const firstReturn = returnDate(startedAt, 2, injuryTunables.timezone).toISOString();
+      const returnsAt = returnDate(startedAt, 3, injuryTunables.timezone).toISOString();
+      const injuryId = uuidv4();
+      const note = 'Taken out in the backstage attack. Out while the angle plays out.';
+      injuryRows.push({
+        playerId: roman.playerId, startedAt, injuryId, source: 'storyline', severity: 'major', weeks: 3, returnsAt,
+        note, createdBy: injuryActor,
+        changes: [{
+          kind: 'extended', at: daysAgo(1).toISOString(), by: injuryActor,
+          note: 'Extending to build the return for the next big show.',
+          returnsAtBefore: firstReturn, returnsAtAfter: returnsAt, weeksBefore: 2, weeksAfter: 3,
+        }],
+      });
+      conditionPatches.set(roman.playerId, {
+        currentInjury: { injuryId, startedAt, returnsAt, severity: 'major', weeks: 3, source: 'storyline', note },
+      });
+    }
+
+    // Edge: a minor injury from a month ago, ended by the weekly recovery.
+    {
+      const startedAt = daysAgo(30).toISOString();
+      const returnsAt = returnDate(startedAt, 1, injuryTunables.timezone).toISOString();
+      injuryRows.push({
+        playerId: edge.playerId, startedAt, injuryId: uuidv4(), source: 'storyline', severity: 'minor', weeks: 1,
+        returnsAt, note: 'Sold a knee injury after the ladder spot.', createdBy: injuryActor,
+        endedAt: returnsAt, endedReason: 'recovered', changes: [],
+      });
+    }
+    const withCondition = <TPlayer extends { playerId: string }>(player: TPlayer): TPlayer =>
+      ({ ...player, ...conditionPatches.get(player.playerId) });
+
     // ── Import all data via repository layer ───────────────────
     console.log('Importing all seed data via repository layer...');
     const { importAllData } = getRepositories();
     const seedData: Required<ExportData> = {
       divisions,
-      players: [...players.map(withEconomy), ...prospects.map((prospect) => ({ ...prospect }))],
+      players: [...players.map((player) => withCondition(withEconomy(player))), ...prospects.map((prospect) => ({ ...prospect }))],
       seasons: [season, pilotSeason],
       seasonStandings: [...seasonStandingsItems, ...pilotStandings.map((row) => ({ ...row }))],
       championships,
@@ -2344,6 +2493,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         ...youngBoysMatches.map((match) => ({ ...match })),
         ...ladderMatches.map((match) => ({ ...match })),
         ...simulatedMatches.map((match) => ({ ...match })),
+        // INJ-13
+        ...injuryMatches.map((match) => ({ ...match })),
       ],
       tagTeams,
       tournaments,
@@ -2373,6 +2524,9 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       ledgerIdempotency: ledgerIdempotency.map((row) => ({ ...row })),
       gmInterference: gmInterferenceRequests.map((request) => ({ ...request })),
       contracts: contracts.map((contract) => ({ ...contract })),
+
+      // INJ-03, INJ-13: the seeded injuries; replaces any stale injury rows.
+      injuries: injuryRows.map((row) => ({ ...row })),
     };
 
     const createdCounts = await importAllData(seedData);

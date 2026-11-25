@@ -6,6 +6,13 @@ import {
   type EconomySettings,
   type EconomySettingsInput,
 } from '../../policies/economyDefaults';
+// INJ-01
+import {
+  appendInjuryTunablesVersion,
+  mergeInjuryTunables,
+  type InjuryTunables,
+  type InjuryTunablesInput,
+} from '../../policies/fatigueDefaults';
 import type { FeatureFlags, RivalryHeatTunables, TickerSettings } from '../SiteConfigRepository';
 import { DEFAULT_FEATURES, DEFAULT_HEAT_TUNABLES, mergeTickerSettings } from '../SiteConfigRepository';
 import type {
@@ -410,6 +417,31 @@ class SiteConfigImpl implements SiteConfigMethods {
 
   async listEconomySettingsVersions(): Promise<EconomySettings[]> {
     return this.economyVersions.map((version) => mergeEconomySettings(version));
+  }
+
+  // INJ-01
+  /** Saved injury tunables versions, newest first. */
+  injuryVersions: InjuryTunables[] = [];
+
+  async getInjuryTunables(): Promise<InjuryTunables> {
+    return mergeInjuryTunables(this.injuryVersions[0]);
+  }
+
+  async saveInjuryTunables(
+    input: InjuryTunablesInput,
+    updatedBy: string,
+    expectedVersion?: number,
+  ): Promise<InjuryTunables> {
+    const currentVersion = this.injuryVersions[0]?.version ?? 0;
+    if (expectedVersion !== undefined && expectedVersion !== currentVersion) {
+      throw new ConflictError(`Injury settings are at version ${currentVersion}, not ${expectedVersion}`);
+    }
+    this.injuryVersions = appendInjuryTunablesVersion(this.injuryVersions, input, updatedBy, new Date().toISOString());
+    return this.getInjuryTunables();
+  }
+
+  async listInjuryTunablesVersions(): Promise<InjuryTunables[]> {
+    return this.injuryVersions.map((version) => mergeInjuryTunables(version));
   }
 }
 

@@ -126,6 +126,18 @@ describe('claimSlot', () => {
     expect(patch).not.toHaveProperty('updatedAt');
   });
 
+  it('does not tell a wrestler which GM overrode an injury on the match (INJ-06)', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch({
+      injuryOverrides: [{ playerId: 'p-other', by: 'gm-sub', at: '2024-05-30T00:00:00Z' }],
+    }));
+    captureTx();
+
+    const r = await claimSlot(ev(), ctx, cb);
+
+    expect(r!.statusCode).toBe(200);
+    expect(JSON.parse(r!.body).injuryOverrides).toEqual([{ playerId: 'p-other', at: '2024-05-30T00:00:00Z' }]);
+  });
+
   it('flips status to scheduled when claiming the last open slot', async () => {
     mockMatchesFindByIdWithDate.mockResolvedValue(
       makeMatch({

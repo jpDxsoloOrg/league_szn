@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Match } from '../../../types';
 import type { PlayerEffect } from '../../../services/api/shop.api';
-import { boostableMatches, formatMoney, shopBlockReason, type ShopContext } from '../shopItems';
+import { boostableMatches, formatMoney, injuryWeeksLeft, shopBlockReason, type ShopContext } from '../shopItems';
 import { activeNoShow, canMarkNoShow } from '../noShowRules';
 import { splitFines } from '../economyDisplay';
 
@@ -41,10 +41,15 @@ const match = (overrides: Partial<Match>): Match => ({
 });
 
 describe('shopBlockReason', () => {
-  it('lists items waiting on ECO-10 as coming soon by default', () => {
-    expect(shopBlockReason('injuryShield', context({ pendingItems: undefined }))).toBe('comingSoon');
-    expect(shopBlockReason('simInterference', context({ pendingItems: undefined }))).toBe('comingSoon');
-    expect(shopBlockReason('gmInterference', context({ pendingItems: undefined }))).toBeNull();
+  it('sells every item by default now that their effects work (ECO-10)', () => {
+    expect(shopBlockReason('injuryShield', context({ pendingItems: undefined }))).toBeNull();
+    expect(shopBlockReason('staminaTopUp', context({ pendingItems: undefined }))).toBeNull();
+    expect(shopBlockReason('simInterference', context({ pendingItems: undefined }))).toBeNull();
+    expect(shopBlockReason('rehab', context({ pendingItems: undefined, injuryWeeksLeft: 3 }))).toBeNull();
+  });
+
+  it('still lists an item in the pending set as coming soon', () => {
+    expect(shopBlockReason('injuryShield', context({ pendingItems: new Set(['injuryShield']) }))).toBe('comingSoon');
   });
 
   it('locks every item while the player is in debt', () => {
@@ -65,8 +70,23 @@ describe('shopBlockReason', () => {
   it('needs an injury for rehab, a match for a boost and no open GM request', () => {
     expect(shopBlockReason('rehab', context())).toBe('noActiveInjury');
     expect(shopBlockReason('rehab', context({ injuryWeeksLeft: 3 }))).toBeNull();
+    expect(shopBlockReason('rehab', context({ injuryWeeksLeft: 1 }))).toBe('injuryTooShort');
     expect(shopBlockReason('simInterference', context({ boostableMatchCount: 0 }))).toBe('noScheduledMatch');
     expect(shopBlockReason('gmInterference', context({ hasPendingRequest: true }))).toBe('requestPending');
+  });
+});
+
+describe('injuryWeeksLeft', () => {
+  const now = new Date('2026-11-24T12:00:00Z');
+
+  it('rounds the time left up to whole weeks', () => {
+    expect(injuryWeeksLeft('2026-12-06T05:00:00Z', now)).toBe(2);
+    expect(injuryWeeksLeft('2026-11-29T05:00:00Z', now)).toBe(1);
+  });
+
+  it('is null with no injury or one that is over', () => {
+    expect(injuryWeeksLeft(undefined, now)).toBeNull();
+    expect(injuryWeeksLeft('2026-11-22T05:00:00Z', now)).toBeNull();
   });
 });
 

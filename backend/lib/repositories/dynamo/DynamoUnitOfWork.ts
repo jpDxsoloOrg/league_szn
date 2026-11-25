@@ -13,6 +13,19 @@ import type { ChallengeStatus, PlayerProgression, ProgressionConsideration, Prog
 import type { Contract, ContractPatch, ContractStatus } from '../types';
 import { buildContractUpdate } from './contractRows';
 import type { GmInterferenceRequest, GmInterferenceResolution } from '../gmInterference'; // ECO-09
+// INJ-03
+import {
+  InvalidInjuryWriteError,
+  injuryRowId,
+  validateInjury,
+  validateInjuryPatch,
+  validatePlayerConditionPatch,
+  removesEffect, // ECO-10
+  type Injury,
+  type InjuryPatch,
+  type PlayerConditionGuard,
+  type PlayerConditionPatch,
+} from '../injuries';
 import {
   buildClearConsiderationUpdate,
   buildSetConsiderationUpdate,
@@ -80,6 +93,11 @@ export class DynamoUnitOfWork implements UnitOfWork {
   // Ledger postings (ECO-02) are turned into items at commit, once the
   // starting balances have been read.
   private ledgerPostings: StagedLedgerPosting[] = [];
+
+  // INJ-03: condition writes are turned into items at commit, merged into the
+  // player's record increment when there is one (one operation per item).
+  private conditionWrites = new Map<string, { patch: PlayerConditionPatch; guard?: PlayerConditionGuard }>();
+  private recordIncrementIndex = new Map<string, number>();
 
   /** Attach metadata to the item most recently pushed onto `staged`. */
   private tagLastStaged(meta: StagedMeta): void {
@@ -178,6 +196,7 @@ export class DynamoUnitOfWork implements UnitOfWork {
         ExpressionAttributeValues: values,
       },
     });
+    this.recordIncrementIndex.set(playerId, this.staged.length - 1); // INJ-03
   }
 
   clearPlayerField(playerId: string, field: string): void {
@@ -1003,6 +1022,178 @@ export class DynamoUnitOfWork implements UnitOfWork {
     this.tagLastStaged({ kind: 'guarded', entityName: 'GmInterference', id: requestId });
   }
 
+  // ── Stamina & injuries (INJ-03) ──────────────────────────────────
+  updatePlayerCondition(playerId: string, patch: PlayerConditionPatch, guard?: PlayerConditionGuard): void {
+    validatePlayerConditionPatch(patch);
+    if (this.conditionWrites.has(playerId)) {
+      throw new InvalidInjuryWriteError(`Player ${playerId} already has a condition write in this unit of work`);
+    }
+    this.conditionWrites.set(playerId, {
+      patch: structuredClone(patch),
+      ...(guard && { guard: { ...guard } }),
+    });
+  }
+
+  /**
+   * Turn the staged condition writes into items: merged into the player's
+   * record increment when this unit of work has one, else a write of its own.
+   */
+  private stageConditionWrites(): void {
+    for (const [playerId, { patch, guard }] of this.conditionWrites) {
+      const incrementIdx = this.recordIncrementIndex.get(playerId);
+      const otherWrite = this.staged.some((item, idx) => {
+        if (idx === incrementIdx) return false;
+        const op = item.Update ?? item.Put ?? item.Delete;
+        if (!op || op.TableName !== TableNames.PLAYERS) return false;
+        const key = item.Put ? item.Put.Item : (op as { Key: Record<string, unknown> }).Key;
+        return key.playerId === playerId;
+      });
+      if (otherWrite) {
+        throw new InvalidInjuryWriteError(
+          `Player ${playerId} has a condition write and another player write in the same unit of work`,
+        );
+      }
+
+      const names: Record<string, string> = {};
+      const values: Record<string, unknown> = {};
+      const sets: string[] = [];
+      const removes: string[] = [];
+      const guards: string[] = [];
+      if (patch.stamina !== undefined) {
+        names['#condStamina'] = 'stamina';
+        values[':condStamina'] = patch.stamina;
+        sets.push('#condStamina = :condStamina');
+      }
+      if (patch.currentInjury !== undefined) {
+        names['#condInjury'] = 'currentInjury';
+        if (patch.currentInjury === null) {
+          removes.push('#condInjury');
+        } else {
+          values[':condInjury'] = patch.currentInjury;
+          sets.push('#condInjury = :condInjury');
+        }
+      }
+      // ECO-10: use up or count down one shop effect, guarded on its position.
+      if (patch.useEffect !== undefined) {
+        const { effectId, index, matchesLeft } = patch.useEffect;
+        const effectPath = `#condEffects[${index}]`;
+        names['#condEffects'] = 'effects';
+        names['#condEffectId'] = 'effectId';
+        values[':condEffectId'] = effectId;
+        guards.push(`${effectPath}.#condEffectId = :condEffectId`);
+        if (matchesLeft !== undefined) {
+          names['#condMatchesLeft'] = 'matchesLeft';
+          values[':condMatchesLeftBefore'] = matchesLeft.before;
+          guards.push(`${effectPath}.#condMatchesLeft = :condMatchesLeftBefore`);
+        }
+        if (removesEffect(patch.useEffect)) {
+          removes.push(effectPath);
+        } else {
+          values[':condMatchesLeftAfter'] = matchesLeft!.after;
+          sets.push(`${effectPath}.#condMatchesLeft = :condMatchesLeftAfter`);
+        }
+      }
+
+      if (guard?.stamina !== undefined) {
+        names['#condStamina'] = 'stamina';
+        if (guard.stamina === null) {
+          guards.push('attribute_not_exists(#condStamina)');
+        } else {
+          values[':condExpectedStamina'] = guard.stamina;
+          guards.push('#condStamina = :condExpectedStamina');
+        }
+      }
+      if (guard?.currentInjuryId !== undefined) {
+        names['#condInjury'] = 'currentInjury';
+        if (guard.currentInjuryId === null) {
+          guards.push('attribute_not_exists(#condInjury)');
+        } else {
+          names['#condInjuryId'] = 'injuryId';
+          values[':condExpectedInjuryId'] = guard.currentInjuryId;
+          guards.push('#condInjury.#condInjuryId = :condExpectedInjuryId');
+        }
+      }
+
+      if (incrementIdx !== undefined) {
+        // The increment's expression is `SET ...`; add to it.
+        const update = this.staged[incrementIdx].Update!;
+        update.UpdateExpression = [
+          sets.length > 0 ? `${update.UpdateExpression}, ${sets.join(', ')}` : update.UpdateExpression,
+          ...(removes.length > 0 ? [`REMOVE ${removes.join(', ')}`] : []),
+        ].join(' ');
+        update.ExpressionAttributeNames = { ...(update.ExpressionAttributeNames ?? {}), ...names };
+        update.ExpressionAttributeValues = { ...(update.ExpressionAttributeValues ?? {}), ...values };
+        if (guards.length > 0) {
+          update.ConditionExpression = `${update.ConditionExpression} AND ${guards.join(' AND ')}`;
+          this.stagedMeta[incrementIdx] = { kind: 'guarded', entityName: 'Player', id: playerId };
+        }
+        continue;
+      }
+
+      names['#condUpdatedAt'] = 'updatedAt';
+      names['#condPlayerId'] = 'playerId';
+      names['#condDeletedAt'] = 'deletedAt';
+      values[':condUpdatedAt'] = new Date().toISOString();
+      sets.push('#condUpdatedAt = :condUpdatedAt');
+      this.staged.push({
+        Update: {
+          TableName: TableNames.PLAYERS,
+          Key: { playerId },
+          UpdateExpression: [`SET ${sets.join(', ')}`, ...(removes.length > 0 ? [`REMOVE ${removes.join(', ')}`] : [])].join(' '),
+          ExpressionAttributeNames: names,
+          ExpressionAttributeValues: values,
+          ConditionExpression: ['attribute_exists(#condPlayerId)', 'attribute_not_exists(#condDeletedAt)', ...guards].join(' AND '),
+        },
+      });
+      this.tagLastStaged({ kind: 'guarded', entityName: 'Player', id: playerId });
+    }
+    this.conditionWrites.clear();
+  }
+
+  putInjury(injury: Injury): void {
+    validateInjury(injury);
+    this.staged.push({
+      Put: {
+        TableName: TableNames.INJURIES,
+        Item: structuredClone(injury) as unknown as Record<string, unknown>,
+        ConditionExpression: 'attribute_not_exists(playerId)',
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'Injury', id: injuryRowId(injury.playerId, injury.startedAt) });
+  }
+
+  updateInjury(playerId: string, startedAt: string, patch: InjuryPatch): void {
+    validateInjuryPatch(patch);
+    const names: Record<string, string> = { '#playerId': 'playerId', '#endedAt': 'endedAt' };
+    const values: Record<string, unknown> = {};
+    const sets: string[] = [];
+    const { appendChanges, ...fields } = patch;
+    for (const [field, value] of Object.entries(fields)) {
+      if (value === undefined) continue;
+      names[`#${field}`] = field;
+      values[`:${field}`] = value;
+      sets.push(`#${field} = :${field}`);
+    }
+    if (appendChanges?.length) {
+      names['#changes'] = 'changes';
+      values[':appendChanges'] = structuredClone(appendChanges);
+      values[':noChanges'] = [];
+      sets.push('#changes = list_append(if_not_exists(#changes, :noChanges), :appendChanges)');
+    }
+    if (sets.length === 0) throw new InvalidInjuryWriteError('An injury update needs at least one change');
+    this.staged.push({
+      Update: {
+        TableName: TableNames.INJURIES,
+        Key: { playerId, startedAt },
+        UpdateExpression: `SET ${sets.join(', ')}`,
+        ConditionExpression: 'attribute_exists(#playerId) AND attribute_not_exists(#endedAt)',
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: values,
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'Injury', id: injuryRowId(playerId, startedAt) });
+  }
+
   // ── Contracts (ECO-03) ───────────────────────────────────────────
   createContract(contract: Contract): void {
     this.staged.push({
@@ -1072,6 +1263,9 @@ export class DynamoUnitOfWork implements UnitOfWork {
     if (this.committed) throw new Error('UnitOfWork already committed');
     this.committed = true;
 
+    // INJ-03: before the ledger, whose same-player check must see these.
+    this.stageConditionWrites();
+
     // Pad stagedMeta so it stays index-aligned with staged. Only guarded
     // items, ratings and idempotency rows carry meta; everything else needs
     // an `undefined` placeholder.
@@ -1125,6 +1319,7 @@ export class DynamoUnitOfWork implements UnitOfWork {
     this.staged = [];
     this.stagedMeta = [];
     this.ledgerPostings = [];
+    this.conditionWrites.clear(); // INJ-03
     this.committed = true;
     return Promise.resolve();
   }

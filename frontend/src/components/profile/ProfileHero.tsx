@@ -8,6 +8,7 @@ import type { FormResult } from '../ui/FormDots';
 import type { TileAccent } from '../ui/PhotoTile';
 import type { Player } from '../../types';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
+import InjuryBadge from '../injuries/InjuryBadge';
 
 const ALIGNMENT_TONES: Record<NonNullable<Player['alignment']>, BadgeTone> = {
   face: 'primary',
@@ -87,6 +88,8 @@ export default function ProfileHero({ player, details = [], actions, card }: Pro
         {player.alignment && (
           <Badge tone={ALIGNMENT_TONES[player.alignment]}>{t(`profile.mobile.${player.alignment}`)}</Badge>
         )}
+        {/* INJ-12: public, hidden while the injuries feature is off. */}
+        <InjuryBadge injury={player.currentInjury} />
         {lines.length > 0 && (
           <dl className="profile-hero__details">
             {lines.map((line) => (

@@ -1,0 +1,68 @@
+/* Stamina meter (INJ-12). The tone follows the injury-chance band. */
+.stamina-meter {
+  --stamina-fill: var(--color-win);
+  --stamina-track: var(--color-overlay-soft);
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.stamina-meter--mid {
+  --stamina-fill: var(--color-warn);
+}
+
+.stamina-meter--low {
+  --stamina-fill: var(--color-loss);
+}
+
+.stamina-meter__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+.stamina-meter__label {
+  color: var(--color-text-muted);
+  font-size: var(--text-dense);
+}
+
+.stamina-meter__value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.stamina-meter__bar {
+  width: 100%;
+  height: 0.5rem;
+  overflow: hidden;
+  border: none;
+  border-radius: var(--radius-pill);
+  appearance: none;
+  background-color: var(--stamina-track);
+}
+
+.stamina-meter__bar::-webkit-progress-bar {
+  background-color: var(--stamina-track);
+}
+
+.stamina-meter__bar::-webkit-progress-value {
+  background-color: var(--stamina-fill);
+}
+
+.stamina-meter__bar::-moz-progress-bar {
+  background-color: var(--stamina-fill);
+}
+
+.stamina-meter__line {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-dense);
+  overflow-wrap: anywhere;
+}
+
+.stamina-meter__line--injury {
+  color: var(--color-warn);
+}

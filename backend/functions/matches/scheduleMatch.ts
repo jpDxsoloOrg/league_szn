@@ -2,12 +2,14 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
 import { getRepositories } from '../../lib/repositories';
 import type { Championship, MatchDesignation, MatchCardEntry, MatchSlot, MatchStatus } from '../../lib/repositories/types';
-import { created, badRequest, notFound, refused, serverError, error as errorResponse, type RefusalCode } from '../../lib/response';
+import { created, badRequest, notFound, refused, serverError, error as errorResponse, type RefusalCode, type RefusalExtra } from '../../lib/response';
 import { createNotifications } from '../../lib/notifications';
 import { parseBody } from '../../lib/parseBody';
 import { CHALLENGE_NEEDS_CHAMPION_MESSAGE, championIsOnASide, titleFormatError } from '../../lib/challengeTitle';
 import { findPromoChallenge, followCounters } from '../../lib/callOutChallenge';
 import { bookingRefusal } from '../../lib/discipline';
+import { checkInjuryGate, staffInjuryOverride, type InjuryOverrideActor, type InjuryWarning } from '../../lib/injuries/bookingGate';
+import type { InjuryOverride } from '../../lib/repositories/types';
 
 /** The frontend matches this wording to show its translation, in ScheduleMatch.tsx. */
 export const ALREADY_BOOKED_MESSAGE = 'This call-out or challenge already has a match booked';
@@ -39,6 +41,8 @@ export interface ScheduleMatchInput {
   promoId?: string;
   /** Optional pointer to the rivalry this match advances (RIV-06). */
   rivalryId?: string;
+  /** INJ-06: staff books injured players anyway. Ignored for anyone else. */
+  allowInjured?: boolean;
 }
 
 export interface ScheduleMatchResult {
@@ -59,7 +63,17 @@ export interface ScheduleMatchResult {
   promoId?: string;
   rivalryId?: string;
   status: MatchStatus;
+  /** INJ-06: injured players booked with `allowInjured`. Stored on the match. */
+  injuryOverrides?: InjuryOverride[];
+  /** INJ-06: one per overridden injury. In the response only, not stored. */
+  injuryWarnings?: InjuryWarning[];
   createdAt: string;
+}
+
+/** Options the HTTP handler resolves from the caller. */
+export interface ScheduleMatchOptions {
+  /** INJ-06: set when a staff caller sent `allowInjured: true`. */
+  injuryOverride?: InjuryOverrideActor | null;
 }
 
 /**
@@ -71,12 +85,15 @@ export class ScheduleMatchError extends Error {
   public readonly statusCode: number;
   /** Set when the frontend should translate the error by code. */
   public readonly code?: RefusalCode;
+  /** Details sent beside `code`, e.g. the injured player and their return date. */
+  public readonly extra?: RefusalExtra;
 
-  constructor(statusCode: number, message: string, code?: RefusalCode) {
+  constructor(statusCode: number, message: string, code?: RefusalCode, extra?: RefusalExtra) {
     super(message);
     this.name = 'ScheduleMatchError';
     this.statusCode = statusCode;
     this.code = code;
+    this.extra = extra;
   }
 }
 
@@ -92,6 +109,7 @@ export class ScheduleMatchError extends Error {
  */
 export async function scheduleMatchInternal(
   input: ScheduleMatchInput,
+  options: ScheduleMatchOptions = {},
 ): Promise<ScheduleMatchResult> {
   const repos = getRepositories();
   const { competition, roster, season: seasonAggregate, leagueOps, user, content, rivalries } = repos;
@@ -253,6 +271,19 @@ export async function scheduleMatchInternal(
     }
   }
 
+  // INJ-06: injured players are refused unless staff override, tournament
+  // entrants included: the GM decides whether an injured entrant still wrestles.
+  const injuryGate = await checkInjuryGate(
+    playerResults.map((result) => result.player),
+    { override: options.injuryOverride },
+  );
+  if (injuryGate.refusal) {
+    const { message, code, playerId, returnsAt } = JSON.parse(injuryGate.refusal.body) as {
+      message: string; code: RefusalCode; playerId?: string; returnsAt?: string;
+    };
+    throw new ScheduleMatchError(injuryGate.refusal.statusCode, message, code, { playerId, returnsAt });
+  }
+
   // Validate season exists and is active if provided
   if (input.seasonId) {
     const season = await seasonAggregate.seasons.findById(input.seasonId);
@@ -384,6 +415,7 @@ export async function scheduleMatchInternal(
   if (challengeId) match.challengeId = challengeId;
   if (promoId) match.promoId = promoId;
   if (resolvedRivalryId) match.rivalryId = resolvedRivalryId;
+  if (injuryGate.overrides.length > 0) match.injuryOverrides = injuryGate.overrides;
 
   await competition.matches.create(match);
 
@@ -443,7 +475,8 @@ export async function scheduleMatchInternal(
     await createNotifications(notificationParams);
   }
 
-  return match as unknown as ScheduleMatchResult;
+  const result = match as unknown as ScheduleMatchResult;
+  return injuryGate.warnings.length > 0 ? { ...result, injuryWarnings: injuryGate.warnings } : result;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -451,11 +484,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody<ScheduleMatchInput>(event);
     if (parseError) return parseError;
 
-    const result = await scheduleMatchInternal(body);
+    const result = await scheduleMatchInternal(body, {
+      injuryOverride: staffInjuryOverride(event, body.allowInjured),
+    });
     return created(result);
   } catch (err) {
     if (err instanceof ScheduleMatchError) {
-      if (err.code) return refused(err.statusCode, err.code, err.message);
+      if (err.code) return refused(err.statusCode, err.code, err.message, err.extra);
       if (err.statusCode === 400) return badRequest(err.message);
       if (err.statusCode === 404) return notFound(err.message);
       return errorResponse(err.statusCode, err.message);

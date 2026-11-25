@@ -449,6 +449,7 @@
       "seasons": "Saisons",
       "divisions": "Divisionen",
       "wrestlerBuilds": "Wrestler-Builds",
+      "staminaAndInjuries": "Ausdauer und Verletzungen",
       "championships": "Meisterschaften",
       "events": "Events & PPV",
       "tournaments": "Turniere",
@@ -466,6 +467,7 @@
       "adminQuickstart": "Admin: Schnellstart",
       "adminMatchConfig": "Admin: Match-Konfiguration",
       "adminMatchSimulator": "Admin: Match-Simulator",
+      "adminInjuries": "Admin: Verletzungen",
       "adminSeasonAwards": "Admin: Saison-Auszeichnungen",
       "adminUserManagement": "Admin: Benutzerverwaltung",
       "adminDivisions": "Admin: Divisionen",
@@ -498,6 +500,7 @@
       "adminQuickstart": "Schnellstart",
       "adminMatchConfig": "Match-Konfiguration",
       "adminMatchSimulator": "Match-Simulator",
+      "adminInjuries": "Verletzungen",
       "adminSeasonAwards": "Saison-Auszeichnungen",
       "adminUserManagement": "Benutzerverwaltung",
       "adminDivisions": "Divisionen",
@@ -923,7 +926,7 @@
         "shieldMatches": "Hält (Matches)",
         "weeksOff": "Wochen weniger Verletzungspause",
         "staminaAmount": "Zusätzliche Ausdauer",
-        "ratingBoost": "Rating-Bonus",
+        "ratingBoost": "Rating-Bonus (%)",
         "items": {
           "injuryShield": {
             "name": "Verletzungsschutz",
@@ -958,6 +961,141 @@
         "winBonuses": "Siegprämien",
         "total": "Summe der Saison",
         "incomplete": "Trag die Bedingungen des Saisonvertrags und die Zahlen oben ein, um eine Summe zu sehen."
+      }
+    },
+    "injuryConfig": {
+      "title": "Verletzungen & Ausdauer",
+      "subtitle": "Lege fest, wie viel Ausdauer Matches kosten, wie wahrscheinlich Verletzungen sind und wie lange sie dauern. Neue Würfe nutzen die zuletzt gespeicherte Version.",
+      "featureOff": "Verletzungen sind ausgeschaltet, Spieler sehen davon also noch nichts. Ein Admin kann sie in der Funktionsverwaltung einschalten.",
+      "readOnly": "Du kannst diese Einstellungen ansehen. Nur Admins können sie ändern.",
+      "loadFailed": "Die Verletzungseinstellungen konnten nicht geladen werden.",
+      "retry": "Erneut versuchen",
+      "reload": "Neu laden",
+      "version": "Version {{version}}, gespeichert von {{user}} am {{date}}.",
+      "notSaved": "Noch nicht gespeichert: Das sind die Startwerte.",
+      "fixErrors": "Korrigiere die markierten Einstellungen, bevor du speicherst.",
+      "saved": "Als Version {{version}} gespeichert.",
+      "conflict": "Jemand anderes hat diese Einstellungen gespeichert, nachdem du die Seite geöffnet hast. Lade neu, um die neue Version zu sehen, und nimm deine Änderungen dann noch einmal vor.",
+      "saveFailed": "Die Verletzungseinstellungen konnten nicht gespeichert werden",
+      "save": "Verletzungseinstellungen speichern",
+      "discard": "Änderungen verwerfen",
+      "remove": "Entfernen",
+      "problems": {
+        "integer": "Gib eine ganze Zahl von {{min}} bis {{max}} ein.",
+        "percent": "Gib einen Prozentwert von 0 bis 100 ein.",
+        "multiplier": "Gib eine Zahl über 0 und höchstens {{max}} ein.",
+        "weight": "Gib eine Gewichtung über 0 und höchstens {{max}} ein.",
+        "weeks": "Gib eine ganze Zahl an Wochen von {{min}} bis {{max}} ein.",
+        "weeksOrder": "Die maximalen Wochen dürfen nicht unter den minimalen liegen.",
+        "formatKey": "Gib dem Format einen Schlüssel mit 1 bis {{max}} Zeichen.",
+        "formatDuplicate": "Dieses Format ist schon aufgeführt.",
+        "formatCount": "Es sind höchstens {{max}} Formate möglich.",
+        "bandsOrder": "Ordne die Stufen von der höchsten Mindestausdauer zur niedrigsten, ohne Wiederholungen.",
+        "bandsLastZero": "Die letzte Stufe muss bei 0 Ausdauer beginnen, damit jeder Ausdauerwert eine Chance hat.",
+        "bandsCount": "Lege zwischen 1 und {{max}} Stufen an.",
+        "timezone": "Wähle eine Zeitzone aus der Liste."
+      },
+      "drain": {
+        "title": "Ausdauerverbrauch",
+        "description": "Ausdauer, die ein Einzelmatch jeden Teilnehmer kostet, je Sim-Kategorie und vor dem Endurance-Effekt.",
+        "maxStamina": "Maximale Ausdauer",
+        "enduranceReduction": "Endurance-Reduktion (%)",
+        "enduranceReductionHint": "Wie viel weniger ein Wrestler mit maximaler Endurance verliert. 0 schaltet den Endurance-Effekt aus.",
+        "perCategory": "Verbrauch pro Match"
+      },
+      "formats": {
+        "title": "Format-Multiplikatoren",
+        "description": "Der Verbrauch wird je Matchformat mit diesem Wert multipliziert. Nicht aufgeführte Formate nutzen 1.",
+        "key": "Format",
+        "multiplier": "Multiplikator",
+        "removeNamed": "Format {{number}} entfernen",
+        "add": "Format hinzufügen",
+        "names": {
+          "singles": "Einzelmatch",
+          "tag": "Tag Team",
+          "multiPerson": "Mehrpersonen",
+          "battleRoyal": "Battle Royal"
+        }
+      },
+      "bands": {
+        "title": "Verletzungschance nach Ausdauer",
+        "description": "Chance auf eine Verletzung in einem Match, je nach Ausdauer danach. Ein Wrestler nutzt die erste Stufe, deren Minimum er erreicht, von oben nach unten; die letzte Stufe beginnt bei 0.",
+        "minStamina": "Mindestausdauer",
+        "chance": "Verletzungschance (%)",
+        "removeNamed": "Stufe {{number}} entfernen",
+        "add": "Stufe hinzufügen"
+      },
+      "risk": {
+        "title": "Kategorierisiko",
+        "description": "Die Chance der Stufe wird je Sim-Kategorie mit diesem Wert multipliziert, bis höchstens 95 %."
+      },
+      "severities": {
+        "title": "Schweregrad",
+        "description": "Bei einer Verletzung wird der Schweregrad nach Gewichtung gewählt, dann werden die Ausfallwochen zwischen Minimum und Maximum gezogen.",
+        "share": "({{share}} der Verletzungen)",
+        "weight": "Gewichtung",
+        "minWeeks": "Min. Wochen",
+        "maxWeeks": "Max. Wochen",
+        "shift": "Verschiebung bei wenig Ausdauer (Ausdauer)",
+        "shiftHint": "Unter diesem Ausdauerwert fallen Verletzungen eher schwerer aus.",
+        "names": {
+          "minor": "Leicht",
+          "moderate": "Mittel",
+          "major": "Schwer"
+        }
+      },
+      "recovery": {
+        "title": "Wöchentliche Erholung",
+        "description": "Ausdauer kommt jeden Sonntag um Mitternacht in der Zeitzone der Liga zurück.",
+        "mode": "Jede Woche",
+        "full": "Wieder voll",
+        "amount": "Festen Wert hinzufügen",
+        "amountLabel": "Ausdauer pro Woche",
+        "timezone": "Zeitzone der Liga",
+        "timezoneSearch": "Zeitzonen durchsuchen...",
+        "timezoneHint": "Legt auch fest, wann die Ligawoche für Gehälter und andere wöchentliche Abläufe beginnt."
+      },
+      "sim": {
+        "title": "Abzüge im Match-Sim",
+        "description": "Wie stark Müdigkeit und Verletzungen das Rating eines Teilnehmers in einem simulierten Match senken.",
+        "staminaFloor": "Rating bei 0 Ausdauer (%)",
+        "staminaFloorHint": "100 % bei voller Ausdauer, sinkt bis auf diesen Wert bei 0.",
+        "injuredPenalty": "Rating bei Verletzung (%)",
+        "injuredPenaltyHint": "Gilt zusätzlich zum Ausdauereffekt, wenn ein verletzter Wrestler trotzdem gebucht wird."
+      },
+      "preview": {
+        "title": "Match-Vorschau",
+        "description": "Nutzt die Einstellungen auf dieser Seite, gespeichert oder nicht.",
+        "category": "Sim-Kategorie",
+        "format": "Format",
+        "stamina": "Ausdauer vorher",
+        "endurance": "Endurance",
+        "drain": "Verbrauch",
+        "staminaAfter": "Ausdauer danach",
+        "chance": "Verletzungschance",
+        "averageWeeks": "Ausfallwochen bei Verletzung",
+        "expectedWeeks": "Erwartete Ausfallwochen",
+        "incomplete": "Korrigiere die Einstellungen oben und fülle jedes Vorschaufeld aus, um die Werte zu sehen.",
+        "shifted": "Diese Ausdauer liegt unter der Verschiebungsgrenze, eine Verletzung fällt also eher schwer aus."
+      },
+      "exhaustion": {
+        "title": "Matches bis zur Erschöpfung",
+        "description": "Standard-Einzelmatches ab voller Ausdauer, mit Endurance auf dem Grundwert {{endurance}} ({{drain}} Ausdauer pro Match) und ohne Pause.",
+        "empty": "Keine Ausdauer mehr",
+        "band": "Unter {{stamina}} Ausdauer (Stufe {{chance}})",
+        "never": "Nie",
+        "matches_one": "{{count}} Match",
+        "matches_other": "{{count}} Matches"
+      },
+      "history": {
+        "title": "Versionsverlauf",
+        "empty": "Noch keine gespeicherten Versionen.",
+        "entry": "Version {{version}}: {{user}}, {{date}}"
+      },
+      "confirm": {
+        "title": "Verletzungseinstellungen speichern?",
+        "save": "Version {{version}} speichern",
+        "message": "Neue Würfe nutzen Version {{version}}. Bereits gewürfelte Verletzungen behalten ihre Version."
       }
     },
     "gmInterference": {
@@ -1030,6 +1168,7 @@
         "matchConfig": "Match-Konfiguration",
         "scheduleMatch": "Kampf planen",
         "matchSimulator": "Match-Simulator",
+        "injuryReport": "Verletzungsbericht",
         "standaloneMatches": "Einzelne Matches",
         "championships": "Meisterschaften",
         "tournaments": "Turniere",
@@ -1056,6 +1195,7 @@
         "rivalries": "Rivalitäten",
         "heatConfig": "Heat-Einstellungen",
         "economyConfig": "Wirtschaft",
+        "injuryConfig": "Verletzungen & Ausdauer",
         "contracts": "Verträge",
         "dangerZone": "Gefahrenzone"
       },
@@ -3010,6 +3150,7 @@
     "typeProgression": "Call-ups",
     "typeContract": "Vertrag",
     "typeEconomy": "Geldbörse",
+    "typeInjury": "Verfassung",
     "typeGmInterference": "GM-Eingriff"
   },
   "overalls": {
@@ -3839,6 +3980,10 @@
       },
       "enable": "{{name}} aktivieren",
       "enabled": "Aktiviert",
+      "injuries": {
+        "description": "Ausdauer, Verletzungen und ihre Wirkung auf die Match-Simulation. Aus, bis das Verletzungssystem startet.",
+        "name": "Ausdauer & Verletzungen"
+      },
       "notifications": {
         "description": "Ankündigungsbanner und Benachrichtigungsglocke in der App",
         "name": "Benachrichtigungen"
@@ -4058,7 +4203,7 @@
       "strikes": "Schläge",
       "grapple": "Griffe",
       "agility": "Beweglichkeit",
-      "endurance": "Ausdauer"
+      "endurance": "Zähigkeit"
     },
     "specialist": "Spezialist: {{category}}",
     "styleBonus": "+{{bonus}} Stil",
@@ -4157,6 +4302,14 @@
       "specialtyHint": "Kämpft in seiner Spezialität und hat dadurch einen Vorteil.",
       "inSpecialty": "in Spezialität",
       "inSpecialtyNamed": "{{name}} in Spezialität",
+      "stamina": "Ausdauer {{stamina}}/{{max}}",
+      "staminaNamed": "{{name}}: Ausdauer {{stamina}}/{{max}}",
+      "injured": "Verletzt",
+      "injuredNamed": "{{name}} verletzt",
+      "conditionHint": "Wenig Ausdauer und Verletzungen senken das Rating in der Simulation. Das sehen nur GMs.",
+      "boost": "Run-in +{{boost}} %",
+      "boostNamed": "{{name}}: Run-in +{{boost}} %",
+      "boostHint": "Gekaufte Sim-Eingriffe erhöhen das Rating in der Simulation. Wer ihn gekauft hat, sehen nur GMs.",
       "playByPlay": "Match-Verlauf",
       "skip": "Alles zeigen"
     },
@@ -4238,6 +4391,21 @@
         "v2": "{{wrestler}} erwischt {{opponent}} mit etwas Großem!",
         "v3": "{{wrestler}} pflanzt {{opponent}} mit einem gewaltigen Move in die Matte!"
       },
+      "gassed": {
+        "v1": "{{wrestler}} ist sichtlich platt, und {{opponent}} nutzt das aus.",
+        "v2": "{{wrestler}} ringt nach Luft, während {{opponent}} das Tempo hochhält.",
+        "v3": "{{wrestler}} läuft auf Reserve, und {{opponent}} legt nach."
+      },
+      "sellingInjury": {
+        "v1": "{{wrestler}} spürt die Verletzung, und {{opponent}} geht gezielt darauf.",
+        "v2": "{{wrestler}} hält sich die verletzte Stelle, und {{opponent}} wittert die Chance.",
+        "v3": "{{wrestler}} hat sichtlich Schmerzen, und {{opponent}} nimmt die Schwachstelle ins Visier."
+      },
+      "runIn": {
+        "v1": "Ein überraschender Run-in! Jemand stürmt in den Ring und schaltet {{opponent}} aus, und {{wrestler}} nutzt den Moment.",
+        "v2": "Chaos am Ring: Ein Außenstehender lenkt {{opponent}} ab, und {{wrestler}} lässt es {{opponent}} büßen.",
+        "v3": "Aus dem Nichts streckt ein Run-in {{opponent}} nieder, und {{wrestler}} ist sofort zur Stelle."
+      },
       "nearFall": {
         "v1": "{{wrestler}} covert {{opponent}}: eins, zwei … {{opponent}} kickt aus!",
         "v2": "{{wrestler}} glaubt schon an den Sieg, aber {{opponent}} hebt bei zwei die Schulter!",
@@ -4268,6 +4436,91 @@
         "v2": "{{opponent}} kann nirgendwo hin und gibt gegen {{wrestler}} auf!",
         "v3": "{{wrestler}} zieht den Griff zu, bis {{opponent}} aufgibt!"
       }
+    }
+  },
+  "injuryReport": {
+    "title": "Verletzungsbericht",
+    "subtitle": "Wer fällt aus, bis wann und was ist betroffen. Verletzungen heilen oder verlängern und Ausdauer anpassen.",
+    "loadError": "Der Verletzungsbericht konnte nicht geladen werden.",
+    "actionError": "Die Änderung konnte nicht gespeichert werden.",
+    "retry": "Erneut versuchen",
+    "activeTitle": "Aktuelle Verletzungen",
+    "noInjuries": "Gerade ist niemand verletzt.",
+    "rosterTitle": "Ausdauer im Kader",
+    "rosterHint": "Ausdauer unter {{threshold}} ist hervorgehoben.",
+    "columns": {
+      "player": "Spieler",
+      "severity": "Schwere",
+      "source": "Ursache",
+      "returns": "Zurück am",
+      "affected": "Betroffen",
+      "actions": "Aktionen",
+      "stamina": "Ausdauer",
+      "status": "Status"
+    },
+    "severity": {
+      "minor": "Leicht",
+      "moderate": "Mittel",
+      "major": "Schwer"
+    },
+    "weeks_one": "{{count}} Woche",
+    "weeks_other": "{{count}} Wochen",
+    "source": {
+      "match": "Aus einem Match",
+      "storyline": "Storyline"
+    },
+    "pastReturn": "Zurück bei der nächsten wöchentlichen Erholung",
+    "affectedMatches_one": "{{count}} geplantes Match",
+    "affectedMatches_other": "{{count}} geplante Matches",
+    "fit": "Verfügbar",
+    "staminaValue": "{{stamina}} / {{max}}",
+    "heal": "Heilen",
+    "extend": "Verlängern",
+    "adjust": "Anpassen",
+    "save": "Speichern",
+    "note": "Notiz (optional)",
+    "noteHint": "Diese Notiz sieht nur das Team.",
+    "healTitle": "Verletzung heilen",
+    "healMessage": "Die Verletzung von {{name}} jetzt beenden? Danach kannst du sofort wieder buchen.",
+    "healed": "{{name}} ist wieder einsatzbereit.",
+    "extendTitle": "Dauer der Verletzung ändern: {{name}}",
+    "extendCurrent_one": "Aktuell {{count}} Woche, zurück am {{date}}.",
+    "extendCurrent_other": "Aktuell {{count}} Wochen, zurück am {{date}}.",
+    "totalWeeks": "Gesamtdauer in Wochen",
+    "totalWeeksHint": "Ab Beginn der Verletzung, 1 bis {{max}}. Das Rückkehrdatum rückt auf den Beginn dieser Ligawoche.",
+    "extended": "{{name}} ist jetzt am {{date}} zurück.",
+    "staminaTitle": "Ausdauer anpassen: {{name}}",
+    "staminaLabel": "Ausdauer (0 bis {{max}})",
+    "staminaSet": "Die Ausdauer von {{name}} ist jetzt {{stamina}}.",
+    "booking": {
+      "injuredUntil": "Verletzt bis {{date}}",
+      "stamina": "Ausdauer {{stamina}}",
+      "allowInjured": "Verletzte zulassen (Override)",
+      "allowInjuredHint": "Damit kannst du verletzte Spieler buchen. Die Buchung wird als Override festgehalten.",
+      "refused": "{{name}} ist bis {{date}} verletzt. Setz den Haken bei „Verletzte zulassen“, um trotzdem zu buchen.",
+      "refusedNoDate": "{{name}} ist verletzt. Setz den Haken bei „Verletzte zulassen“, um trotzdem zu buchen.",
+      "thisPlayer": "Dieser Spieler",
+      "warningsTitle_one": "Gespeichert, {{count}} verletzter Spieler ist gebucht:",
+      "warningsTitle_other": "Gespeichert, {{count}} verletzte Spieler sind gebucht:",
+      "warningLine": "{{name}}, verletzt bis {{date}}",
+      "done": "Fertig"
+    },
+    "banner": {
+      "entry": "{{name}} (bis {{date}})",
+      "text_one": "Am Matchtag verletzt: {{names}}",
+      "text_other": "{{count}} Teilnehmer am Matchtag verletzt: {{names}}"
+    },
+    "condition": {
+      "title": "Zustandsbericht",
+      "player": "Spieler",
+      "stamina": "Ausdauer",
+      "staminaChange": "{{before}} → {{after}}",
+      "chance": "Verletzungsrisiko",
+      "roll": "Wurf",
+      "result": "Ergebnis",
+      "injured": "Verletzung ({{severity}}), zurück am {{date}}",
+      "alreadyInjured": "Bereits verletzt",
+      "noInjury": "Keine Verletzung"
     }
   },
   "discipline": {
@@ -4422,7 +4675,7 @@
       },
       "simInterference": {
         "name": "Sim-Eingriff",
-        "effect": "Erhöht deine Wertung in einem deiner simulierten Matches um {{boost}}."
+        "effect": "Erhöht deine Wertung in einem deiner simulierten Matches um {{boost}} %."
       },
       "gmInterference": {
         "name": "GM-Eingriff",
@@ -4435,6 +4688,7 @@
       "insufficientFunds": "Dafür hast du nicht genug Geld.",
       "shieldActive": "Du hast schon einen aktiven Verletzungsschutz.",
       "noActiveInjury": "Braucht eine aktive Verletzung.",
+      "injuryTooShort": "Deine Verletzung muss noch mindestens 2 Wochen dauern.",
       "noScheduledMatch": "Braucht ein angesetztes Match, für das du noch keinen Eingriff gekauft hast.",
       "requestPending": "Du hast schon eine Anfrage, die auf den GM wartet."
     },
@@ -4521,6 +4775,37 @@
       "marked": "{{name}} wurde als No-Show markiert.",
       "undone": "Der No-Show von {{name}} wurde rückgängig gemacht.",
       "failed": "Der No-Show konnte nicht gespeichert werden."
+    }
+  },
+  "injuries": {
+    "badge": {
+      "returns": "Verletzt, zurück am {{date}}"
+    },
+    "severity": {
+      "minor": "Leicht",
+      "moderate": "Mittel",
+      "major": "Schwer"
+    },
+    "stamina": {
+      "title": "Ausdauer",
+      "cardTitle": "Deine Ausdauer",
+      "cardLink": "Dein Profil",
+      "label": "Ausdauer",
+      "value": "{{stamina}} / {{max}}",
+      "meterLabel": "Ausdauer {{stamina}} von {{max}}",
+      "full": "Die Ausdauer ist voll.",
+      "recoversFull": "Erholung am Sonntag: wieder voll am {{time}}.",
+      "recoversBy": "Erholung am Sonntag: +{{amount}} am {{time}}.",
+      "nextMatch": "Das nächste Match ({{date}}) kostet {{drain}} Ausdauer, danach bleiben {{after}}.",
+      "outUntil": "Pausiert bis {{date}}."
+    },
+    "history": {
+      "title": "Verletzungen",
+      "summary_one": "{{severity}}, {{count}} Woche Pause",
+      "summary_other": "{{severity}}, {{count}} Wochen Pause",
+      "range": "{{start}} bis {{end}}",
+      "ongoing": "Seit {{start}}, zurück am {{end}}",
+      "fromMatch": "Aus dem Match am {{date}}"
     }
   },
   "pwa": {

@@ -67,6 +67,9 @@ provider:
     # ECO-09
     GM_INTERFERENCE_TABLE: ${self:service}-gm-interference-${self:provider.stage}
 
+    # INJ-03
+    INJURIES_TABLE: ${self:service}-injuries-${self:provider.stage}
+
     DYNAMODB_ENDPOINT: ${env:DYNAMODB_ENDPOINT, 'http://localhost:8000'}
     DB_DRIVER: ${env:DB_DRIVER, 'dynamo'}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
@@ -176,6 +179,9 @@ provider:
             # ECO-09
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GM_INTERFERENCE_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GM_INTERFERENCE_TABLE}/index/*
+
+            # INJ-03
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.INJURIES_TABLE}
 
         - Effect: Allow
           Action:
@@ -382,6 +388,26 @@ functions:
           path: economy/catalog
           method: get
           cors: *corsConfig
+
+      # INJ-01: stamina and injury tunables
+      - http:
+          path: admin/injury-config
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/injury-config
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+      # INJ-05: run this week's recovery now (Admin)
+      - http:
+          path: admin/injury-recovery
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
       # ECO-08
       - http:
           path: shop/purchase
@@ -1187,6 +1213,43 @@ functions:
           cors: *corsConfig
       - http:
           path: free-agents
+          method: get
+          cors: *corsConfig
+
+  # INJ-08: GM injury management (board, heal, extend/shorten, storyline
+  # injury, stamina) and the public injury history. No gateway authorizer:
+  # access is declared per route in functions/injuries/handler.ts and enforced
+  # by the router. New function, so stacks-map.js routes it to Overflow.
+  injuries:
+    handler: functions/injuries/handler.handler
+    events:
+      - http:
+          path: injuries
+          method: get
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/injuries
+          method: get
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/injuries
+          method: post
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/injuries/heal
+          method: post
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/injuries/current
+          method: patch
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/stamina
+          method: patch
+          cors: *corsConfig
+      # INJ-12: the player's own stamina meter (owner + staff, checked in the handler)
+      - http:
+          path: players/{playerId}/condition
           method: get
           cors: *corsConfig
 
@@ -3031,6 +3094,31 @@ resources:
             Projection:
               ProjectionType: ALL
     # ── end GM interference (ECO-09) ──
+
+    # ── Injuries (INJ-03) ── routed to the Overflow stack by stacks-map.js
+    # (AWS::DynamoDB::Table). One row per injury, open or ended; the open
+    # one is also copied onto Player.currentInjury.
+    InjuriesTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.INJURIES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        AttributeDefinitions:
+          - AttributeName: playerId
+            AttributeType: S
+          - AttributeName: startedAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: playerId
+            KeyType: HASH
+          - AttributeName: startedAt
+            KeyType: RANGE
+    # ── end Injuries (INJ-03) ──
 
     ImagesBucket:
       Type: AWS::S3::Bucket

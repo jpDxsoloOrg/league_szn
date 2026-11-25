@@ -2,6 +2,7 @@ import type { DivisionPatch } from './LeagueOpsRepository';
 import type { FactionMessage, FactionDirectMessage } from './factionMessages';
 import type { PostLedgerEntryInput, StagedLedgerEntry } from './ledger';
 import type { GmInterferenceRequest, GmInterferenceResolution } from './gmInterference'; // ECO-09
+import type { Injury, InjuryPatch, PlayerConditionGuard, PlayerConditionPatch } from './injuries'; // INJ-03
 import type {
   Rivalry,
   RivalryMessage,
@@ -302,6 +303,43 @@ export interface UnitOfWork {
    * the whole unit of work fails with `ConcurrencyError('GmInterference', requestId)`.
    */
   resolveGmInterferenceRequest(requestId: string, resolution: GmInterferenceResolution): void;
+
+  // ── Stamina & injuries (INJ-03) ──────────────────────────────────
+  /**
+   * Stage writing `stamina` and/or `currentInjury` on a player
+   * (`currentInjury: null` removes it). The player must exist and not be
+   * soft-deleted; with `guard`, the stored values must also still match.
+   * Either failure fails the whole unit of work with
+   * `ConcurrencyError('Player', playerId)`.
+   *
+   * It may share a unit of work with `incrementPlayerRecord` for the same
+   * player: the DynamoDB store merges both into one write (one operation per
+   * item), so a result can record the win/loss and the drain together. Any
+   * other write to that player in the same unit of work (`updatePlayer`,
+   * `clearPlayerField`, `postLedgerEntry`, ...) fails at commit with
+   * `InvalidInjuryWriteError` (or `InvalidLedgerPostingError` for a posting):
+   * put money in its own unit of work, as match pay does.
+   *
+   * Throws `InvalidInjuryWriteError` immediately for an empty patch, a
+   * negative stamina, or a second condition write for the same player.
+   */
+  updatePlayerCondition(playerId: string, patch: PlayerConditionPatch, guard?: PlayerConditionGuard): void;
+
+  /**
+   * Stage creating an injury row. Fails the whole unit of work with
+   * `ConcurrencyError('Injury', injuryRowId(playerId, startedAt))` if the row
+   * already exists.
+   */
+  putInjury(injury: Injury): void;
+
+  /**
+   * Stage editing an open injury row (no `endedAt` yet): change its dates or
+   * severity, end it, and/or append to `changes[]`. A missing or already
+   * ended row fails the whole unit of work with
+   * `ConcurrencyError('Injury', injuryRowId(playerId, startedAt))`, so two
+   * racing heals or a heal racing the weekly recovery end it only once.
+   */
+  updateInjury(playerId: string, startedAt: string, patch: InjuryPatch): void;
 
   // ── Contracts (ECO-03) ──────────────────────────────────────────
   /**

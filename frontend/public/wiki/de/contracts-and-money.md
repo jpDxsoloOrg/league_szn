@@ -66,7 +66,7 @@ Die Preise legen die GMs fest, und ein Artikel taucht nur auf, wenn die GMs ihn 
 | **Sim-Eingriff** | Verbessert deine Wertung in einem deiner angesetzten Matches, wenn es simuliert wird. Einer pro Match. |
 | **GM-Eingriff** | Bezahl den GM und wünsch dir, was du willst. Mehr dazu unten. |
 
-Verletzungen, Ausdauer und die Match-Simulation kommen später. Bis dahin zeigen Verletzungsschutz, Reha, Ausdauer-Auffüllung und Sim-Eingriff **Bald verfügbar** und können noch nicht gekauft werden. Den GM-Eingriff gibt es schon jetzt.
+Alle Artikel funktionieren jetzt. Verletzungsschutz, Reha und Ausdauer-Auffüllung wirken, solange die GMs Ausdauer und Verletzungen eingeschaltet haben; wie das zusammenspielt, steht unter [Ausdauer und Verletzungen](stamina-and-injuries). Für Reha muss deine Verletzung noch mindestens zwei Wochen dauern, und du kannst immer nur einen aktiven Verletzungsschutz haben.
 
 Deine Käufe sind privat. Niemand sonst sieht, dass du einen Sim-Eingriff für ein Match gekauft hast. Trägt ein GM das Ergebnis dieses Matches von Hand ein, statt es zu simulieren, oder wird das Match gelöscht, bekommst du dein Geld zurück.
 

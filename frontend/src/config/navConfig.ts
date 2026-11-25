@@ -27,6 +27,7 @@ import {
   Flame,
   Gavel,
   GitBranch,
+  HeartPulse,
   House,
   LayoutGrid,
   ListOrdered,
@@ -43,6 +44,7 @@ import {
   ShoppingBag,
   SlidersHorizontal,
   Star,
+  Stethoscope,
   Swords,
   Target,
   Thermometer,
@@ -287,6 +289,10 @@ export const ADMIN_TABS = [
   'standalone-matches',
   // BLD-14
   'match-simulator',
+
+  // INJ-11
+  'injury-report',
+
   'users',
   'players',
   'wrestlers',
@@ -317,6 +323,10 @@ export const ADMIN_TABS = [
   'locations',
   // ECO-11
   'economy-config',
+
+  // INJ-10
+  'injury-config',
+
   'features',
   'danger',
 ] as const;
@@ -351,6 +361,10 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { tab: 'standalone-matches', labelKey: 'admin.panel.tabs.standaloneMatches', icon: ClipboardList, minRole: 'Moderator' },
       // BLD-14: GM-only sim previews.
       { tab: 'match-simulator', labelKey: 'admin.panel.tabs.matchSimulator', icon: Dices, minRole: 'Moderator' },
+
+      // INJ-11: only while the injuries feature is on.
+      { tab: 'injury-report', labelKey: 'admin.panel.tabs.injuryReport', icon: Stethoscope, minRole: 'Moderator', feature: 'injuries' },
+
     ],
   },
   {
@@ -405,6 +419,10 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { tab: 'locations', labelKey: 'admin.panel.tabs.locations', icon: MapPin, minRole: 'Moderator' },
       // ECO-11: Moderators view, only Admins save. Not gated on the economy flag so GMs can set prices first.
       { tab: 'economy-config', labelKey: 'admin.panel.tabs.economyConfig', icon: Coins, minRole: 'Moderator' },
+
+      // INJ-10: Moderators view, only Admins save. Not gated on the injuries flag so GMs can tune before launch.
+      { tab: 'injury-config', labelKey: 'admin.panel.tabs.injuryConfig', icon: HeartPulse, minRole: 'Moderator' },
+
       { tab: 'features', labelKey: 'admin.panel.tabs.features', icon: Flag, minRole: 'Admin' },
       { tab: 'danger', labelKey: 'admin.panel.tabs.dangerZone', icon: TriangleAlert, minRole: 'Admin', danger: true },
     ],

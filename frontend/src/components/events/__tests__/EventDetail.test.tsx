@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -25,6 +25,12 @@ const { api, authState } = vi.hoisted(() => ({
     isWrestler: false,
     profile: null as { discipline: PlayerDisciplineSummary } | null,
   },
+}));
+
+// INJ-11: the injuries feature is off unless a test turns it on.
+const { siteFeatures } = vi.hoisted(() => ({ siteFeatures: { injuries: false } }));
+vi.mock('../../../contexts/SiteConfigContext', () => ({
+  useSiteConfig: () => ({ features: siteFeatures, isLoading: false }),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -63,6 +69,9 @@ vi.mock('../../../contexts/AuthContext', () => ({
 
 // ECO-14: the no-show control is covered in economy/__tests__/fines.test.tsx.
 vi.mock('../../economy/NoShowButton', () => ({ default: () => null }));
+// INJ-12: injury badges are covered in injuries/__tests__/injuries.test.tsx.
+vi.mock('../../injuries/useInjuriesByPlayer', () => ({ useInjuriesByPlayer: () => new Map() }));
+vi.mock('../../injuries/InjuryBadge', () => ({ default: () => null }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     i18n: { language: 'en' },
@@ -513,6 +522,60 @@ describe('EventDetail', () => {
       expect(within(dialog).getByTestId('match-result-form')).toHaveTextContent('Hidden Harry');
     });
     expect(api.getPublicPlayers).not.toHaveBeenCalled();
+  });
+
+  // INJ-11
+  describe('injury banner and condition report', () => {
+    const flaggedEvent = {
+      ...eventWithMatch,
+      enrichedMatches: [{
+        ...eventWithMatch.enrichedMatches[0]!,
+        matchData: {
+          ...eventWithMatch.enrichedMatches[0]!.matchData,
+          injuredParticipants: [{ playerId: 'p2', returnsAt: '2026-08-09T00:00:00Z' }],
+        },
+      }],
+    };
+    const completedEvent = {
+      ...eventWithMatch,
+      enrichedMatches: [{
+        ...eventWithMatch.enrichedMatches[0]!,
+        matchData: {
+          ...eventWithMatch.enrichedMatches[0]!.matchData,
+          status: 'completed',
+          winners: ['p1'],
+          losers: ['p2'],
+          conditionReport: [{ playerId: 'p1', staminaBefore: 90, staminaAfter: 70, drain: 20, chance: 0.03, roll: 0.4 }],
+        },
+      }],
+    };
+
+    afterEach(() => {
+      siteFeatures.injuries = false;
+    });
+
+    it('warns staff about an injured participant on a scheduled match', async () => {
+      siteFeatures.injuries = true;
+      api.getEvent.mockResolvedValue(flaggedEvent);
+      renderDetail();
+
+      expect(await screen.findByRole('note')).toHaveTextContent('injuryReport.banner.text');
+    });
+
+    it('shows no banner to the public or while injuries are off', async () => {
+      api.getEvent.mockResolvedValue(flaggedEvent);
+      renderDetail();
+      await screen.findByRole('heading', { level: 1, name: 'Summer Slam' });
+      expect(screen.queryByRole('note')).not.toBeInTheDocument();
+    });
+
+    it('gives staff the condition report on a completed match', async () => {
+      siteFeatures.injuries = true;
+      api.getEvent.mockResolvedValue(completedEvent);
+      renderDetail();
+
+      expect(await screen.findByRole('table', { name: 'injuryReport.condition.title' })).toHaveTextContent('Alpha');
+    });
   });
 
   it('confirms in a dialog before deleting a match', async () => {

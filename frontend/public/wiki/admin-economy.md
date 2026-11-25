@@ -70,6 +70,6 @@ Add a **note to the player** if you want them to know why, and a **staff note** 
 
 ## The shop and sim interference
 
-Injuries, stamina and the match sim arrive later. Until they do, players see the injury shield, rehab, stamina top-up and sim interference as **Coming soon** and can't buy them. GM interference works now. You can already set their prices, so they're ready when those features launch.
+Every shop item can be bought now. The injury shield, rehab and stamina top-up act on stamina and injuries, so they only make a difference while the **Stamina & Injuries** flag is on; see [Admin: Injuries](admin-injuries).
 
 Sim interference is bought for one scheduled match the player is in. Who bought it is private: GMs see every boost on a match, each player sees only their own. If you record that match by hand instead of simulating it, or delete it, the player gets their money back automatically.

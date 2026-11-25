@@ -9,6 +9,7 @@ import { challengeExpiresAt, isChallengeExpired } from '../../lib/challengeExpir
 import { CHAMPIONSHIP_NOT_FOUND_MESSAGE, challengeTitleFitError, titleAvailabilityError } from '../../lib/challengeTitle';
 import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
 import { callerRefusal, targetRefusal } from '../../lib/discipline';
+import { checkInjuryGate } from '../../lib/injuries/bookingGate';
 import type { Challenge } from '../../lib/repositories/types';
 
 type ChallengeAction = 'accept' | 'decline' | 'counter';
@@ -108,6 +109,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const otherBlocked = otherParty && targetRefusal(otherParty);
         if (otherBlocked) return otherBlocked;
       }
+      // INJ-06: nobody who would wrestle can be injured. No override here.
+      const injuryGate = await checkInjuryGate([responderPlayer, ...otherParties], {
+        selfPlayerId: responderPlayer.playerId,
+      });
+      if (injuryGate.refusal) return injuryGate.refusal;
     }
 
     const now = new Date().toISOString();

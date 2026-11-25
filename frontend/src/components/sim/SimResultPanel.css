@@ -121,6 +121,26 @@
   font-weight: 600;
 }
 
+/* INJ-09: stamina marker (staff only). */
+.sim-odds__stamina {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ECO-10: bought sim boost marker (staff only). */
+.sim-odds__boost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .sim-story {
   display: flex;
   flex-direction: column;

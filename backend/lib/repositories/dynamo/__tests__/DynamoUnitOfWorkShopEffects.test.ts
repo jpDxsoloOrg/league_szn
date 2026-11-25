@@ -100,3 +100,47 @@ describe('DynamoUnitOfWork.postLedgerEntry with appendPlayerEffects', () => {
     expect(entry).not.toHaveProperty('appendPlayerEffects');
   });
 });
+
+// ECO-10
+describe('DynamoUnitOfWork.updatePlayerCondition with useEffect', () => {
+  const conditionUpdate = (): NonNullable<UpdateItem['Update']> & { ConditionExpression: string } =>
+    balanceUpdate() as NonNullable<UpdateItem['Update']> & { ConditionExpression: string };
+
+  it('counts a shield down in place, guarded on its id and matches left', async () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updatePlayerCondition('p1', {
+      useEffect: { effectId: 'e1', index: 2, matchesLeft: { before: 3, after: 2 } },
+    });
+    await uow.commit();
+
+    const update = conditionUpdate();
+    expect(update.UpdateExpression).toContain('#condEffects[2].#condMatchesLeft = :condMatchesLeftAfter');
+    expect(update.UpdateExpression).not.toContain('REMOVE');
+    expect(update.ConditionExpression).toContain('#condEffects[2].#condEffectId = :condEffectId');
+    expect(update.ConditionExpression).toContain('#condEffects[2].#condMatchesLeft = :condMatchesLeftBefore');
+    expect(update.ExpressionAttributeValues).toMatchObject({
+      ':condEffectId': 'e1',
+      ':condMatchesLeftBefore': 3,
+      ':condMatchesLeftAfter': 2,
+    });
+  });
+
+  it('removes a used effect with the stamina it gave', async () => {
+    const uow = new DynamoUnitOfWork();
+    uow.updatePlayerCondition('p1', { stamina: 70, useEffect: { effectId: 't1', index: 0 } }, { stamina: 50 });
+    await uow.commit();
+
+    const update = conditionUpdate();
+    expect(update.UpdateExpression).toMatch(/REMOVE #condEffects\[0\]$/);
+    expect(update.ConditionExpression).toContain('#condEffects[0].#condEffectId = :condEffectId');
+    expect(update.ConditionExpression).toContain('#condStamina = :condExpectedStamina');
+  });
+
+  it('rejects a bad effect position or a count that does not go down', () => {
+    const uow = new DynamoUnitOfWork();
+    expect(() => uow.updatePlayerCondition('p1', { useEffect: { effectId: 'e1', index: -1 } })).toThrow();
+    expect(() => uow.updatePlayerCondition('p1', {
+      useEffect: { effectId: 'e1', index: 0, matchesLeft: { before: 2, after: 2 } },
+    })).toThrow();
+  });
+});

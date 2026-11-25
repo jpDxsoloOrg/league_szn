@@ -8,6 +8,7 @@ import { challengeTitleFitError, titleAvailabilityError } from '../../lib/challe
 import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
 import { callerRefusal, targetRefusal } from '../../lib/discipline';
 import { firstTagMemberRefusal } from '../../lib/disciplineGates';
+import { checkInjuryGate } from '../../lib/injuries/bookingGate';
 // Notifications intentionally not dispatched here while the challenge UI is hidden.
 
 interface CreateChallengeBody {
@@ -117,6 +118,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
       const memberBlocked = firstTagMemberRefusal([...challengerMembers, ...challengedMembers], challengerId);
       if (memberBlocked) return memberBlocked;
+      // INJ-06: every member of both teams would wrestle. No override here.
+      const injuryGate = await checkInjuryGate([...challengerMembers, ...challengedMembers], { selfPlayerId: challengerId });
+      if (injuryGate.refusal) return injuryGate.refusal;
 
       if (challengedMembers.some((member) => member && !isPlayerVisible(member))) {
         return badRequest('A member of that tag team has not set a wrestler name yet');
@@ -168,6 +172,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const targetBlocked = targetRefusal(challengedPlayer);
     if (targetBlocked) return targetBlocked;
+    // INJ-06: neither side can be injured. No override here.
+    const injuryGate = await checkInjuryGate([challengerPlayer, challengedPlayer], { selfPlayerId: challengerId });
+    if (injuryGate.refusal) return injuryGate.refusal;
 
     if (!isPlayerVisible(challengedPlayer)) {
       return badRequest(TARGET_NEEDS_WRESTLER_MESSAGE);

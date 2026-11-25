@@ -1,0 +1,114 @@
+/* INJ-11: injury tags, the override toggle, warning banners and the condition report. */
+
+.injury-tag {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.injury-tag--injured {
+  background-color: var(--tint-loss);
+  color: var(--color-loss);
+}
+
+.injury-tag--stamina {
+  background-color: var(--tint-warn);
+  color: var(--color-text);
+}
+
+.allow-injured-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  font-size: var(--text-dense);
+  cursor: pointer;
+}
+
+.allow-injured-toggle input {
+  margin-top: 0.2rem;
+}
+
+.allow-injured-toggle__hint {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.injury-notice__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.injury-notice__list {
+  margin: 0.25rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.injured-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--color-warn);
+  border-radius: var(--radius-control);
+  background-color: var(--tint-warn);
+  color: var(--color-text);
+  font-size: var(--text-dense);
+  overflow-wrap: anywhere;
+}
+
+.injured-banner__icon {
+  flex: none;
+  margin-top: 0.125rem;
+  color: var(--color-warn);
+}
+
+.condition-report {
+  margin: 0.5rem 0 0;
+  font-size: var(--text-dense);
+}
+
+.condition-report summary {
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.condition-report__scroll {
+  max-width: 100%;
+  margin-top: 0.5rem;
+  overflow-x: auto;
+}
+
+.condition-report__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.condition-report__table th,
+.condition-report__table td {
+  padding: 0.375rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: start;
+  white-space: nowrap;
+}
+
+.condition-report__table thead th {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+/* An injured player the override has not unlocked yet. */
+.booking-picker-option:disabled,
+.injury-pick--blocked:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

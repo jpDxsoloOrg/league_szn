@@ -73,6 +73,8 @@ const ADMIN_ONLY_ROUTES = new Set([
   'GET /admin/heat-config',
   'PUT /admin/heat-config',
   'PUT /admin/economy-config',
+  'PUT /admin/injury-config', // INJ-01
+  'POST /admin/injury-recovery', // INJ-05
   'GET /admin/users',
   'POST /admin/users/role',
   'POST /admin/users/toggle-enabled',
@@ -120,6 +122,14 @@ const STAFF_ROUTES = [
   'POST /fines/{entryId}/rescind',
   // ECO-14
   'GET /players/{playerId}/ledger',
+
+  // INJ-08
+  'GET /injuries',
+  'POST /players/{playerId}/injuries',
+  'POST /players/{playerId}/injuries/heal',
+  'PATCH /players/{playerId}/injuries/current',
+  'PATCH /players/{playerId}/stamina',
+
   'POST /players',
   'DELETE /players/{playerId}',
   'POST /shows',

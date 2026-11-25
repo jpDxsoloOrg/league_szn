@@ -1,6 +1,7 @@
 /**
  * Refunds sim interference on a match that will never be simulated (ECO-08):
- * a result recorded by hand, or a scheduled match that is deleted.
+ * a result recorded by hand, a scheduled match that is deleted, or (ECO-10) a
+ * boost bought while the official sim was already running.
  *
  * Each boost gets one `refund` entry for exactly what its purchase entry took,
  * keyed `${purchaseKey}#refund`, so running this twice never pays twice.
@@ -13,11 +14,12 @@ import { DuplicatePostingError } from '../repositories/ledger';
 import type { Match } from '../repositories/types';
 import { simBoostRefundKey } from './effects';
 
-export type SimBoostRefundReason = 'manualResult' | 'matchDeleted';
+export type SimBoostRefundReason = 'manualResult' | 'matchDeleted' | 'missedBySim'; // missedBySim: ECO-10
 
 const REFUND_NOTES: Record<SimBoostRefundReason, string> = {
   manualResult: 'Sim interference refunded: the match result was recorded by hand',
   matchDeleted: 'Sim interference refunded: the match was deleted',
+  missedBySim: 'Sim interference refunded: it was bought after the sim had already run',
 };
 
 /** A concurrent posting for the same player fails the refund; it is safe to retry. */

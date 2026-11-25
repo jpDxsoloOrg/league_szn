@@ -18,6 +18,8 @@ import { isNeedsWrestler } from '../../utils/needsWrestler';
 import { nameOrUnnamed } from '../../utils/playerName';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { BookingDisciplineBadge } from '../admin/DisciplineBadge';
+import InjuryPickerTags from '../injuries/InjuryPickerTags'; // INJ-11
+import { isPickBlocked, type BookingCondition } from '../../utils/injuryBooking'; // INJ-11
 import './PlayerBookingPicker.css';
 
 /** @deprecated Use CheckInStatus from utils/checkInStatus. Kept for callers. */
@@ -50,6 +52,11 @@ export interface PlayerBookingPickerProps {
    */
   bookingInfoByPlayerId?: ReadonlyMap<string, PlayerBookingInfo>;
   disabled?: boolean;
+  /**
+   * INJ-11 (staff, injuries on): injured players are tagged and cannot be
+   * picked until the override is on; low stamina shows beside the name.
+   */
+  condition?: BookingCondition;
 }
 
 interface PickerGroup {
@@ -76,6 +83,7 @@ export default function PlayerBookingPicker({
   bookedPlayerIds,
   bookingInfoByPlayerId,
   disabled = false,
+  condition,
 }: PlayerBookingPickerProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -368,6 +376,7 @@ export default function PlayerBookingPicker({
                 const isBooked = bookedPlayerIds?.has(player.playerId) ?? false;
                 const info = bookingInfoByPlayerId?.get(player.playerId);
                 const fresh = info !== undefined && isFreshBooking(info.lastBookedAt);
+                const injuryBlocked = isPickBlocked(condition, player.playerId, isSelected(player.playerId));
                 return (
                   <button
                     key={player.playerId}
@@ -377,6 +386,8 @@ export default function PlayerBookingPicker({
                     }${fresh ? ' booking-picker-option--fresh' : ''}`}
                     role="option"
                     aria-selected={isSelected(player.playerId)}
+                    aria-disabled={injuryBlocked || undefined}
+                    disabled={injuryBlocked}
                     onClick={() => handleSelect(player.playerId)}
                   >
                     <span
@@ -387,6 +398,7 @@ export default function PlayerBookingPicker({
                       {playerLabel(player, unnamedLabel)}
                     </span>
                     <BookingDisciplineBadge discipline={player.discipline} />
+                    <InjuryPickerTags condition={condition} playerId={player.playerId} />
                     {multi && isSelected(player.playerId) && (
                       <Check className="booking-picker-check" aria-hidden="true" size={16} />
                     )}

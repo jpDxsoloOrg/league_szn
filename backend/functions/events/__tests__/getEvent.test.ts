@@ -497,4 +497,48 @@ describe('getEvent', () => {
       expect(matchData.simulation.probabilities).toEqual(storedSimulation.probabilities);
     });
   });
+
+  // INJ-11
+  describe('INJ-11 condition report', () => {
+    const conditionReport = [
+      { playerId: 'p1', staminaBefore: 80, staminaAfter: 62, drain: 18, chance: 0.03, roll: 0.5 },
+    ];
+
+    async function setupReportedEvent(): Promise<string> {
+      await repos.competition.matches.create({
+        matchId: 'done-1',
+        date: '2024-01-01',
+        matchFormat: 'singles',
+        participants: [],
+        winners: ['p1'],
+        losers: ['p2'],
+        isChampionship: false,
+        status: 'completed',
+        conditionReport,
+        createdAt: new Date().toISOString(),
+      });
+      const eventItem = await repos.leagueOps.events.create({ name: 'Raw', eventType: 'weekly', date: '2024-01-01' });
+      await repos.leagueOps.events.update(eventItem.eventId, {
+        matchCards: [{ position: 1, matchId: 'done-1', designation: 'midcard' as const }],
+      });
+      return eventItem.eventId;
+    }
+
+    const asGroups = (eventId: string, groups: string): APIGatewayProxyEvent => makeEvent({
+      pathParameters: { eventId },
+      requestContext: {
+        authorizer: { principalId: 'caller', username: 'caller', email: '', groups },
+      } as unknown as APIGatewayProxyEvent['requestContext'],
+    });
+
+    it('gives staff the condition report and nobody else', async () => {
+      const eventId = await setupReportedEvent();
+      const staff = JSON.parse((await getEvent(asGroups(eventId, 'Moderator'), ctx, cb))!.body);
+      expect(staff.enrichedMatches[0].matchData.conditionReport).toEqual(conditionReport);
+      for (const request of [makeEvent({ pathParameters: { eventId } }), asGroups(eventId, 'Wrestler')]) {
+        const body = JSON.parse((await getEvent(request, ctx, cb))!.body);
+        expect(body.enrichedMatches[0].matchData).not.toHaveProperty('conditionReport');
+      }
+    });
+  });
 });

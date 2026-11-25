@@ -94,6 +94,27 @@ export interface SimModifier {
   multiplier: number;
 }
 
+// ECO-10
+/** `SimModifier.source` of a paid sim boost (`Match.simBoosts`); the play-by-play adds a run-in for it. */
+export const SIM_BOOST_MODIFIER_SOURCE = 'simBoost';
+
+/** True when the competitor carries a paid sim boost. */
+export function hasSimBoost(competitor: Pick<SimCompetitor, 'modifiers'>): boolean {
+  return (competitor.modifiers ?? []).some((modifier) => modifier.source === SIM_BOOST_MODIFIER_SOURCE);
+}
+
+/**
+ * A competitor's stamina and injury state (INJ-09), set by the input loader
+ * only when the `injuries` feature is on. It does not change the rating by
+ * itself: the loader adds the matching `condition` modifier. The play-by-play
+ * reads it for the "gassed" and "selling the injury" beats.
+ */
+export interface SimCondition {
+  stamina: number;
+  maxStamina: number;
+  injured: boolean;
+}
+
 export interface SimCompetitor {
   playerId: string;
   style: StyleId;
@@ -106,6 +127,8 @@ export interface SimCompetitor {
   form: number;
   /** Optional rating multipliers (INJ-09 stamina/injury, ECO-10 sim boosts). */
   modifiers?: readonly SimModifier[];
+  /** Stamina and injury state (INJ-09); missing when the injuries feature is off. */
+  condition?: SimCondition;
 }
 
 export interface SimSide {
@@ -396,6 +419,9 @@ export function simInputsDigest(sides: readonly SimSide[], category: SimCategory
         finisherLevels: [...member.finisherLevels],
         form: member.form,
         modifiers: (member.modifiers ?? []).map((modifier) => [modifier.source, modifier.multiplier]),
+        // INJ-09: the condition shapes the play-by-play. Left out when unset,
+        // so digests without it are unchanged.
+        ...(member.condition ? { condition: member.condition } : {}),
       })),
     })),
   };

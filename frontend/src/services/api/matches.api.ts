@@ -7,6 +7,7 @@ import type {
   SimulatePreviewResponse,
 } from '../../types';
 import type { RivalryHeat } from '../../types/rivalry';
+import type { WithInjuryWarnings } from '../../types/injuryReport'; // INJ-11
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
 /**
@@ -42,7 +43,7 @@ export const matchesApi = {
     return fetchWithAuth(`${API_BASE_URL}/matches${query ? `?${query}` : ''}`, {}, signal);
   },
 
-  schedule: async (match: ScheduleMatchInput): Promise<Match> => {
+  schedule: async (match: ScheduleMatchInput): Promise<Match & WithInjuryWarnings> => {
     return fetchWithAuth(`${API_BASE_URL}/matches`, {
       method: 'POST',
       body: JSON.stringify(match),
@@ -83,7 +84,10 @@ export const matchesApi = {
     });
   },
 
-  update: async (matchId: string, data: Partial<Omit<ScheduleMatchInput, 'status'>>): Promise<Match> => {
+  update: async (
+    matchId: string,
+    data: Partial<Omit<ScheduleMatchInput, 'status'>>,
+  ): Promise<Match & WithInjuryWarnings> => {
     return fetchWithAuth(`${API_BASE_URL}/matches/${matchId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -133,8 +137,10 @@ export const matchesApi = {
       lockedByAdmin?: boolean;
       teamLabel?: string | null;
       wrestlerChoice?: 'main' | 'alternate';
+      /** INJ-11: staff only, book an injured player anyway. */
+      allowInjured?: boolean;
     },
-  ): Promise<Match> => {
+  ): Promise<Match & WithInjuryWarnings> => {
     return fetchWithAuth(`${API_BASE_URL}/matches/${matchId}/slots/${slotId}`, {
       method: 'PUT',
       body: JSON.stringify(patch),

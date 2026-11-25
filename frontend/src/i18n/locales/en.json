@@ -449,6 +449,7 @@
       "seasons": "Seasons",
       "divisions": "Divisions",
       "wrestlerBuilds": "Wrestler Builds",
+      "staminaAndInjuries": "Stamina and Injuries",
       "championships": "Championships",
       "events": "Events & PPV",
       "tournaments": "Tournaments",
@@ -466,6 +467,7 @@
       "adminQuickstart": "Admin: Quickstart",
       "adminMatchConfig": "Admin: Match Config",
       "adminMatchSimulator": "Admin: Match Simulator",
+      "adminInjuries": "Admin: Injuries",
       "adminSeasonAwards": "Admin: Season Awards",
       "adminUserManagement": "Admin: User Management",
       "adminDivisions": "Admin: Divisions",
@@ -498,6 +500,7 @@
       "adminQuickstart": "Quickstart",
       "adminMatchConfig": "Match Config",
       "adminMatchSimulator": "Match Simulator",
+      "adminInjuries": "Injuries",
       "adminSeasonAwards": "Season Awards",
       "adminUserManagement": "User Management",
       "adminDivisions": "Divisions",
@@ -923,7 +926,7 @@
         "shieldMatches": "Lasts (matches)",
         "weeksOff": "Weeks taken off the injury",
         "staminaAmount": "Stamina added",
-        "ratingBoost": "Rating boost",
+        "ratingBoost": "Rating boost (%)",
         "items": {
           "injuryShield": {
             "name": "Injury shield",
@@ -958,6 +961,141 @@
         "winBonuses": "Win bonuses",
         "total": "Season total",
         "incomplete": "Fill in the season contract terms and the numbers above to see a total."
+      }
+    },
+    "injuryConfig": {
+      "title": "Injury & Stamina Settings",
+      "subtitle": "Set how much stamina matches take, how likely injuries are and how long they last. New rolls use the latest saved version.",
+      "featureOff": "Injuries are turned off, so players don't see any of this yet. An Admin can turn them on in Feature Management.",
+      "readOnly": "You can view these settings. Only Admins can change them.",
+      "loadFailed": "Could not load the injury settings.",
+      "retry": "Try again",
+      "reload": "Reload",
+      "version": "Version {{version}}, saved by {{user}} on {{date}}.",
+      "notSaved": "Not saved yet: these are the starting values.",
+      "fixErrors": "Fix the highlighted settings before saving.",
+      "saved": "Saved as version {{version}}.",
+      "conflict": "Someone else saved these settings after you opened the page. Reload to see their version, then make your changes again.",
+      "saveFailed": "Failed to save the injury settings",
+      "save": "Save Injury Settings",
+      "discard": "Discard changes",
+      "remove": "Remove",
+      "problems": {
+        "integer": "Enter a whole number from {{min}} to {{max}}.",
+        "percent": "Enter a percentage from 0 to 100.",
+        "multiplier": "Enter a number above 0 and at most {{max}}.",
+        "weight": "Enter a weight above 0 and at most {{max}}.",
+        "weeks": "Enter a whole number of weeks from {{min}} to {{max}}.",
+        "weeksOrder": "Max weeks can't be less than min weeks.",
+        "formatKey": "Give the format a key of 1 to {{max}} characters.",
+        "formatDuplicate": "This format is already listed.",
+        "formatCount": "There can be at most {{max}} formats.",
+        "bandsOrder": "List the bands from the highest minimum stamina to the lowest, with no repeats.",
+        "bandsLastZero": "The last band must start at 0 stamina so every stamina level has a chance.",
+        "bandsCount": "Add between 1 and {{max}} bands.",
+        "timezone": "Pick a time zone from the list."
+      },
+      "drain": {
+        "title": "Stamina drain",
+        "description": "Stamina one singles match takes from each competitor, by sim category, before Endurance.",
+        "maxStamina": "Max stamina",
+        "enduranceReduction": "Endurance reduction (%)",
+        "enduranceReductionHint": "How much less a wrestler with maxed Endurance loses. 0 turns the Endurance effect off.",
+        "perCategory": "Drain per match"
+      },
+      "formats": {
+        "title": "Format multipliers",
+        "description": "Drain is multiplied by this for each match format. A format not listed uses 1.",
+        "key": "Format",
+        "multiplier": "Multiplier",
+        "removeNamed": "Remove format {{number}}",
+        "add": "Add format",
+        "names": {
+          "singles": "Singles",
+          "tag": "Tag team",
+          "multiPerson": "Multi-person",
+          "battleRoyal": "Battle royal"
+        }
+      },
+      "bands": {
+        "title": "Injury chance by stamina",
+        "description": "Chance of an injury in a match, by stamina after it. A wrestler uses the first band whose minimum they reach, highest first; the last band starts at 0.",
+        "minStamina": "Min stamina",
+        "chance": "Injury chance (%)",
+        "removeNamed": "Remove band {{number}}",
+        "add": "Add band"
+      },
+      "risk": {
+        "title": "Category risk",
+        "description": "The band's chance is multiplied by this for each sim category, up to 95%."
+      },
+      "severities": {
+        "title": "Severity",
+        "description": "When an injury happens, its severity is picked by weight, then the weeks out are drawn between min and max.",
+        "share": "({{share}} of injuries)",
+        "weight": "Weight",
+        "minWeeks": "Min weeks",
+        "maxWeeks": "Max weeks",
+        "shift": "Low-stamina shift (stamina)",
+        "shiftHint": "Below this stamina, injuries lean towards the worse severities.",
+        "names": {
+          "minor": "Minor",
+          "moderate": "Moderate",
+          "major": "Major"
+        }
+      },
+      "recovery": {
+        "title": "Weekly recovery",
+        "description": "Stamina comes back every Sunday at midnight in the league time zone.",
+        "mode": "Each week",
+        "full": "Back to full",
+        "amount": "Add a fixed amount",
+        "amountLabel": "Stamina added each week",
+        "timezone": "League time zone",
+        "timezoneSearch": "Search time zones...",
+        "timezoneHint": "Also sets when the league week starts for payroll and other weekly jobs."
+      },
+      "sim": {
+        "title": "Match sim penalties",
+        "description": "How tiredness and injuries lower a competitor's rating in a simulated match.",
+        "staminaFloor": "Rating at 0 stamina (%)",
+        "staminaFloorHint": "100% at full stamina, sliding down to this at 0.",
+        "injuredPenalty": "Rating while injured (%)",
+        "injuredPenaltyHint": "Applied on top of the stamina effect when an injured wrestler is booked anyway."
+      },
+      "preview": {
+        "title": "Preview a match",
+        "description": "Uses the settings on this page, saved or not.",
+        "category": "Sim category",
+        "format": "Format",
+        "stamina": "Starting stamina",
+        "endurance": "Endurance",
+        "drain": "Drain",
+        "staminaAfter": "Stamina after",
+        "chance": "Injury chance",
+        "averageWeeks": "Weeks out if injured",
+        "expectedWeeks": "Expected weeks lost",
+        "incomplete": "Fix the settings above and fill in every preview box to see the numbers.",
+        "shifted": "This stamina is below the low-stamina shift, so an injury is more likely to be a bad one."
+      },
+      "exhaustion": {
+        "title": "Matches until exhausted",
+        "description": "Standard singles matches from full stamina, with Endurance at the base of {{endurance}} ({{drain}} stamina a match) and no rest.",
+        "empty": "Out of stamina",
+        "band": "Below {{stamina}} stamina ({{chance}} band)",
+        "never": "Never",
+        "matches_one": "{{count}} match",
+        "matches_other": "{{count}} matches"
+      },
+      "history": {
+        "title": "Version history",
+        "empty": "No saved versions yet.",
+        "entry": "Version {{version}}: {{user}}, {{date}}"
+      },
+      "confirm": {
+        "title": "Save injury settings?",
+        "save": "Save version {{version}}",
+        "message": "New rolls will use version {{version}}. Injuries already rolled keep the version they used."
       }
     },
     "gmInterference": {
@@ -1030,6 +1168,7 @@
         "matchConfig": "Match Config",
         "scheduleMatch": "Schedule Match",
         "matchSimulator": "Match Simulator",
+        "injuryReport": "Injury Report",
         "standaloneMatches": "Standalone Matches",
         "championships": "Championships",
         "tournaments": "Tournaments",
@@ -1056,6 +1195,7 @@
         "rivalries": "Rivalries",
         "heatConfig": "Heat Tunables",
         "economyConfig": "Economy Settings",
+        "injuryConfig": "Injury & Stamina",
         "contracts": "Contracts",
         "dangerZone": "Danger Zone"
       },
@@ -3010,6 +3150,7 @@
     "typeProgression": "Call-ups",
     "typeContract": "Contract",
     "typeEconomy": "Wallet",
+    "typeInjury": "Condition",
     "typeGmInterference": "GM interference"
   },
   "overalls": {
@@ -3839,6 +3980,10 @@
       },
       "enable": "Enable {{name}}",
       "enabled": "Enabled",
+      "injuries": {
+        "description": "Stamina, injuries and their effect on the match sim. Off until the injury system launches.",
+        "name": "Stamina & Injuries"
+      },
       "notifications": {
         "description": "Announcements banner and in-app notification bell for users",
         "name": "Notifications"
@@ -4157,6 +4302,14 @@
       "specialtyHint": "Fighting in their specialty, which gives them an edge.",
       "inSpecialty": "in specialty",
       "inSpecialtyNamed": "{{name}} in specialty",
+      "stamina": "Stamina {{stamina}}/{{max}}",
+      "staminaNamed": "{{name}}: stamina {{stamina}}/{{max}}",
+      "injured": "Injured",
+      "injuredNamed": "{{name}} injured",
+      "conditionHint": "Low stamina and injuries lower the rating in the sim. Only GMs see this.",
+      "boost": "Run-in +{{boost}}%",
+      "boostNamed": "{{name}}: run-in +{{boost}}%",
+      "boostHint": "Bought sim interference raises the rating in the sim. Only GMs see who bought it.",
       "playByPlay": "Play-by-play",
       "skip": "Show all"
     },
@@ -4238,6 +4391,21 @@
         "v2": "{{wrestler}} catches {{opponent}} with something big!",
         "v3": "{{wrestler}} plants {{opponent}} with a huge move!"
       },
+      "gassed": {
+        "v1": "{{wrestler}} looks gassed and {{opponent}} takes advantage.",
+        "v2": "{{wrestler}} is sucking wind, and {{opponent}} keeps up the pace.",
+        "v3": "{{wrestler}} is running on empty as {{opponent}} piles on."
+      },
+      "sellingInjury": {
+        "v1": "{{wrestler}} is selling the injury, and {{opponent}} goes right after it.",
+        "v2": "{{wrestler}} clutches the injury, and {{opponent}} smells blood.",
+        "v3": "{{wrestler}} is clearly hurting, and {{opponent}} targets the bad spot."
+      },
+      "runIn": {
+        "v1": "A surprise run-in! Someone hits the ring and takes {{opponent}} out, and {{wrestler}} seizes the moment.",
+        "v2": "Chaos at ringside: an outsider distracts {{opponent}}, and {{wrestler}} makes them pay.",
+        "v3": "Out of nowhere, a run-in levels {{opponent}}, and {{wrestler}} is right there to capitalise."
+      },
       "nearFall": {
         "v1": "{{wrestler}} covers {{opponent}}: one, two… {{opponent}} kicks out!",
         "v2": "{{wrestler}} thinks it's over, but {{opponent}} gets a shoulder up at two!",
@@ -4268,6 +4436,91 @@
         "v2": "{{opponent}} has nowhere to go and taps out to {{wrestler}}!",
         "v3": "{{wrestler}} cranks the hold until {{opponent}} gives up!"
       }
+    }
+  },
+  "injuryReport": {
+    "title": "Injury Report",
+    "subtitle": "Who is out, until when, and what it affects. Heal or extend injuries and adjust stamina.",
+    "loadError": "Could not load the injury report.",
+    "actionError": "Could not save the change.",
+    "retry": "Try again",
+    "activeTitle": "Active injuries",
+    "noInjuries": "Nobody is injured right now.",
+    "rosterTitle": "Roster stamina",
+    "rosterHint": "Stamina below {{threshold}} is highlighted.",
+    "columns": {
+      "player": "Player",
+      "severity": "Severity",
+      "source": "Source",
+      "returns": "Returns on",
+      "affected": "Affected",
+      "actions": "Actions",
+      "stamina": "Stamina",
+      "status": "Status"
+    },
+    "severity": {
+      "minor": "Minor",
+      "moderate": "Moderate",
+      "major": "Major"
+    },
+    "weeks_one": "{{count}} week",
+    "weeks_other": "{{count}} weeks",
+    "source": {
+      "match": "From a match",
+      "storyline": "Storyline"
+    },
+    "pastReturn": "Back at the next weekly recovery",
+    "affectedMatches_one": "{{count}} scheduled match",
+    "affectedMatches_other": "{{count}} scheduled matches",
+    "fit": "Available",
+    "staminaValue": "{{stamina}} / {{max}}",
+    "heal": "Heal",
+    "extend": "Extend",
+    "adjust": "Adjust",
+    "save": "Save",
+    "note": "Note (optional)",
+    "noteHint": "Only staff see this note.",
+    "healTitle": "Heal injury",
+    "healMessage": "End {{name}}'s injury now? They can be booked again straight away.",
+    "healed": "{{name}} is cleared to return.",
+    "extendTitle": "Change injury length: {{name}}",
+    "extendCurrent_one": "Currently {{count}} week, back {{date}}.",
+    "extendCurrent_other": "Currently {{count}} weeks, back {{date}}.",
+    "totalWeeks": "Total length in weeks",
+    "totalWeeksHint": "Counted from when the injury started, 1 to {{max}}. The return date moves to the start of that league week.",
+    "extended": "{{name}} now returns {{date}}.",
+    "staminaTitle": "Adjust stamina: {{name}}",
+    "staminaLabel": "Stamina (0 to {{max}})",
+    "staminaSet": "{{name}}'s stamina is now {{stamina}}.",
+    "booking": {
+      "injuredUntil": "Injured until {{date}}",
+      "stamina": "Stamina {{stamina}}",
+      "allowInjured": "Allow injured (override)",
+      "allowInjuredHint": "Lets you book players who are injured. The booking is recorded as an override.",
+      "refused": "{{name}} is injured until {{date}}. Tick \"Allow injured\" to book them anyway.",
+      "refusedNoDate": "{{name}} is injured. Tick \"Allow injured\" to book them anyway.",
+      "thisPlayer": "This player",
+      "warningsTitle_one": "Saved with {{count}} injured player booked:",
+      "warningsTitle_other": "Saved with {{count}} injured players booked:",
+      "warningLine": "{{name}}, injured until {{date}}",
+      "done": "Done"
+    },
+    "banner": {
+      "entry": "{{name}} (until {{date}})",
+      "text_one": "Injured on the match date: {{names}}",
+      "text_other": "{{count}} participants injured on the match date: {{names}}"
+    },
+    "condition": {
+      "title": "Condition report",
+      "player": "Player",
+      "stamina": "Stamina",
+      "staminaChange": "{{before}} → {{after}}",
+      "chance": "Injury chance",
+      "roll": "Roll",
+      "result": "Result",
+      "injured": "{{severity}} injury, back {{date}}",
+      "alreadyInjured": "Already injured",
+      "noInjury": "No injury"
     }
   },
   "discipline": {
@@ -4422,7 +4675,7 @@
       },
       "simInterference": {
         "name": "Sim interference",
-        "effect": "Adds {{boost}} to your rating in one of your simulated matches."
+        "effect": "Raises your rating by {{boost}}% in one of your simulated matches."
       },
       "gmInterference": {
         "name": "GM interference",
@@ -4435,6 +4688,7 @@
       "insufficientFunds": "You don't have enough money for this.",
       "shieldActive": "You already have an active injury shield.",
       "noActiveInjury": "Needs an active injury.",
+      "injuryTooShort": "Needs at least 2 weeks left on your injury.",
       "noScheduledMatch": "Needs a scheduled match you haven't boosted yet.",
       "requestPending": "You already have a request waiting on the GM."
     },
@@ -4521,6 +4775,37 @@
       "marked": "{{name}} was marked as a no-show.",
       "undone": "{{name}}'s no-show was undone.",
       "failed": "Could not save the no-show."
+    }
+  },
+  "injuries": {
+    "badge": {
+      "returns": "Injured, returns {{date}}"
+    },
+    "severity": {
+      "minor": "Minor",
+      "moderate": "Moderate",
+      "major": "Major"
+    },
+    "stamina": {
+      "title": "Stamina",
+      "cardTitle": "Your stamina",
+      "cardLink": "Your profile",
+      "label": "Stamina",
+      "value": "{{stamina}} / {{max}}",
+      "meterLabel": "Stamina {{stamina}} of {{max}}",
+      "full": "Stamina is full.",
+      "recoversFull": "Recovers on Sunday: back to full on {{time}}.",
+      "recoversBy": "Recovers on Sunday: +{{amount}} on {{time}}.",
+      "nextMatch": "Next match ({{date}}) uses {{drain}} stamina, leaving {{after}}.",
+      "outUntil": "Out until {{date}}."
+    },
+    "history": {
+      "title": "Injury history",
+      "summary_one": "{{severity}}, {{count}} week out",
+      "summary_other": "{{severity}}, {{count}} weeks out",
+      "range": "{{start}} to {{end}}",
+      "ongoing": "Since {{start}}, returns {{end}}",
+      "fromMatch": "From the match on {{date}}"
     }
   },
   "pwa": {

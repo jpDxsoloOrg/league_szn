@@ -12,6 +12,7 @@ import {
 import { getAuthContext, hasRole, requireRole } from '../../lib/auth';
 import { anyMatchHasSimBoosts, resolveSimBoostViewer, withVisibleSimBoosts } from '../../lib/economy/simBoostVisibility';
 import { isConcurrentWriteError } from '../../lib/repositories/errors';
+import { withoutInjuryOverrideActors } from '../../lib/injuries/bookingGate';
 
 /**
  * DELETE /matches/{matchId}/slots/{slotId}/claim
@@ -58,7 +59,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Already empty? Idempotent success — nothing to do.
     if (!slot.playerId) {
-      return success(withVisibleSimBoosts(match, await resolveSimBoostViewer(authContext, anyMatchHasSimBoosts([match]))));
+      return success(withVisibleSimBoosts(isAdmin ? match : withoutInjuryOverrideActors(match), await resolveSimBoostViewer(authContext, anyMatchHasSimBoosts([match]))));
     }
 
     if (slot.lockedByAdmin && !isAdmin) {
@@ -121,8 +122,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       updatedAt: now,
     };
 
-    // Only the caller's own sim boost goes back (staff see all).
-    return success(withVisibleSimBoosts(updated, await resolveSimBoostViewer(authContext, anyMatchHasSimBoosts([match]))));
+    // Only the caller's own sim boost goes back (staff see all); INJ-06 override actors are staff only.
+    return success(withVisibleSimBoosts(isAdmin ? updated : withoutInjuryOverrideActors(updated), await resolveSimBoostViewer(authContext, anyMatchHasSimBoosts([match]))));
   } catch (err) {
     console.error('Error releasing slot:', err);
     return serverError('Failed to release slot');

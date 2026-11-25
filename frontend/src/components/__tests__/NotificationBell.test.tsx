@@ -5,7 +5,7 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import type { AppNotification } from '../../types';
 
 const { mockFeatures, mockGetAll, mockGetUnreadCount, mockMarkRead } = vi.hoisted(() => ({
-  mockFeatures: { notifications: true, transfers: false, economy: true },
+  mockFeatures: { notifications: true, transfers: false, economy: true, injuries: false },
   mockGetAll: vi.fn(),
   mockGetUnreadCount: vi.fn(),
   mockMarkRead: vi.fn(),
@@ -71,6 +71,7 @@ describe('NotificationBell source types', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFeatures.transfers = false;
+    mockFeatures.injuries = false;
     mockGetUnreadCount.mockResolvedValue({ count: 0 });
   });
 
@@ -98,6 +99,39 @@ describe('NotificationBell source types', () => {
     expect(screen.getByText('notifications.typeGmInterference')).toBeInTheDocument();
     await userEvent.click(screen.getByText('Something happened'));
     await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(path));
+  });
+
+  // INJ-11
+  it('sends the staff injury notice to the Injury Report while injuries are on', async () => {
+    mockFeatures.injuries = true;
+    await openWith(notification({ type: 'injury_staff_notice', sourceType: 'injury' }));
+
+    expect(screen.getByText('notifications.typeInjury')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Something happened'));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent('/admin/injury-report'));
+  });
+
+  it('sends the staff injury notice home while injuries are off', async () => {
+    await openWith(notification({ type: 'injury_staff_notice', sourceType: 'injury' }), '/events');
+
+    await userEvent.click(screen.getByText('Something happened'));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(/^\/$/));
+  });
+
+  // INJ-12
+  it.each([
+    ['injury_sustained', 'match'],
+    ['injury_recovered', 'injury'],
+    ['injury_healed', 'injury'],
+    ['injury_updated', 'injury'],
+    ['injury_added', 'injury'],
+    ['stamina_adjusted', 'injury'],
+  ] as const)('labels a %s notification as condition and opens the profile', async (type, sourceType) => {
+    await openWith(notification({ type, sourceType }), '/events');
+
+    expect(screen.getByText('notifications.typeInjury')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Something happened'));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent('/profile'));
   });
 
   it('sends a transfer notification home while transfers are off', async () => {

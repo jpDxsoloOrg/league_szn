@@ -23,6 +23,7 @@ import {
   type Repositories,
 } from '../../../lib/repositories';
 import { DEFAULT_ECONOMY_SETTINGS, toEconomySettingsInput } from '../../../lib/policies/economyDefaults';
+import { toCurrentInjury } from '../../../lib/repositories/injuries';
 import { handler as adminRouter } from '../../admin/handler';
 import { handler as recordResult } from '../../matches/recordResult';
 import { handler as deleteMatch } from '../../matches/deleteMatch';
@@ -73,6 +74,30 @@ async function scheduleMatch(participants: string[]): Promise<string> {
 
 const balanceOf = async (id: string) => (await repos.roster.players.findById(id))?.balance ?? 0;
 
+async function setStamina(id: string, stamina: number): Promise<void> {
+  await repos.runInTransaction(async (tx) => {
+    tx.updatePlayerCondition(id, { stamina });
+  });
+}
+
+/** ECO-10: puts an open injury on the player, `weeks` weeks from a Sunday boundary. */
+async function injure(id: string, startedAt: string, returnsAt: string): Promise<void> {
+  const injury = {
+    playerId: id,
+    startedAt,
+    injuryId: `inj-${id}`,
+    source: 'match' as const,
+    severity: 'major' as const,
+    weeks: 4,
+    returnsAt,
+    changes: [],
+  };
+  await repos.runInTransaction(async (tx) => {
+    tx.putInjury(injury);
+    tx.updatePlayerCondition(id, { currentInjury: toCurrentInjury(injury) });
+  });
+}
+
 beforeEach(async () => {
   repos = buildInMemoryRepositories();
   setRepositoriesForTesting(repos);
@@ -119,11 +144,47 @@ describe('POST /shop/purchase', () => {
     expect(await balanceOf(playerId)).toBe(1000 - shop.injuryShield.price);
   });
 
-  it('records a pending stamina top-up', async () => {
+  it('applies a stamina top-up at once (ECO-10): adds stamina and uses the effect', async () => {
     await fund(playerId, 500);
+    await setStamina(playerId, 50);
     const { statusCode, body } = await buy({ item: 'staminaTopUp' });
     expect(statusCode).toBe(201);
     expect(body.effect).toMatchObject({ kind: 'staminaTopUp', amount: shop.staminaTopUp.amount });
+    expect(body.used).toBe(true);
+    const stored = await repos.roster.players.findById(playerId);
+    expect(stored?.stamina).toBe(50 + shop.staminaTopUp.amount);
+    expect(stored?.effects).toEqual([]);
+  });
+
+  it('applies rehab at once (ECO-10): the injury returns a week earlier, logged as rehab', async () => {
+    await fund(playerId, 1000);
+    const now = Date.now();
+    const startedAt = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+    // Four weeks out, on the league week boundary.
+    const { leagueWeekOf } = await import('../../../lib/leagueWeek');
+    const returnsAt = leagueWeekOf(new Date(now + 4 * 7 * 24 * 60 * 60 * 1000)).weekStart.toISOString();
+    await injure(playerId, startedAt, returnsAt);
+
+    const { statusCode, body } = await buy({ item: 'rehab' });
+    expect(statusCode).toBe(201);
+    expect(body.used).toBe(true);
+
+    const expected = new Date(Date.parse(returnsAt) - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const stored = await repos.roster.players.findById(playerId);
+    expect(Math.abs(Date.parse(stored!.currentInjury!.returnsAt) - Date.parse(expected))).toBeLessThanOrEqual(60 * 60 * 1000);
+    expect(stored?.effects).toEqual([]);
+    const row = await repos.injuries.get(playerId, startedAt);
+    expect(row?.returnsAt).toBe(stored?.currentInjury?.returnsAt);
+    expect(row?.changes).toEqual([expect.objectContaining({ kind: 'rehab', returnsAtBefore: returnsAt })]);
+  });
+
+  it('refuses rehab with less than two weeks left (409)', async () => {
+    await fund(playerId, 1000);
+    const now = Date.now();
+    await injure(playerId, new Date(now - 1000).toISOString(), new Date(now + 3 * 24 * 60 * 60 * 1000).toISOString());
+    const { statusCode, body } = await buy({ item: 'rehab' });
+    expect(statusCode).toBe(409);
+    expect(body.code).toBe('INJURY_TOO_SHORT');
   });
 
   it('refuses rehab without an active injury (409) and charges nothing', async () => {
@@ -166,6 +227,7 @@ describe('POST /shop/purchase', () => {
 
   it('charges a resent requestId only once', async () => {
     await fund(playerId, 1000);
+    await setStamina(playerId, 50);
     const first = await buy({ item: 'staminaTopUp', requestId: 'req-1' });
     const second = await buy({ item: 'staminaTopUp', requestId: 'req-1' });
     expect(first.statusCode).toBe(201);
@@ -173,7 +235,9 @@ describe('POST /shop/purchase', () => {
     expect(second.body.alreadyApplied).toBe(true);
     expect(second.body.entry.entryId).toBe(first.body.entry.entryId);
     expect(await balanceOf(playerId)).toBe(1000 - shop.staminaTopUp.price);
-    expect((await repos.roster.players.findById(playerId))?.effects).toHaveLength(1);
+    // ECO-10: the top-up applied once.
+    expect((await repos.roster.players.findById(playerId))?.stamina).toBe(50 + shop.staminaTopUp.amount);
+    expect((await repos.roster.players.findById(playerId))?.effects).toEqual([]);
   });
 
   it('is 403 while the economy feature is off', async () => {

@@ -86,6 +86,82 @@ describe('SimResultPanel', () => {
     expect(within(screen.getByTestId('sim-side-side-2')).getByText('sim.panel.inSpecialty')).toBeInTheDocument();
   });
 
+  // INJ-09
+  it('shows stamina and an injured marker per competitor when conditions are given', () => {
+    const sides = buildSimSides({
+      sides: matchSimSides({ participants: ['p1', 'p2', 'p3', 'p4'], teams: [['p1', 'p2'], ['p3', 'p4']] }),
+      nameOf,
+    });
+    render(
+      <SimResultPanel
+        sides={sides}
+        category="standard"
+        specialtyHits={[]}
+        conditions={[
+          { playerId: 'p1', stamina: 100, maxStamina: 100, injured: false, multiplier: 1 },
+          { playerId: 'p3', stamina: 20.4, maxStamina: 100, injured: true, multiplier: 0.66 },
+        ]}
+        playByPlay={[]}
+        seed={1}
+      />,
+    );
+
+    const hurtSide = screen.getByTestId('sim-side-side-2');
+    expect(within(hurtSide).getByText('sim.panel.stamina 20 100')).toBeInTheDocument();
+    expect(within(hurtSide).getByText('sim.panel.injured')).toBeInTheDocument();
+    const freshSide = screen.getByTestId('sim-side-side-1');
+    expect(within(freshSide).getByText('sim.panel.stamina 100 100')).toBeInTheDocument();
+    expect(within(freshSide).queryByText('sim.panel.injured')).not.toBeInTheDocument();
+  });
+
+  it('names the wrestler on the markers in singles and shows none without conditions', () => {
+    const sides = sidesFromOdds(
+      [
+        { sideId: 'side-1', playerIds: ['p1'], pct: 70 },
+        { sideId: 'side-2', playerIds: ['p2'], pct: 30 },
+      ],
+      nameOf,
+    );
+    const { rerender } = render(
+      <SimResultPanel
+        sides={sides}
+        category="standard"
+        specialtyHits={[]}
+        conditions={[{ playerId: 'p2', stamina: 15, maxStamina: 100, injured: true, multiplier: 0.7 }]}
+        playByPlay={[]}
+        seed={1}
+      />,
+    );
+    expect(screen.getByText('sim.panel.staminaNamed Rock 15 100')).toBeInTheDocument();
+    expect(screen.getByText('sim.panel.injuredNamed Rock')).toBeInTheDocument();
+
+    rerender(<SimResultPanel sides={sides} category="standard" specialtyHits={[]} playByPlay={[]} seed={1} />);
+    expect(screen.queryByText(/sim\.panel\.stamina/)).not.toBeInTheDocument();
+  });
+
+  // ECO-10
+  it('marks a competitor with a bought sim boost', () => {
+    const sides = sidesFromOdds(
+      [
+        { sideId: 'side-1', playerIds: ['p1'], pct: 55 },
+        { sideId: 'side-2', playerIds: ['p2'], pct: 45 },
+      ],
+      nameOf,
+    );
+    render(
+      <SimResultPanel
+        sides={sides}
+        category="standard"
+        specialtyHits={[]}
+        boosts={[{ playerId: 'p1', boost: 5, multiplier: 1.05 }]}
+        playByPlay={[]}
+        seed={1}
+      />,
+    );
+    expect(within(screen.getByTestId('sim-side-side-1')).getByText('sim.panel.boostNamed Cena 5')).toBeInTheDocument();
+    expect(within(screen.getByTestId('sim-side-side-2')).queryByText(/sim\.panel\.boost/)).not.toBeInTheDocument();
+  });
+
   it('reveals the play-by-play beat by beat, rendered from the beat keys and params', () => {
     render(<SimResultPanel sides={[]} category="standard" specialtyHits={[]} playByPlay={beats} seed={3} />);
 

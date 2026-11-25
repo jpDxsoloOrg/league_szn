@@ -26,6 +26,7 @@ const DEFAULT_FEATURES = {
   transfers: false,
   ticker: true,
   economy: false,
+  injuries: false,
 };
 
 const ALL_SEGMENTS = [
@@ -113,6 +114,7 @@ describe('getSiteConfig', () => {
       transfers: false,
       ticker: true,
       economy: false,
+      injuries: false,
     });
   });
 });
@@ -267,6 +269,7 @@ describe('updateSiteConfig', () => {
       transfers: false,
       ticker: true,
       economy: false,
+      injuries: false,
     });
   });
 
@@ -291,6 +294,7 @@ describe('updateSiteConfig', () => {
       transfers: false,
       ticker: true,
       economy: false,
+      injuries: false,
     });
   });
 

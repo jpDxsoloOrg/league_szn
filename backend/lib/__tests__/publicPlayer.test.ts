@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { toOwnPlayer, toPublicPlayer } from '../publicPlayer';
 import type { AuthContext, UserRole } from '../auth';
 import type { PlayerEffect } from '../repositories/types';
+import type { CurrentInjury } from '../repositories/injuries';
 
 function caller(sub: string, ...groups: UserRole[]): AuthContext {
   return { sub, groups, username: sub, email: '' };
@@ -116,6 +117,58 @@ describe('toPublicPlayer', () => {
       ['a Moderator', caller('staff-sub', 'Moderator')],
     ])('shows it to %s', (_label, viewer) => {
       expect(toPublicPlayer(signed, viewer).activeContractId).toBe('c1');
+    });
+  });
+
+  // INJ-03
+  describe('stamina and current injury', () => {
+    const currentInjury: CurrentInjury = {
+      injuryId: 'inj-1',
+      startedAt: '2026-11-24T20:00:00.000Z',
+      returnsAt: '2026-12-06T05:00:00.000Z',
+      severity: 'major',
+      weeks: 2,
+      source: 'storyline',
+      note: 'Written off for the movie shoot',
+    };
+    const publicInjury = {
+      injuryId: 'inj-1',
+      startedAt: '2026-11-24T20:00:00.000Z',
+      returnsAt: '2026-12-06T05:00:00.000Z',
+      severity: 'major',
+      weeks: 2,
+    };
+    const hurt = { ...player, stamina: 35, currentInjury };
+
+    it.each([
+      ['an anonymous caller', null],
+      ['another wrestler', caller('other-sub', 'Wrestler')],
+    ])('shows %s the injury without source or note, and no stamina', (_label, viewer) => {
+      const shaped = toPublicPlayer(hurt, viewer);
+
+      expect(shaped).not.toHaveProperty('stamina');
+      expect(shaped.currentInjury).toEqual(publicInjury);
+    });
+
+    it('shows the player their stamina and the public injury', () => {
+      const shaped = toPublicPlayer(hurt, caller('owner-sub', 'Wrestler'));
+
+      expect(shaped.stamina).toBe(35);
+      expect(shaped.currentInjury).toEqual(publicInjury);
+    });
+
+    it.each(['Admin', 'Moderator'] as const)('shows %s everything', (role) => {
+      const shaped = toPublicPlayer(hurt, caller('staff-sub', role));
+
+      expect(shaped.stamina).toBe(35);
+      expect(shaped.currentInjury).toEqual(currentInjury);
+    });
+
+    it('gives the own-player view stamina and the injury without the note', () => {
+      const shaped = toOwnPlayer(hurt);
+
+      expect(shaped.stamina).toBe(35);
+      expect(shaped.currentInjury).toEqual(publicInjury);
     });
   });
 

@@ -17,6 +17,12 @@ const { mocks } = vi.hoisted(() => ({
 // ECO-14: the no-show control is covered in economy/__tests__/fines.test.tsx.
 vi.mock('../../economy/NoShowButton', () => ({ default: () => null }));
 vi.mock('react-i18next', async () => (await import('./i18nMock')).i18nMock);
+// INJ-11: the injuries feature is off unless a test turns it on.
+const { siteFeatures } = vi.hoisted(() => ({ siteFeatures: { injuries: false } }));
+vi.mock('../../../contexts/SiteConfigContext', () => ({
+  useSiteConfig: () => ({ features: siteFeatures, isLoading: false }),
+}));
+
 vi.mock('../../../services/api', () => ({
   matchesApi: { getAll: mocks.getMatches, delete: mocks.deleteMatch },
   eventsApi: { getAll: mocks.getEvents },

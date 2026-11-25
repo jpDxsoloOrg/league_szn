@@ -4,11 +4,14 @@ import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { firstBookingRefusal } from '../../lib/disciplineGates';
+import { checkInjuryGate, staffInjuryOverride } from '../../lib/injuries/bookingGate';
 
 interface CreateTournamentBody {
   name: string;
   type: 'single-elimination' | 'round-robin';
   participants: string[];
+  /** INJ-06: enter injured players anyway (staff only). */
+  allowInjured?: boolean;
 }
 
 interface BracketMatch {
@@ -107,6 +110,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const entrants = await Promise.all(body.participants.map((id) => players.findById(id)));
     const entrantBlocked = firstBookingRefusal(entrants);
     if (entrantBlocked) return entrantBlocked;
+    const injuryGate = await checkInjuryGate(entrants, {
+      override: staffInjuryOverride(event, body.allowInjured),
+    });
+    if (injuryGate.refusal) return injuryGate.refusal;
 
     const tournament: Record<string, unknown> = {
       tournamentId: uuidv4(),
@@ -124,9 +131,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       tournament.standings = initializeRoundRobinStandings(body.participants);
     }
 
+    if (injuryGate.overrides.length > 0) tournament.injuryOverrides = injuryGate.overrides;
+
     await tournaments.create(tournament);
 
-    return created(tournament);
+    return created(injuryGate.warnings.length > 0 ? { ...tournament, injuryWarnings: injuryGate.warnings } : tournament);
   } catch (err) {
     console.error('Error creating tournament:', err);
     return serverError('Failed to create tournament');

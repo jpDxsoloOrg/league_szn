@@ -16,6 +16,20 @@ import {
   type GmInterferenceRequest,
   type GmInterferenceResolution,
 } from '../gmInterference';
+// INJ-03
+import {
+  InvalidInjuryWriteError,
+  applyInjuryPatch,
+  injuryRowId,
+  validateInjury,
+  validateInjuryPatch,
+  validatePlayerConditionPatch,
+  removesEffect, // ECO-10
+  type Injury,
+  type InjuryPatch,
+  type PlayerConditionGuard,
+  type PlayerConditionPatch,
+} from '../injuries';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
 import type {
   Rivalry,
@@ -55,6 +69,10 @@ export class InMemoryUnitOfWork implements UnitOfWork {
   // the same player fails as it would in DynamoDB (one operation per item).
   private playerWrites = new Set<string>();
   private ledgerPostings: Array<{ input: PostLedgerEntryInput; staged: StagedLedgerEntry }> = [];
+  // INJ-03: a condition write may share the player with a record increment
+  // (DynamoDB merges the two) but with no other player write.
+  private conditionWritePlayers = new Set<string>();
+  private plainPlayerWrites = new Set<string>();
 
   constructor(
     private stores: {
@@ -83,6 +101,9 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       /** ECO-09. Optional so callers that never touch GM interference need not wire it. */
       gmInterference?: Map<string, GmInterferenceRequest>;
 
+      /** INJ-03, keyed by `injuryRowId`. Optional so callers that never touch injuries need not wire it. */
+      injuries?: Map<string, Injury>;
+
       /** ECO-03. Optional so callers that never touch contracts need not wire it. */
       contracts?: Map<string, Contract>;
     },
@@ -92,6 +113,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
 
   updatePlayer(playerId: string, patch: Record<string, unknown>, condition?: PlayerWriteCondition): void {
     this.playerWrites.add(playerId);
+    this.plainPlayerWrites.add(playerId); // INJ-03
     if (condition) {
       this.preconditions.push(() => {
         const player = this.stores.players.get(playerId);
@@ -140,6 +162,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
 
   clearPlayerField(playerId: string, field: string): void {
     this.playerWrites.add(playerId);
+    this.plainPlayerWrites.add(playerId); // INJ-03
     this.staged.push(() => {
       const existing = this.stores.players.get(playerId);
       if (existing) {
@@ -151,6 +174,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
 
   setPlayerTagTeamId(playerId: string, tagTeamId: string): void {
     this.playerWrites.add(playerId);
+    this.plainPlayerWrites.add(playerId); // INJ-03
     this.staged.push(() => {
       const existing = this.stores.players.get(playerId);
       if (existing) {
@@ -654,6 +678,100 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     });
   }
 
+  // ── Stamina & injuries (INJ-03) ──────────────────────────────────
+  private injuriesStore(): Map<string, Injury> {
+    if (!this.stores.injuries) throw new Error('InMemoryUnitOfWork: injuries store not wired');
+    return this.stores.injuries;
+  }
+
+  updatePlayerCondition(playerId: string, patch: PlayerConditionPatch, guard?: PlayerConditionGuard): void {
+    validatePlayerConditionPatch(patch);
+    if (this.conditionWritePlayers.has(playerId)) {
+      throw new InvalidInjuryWriteError(`Player ${playerId} already has a condition write in this unit of work`);
+    }
+    this.conditionWritePlayers.add(playerId);
+    this.playerWrites.add(playerId);
+    const stagedPatch = structuredClone(patch);
+    this.preconditions.push(() => {
+      if (this.plainPlayerWrites.has(playerId)) {
+        throw new InvalidInjuryWriteError(
+          `Player ${playerId} has a condition write and another player write in the same unit of work`,
+        );
+      }
+      const player = this.stores.players.get(playerId);
+      if (!player || player.deletedAt) throw new ConcurrencyError('Player', playerId);
+      if (guard?.stamina !== undefined) {
+        const stored = typeof player.stamina === 'number' ? player.stamina : null;
+        if (stored !== guard.stamina) throw new ConcurrencyError('Player', playerId);
+      }
+      if (guard?.currentInjuryId !== undefined) {
+        const stored = (player.currentInjury as { injuryId?: string } | undefined)?.injuryId ?? null;
+        if (stored !== guard.currentInjuryId) throw new ConcurrencyError('Player', playerId);
+      }
+      // ECO-10: the effect must still sit where it was read.
+      const use = stagedPatch.useEffect;
+      if (use) {
+        const effects = Array.isArray(player.effects) ? (player.effects as PlayerEffect[]) : [];
+        const effect = effects[use.index];
+        if (!effect || effect.effectId !== use.effectId) throw new ConcurrencyError('Player', playerId);
+        if (use.matchesLeft && (effect.kind !== 'injuryShield' || effect.matchesLeft !== use.matchesLeft.before)) {
+          throw new ConcurrencyError('Player', playerId);
+        }
+      }
+    });
+    this.staged.push(() => {
+      const existing = this.stores.players.get(playerId);
+      if (!existing) return;
+      const next: Record<string, unknown> = { ...existing, updatedAt: new Date().toISOString() };
+      if (stagedPatch.stamina !== undefined) next.stamina = stagedPatch.stamina;
+      if (stagedPatch.currentInjury === null) delete next.currentInjury;
+      else if (stagedPatch.currentInjury !== undefined) next.currentInjury = stagedPatch.currentInjury;
+      // ECO-10
+      const use = stagedPatch.useEffect;
+      if (use) {
+        const effects = [...((existing.effects as PlayerEffect[] | undefined) ?? [])];
+        if (removesEffect(use)) {
+          effects.splice(use.index, 1);
+        } else {
+          effects[use.index] = { ...effects[use.index], matchesLeft: use.matchesLeft!.after } as PlayerEffect;
+        }
+        next.effects = effects;
+      }
+      this.stores.players.set(playerId, next);
+    });
+  }
+
+  putInjury(injury: Injury): void {
+    validateInjury(injury);
+    const key = injuryRowId(injury.playerId, injury.startedAt);
+    const row = structuredClone(injury);
+    this.preconditions.push(() => {
+      if (this.injuriesStore().has(key)) throw new ConcurrencyError('Injury', key);
+    });
+    this.staged.push(() => {
+      this.injuriesStore().set(key, row);
+    });
+  }
+
+  updateInjury(playerId: string, startedAt: string, patch: InjuryPatch): void {
+    validateInjuryPatch(patch);
+    const hasChange = Object.entries(patch).some(([field, value]) => (
+      field === 'appendChanges' ? Array.isArray(value) && value.length > 0 : value !== undefined
+    ));
+    if (!hasChange) throw new InvalidInjuryWriteError('An injury update needs at least one change');
+    const key = injuryRowId(playerId, startedAt);
+    const stagedPatch = structuredClone(patch);
+    this.preconditions.push(() => {
+      const stored = this.injuriesStore().get(key);
+      if (!stored || stored.endedAt !== undefined) throw new ConcurrencyError('Injury', key);
+    });
+    this.staged.push(() => {
+      const existing = this.injuriesStore().get(key);
+      if (!existing) return;
+      this.injuriesStore().set(key, applyInjuryPatch(existing, stagedPatch));
+    });
+  }
+
   // ── Contracts (ECO-03) ───────────────────────────────────────────
   private contractsStore(): Map<string, Contract> {
     if (!this.stores.contracts) throw new Error('InMemoryUnitOfWork: contracts store not wired');
@@ -694,6 +812,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
   }
 
   setPlayerActiveContract(playerId: string, contractId: string): void {
+    this.plainPlayerWrites.add(playerId); // INJ-03
     this.preconditions.push(() => {
       const player = this.stores.players.get(playerId);
       if (!player || player.activeContractId !== undefined) {
@@ -712,6 +831,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
   }
 
   clearPlayerActiveContract(playerId: string, expectedContractId: string): void {
+    this.plainPlayerWrites.add(playerId); // INJ-03
     this.preconditions.push(() => {
       if (this.stores.players.get(playerId)?.activeContractId !== expectedContractId) {
         throw new ConcurrencyError('Player', playerId);

@@ -2,6 +2,7 @@ import type { AuthContext } from './auth';
 import { computeDiscipline, type PlayerDisciplineSummary } from './discipline';
 import { isStaff } from './optionalCaller';
 import type { PlayerDeactivation, PlayerEffect, PlayerStrike } from './repositories/types';
+import { toPublicCurrentInjury, type CurrentInjury, type PublicCurrentInjury } from './repositories/injuries'; // INJ-03
 
 interface PrivateAccountFields {
   userId?: string;
@@ -13,6 +14,16 @@ interface PrivateAccountFields {
   effects?: PlayerEffect[];
   /** ECO-13: which contract is active stays with staff and the player; the public badge comes from GET /players/{id}/contract. */
   activeContractId?: string;
+  /** INJ-03: stamina is for staff and the player only. */
+  stamina?: number;
+}
+
+/**
+ * INJ-03: everyone may see that a player is injured and until when; the
+ * source and GM note stay with staff.
+ */
+interface StoredInjuryFields {
+  currentInjury?: CurrentInjury;
 }
 
 /** Stored discipline state. Never leaves in raw form: readers get `discipline`. */
@@ -24,15 +35,18 @@ interface StoredDisciplineFields {
   signupGuardKey?: string;
 }
 
-type PrivatePlayerFields = PrivateAccountFields & StoredDisciplineFields;
+type PrivatePlayerFields = PrivateAccountFields & StoredDisciplineFields & StoredInjuryFields;
 
 export type PublicPlayer<TPlayer> = Omit<TPlayer, keyof PrivatePlayerFields> & PrivateAccountFields & {
   hasLinkedAccount: boolean;
   discipline?: PlayerDisciplineSummary;
+  /** Staff get the stored injury; everyone else the public view. */
+  currentInjury?: CurrentInjury | PublicCurrentInjury;
 };
 
-export type OwnPlayer<TPlayer> = Omit<TPlayer, keyof StoredDisciplineFields> & {
+export type OwnPlayer<TPlayer> = Omit<TPlayer, keyof StoredDisciplineFields | keyof StoredInjuryFields> & {
   discipline: PlayerDisciplineSummary;
+  currentInjury?: PublicCurrentInjury;
 };
 
 /**
@@ -46,13 +60,14 @@ export function toPublicPlayer<TPlayer extends PrivatePlayerFields>(
   caller: AuthContext | null,
 ): PublicPlayer<TPlayer> {
   const {
-    userId, canUploadVideos, hasWrestlerRole, balance, effects, activeContractId,
+    userId, canUploadVideos, hasWrestlerRole, balance, effects, activeContractId, stamina, currentInjury,
     strikes, deactivatedAt,
     deactivations: _deactivations, disciplineVersion: _disciplineVersion, signupGuardKey: _signupGuardKey,
     ...rest
   } = player;
   const isSelf = Boolean(userId) && caller?.sub === userId;
-  const mayReadPrivate = isStaff(caller) || isSelf;
+  const staff = isStaff(caller);
+  const mayReadPrivate = staff || isSelf;
   return {
     ...rest,
     hasLinkedAccount: Boolean(userId),
@@ -62,16 +77,26 @@ export function toPublicPlayer<TPlayer extends PrivatePlayerFields>(
     ...(mayReadPrivate && balance !== undefined ? { balance } : {}),
     ...(mayReadPrivate && effects !== undefined ? { effects } : {}),
     ...(mayReadPrivate && activeContractId !== undefined ? { activeContractId } : {}),
+    ...(mayReadPrivate && stamina !== undefined ? { stamina } : {}),
+    ...(currentInjury !== undefined
+      ? { currentInjury: staff ? currentInjury : toPublicCurrentInjury(currentInjury) }
+      : {}),
     ...(mayReadPrivate ? { discipline: computeDiscipline({ strikes, deactivatedAt }) } : {}),
   };
 }
 
-/** Shape a player's own row for `/players/me`, which keeps the account fields. */
-export function toOwnPlayer<TPlayer extends StoredDisciplineFields>(player: TPlayer): OwnPlayer<TPlayer> {
+/** Shape a player's own row for `/players/me`, which keeps the account fields (stamina included). */
+export function toOwnPlayer<TPlayer extends StoredDisciplineFields & StoredInjuryFields>(player: TPlayer): OwnPlayer<TPlayer> {
   const {
+    currentInjury,
     strikes, deactivatedAt,
     deactivations: _deactivations, disciplineVersion: _disciplineVersion, signupGuardKey: _signupGuardKey,
     ...rest
   } = player;
-  return { ...rest, discipline: computeDiscipline({ strikes, deactivatedAt }) };
+  return {
+    ...rest,
+    discipline: computeDiscipline({ strikes, deactivatedAt }),
+    // INJ-03: the player sees their injury without the GM note.
+    ...(currentInjury !== undefined && { currentInjury: toPublicCurrentInjury(currentInjury) }),
+  };
 }

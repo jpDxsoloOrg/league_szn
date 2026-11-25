@@ -22,7 +22,7 @@ Die Anzeige oben im Editor zeigt, was du ausgegeben hast, dein Budget und was ü
 
 ## Werte und was sie kosten
 
-Es gibt vier Werte: **Schläge**, **Griffe**, **Beweglichkeit** und **Ausdauer**. Jeder Wert startet bei 40 und geht bis maximal 100. Je höher ein Wert ist, desto mehr kostet jeder weitere Punkt:
+Es gibt vier Werte: **Schläge**, **Griffe**, **Beweglichkeit** und **Zähigkeit**. Jeder Wert startet bei 40 und geht bis maximal 100. Je höher ein Wert ist, desto mehr kostet jeder weitere Punkt:
 
 | Wert | Kosten pro Punkt |
 |------|------------------|
@@ -32,7 +32,7 @@ Es gibt vier Werte: **Schläge**, **Griffe**, **Beweglichkeit** und **Ausdauer**
 
 Einen Wert von 40 auf 75 zu bringen kostet also 35 Punkte, ihn ganz auf 100 zu bringen 95. Der Editor zeigt neben jedem Regler, was der nächste Punkt kostet, und stoppt dich, wenn deine Punkte aufgebraucht sind.
 
-Welche Werte am meisten zählen, hängt vom Match ab. Ein Ladder-Match setzt auf Beweglichkeit, ein Submission-Match auf Griffe, ein Iron-Man-Match auf Ausdauer, ein Street Fight auf Schläge und ein Käfig-Match auf Schläge und Griffe. Ein Standard-Match gewichtet alle vier, Schläge und Griffe ein wenig stärker.
+Welche Werte am meisten zählen, hängt vom Match ab. Ein Ladder-Match setzt auf Beweglichkeit, ein Submission-Match auf Griffe, ein Iron-Man-Match auf Zähigkeit, ein Street Fight auf Schläge und ein Käfig-Match auf Schläge und Griffe. Ein Standard-Match gewichtet alle vier, Schläge und Griffe ein wenig stärker.
 
 ## Stile
 
@@ -42,8 +42,8 @@ Dein Stil gibt dir einen kostenlosen Bonus auf deine Werte und entscheidet, gege
 |------|-------|-------------|---------------|
 | **Powerhouse** | +8 Griffe | High-Flyer | Striker |
 | **High-Flyer** | +8 Beweglichkeit | Techniker | Powerhouse |
-| **Techniker** | +4 Griffe, +4 Ausdauer | Brawler | High-Flyer |
-| **Brawler** | +4 Schläge, +4 Ausdauer | Striker | Techniker |
+| **Techniker** | +4 Griffe, +4 Zähigkeit | Brawler | High-Flyer |
+| **Brawler** | +4 Schläge, +4 Zähigkeit | Striker | Techniker |
 | **Striker** | +8 Schläge | Powerhouse | Brawler |
 | **Allrounder** | +2 auf jeden Wert | Weder Vorteil noch Schwäche | Weder Vorteil noch Schwäche |
 

@@ -70,6 +70,6 @@ Schreib eine **Notiz an den Spieler**, wenn er wissen soll, warum, und eine **in
 
 ## Der Shop und der Sim-Eingriff
 
-Verletzungen, Ausdauer und die Match-Simulation kommen später. Bis dahin sehen Spieler Verletzungsschutz, Reha, Ausdauer-Auffüllung und Sim-Eingriff als **Bald verfügbar** und können sie nicht kaufen. Der GM-Eingriff funktioniert schon jetzt. Die Preise kannst du bereits festlegen, damit alles bereit ist, wenn diese Features starten.
+Alle Shop-Artikel sind jetzt kaufbar. Verletzungsschutz, Reha und Ausdauer-Auffüllung wirken auf Ausdauer und Verletzungen, machen also nur einen Unterschied, solange der Schalter **Ausdauer & Verletzungen** an ist; siehe [Admin: Verletzungen](admin-injuries).
 
 Ein Sim-Eingriff wird für ein angesetztes Match gekauft, in dem der Spieler steht. Wer ihn gekauft hat, bleibt privat: GMs sehen jeden Eingriff an einem Match, jeder Spieler nur seinen eigenen. Trägst du das Ergebnis dieses Matches von Hand ein, statt es zu simulieren, oder löschst du es, bekommt der Spieler sein Geld automatisch zurück.

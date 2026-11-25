@@ -25,6 +25,9 @@ const ALL_FEATURES: SiteFeatures = {
   notifications: true,
   rivalries: true,
   transfers: true,
+  ticker: true,
+  economy: true,
+  injuries: true,
 };
 
 function renderTabBar(route = '/') {

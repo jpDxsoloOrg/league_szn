@@ -49,8 +49,15 @@ import { MotnToggleButton } from '../matches/MotnToggleButton';
 import { formatCalendarDate, toCalendarDate } from '../../utils/dateUtils';
 import { describeSides, formatMatchType, groupMatchSides, sideTagTeamFor } from '../../utils/matchDisplay';
 import { DESIGNATION_LABEL_KEYS, EVENT_STATUS_TONES, EVENT_TYPE_TONES } from './eventDisplay';
+// INJ-11
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import ConditionReportTable from '../injuries/ConditionReportTable';
+import InjuredParticipantsBanner from '../injuries/InjuredParticipantsBanner';
+import type { MatchInjuryFields } from '../../types/injuryReport';
 import { findMoveTarget, isPreShowCard, swapCards } from './cardOrder';
 import type { CardMoveDirection } from './cardOrder';
+import { useInjuriesByPlayer } from '../injuries/useInjuriesByPlayer';
+import type { PublicCurrentInjury } from '../../types/injury';
 import '../posterHero.css';
 import './EventDetail.css';
 
@@ -80,6 +87,8 @@ export default function EventDetail() {
   const signupBlock = useSignupBlock();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  // INJ-11: staff see injury banners and condition reports while injuries are on.
+  const { features } = useSiteConfig();
   const {
     isAdminOrModerator,
     isAuthenticated,
@@ -278,11 +287,12 @@ export default function EventDetail() {
       lockedByAdmin?: boolean;
       teamLabel?: string | null;
       wrestlerChoice?: 'main' | 'alternate';
+      allowInjured?: boolean;
     },
   ) => {
     if (!editingSlot) return;
     try {
-      await matchesApi.adminUpdateSlot(editingSlot.matchId, editingSlot.slot.slotId, patch);
+      return await matchesApi.adminUpdateSlot(editingSlot.matchId, editingSlot.slot.slotId, patch);
     } finally {
       // adminUpdateSlot can also flip the match's status (filling the last
       // slot, clearing one, etc.), so refresh admin data too.
@@ -658,6 +668,12 @@ export default function EventDetail() {
     [checkInRoster],
   );
 
+  // INJ-12: injury badges on matches still to be wrestled.
+  const hasOpenMatches = (eventData?.enrichedMatches ?? []).some(
+    (entry) => entry.matchData && entry.matchData.status !== 'completed',
+  );
+  const injuriesByPlayer = useInjuriesByPlayer(hasOpenMatches);
+
   // Refetches keep the current page on screen so open forms and slots survive.
   if (loading && eventData?.eventId !== eventId) {
     return (
@@ -788,6 +804,7 @@ export default function EventDetail() {
         match={match}
         isCompleted={match.matchData?.status === 'completed'}
         isAdmin={isAdminOrModerator}
+        showInjuryInfo={isAdminOrModerator && features.injuries}
         isDeleting={deletingMatchId === match.matchId}
         isSavingOrder={savingCardOrder}
         orderControls={canAddMatch ? renderMoveControls(match) : undefined}
@@ -809,6 +826,7 @@ export default function EventDetail() {
           ? () => void handleRemoveCard(enrichedMatches.indexOf(match))
           : undefined}
         onMatchUpdated={refreshAfterMutation}
+        injuries={injuriesByPlayer}
       >
         {slots && slots.length > 0 && match.matchData && (
           <MatchSlots
@@ -1133,6 +1151,7 @@ export default function EventDetail() {
         bookingInfoByPlayerId={bookingInfo}
         onSave={handleSlotEditSave}
         onClose={() => setEditingSlot(null)}
+        injuriesEnabled={features.injuries}
       />
     </div>
   );
@@ -1144,7 +1163,7 @@ interface MatchEntryProps {
     matchId: string;
     designation: MatchDesignation;
     notes?: string;
-    matchData: {
+    matchData: ({
       matchId: string;
       matchFormat: string;
       stipulationId?: string;
@@ -1168,10 +1187,12 @@ interface MatchEntryProps {
       // BLD-14
       resultSource?: MatchResultSource;
       simulation?: StoredMatchSimulation;
-    } | null;
+    } & MatchInjuryFields) | null;
   };
   isCompleted: boolean;
   isAdmin?: boolean;
+  /** INJ-11: staff with injuries on see the injured-participant banner and the condition report. */
+  showInjuryInfo?: boolean;
   isDeleting?: boolean;
   /** True while the card order saves. A delete or edit must not overlap that write. */
   isSavingOrder?: boolean;
@@ -1192,12 +1213,15 @@ interface MatchEntryProps {
   onMatchUpdated?: () => void;
   /** Slot list, shown inside the match row so it does not read as a second card. */
   children?: ReactNode;
+  /** INJ-12: injured players by id, badged until the match is completed. */
+  injuries?: ReadonlyMap<string, PublicCurrentInjury>;
 }
 
 function MatchEntry({
   match,
   isCompleted,
   isAdmin = false,
+  showInjuryInfo = false,
   isDeleting = false,
   isSavingOrder = false,
   orderControls,
@@ -1210,6 +1234,7 @@ function MatchEntry({
   onRemoveCard,
   onMatchUpdated,
   children,
+  injuries,
 }: MatchEntryProps) {
   const { t } = useTranslation();
   const { designation, matchData } = match;
@@ -1237,6 +1262,10 @@ function MatchEntry({
   }
 
   const isDraw = isCompleted && (matchData.winners?.length ?? 0) > 0 && (matchData.losers?.length ?? 0) === 0;
+  const participantName = (participantId: string): string => {
+    const participant = matchData.participants.find((entry) => entry.playerId === participantId);
+    return participant?.wrestlerName || participant?.playerName || t('common.unknown');
+  };
 
   return (
     <article className={entryClass}>
@@ -1266,9 +1295,14 @@ function MatchEntry({
         matchFormat={matchData.matchFormat}
         winners={isCompleted && !isDraw ? matchData.winners : undefined}
         losers={isCompleted ? matchData.losers : undefined}
+        injuries={isCompleted ? undefined : injuries}
       />
 
       {match.notes && <p className="event-match__notes">{match.notes}</p>}
+
+      {showInjuryInfo && matchData.status === 'scheduled' && (
+        <InjuredParticipantsBanner injuredParticipants={matchData.injuredParticipants} nameOf={participantName} />
+      )}
 
       {children}
 
@@ -1301,6 +1335,10 @@ function MatchEntry({
             />
           )}
         </div>
+      )}
+
+      {isCompleted && showInjuryInfo && (
+        <ConditionReportTable report={matchData.conditionReport} nameOf={participantName} />
       )}
 
       {isAdmin && (onRecordResult || onEdit || onCloseSignups || onDelete) && (

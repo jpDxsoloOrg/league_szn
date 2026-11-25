@@ -8,6 +8,9 @@ import { handler as updateHeatConfigHandler } from './updateHeatConfig';
 import { handler as getEconomyConfigHandler } from './getEconomyConfig';
 import { handler as updateEconomyConfigHandler } from './updateEconomyConfig';
 import { handler as getEconomyCatalogHandler } from './getEconomyCatalog';
+import { handler as getInjuryConfigHandler } from './getInjuryConfig'; // INJ-01
+import { handler as updateInjuryConfigHandler } from './updateInjuryConfig'; // INJ-01
+import { handler as runInjuryRecoveryHandler } from './runInjuryRecovery'; // INJ-05
 import { handler as shopPurchaseHandler } from '../shop/purchase'; // ECO-08
 // ECO-09
 import {
@@ -83,6 +86,28 @@ export const routes: ReadonlyArray<RouteConfig> = [
     method: 'GET',
     handler: getEconomyCatalogHandler,
     access: 'public',
+  },
+
+  // INJ-01: stamina and injury tunables. Staff read, Admin saves.
+  {
+    resource: '/admin/injury-config',
+    method: 'GET',
+    handler: getInjuryConfigHandler,
+    access: STAFF,
+  },
+  {
+    resource: '/admin/injury-config',
+    method: 'PUT',
+    handler: updateInjuryConfigHandler,
+    access: ADMIN_ONLY,
+  },
+
+  // INJ-05: run this week's recovery now (same once-per-week claim as the job).
+  {
+    resource: '/admin/injury-recovery',
+    method: 'POST',
+    handler: runInjuryRecoveryHandler,
+    access: ADMIN_ONLY,
   },
 
   // ECO-08: the player buys for themselves; the handler checks the Wrestler role.

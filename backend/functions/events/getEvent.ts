@@ -6,6 +6,7 @@ import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { authenticate } from '../../lib/authenticate';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { toPublicMatchSimulation } from '../../lib/sim/publicSimulation';
+import { injuredParticipantsField, injuryFlagsEnabled } from '../../lib/injuries/scheduledMatchFlags'; // INJ-07
 import { bookablePsnId } from '../../lib/disciplineGates';
 import { hydrateMatchSlots } from '../matches/hydrateSlots';
 import type { TagTeamIndex } from '../../lib/tagTeams/resolveTagTeams';
@@ -77,6 +78,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const getTagTeamIndex = (): Promise<TagTeamIndex | null> => {
       tagTeamIndexPromise ??= loadTagTeamIndex();
       return tagTeamIndexPromise;
+    };
+
+    // INJ-07: the injuries flag is read at most once, and only when a card
+    // has a scheduled match to flag.
+    let injuryFlagsPromise: Promise<boolean> | undefined;
+    const getInjuryFlagsOn = (): Promise<boolean> => {
+      injuryFlagsPromise ??= injuryFlagsEnabled();
+      return injuryFlagsPromise;
     };
 
     // Build enrichedMatches array matching the EventWithMatches frontend type
@@ -161,6 +170,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
         const userRatingForMatch = userRatingsByMatchId.get(match.matchId);
         const tagTeamIndex = match.teams && match.teams.length > 0 ? await getTagTeamIndex() : null;
+        // INJ-07: participants injured on the match date (return dates only).
+        const injuryLookup = match.status === 'scheduled' && (await getInjuryFlagsOn()) ? playerLookup : null;
 
         return {
           position: card.position,
@@ -180,6 +191,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             isChampionship: match.isChampionship || false,
             championshipName,
             status: match.status,
+            ...injuredParticipantsField(match, injuryLookup), // INJ-07
             ...(hydratedSlots && { slots: hydratedSlots, slotsRequired: match.slotsRequired }),
             ...(match.starRating != null && { starRating: match.starRating }),
             ...(match.ratingAverage != null && { ratingAverage: match.ratingAverage }),
@@ -195,6 +207,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             ...(match.simulation && {
               simulation: callerIsStaff ? match.simulation : toPublicMatchSimulation(match.simulation),
             }),
+            // INJ-11: the condition report (stamina, chance, roll) is staff only.
+            ...(callerIsStaff && match.conditionReport && { conditionReport: match.conditionReport }),
           },
         };
       })

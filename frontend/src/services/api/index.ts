@@ -34,6 +34,10 @@ export { usersApi, BULK_USERS_MAX } from './users.api';
 export type { BulkUserAction, BulkUserRole, BulkUserResult } from './users.api';
 export { siteConfigApi } from './siteConfig.api';
 export { economyApi } from './economy.api';
+
+// INJ-10
+export { injuriesApi } from './injuries.api';
+
 // ECO-12
 export { contractsApi } from './contracts.api';
 

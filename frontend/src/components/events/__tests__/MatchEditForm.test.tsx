@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -29,6 +29,12 @@ const {
   mockGetAllDivisions: vi.fn(),
 }));
 
+// INJ-11: the injuries feature is off unless a test turns it on.
+const { siteFeatures } = vi.hoisted(() => ({ siteFeatures: { injuries: false } }));
+vi.mock('../../../contexts/SiteConfigContext', () => ({
+  useSiteConfig: () => ({ features: siteFeatures, isLoading: false }),
+}));
+
 vi.mock('../../../services/api', () => ({
   matchesApi: {
     getAll: mockGetAllMatches,
@@ -47,6 +53,7 @@ vi.mock('../../../services/api', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string, fallback?: string | { defaultValue?: string }) =>
       (typeof fallback === 'string' ? fallback : fallback?.defaultValue) ?? key,
   }),
@@ -56,6 +63,7 @@ vi.mock('../MatchEditForm.css', () => ({}));
 vi.mock('../../admin/SearchableSelect.css', () => ({}));
 
 import MatchEditForm from '../MatchEditForm';
+import { ApiError } from '../../../services/api/apiClient';
 
 // --- Test data ---
 const mockPlayers = [
@@ -405,5 +413,79 @@ describe('MatchEditForm', () => {
 
     // Cancel button should still be rendered in the error state
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+  });
+});
+
+// INJ-11
+describe('MatchEditForm injury override', () => {
+  const returnsAt = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
+  const injuredUndertaker = {
+    ...mockPlayers[2]!,
+    currentInjury: { startedAt: '2024-01-01', returnsAt, severity: 'moderate', weeks: 2 },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    siteFeatures.injuries = true;
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([mockPlayers[0], mockPlayers[1], injuredUndertaker]);
+  });
+
+  afterEach(() => {
+    siteFeatures.injuries = false;
+  });
+
+  const undertakerButton = async () =>
+    (await screen.findByText('Undertaker', { selector: '.match-edit-form__player-name' })).closest('button')!;
+
+  it('tags an injured player and keeps them disabled until the override is ticked', async () => {
+    render(<MatchEditForm matchId="m1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    const button = await undertakerButton();
+    expect(button).toBeDisabled();
+    expect(button).toHaveTextContent('injuryReport.booking.injuredUntil');
+
+    await userEvent.click(screen.getByRole('checkbox', { name: /injuryReport.booking.allowInjured/ }));
+    expect(button).toBeEnabled();
+  });
+
+  it('sends allowInjured and shows the warnings the save returns', async () => {
+    const onSuccess = vi.fn();
+    mockUpdateMatch.mockResolvedValue({
+      injuryWarnings: [{ code: 'PLAYER_INJURED', playerId: 'p3', name: 'Undertaker', returnsAt, message: '' }],
+    });
+    render(<MatchEditForm matchId="m1" onSuccess={onSuccess} onCancel={vi.fn()} />);
+
+    await userEvent.click(await screen.findByRole('checkbox', { name: /injuryReport.booking.allowInjured/ }));
+    await userEvent.click(await undertakerButton());
+    await userEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+
+    await waitFor(() => expect(mockUpdateMatch).toHaveBeenCalledTimes(1));
+    expect(mockUpdateMatch.mock.calls[0]![1]).toMatchObject({ participants: ['p1', 'p2', 'p3'], allowInjured: true });
+    expect(await screen.findByText('injuryReport.booking.warningLine')).toBeInTheDocument();
+    expect(onSuccess).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'injuryReport.booking.done' }));
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the injury refusal when the save is refused', async () => {
+    mockUpdateMatch.mockRejectedValue(new ApiError('Undertaker is injured', 409, {
+      code: 'PLAYER_INJURED',
+      body: { code: 'PLAYER_INJURED', playerId: 'p3', returnsAt },
+    }));
+    render(<MatchEditForm matchId="m1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    await screen.findByText('Undertaker', { selector: '.match-edit-form__player-name' });
+    await userEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('injuryReport.booking.refused');
+  });
+
+  it('leaves the pickers alone while the injuries feature is off', async () => {
+    siteFeatures.injuries = false;
+    render(<MatchEditForm matchId="m1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    expect(await undertakerButton()).toBeEnabled();
+    expect(screen.queryByRole('checkbox', { name: /injuryReport.booking.allowInjured/ })).not.toBeInTheDocument();
   });
 });

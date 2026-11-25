@@ -51,6 +51,8 @@ Each wrestler gets a rating from:
 2. **Moves**: the level of their best finisher, and the average level of their signatures.
 3. **Form**: how they've done in the current season, from league points per match and the strength of the opponents they've faced. Wins over strong opponents count for more. With no active season, the sim reads their last 10 matches. A wrestler with no matches yet is rated as average.
 4. **Specialty**: a 6% boost when the match's category is their specialty (3% for an All-rounder).
+5. **Condition**: with stamina and injuries switched on, a tired wrestler is rated lower, and an injured wrestler booked with the override lower still. The preview shows each wrestler's stamina. See [Admin: Injuries](admin-injuries).
+6. **Sim interference**: a player who bought it in the shop for this match gets a rating boost. The preview shows it to GMs only.
 
 A side's rating is the average of its wrestlers, so a tag team with one strong and one weak member lands in between. Then the **style matchup** adds or takes away 5% for each opponent their style beats or loses to (see the circle in [Wrestler Builds](wrestler-builds)). The ratings turn into win chances that add up to 100%, and every side keeps at least a 5% chance. That floor is why upsets always stay possible.
 

@@ -46,6 +46,7 @@ function sourceTypeLabel(sourceType: AppNotification['sourceType']): string {
     case 'progression': return 'notifications.typeProgression';
     case 'contract': return 'notifications.typeContract';
     case 'economy': return 'notifications.typeEconomy';
+    case 'injury': return 'notifications.typeInjury'; // INJ-12
     default: return 'notifications.typeAnnouncement';
   }
 }
@@ -59,6 +60,22 @@ function gmInterferenceRoute(notification: AppNotification): { path: string; lab
     return { path: '/shop', labelKey: 'notifications.typeGmInterference' };
   }
   return null;
+}
+
+// INJ-11: the staff injury notice opens the Injury Report (home while injuries are off).
+function injuryStaffRoute(notification: AppNotification, injuriesEnabled: boolean): { path: string; labelKey: string } | null {
+  if (notification.type !== 'injury_staff_notice') return null;
+  return { path: injuriesEnabled ? '/admin/injury-report' : '/', labelKey: 'notifications.typeInjury' };
+}
+
+// INJ-12: injury and stamina notifications open the player's own profile, where the meter and history are.
+const INJURY_NOTIFICATION_TYPES: ReadonlySet<AppNotification['type']> = new Set<AppNotification['type']>([
+  'injury_sustained', 'injury_recovered', 'injury_healed', 'injury_updated', 'injury_added', 'stamina_adjusted',
+]);
+
+function injuryRoute(notification: AppNotification): { path: string; labelKey: string } | null {
+  if (!INJURY_NOTIFICATION_TYPES.has(notification.type) && notification.sourceType !== 'injury') return null;
+  return { path: '/profile', labelKey: 'notifications.typeInjury' };
 }
 
 /** ECO-13: where a contract or money notification goes, or null when it isn't one. Home while the economy is off. */
@@ -246,8 +263,10 @@ export default function NotificationBell() {
       return;
     }
     navigate(gmInterferenceRoute(notification)?.path
+      ?? injuryStaffRoute(notification, features.injuries)?.path
+      ?? injuryRoute(notification)?.path
       ?? getNavigationPath(notification, playerId, features.transfers, Boolean(features.economy)));
-  }, [navigate, playerId, features.transfers, features.economy]);
+  }, [navigate, playerId, features.transfers, features.economy, features.injuries]);
 
   const handleDeleteNotification = useCallback(async (e: React.MouseEvent, notification: AppNotification) => {
     e.stopPropagation();
@@ -318,7 +337,10 @@ export default function NotificationBell() {
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <span className="notification-item-badge-label">
-                    {t(gmInterferenceRoute(notification)?.labelKey ?? sourceTypeLabel(notification.sourceType))}
+                    {t(gmInterferenceRoute(notification)?.labelKey
+                      ?? injuryStaffRoute(notification, features.injuries)?.labelKey
+                      ?? injuryRoute(notification)?.labelKey
+                      ?? sourceTypeLabel(notification.sourceType))}
                   </span>
                   <span className="notification-item-message">{notification.message}</span>
                   <span className="notification-item-time">

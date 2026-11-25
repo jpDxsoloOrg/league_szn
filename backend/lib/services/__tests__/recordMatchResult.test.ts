@@ -29,6 +29,8 @@ vi.mock('../../repositories', () => ({
     leagueOps: { events: mockEventsRepo },
     roster: { players: mockPlayersRepo },
     season: { seasons: { findById: vi.fn() } },
+    // INJ-04: injuries off, so no drain is planned
+    user: { siteConfig: { getFeatures: async () => ({ injuries: false }) } },
     runInTransaction: mockRunInTransaction,
   }),
 }));

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Star } from 'lucide-react';
+import { Activity, Star, Zap } from 'lucide-react';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import type { SimCategory } from '../../constants/simCategories';
-import type { SimBeat } from '../../types';
+import type { SimBeat, SimBoostApplied, SimCondition } from '../../types';
 import type { SimPanelSide } from './simSides';
 import './SimResultPanel.css';
 
@@ -20,15 +20,22 @@ interface SimOddsListProps {
   sides: SimPanelSide[];
   specialtyHits: string[];
   winnerSideId?: string;
+  /** INJ-09: stamina and injury per player (staff only, injuries feature on). */
+  conditions?: SimCondition[];
+  /** ECO-10: bought sim boosts per player (staff only). */
+  boosts?: SimBoostApplied[];
 }
 
 /**
- * Each side with its members, the "in specialty" marker and, when the sides
- * carry odds (staff only), a win-chance bar.
+ * Each side with its members, the "in specialty" marker, stamina and injury
+ * markers (staff only) and, when the sides carry odds (staff only), a
+ * win-chance bar.
  */
-export function SimOddsList({ sides, specialtyHits, winnerSideId }: SimOddsListProps) {
+export function SimOddsList({ sides, specialtyHits, winnerSideId, conditions, boosts }: SimOddsListProps) {
   const { t } = useTranslation();
   const hitSet = new Set(specialtyHits);
+  const conditionById = new Map((conditions ?? []).map((condition) => [condition.playerId, condition]));
+  const boostById = new Map((boosts ?? []).map((boost) => [boost.playerId, boost]));
 
   return (
     <ul className="sim-odds" aria-label={t('sim.panel.sidesLabel')}>
@@ -53,24 +60,62 @@ export function SimOddsList({ sides, specialtyHits, winnerSideId }: SimOddsListP
               />
             )}
             <ul className="sim-odds__members">
-              {side.members.map((member) => (
-                <li key={member.playerId} className="sim-odds__member">
-                  {showMembers && <span>{member.name}</span>}
-                  {hitSet.has(member.playerId) && (
-                    <span className="sim-odds__specialty" title={t('sim.panel.specialtyHint')}>
-                      <Star size={12} aria-hidden="true" />
-                      {showMembers
-                        ? t('sim.panel.inSpecialty')
-                        : t('sim.panel.inSpecialtyNamed', { name: member.name })}
-                    </span>
-                  )}
-                </li>
-              ))}
+              {side.members.map((member) => {
+                const condition = conditionById.get(member.playerId);
+                const boost = boostById.get(member.playerId);
+                return (
+                  <li key={member.playerId} className="sim-odds__member">
+                    {showMembers && <span>{member.name}</span>}
+                    {hitSet.has(member.playerId) && (
+                      <span className="sim-odds__specialty" title={t('sim.panel.specialtyHint')}>
+                        <Star size={12} aria-hidden="true" />
+                        {showMembers
+                          ? t('sim.panel.inSpecialty')
+                          : t('sim.panel.inSpecialtyNamed', { name: member.name })}
+                      </span>
+                    )}
+                    {condition && (
+                      <SimConditionMarkers condition={condition} name={showMembers ? undefined : member.name} />
+                    )}
+                    {boost && (
+                      <span className="sim-odds__boost" title={t('sim.panel.boostHint')}>
+                        <Zap size={12} aria-hidden="true" />
+                        {showMembers
+                          ? t('sim.panel.boost', { boost: boost.boost })
+                          : t('sim.panel.boostNamed', { name: member.name, boost: boost.boost })}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </li>
         );
       })}
     </ul>
+  );
+}
+
+interface SimConditionMarkersProps {
+  condition: SimCondition;
+  /** Set when the member's name is not shown next to the markers (singles). */
+  name?: string;
+}
+
+/** INJ-09: a member's stamina and, when hurt, an injured marker. */
+function SimConditionMarkers({ condition, name }: SimConditionMarkersProps) {
+  const { t } = useTranslation();
+  const values = { stamina: Math.round(condition.stamina), max: condition.maxStamina };
+  return (
+    <>
+      <span className="sim-odds__stamina" title={t('sim.panel.conditionHint')}>
+        <Activity size={12} aria-hidden="true" />
+        {name ? t('sim.panel.staminaNamed', { name, ...values }) : t('sim.panel.stamina', values)}
+      </span>
+      {condition.injured && (
+        <Badge tone="loss">{name ? t('sim.panel.injuredNamed', { name }) : t('sim.panel.injured')}</Badge>
+      )}
+    </>
   );
 }
 
@@ -121,6 +166,10 @@ export interface SimResultPanelProps {
   category: SimCategory;
   winnerSideId?: string;
   specialtyHits: string[];
+  /** INJ-09: stamina and injury per player (staff only). */
+  conditions?: SimCondition[];
+  /** ECO-10: bought sim boosts per player (staff only). */
+  boosts?: SimBoostApplied[];
   playByPlay: SimBeat[];
   /** Restarts the story when it changes (a new preview). */
   seed: number;
@@ -137,6 +186,8 @@ export default function SimResultPanel({
   category,
   winnerSideId,
   specialtyHits,
+  conditions,
+  boosts,
   playByPlay,
   seed,
   className = '',
@@ -147,7 +198,13 @@ export default function SimResultPanel({
       <div className="sim-result__meta">
         <Badge tone="primary">{t('sim.panel.category', { category: t(`simCategories.${category}`) })}</Badge>
       </div>
-      <SimOddsList sides={sides} specialtyHits={specialtyHits} winnerSideId={winnerSideId} />
+      <SimOddsList
+        sides={sides}
+        specialtyHits={specialtyHits}
+        winnerSideId={winnerSideId}
+        conditions={conditions}
+        boosts={boosts}
+      />
       <SimPlayByPlay key={seed} beats={playByPlay} />
     </section>
   );
