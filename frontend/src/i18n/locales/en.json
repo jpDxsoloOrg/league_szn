@@ -276,6 +276,7 @@
     "wiki": "Wiki",
     "admin": "Admin",
     "contenders": "Contenders",
+    "freeAgents": "Free Agents",
     "matchSearch": "Match Search",
     "seasonAwards": "Season Awards",
     "factions": "Factions",
@@ -997,6 +998,7 @@
         "rivalries": "Rivalries",
         "heatConfig": "Heat Tunables",
         "economyConfig": "Economy Settings",
+        "contracts": "Contracts",
         "dangerZone": "Danger Zone"
       },
       "groups": {
@@ -2715,6 +2717,146 @@
       "noContendersHint": "Teams need at least {{minMatches}} matches together in the ranking period to qualify",
       "currentChampions": "Current Champions",
       "dissolved": "Dissolved"
+    }
+  },
+  "contracts": {
+    "types": {
+      "tryout": "Tryout",
+      "matches": "Match contract",
+      "season": "Season contract"
+    },
+    "statuses": {
+      "offered": "Offered",
+      "active": "Active",
+      "declined": "Declined",
+      "withdrawn": "Withdrawn",
+      "expired": "Expired",
+      "completed": "Completed",
+      "released": "Released"
+    },
+    "length": {
+      "matches": "{{left}} of {{total}} matches left",
+      "season": "Through {{season}}",
+      "seasonUnknown": "Until the season ends"
+    },
+    "badge": {
+      "freeAgent": "Free agent",
+      "season": "{{type}}, through {{season}}",
+      "matches": "{{type}}, {{left}} of {{total}} matches left"
+    },
+    "desk": {
+      "title": "Contracts",
+      "subtitle": "Offer contracts, follow open offers and release players. Players answer offers from their own account.",
+      "loadFailed": "Could not load contracts.",
+      "offerContract": "Offer contract",
+      "offer": "Offer",
+      "underContract": "Under contract",
+      "unknownPlayer": "Unknown player",
+      "withdraw": "Withdraw",
+      "withdrawTitle": "Withdraw this offer?",
+      "withdrawText": "{{name}} will no longer be able to accept it.",
+      "withdrawn": "Offer withdrawn.",
+      "withdrawFailed": "Failed to withdraw the offer",
+      "release": "Release",
+      "releaseTitle": "Release {{name}}",
+      "releaseText": "The contract ends now and the player becomes a free agent. They will see your note.",
+      "releaseNote": "Reason",
+      "released": "Contract released. The player is a free agent again.",
+      "releaseFailed": "Failed to release the contract",
+      "adjustBalance": "Adjust balance",
+      "tabs": {
+        "active": "Active",
+        "offered": "Offered",
+        "freeAgents": "Free agents",
+        "history": "History"
+      },
+      "empty": {
+        "active": "No one is under contract yet.",
+        "offered": "No open offers.",
+        "freeAgents": "Every player is under contract.",
+        "history": "No past contracts or offers."
+      },
+      "columns": {
+        "player": "Player",
+        "type": "Contract",
+        "length": "Matches left / season",
+        "pay": "Pay per match",
+        "salary": "Weekly salary",
+        "bonus": "Win bonus",
+        "started": "Started",
+        "expires": "Offer expires",
+        "ended": "Ended",
+        "status": "Status",
+        "note": "Note",
+        "record": "Record",
+        "balance": "Balance",
+        "actions": "Actions"
+      }
+    },
+    "offer": {
+      "title": "Offer a contract",
+      "titleFor": "Offer a contract to {{name}}",
+      "submit": "Send offer",
+      "sent": "Offer sent to {{name}}.",
+      "failed": "Failed to send the offer",
+      "loadFailed": "Could not load the contract defaults.",
+      "player": "Player",
+      "pickPlayer": "Pick a player",
+      "noAccount": "No linked account",
+      "type": "Contract type",
+      "season": "Season",
+      "noSeason": "No active season",
+      "matchesTotal": "Length (matches)",
+      "perMatchPay": "Pay per match",
+      "weeklySalary": "Weekly salary",
+      "winBonus": "Win bonus",
+      "tryoutSalaryHint": "Tryouts pay per match only.",
+      "note": "Note to the player (optional)",
+      "expires": "If the player doesn't answer, the offer expires on {{date}}.",
+      "problems": {
+        "amounts": "Fill in every amount with a whole number of 0 or more.",
+        "matchesTotal": "The contract needs at least 1 match.",
+        "noPay": "Set a pay per match or a weekly salary above 0.",
+        "tryoutPay": "A tryout needs a pay per match above 0 and no weekly salary.",
+        "noActiveSeason": "There is no active season, so a season contract can't be offered right now."
+      },
+      "serverErrors": {
+        "invalidType": "Pick a contract type.",
+        "missingPlayer": "Pick a player.",
+        "matchesTotalRequired": "The contract needs a length in matches.",
+        "matchesTotalNotAllowed": "A season contract has no match count.",
+        "seasonRequired": "A season contract needs the active season.",
+        "seasonNotActive": "A season contract can only be for the active season.",
+        "seasonNotAllowed": "Only season contracts name a season.",
+        "invalidAmount": "Every amount must be a whole number of 0 or more.",
+        "noPay": "Set a pay per match or a weekly salary above 0.",
+        "tryoutSalaryNotAllowed": "A tryout pays per match only, with no weekly salary.",
+        "invalidExpiry": "The offer expiry in the economy settings is not valid."
+      }
+    },
+    "balance": {
+      "title": "Adjust {{name}}'s balance",
+      "current": "Current balance: {{balance}}",
+      "submit": "Adjust balance",
+      "amount": "Amount",
+      "amountHint": "Use a minus sign to take money away. The balance can go below zero.",
+      "note": "Reason",
+      "saved": "Balance is now {{balance}}.",
+      "failed": "Failed to adjust the balance"
+    },
+    "freeAgents": {
+      "title": "Free Agents",
+      "subtitle": "Wrestlers without a contract, ready to sign.",
+      "loadFailed": "Could not load the free agents.",
+      "empty": "Every wrestler is under contract right now.",
+      "noDivision": "No division",
+      "offer": "Offer contract",
+      "columns": {
+        "player": "Wrestler",
+        "record": "Record",
+        "division": "Division",
+        "offer": "Contract"
+      }
     }
   },
   "notifications": {

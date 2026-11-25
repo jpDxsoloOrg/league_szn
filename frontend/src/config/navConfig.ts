@@ -20,6 +20,7 @@ import {
   Coins,
   Crown,
   FileText,
+  FileSignature,
   Film,
   Flag,
   Flame,
@@ -48,13 +49,14 @@ import {
   Tv,
   User,
   UserPlus,
+  UserSearch,
   Users,
   UsersRound,
   Video,
 } from 'lucide-react';
 import type { SiteFeatures } from '../services/api';
 
-export type NavFeature = 'challenges' | 'promos' | 'contenders' | 'statistics' | 'stables' | 'rivalries';
+export type NavFeature = 'challenges' | 'promos' | 'contenders' | 'statistics' | 'stables' | 'rivalries' | 'economy';
 
 export type SectionKey = 'home' | 'events' | 'rankings' | 'storylines' | 'me';
 
@@ -144,6 +146,8 @@ export const NAV_SECTIONS: NavSection[] = [
       { path: '/standings', labelKey: 'nav.standings', icon: ListOrdered, matches: ['/player'] },
       { path: '/championships', labelKey: 'nav.tabs.titles', icon: Crown },
       { path: '/contenders', labelKey: 'nav.contenders', icon: Target, feature: 'contenders' },
+      // ECO-12
+      { path: '/free-agents', labelKey: 'nav.freeAgents', icon: UserSearch, feature: 'economy' },
       { path: '/stats', labelKey: 'nav.statistics', icon: ChartColumn, feature: 'statistics', children: STATS_TABS },
       { path: '/awards', labelKey: 'nav.tabs.awards', icon: Award },
     ],
@@ -279,6 +283,8 @@ export const ADMIN_TABS = [
   'overalls',
   'divisions',
   'transfers',
+  // ECO-12
+  'contracts',
   'tag-teams',
   'factions',
   'seasons',
@@ -343,6 +349,8 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { tab: 'overalls', labelKey: 'overalls.admin.title', icon: TrendingUp, minRole: 'Moderator' },
       { tab: 'divisions', labelKey: 'admin.panel.tabs.divisions', icon: LayoutGrid, minRole: 'Moderator' },
       { tab: 'transfers', labelKey: 'admin.panel.tabs.transfers', icon: ArrowLeftRight, minRole: 'Moderator', feature: 'transfers' },
+      // ECO-12
+      { tab: 'contracts', labelKey: 'admin.panel.tabs.contracts', icon: FileSignature, minRole: 'Moderator', feature: 'economy' },
       { tab: 'tag-teams', labelKey: 'admin.panel.tabs.tagTeams', icon: Users, minRole: 'Moderator' },
       { tab: 'factions', labelKey: 'admin.panel.tabs.factions', icon: UsersRound, minRole: 'Moderator' },
     ],

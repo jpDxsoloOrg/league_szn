@@ -19,6 +19,8 @@ export { usersApi, BULK_USERS_MAX } from './users.api';
 export type { BulkUserAction, BulkUserRole, BulkUserResult } from './users.api';
 export { siteConfigApi } from './siteConfig.api';
 export { economyApi } from './economy.api';
+// ECO-12
+export { contractsApi } from './contracts.api';
 export { authApi } from './auth.api';
 export { profileApi } from './profile.api';
 export { statisticsApi } from './statistics.api';

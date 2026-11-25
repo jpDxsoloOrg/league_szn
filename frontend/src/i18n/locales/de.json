@@ -276,6 +276,7 @@
     "wiki": "Wiki",
     "admin": "Admin",
     "contenders": "Herausforderer",
+    "freeAgents": "Free Agents",
     "matchSearch": "Kampf-Suche",
     "seasonAwards": "Saison-Auszeichnungen",
     "factions": "Faktionen",
@@ -997,6 +998,7 @@
         "rivalries": "Rivalitäten",
         "heatConfig": "Heat-Einstellungen",
         "economyConfig": "Wirtschaft",
+        "contracts": "Verträge",
         "dangerZone": "Gefahrenzone"
       },
       "groups": {
@@ -2715,6 +2717,146 @@
       "noContendersHint": "Teams brauchen mindestens {{minMatches}} gemeinsame Matches im Wertungszeitraum, um sich zu qualifizieren",
       "currentChampions": "Aktuelle Champions",
       "dissolved": "Aufgelöst"
+    }
+  },
+  "contracts": {
+    "types": {
+      "tryout": "Probevertrag",
+      "matches": "Match-Vertrag",
+      "season": "Saisonvertrag"
+    },
+    "statuses": {
+      "offered": "Angeboten",
+      "active": "Aktiv",
+      "declined": "Abgelehnt",
+      "withdrawn": "Zurückgezogen",
+      "expired": "Abgelaufen",
+      "completed": "Erfüllt",
+      "released": "Entlassen"
+    },
+    "length": {
+      "matches": "Noch {{left}} von {{total}} Matches",
+      "season": "Bis {{season}}",
+      "seasonUnknown": "Bis Saisonende"
+    },
+    "badge": {
+      "freeAgent": "Free Agent",
+      "season": "{{type}} bis {{season}}",
+      "matches": "{{type}}, noch {{left}} von {{total}} Matches"
+    },
+    "desk": {
+      "title": "Verträge",
+      "subtitle": "Biete Verträge an, behalte offene Angebote im Blick und entlasse Spieler. Spieler beantworten Angebote über ihr eigenes Konto.",
+      "loadFailed": "Die Verträge konnten nicht geladen werden.",
+      "offerContract": "Vertrag anbieten",
+      "offer": "Anbieten",
+      "underContract": "Unter Vertrag",
+      "unknownPlayer": "Unbekannter Spieler",
+      "withdraw": "Zurückziehen",
+      "withdrawTitle": "Angebot zurückziehen?",
+      "withdrawText": "{{name}} kann es dann nicht mehr annehmen.",
+      "withdrawn": "Angebot zurückgezogen.",
+      "withdrawFailed": "Das Angebot konnte nicht zurückgezogen werden",
+      "release": "Entlassen",
+      "releaseTitle": "{{name}} entlassen",
+      "releaseText": "Der Vertrag endet sofort und der Spieler wird Free Agent. Er sieht deine Notiz.",
+      "releaseNote": "Grund",
+      "released": "Vertrag beendet. Der Spieler ist wieder Free Agent.",
+      "releaseFailed": "Der Vertrag konnte nicht beendet werden",
+      "adjustBalance": "Guthaben anpassen",
+      "tabs": {
+        "active": "Aktiv",
+        "offered": "Angeboten",
+        "freeAgents": "Free Agents",
+        "history": "Verlauf"
+      },
+      "empty": {
+        "active": "Noch niemand steht unter Vertrag.",
+        "offered": "Keine offenen Angebote.",
+        "freeAgents": "Alle Spieler stehen unter Vertrag.",
+        "history": "Noch keine früheren Verträge oder Angebote."
+      },
+      "columns": {
+        "player": "Spieler",
+        "type": "Vertrag",
+        "length": "Restliche Matches / Saison",
+        "pay": "Gage pro Match",
+        "salary": "Wochengehalt",
+        "bonus": "Siegprämie",
+        "started": "Beginn",
+        "expires": "Angebot läuft ab",
+        "ended": "Beendet",
+        "status": "Status",
+        "note": "Notiz",
+        "record": "Bilanz",
+        "balance": "Guthaben",
+        "actions": "Aktionen"
+      }
+    },
+    "offer": {
+      "title": "Vertrag anbieten",
+      "titleFor": "{{name}} einen Vertrag anbieten",
+      "submit": "Angebot senden",
+      "sent": "Angebot an {{name}} gesendet.",
+      "failed": "Das Angebot konnte nicht gesendet werden",
+      "loadFailed": "Die Vertragsvorgaben konnten nicht geladen werden.",
+      "player": "Spieler",
+      "pickPlayer": "Spieler auswählen",
+      "noAccount": "Kein verknüpftes Konto",
+      "type": "Vertragsart",
+      "season": "Saison",
+      "noSeason": "Keine aktive Saison",
+      "matchesTotal": "Laufzeit (Matches)",
+      "perMatchPay": "Gage pro Match",
+      "weeklySalary": "Wochengehalt",
+      "winBonus": "Siegprämie",
+      "tryoutSalaryHint": "Probeverträge zahlen nur pro Match.",
+      "note": "Notiz an den Spieler (optional)",
+      "expires": "Wenn der Spieler nicht antwortet, läuft das Angebot am {{date}} ab.",
+      "problems": {
+        "amounts": "Trag bei jedem Betrag eine ganze Zahl ab 0 ein.",
+        "matchesTotal": "Der Vertrag braucht mindestens 1 Match.",
+        "noPay": "Setz eine Gage pro Match oder ein Wochengehalt über 0.",
+        "tryoutPay": "Ein Probevertrag braucht eine Gage pro Match über 0 und kein Wochengehalt.",
+        "noActiveSeason": "Es gibt keine aktive Saison, daher kann gerade kein Saisonvertrag angeboten werden."
+      },
+      "serverErrors": {
+        "invalidType": "Wähl eine Vertragsart.",
+        "missingPlayer": "Wähl einen Spieler.",
+        "matchesTotalRequired": "Der Vertrag braucht eine Laufzeit in Matches.",
+        "matchesTotalNotAllowed": "Ein Saisonvertrag hat keine Match-Anzahl.",
+        "seasonRequired": "Ein Saisonvertrag braucht die aktive Saison.",
+        "seasonNotActive": "Ein Saisonvertrag kann nur für die aktive Saison gelten.",
+        "seasonNotAllowed": "Nur Saisonverträge nennen eine Saison.",
+        "invalidAmount": "Jeder Betrag muss eine ganze Zahl ab 0 sein.",
+        "noPay": "Setz eine Gage pro Match oder ein Wochengehalt über 0.",
+        "tryoutSalaryNotAllowed": "Ein Probevertrag zahlt nur pro Match, ohne Wochengehalt.",
+        "invalidExpiry": "Die Angebotsfrist in den Wirtschaftseinstellungen ist ungültig."
+      }
+    },
+    "balance": {
+      "title": "Guthaben von {{name}} anpassen",
+      "current": "Aktuelles Guthaben: {{balance}}",
+      "submit": "Guthaben anpassen",
+      "amount": "Betrag",
+      "amountHint": "Mit einem Minus ziehst du Geld ab. Das Guthaben kann unter null fallen.",
+      "note": "Grund",
+      "saved": "Das Guthaben beträgt jetzt {{balance}}.",
+      "failed": "Das Guthaben konnte nicht angepasst werden"
+    },
+    "freeAgents": {
+      "title": "Free Agents",
+      "subtitle": "Wrestler ohne Vertrag, bereit zur Unterschrift.",
+      "loadFailed": "Die Free Agents konnten nicht geladen werden.",
+      "empty": "Gerade stehen alle Wrestler unter Vertrag.",
+      "noDivision": "Keine Division",
+      "offer": "Vertrag anbieten",
+      "columns": {
+        "player": "Wrestler",
+        "record": "Bilanz",
+        "division": "Division",
+        "offer": "Vertrag"
+      }
     }
   },
   "notifications": {

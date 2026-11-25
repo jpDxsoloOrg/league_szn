@@ -32,6 +32,7 @@ import DivisionHistory from '../progression/DivisionHistory';
 import DivisionProgress from '../progression/DivisionProgress';
 import DivisionWatchBanners from '../progression/DivisionWatchBanners';
 import { profileViewer } from '../progression/divisionProgressVisibility';
+import ContractBadge from '../economy/ContractBadge';
 import MovesetSection from './MovesetSection';
 import ProfileHero from './ProfileHero';
 import ProfileRivalries from './ProfileRivalries';
@@ -244,6 +245,7 @@ export default function PublicProfile() {
         }
       />
 
+      <ContractBadge playerId={player.playerId} />
       <ConsiderationBanner playerId={player.playerId} />
       <DivisionWatchBanners playerId={player.playerId} viewer={viewer} />
       <RecordSummary

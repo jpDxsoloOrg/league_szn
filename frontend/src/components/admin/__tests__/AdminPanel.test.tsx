@@ -66,7 +66,7 @@ function renderAdminPanel(route: string) {
 describe('AdminPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseSiteConfig.mockReturnValue({ features: { transfers: false }, isLoading: false });
+    mockUseSiteConfig.mockReturnValue({ features: { transfers: false, economy: true }, isLoading: false });
   });
 
   it('renders the correct tab component based on URL parameter', async () => {
@@ -213,7 +213,7 @@ describe('AdminPanel', () => {
   it('shows every registry entry to an Admin', async () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: true });
 
-    mockUseSiteConfig.mockReturnValue({ features: { transfers: true }, isLoading: false });
+    mockUseSiteConfig.mockReturnValue({ features: { transfers: true, economy: true }, isLoading: false });
 
     renderAdminPanel('/admin/players');
     const nav = await screen.findByRole('navigation');

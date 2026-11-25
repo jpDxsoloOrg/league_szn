@@ -1,0 +1,43 @@
+/* Public free agent pool (ECO-12). */
+.free-agents {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.free-agents__player {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.free-agents__player:hover .free-agents__name,
+.free-agents__player:focus-visible .free-agents__name {
+  text-decoration: underline;
+}
+
+.free-agents__names {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.free-agents__name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.free-agents__sub {
+  color: var(--color-text-muted);
+  font-size: var(--text-dense);
+  overflow-wrap: anywhere;
+}
+
+.free-agents__record {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

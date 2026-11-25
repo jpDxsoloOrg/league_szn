@@ -21,7 +21,7 @@ import {
   type NavSection,
 } from './navConfig';
 
-const ALL_ON = { challenges: true, promos: true, contenders: true, statistics: true, stables: true, notifications: true, rivalries: true, transfers: true };
+const ALL_ON = { challenges: true, promos: true, contenders: true, statistics: true, stables: true, notifications: true, rivalries: true, transfers: true, economy: true };
 
 function context(overrides: Partial<NavContext> = {}): NavContext {
   return { features: ALL_ON, isAuthenticated: true, isWrestler: true, isAdminOrModerator: false, isSuperAdmin: false, ...overrides };
@@ -88,7 +88,7 @@ describe('section routing', () => {
 
 describe('flag and role visibility', () => {
   it('hides a tab when its flag is off, and keeps Standings', () => {
-    const features = { ...ALL_ON, statistics: false, contenders: false };
+    const features = { ...ALL_ON, statistics: false, contenders: false, economy: false };
     const paths = getVisibleTabs(section('rankings'), context({ features })).map((tab) => tab.path);
     expect(paths).toEqual(['/standings', '/championships', '/awards']);
   });
@@ -136,6 +136,21 @@ describe('admin registry', () => {
     const tabs = getVisibleAdminGroups(true, features).flatMap((group) => group.entries.map((entry) => entry.tab));
     expect(tabs).toHaveLength(ADMIN_TABS.length - 1);
     expect(tabs).not.toContain('transfers');
+  });
+
+  it('drops the Contracts desk and the Free Agents tab while the economy is off', () => {
+    const features = { ...ALL_ON, economy: false };
+    const tabs = getVisibleAdminGroups(true, features).flatMap((group) => group.entries.map((entry) => entry.tab));
+    expect(tabs).not.toContain('contracts');
+    expect(getVisibleAdminGroups(false, ALL_ON).flatMap((group) => group.entries.map((entry) => entry.tab)))
+      .toContain('contracts');
+    const rankings = NAV_SECTIONS.find((section) => section.key === 'rankings');
+    expect(rankings && getVisibleTabs(rankings, context({ features }))).not.toContainEqual(
+      expect.objectContaining({ path: '/free-agents' }),
+    );
+    expect(rankings && getVisibleTabs(rankings, context())).toContainEqual(
+      expect.objectContaining({ path: '/free-agents' }),
+    );
   });
 
   it('no longer registers the Match Card Builder', () => {

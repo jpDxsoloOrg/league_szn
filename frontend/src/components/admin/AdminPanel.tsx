@@ -35,6 +35,8 @@ const TAB_COMPONENTS: Record<AdminTab, LazyExoticComponent<ComponentType>> = {
   overalls: lazy(() => import('./ManageOveralls')),
   divisions: lazy(() => import('./ManageDivisions')),
   transfers: lazy(() => import('./ManageTransfers')),
+  // ECO-12
+  contracts: lazy(() => import('./ManageContracts')),
   'tag-teams': lazy(() => import('./ManageTagTeams')),
   factions: lazy(() => import('./ManageFactions')),
   seasons: lazy(() => import('./ManageSeasons')),

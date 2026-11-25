@@ -59,6 +59,8 @@ const Achievements = lazy(() => import('./components/statistics/Achievements'));
 const MatchTypeLeaderboards = lazy(() => import('./components/statistics/MatchTypeLeaderboards'));
 const ContenderRankings = lazy(() => import('./components/contenders/ContenderRankings'));
 const MyContenderStatus = lazy(() => import('./components/contenders/MyContenderStatus'));
+// ECO-12
+const FreeAgents = lazy(() => import('./components/economy/FreeAgents'));
 const EventsCalendar = lazy(() => import('./components/events/EventsCalendar'));
 const EventDetail = lazy(() => import('./components/events/EventDetail'));
 const EventResults = lazy(() => import('./components/events/EventResults'));
@@ -345,6 +347,11 @@ function AppLayout() {
             } />
             <Route path="/contenders/my-status" element={
               <FeatureRoute feature="contenders"><MyContenderStatus /></FeatureRoute>
+            } />
+
+            {/* ECO-12: free agent pool - feature-gated */}
+            <Route path="/free-agents" element={
+              <FeatureRoute feature="economy"><FreeAgents /></FeatureRoute>
             } />
 
             {/* Catch-all 404 */}
