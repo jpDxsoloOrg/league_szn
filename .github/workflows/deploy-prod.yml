@@ -99,6 +99,15 @@ jobs:
         working-directory: backend
         run: node scripts/check-api-cutover.js --stage dev
 
+      # INFRA-207 2a to 2b only (plan section 6, PR 2a): read-only diff of the
+      # packaged templates against the live stack. Fails when a function,
+      # permission or the authorizer would be removed or moved, or a
+      # legacy-bridge.js resource drifts from live. PR 2b deletes this step
+      # with legacy-bridge.js.
+      - name: Diff packaged templates against live stack
+        working-directory: backend
+        run: node scripts/diff-live-template.js --stage dev
+
       - name: Deploy backend to production
         id: deploy_backend
         working-directory: backend
@@ -139,6 +148,28 @@ jobs:
             --query id \
             --output text)
           echo "New dev stage deploymentId: $NEW_DEPLOYMENT_ID"
+          # INFRA-207 stage throttling (plan 7.5): a cost and runaway cap only,
+          # not abuse protection. Since the cut-over every unknown path invokes
+          # the api Lambda, and the limit is one budget shared by every client,
+          # so it sits far above organic traffic. Idempotent; stage settings
+          # survive later deployments.
+          # Sizing: R = max(500, ceil(peakMinuteSum / 60) * 20), B = 2 * R, from
+          # the 90-day peak per-minute request Sum on prod (API Gateway Count has
+          # 1-minute resolution). Peak on 2026-11-24: 811 requests in one minute
+          # (2026-11-20 23:26 UTC), about 13.5 rps, so R = 500 and B = 1000.
+          # Query (revisit the values if the peak changes):
+          #   aws cloudwatch get-metric-statistics --namespace AWS/ApiGateway \
+          #     --metric-name Count --dimensions Name=ApiName,Value=dev-wwe-2k-league-api \
+          #     --start-time <now-90d> --end-time <now> --period 60 --statistics Sum
+          # Per-client limiting is a WAF rate-based rule follow-up.
+          aws apigateway update-stage \
+            --rest-api-id "$REST_API_ID" \
+            --stage-name dev \
+            --patch-operations \
+              'op=replace,path=/*/*/throttling/rateLimit,value=500' \
+              'op=replace,path=/*/*/throttling/burstLimit,value=1000' \
+            --query methodSettings \
+            --output json
 
       - name: Extract Cognito IDs from CloudFormation
         id: cognito

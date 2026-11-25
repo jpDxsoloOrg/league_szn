@@ -59,23 +59,24 @@ const nested = (name: string, resources: number, extra: Template = {}): Packaged
 });
 
 describe('check-stack-limits thresholds', () => {
-  it('uses the PR 1 thresholds', () => {
-    expect(ROOT_MAX).toBe(485);
+  it('uses the PR 2a thresholds', () => {
+    expect(ROOT_MAX).toBe(450);
     expect(NESTED_MAX).toBe(450);
     expect(MAX_PARAMETERS).toBe(180);
     expect(MAX_OUTPUTS).toBe(180);
   });
 
-  it('passes a 478-resource root at ROOT_MAX 485', () => {
-    expect(checkStackLimits([root(478)]).failures).toEqual([]);
+  it('fails the pre-2a 478-resource root at ROOT_MAX 450', () => {
+    expect(checkStackLimits([root(478)]).failures).toEqual(['root: 478 resources (max 450)']);
   });
 
-  it('fails a 478-resource root at 450', () => {
-    expect(checkStackLimits([root(478)], { rootMax: 450 }).failures).toEqual(['root: 478 resources (max 450)']);
+  it('passed the same root at the PR 1 limit of 485', () => {
+    expect(checkStackLimits([root(478)], { rootMax: 485 }).failures).toEqual([]);
   });
 
-  it('fails a 486-resource root at 485', () => {
-    expect(checkStackLimits([root(486)]).failures).toEqual(['root: 486 resources (max 485)']);
+  it('passes a 450-resource root and fails a 451-resource one', () => {
+    expect(checkStackLimits([root(450)]).failures).toEqual([]);
+    expect(checkStackLimits([root(451)]).failures).toEqual(['root: 451 resources (max 450)']);
   });
 
   it('passes a 450-resource nested stack and fails a 451-resource one', () => {

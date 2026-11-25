@@ -15,6 +15,12 @@
  *   create-deployment (never with --dry-run), then re-checked.
  * - Check C (live stack lacks the authorizer): fail when the packaged templates
  *   still declare it (a pre-2b template over a stage that has run 2b).
+ * - Check D (while the live stack still has the gateway authorizer): fail when
+ *   the packaged templates are proxy-only (no explicit Methods) but the live
+ *   API has no /{proxy+} resource. That is a 2a (or 2b) template over a stage
+ *   that never ran deploy 1, which would create the proxy and remove every
+ *   explicit route in one deploy, so the refresh step would move all traffic
+ *   onto a router that has never served this stage or been parity-checked.
  * - A missing stack or RestApi (first deploy of a stage) passes every check.
  *
  * See docs/plans/plan-infra-207-api-simplification.md section 7.3.
@@ -30,7 +36,8 @@ const { createAwsCli, describeStackResourceId, getApiResources, isNotFound, pars
 const AUTHORIZER_ID = 'AdminAuthorizerApiGatewayAuthorizer';
 const REST_API_ID = 'ApiGatewayRestApi';
 const PROXY_METHOD_IDS = new Set(['ApiGatewayMethodProxyVarAny', 'ApiGatewayMethodProxyVarOptions']);
-const PROXY_ONLY_PATHS = new Set(['/', '/{proxy+}']);
+const PROXY_PATH = '/{proxy+}';
+const PROXY_ONLY_PATHS = new Set(['/', PROXY_PATH]);
 const DEFAULT_SERVICE = 'wwe-2k-league-api';
 
 /** Whether the packaged templates carry the authorizer, and their non-proxy Methods. */
@@ -60,7 +67,7 @@ function isProxyOnlySubset(paths) {
 }
 
 /**
- * Runs checks A, B and C. `aws` is the live-state reader (see createCliReader):
+ * Runs checks A, B, C and D. `aws` is the live-state reader (see createCliReader):
  *   getStackResourceId(stackName, logicalId) -> string | null
  *   getResourcePaths(restApiId) -> string[]
  *   getStageSnapshotPaths(restApiId, stage) -> string[] | null (null: no stage)
@@ -101,6 +108,15 @@ async function runCutoverGate({ stage, service = DEFAULT_SERVICE, templates, aws
   const livePaths = await aws.getResourcePaths(restApiId);
   const liveProxyOnly = isProxyOnly(livePaths);
   messages.push(`Live API has ${livePaths.length} resources${liveProxyOnly ? ' (proxy-only)' : ''}.`);
+
+  if (packaged.explicitMethods.length === 0 && !livePaths.includes(PROXY_PATH)) {
+    return fail(
+      `Check D failed: template is proxy-only but the live API has no ${PROXY_PATH} resource. ` +
+        'Deploy INFRA-207 PR 1 (proxy alongside the explicit routes) to this stage and run ' +
+        'scripts/proxy-parity-check.js on it before deploying 2a.',
+    );
+  }
+  messages.push('Check D passed.');
 
   if (liveProxyOnly && packaged.explicitMethods.length > 0) {
     return fail(

@@ -387,13 +387,16 @@ PR 2a (cut-over):
 - [ ] `backend/legacy-bridge.js`: emit Permissions and the Authorizer under their existing logical IDs (list generated from the pre-2a function set).
 - [ ] Delete `backend/functions/auth/login.ts` and its tests. Remove the `/auth/login` path from `backend/docs/openapi.yaml` and run `npm run embed-docs`.
 - [ ] Rewrite `backend/functions/__tests__/routeAccess.test.ts` per §5.10.
-- [ ] `backend/scripts/diff-live-template.js` (read-only pre-deploy diff, §6 2a; skips `VersionsNestedStack`, allows `AWS::Lambda::Version` removal).
+- [ ] `backend/scripts/diff-live-template.js` (read-only pre-deploy diff, §6 2a; skips `VersionsNestedStack`, allows `AWS::Lambda::Version` removal). A bridged permission that is not live passes only when its target function is also new in the packaged templates (prod lags main, so 2a can create a function and its bridged permission together). Run by both deploy workflows before `Deploy backend` ("Diff packaged templates against live stack"), so a failure blocks the deploy.
+- [ ] `backend/scripts/check-api-cutover.js` check D (while the live authorizer exists): refuse a proxy-only template (no explicit Methods) when the live API has no `/{proxy+}` resource, so 2a cannot reach a stage that never ran deploy 1.
+- [ ] PR description checklist: deploy 1 ran on **both** stages (live `/{proxy+}` present) and `proxy-parity-check.js` passed on each before 2a merges, with the run URLs.
 - [ ] `backend/scripts/check-stack-limits.js`: lower `ROOT_MAX` to 450 and update its test.
 - [ ] Refresh step: add the idempotent stage throttling `update-stage` (§7.5, `R=500`/`B=1000` cost cap) in both workflows.
 
 PR 2b (delete dead targets):
 - [ ] `backend/serverless.yml`: remove the legacy functions listed in §6 2b, `adminAuthorizer` and the `legacy-bridge.js` reference.
 - [ ] Delete `backend/legacy-bridge.js`, `backend/functions/auth/authorizer.ts` and its tests.
+- [ ] Delete `backend/scripts/diff-live-template.js`, its test, its "Diff packaged templates against live stack" step in both workflows and the matching `serverlessConfig.test.ts` assertion (the script imports `legacy-bridge.js`).
 - [ ] `backend/lib/__tests__/serverlessConfig.test.ts`: assert that only `api` has `http` events and that no `authorizer:` remains.
 - [ ] PR description: the prod 2a run URL and refresh `deploymentId` (merge gate, §6).
 

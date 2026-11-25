@@ -28,6 +28,7 @@
     "cleanup-tag-title-player-overrides": "ts-node scripts/cleanup-tag-title-player-overrides.ts",
     "check-stack-limits": "node scripts/check-stack-limits.js",
     "check-api-cutover": "node scripts/check-api-cutover.js",
+    "diff-live-template": "node scripts/diff-live-template.js",
     "proxy-parity-check": "node scripts/proxy-parity-check.js",
     "lint": "eslint functions/ lib/",
     "test": "vitest run",
