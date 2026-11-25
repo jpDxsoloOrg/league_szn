@@ -283,6 +283,9 @@ export interface UnitOfWork {
    * Several postings for one player in one unit of work are fine: they apply
    * in staging order and share one balance write. Ledger writes are flushed in
    * the first transaction chunk, so they never split across chunks.
+   *
+   * ECO-08: `appendPlayerEffects` appends shop effects to `Player.effects` in
+   * that same balance write, so a purchase and its effect commit together.
    */
   postLedgerEntry(input: PostLedgerEntryInput): StagedLedgerEntry;
   // ── Contracts (ECO-03) ──────────────────────────────────────────

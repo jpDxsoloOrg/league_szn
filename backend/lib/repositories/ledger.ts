@@ -15,6 +15,7 @@
  * idempotency row, the entry and the balance together.
  */
 import { RepositoryError } from './errors';
+import type { PlayerEffect } from './types';
 
 export type LedgerEntryKind =
   | 'perMatchPay'
@@ -77,6 +78,14 @@ export interface PostLedgerEntryInput {
   ref?: LedgerRef;
   note?: string;
   actorUserId?: string;
+
+  // ECO-08
+  /**
+   * Shop effects to append to `Player.effects` in the same write as the
+   * balance (DynamoDB allows one operation per item per transaction, so a
+   * purchase cannot update the player row separately). Not stored on the entry.
+   */
+  appendPlayerEffects?: PlayerEffect[];
 }
 
 /** Ids `postLedgerEntry` assigns at staging time, so callers can link to the entry. */
@@ -153,6 +162,14 @@ export function validateLedgerPosting(input: PostLedgerEntryInput): void {
       `idempotencyKey must be 1-${LEDGER_IDEMPOTENCY_KEY_MAX_LENGTH} characters`,
     );
   }
+}
+
+// ECO-08
+/** Every effect the postings append to the player, in staging order. */
+export function collectAppendedEffects(
+  postings: ReadonlyArray<{ input: PostLedgerEntryInput }>,
+): PlayerEffect[] {
+  return postings.flatMap(({ input }) => input.appendPlayerEffects ?? []);
 }
 
 /** Builds the stored entries for one player's postings, in staging order. */

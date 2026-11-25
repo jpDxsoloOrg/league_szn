@@ -1056,6 +1056,54 @@ components:
               amount: { type: integer }
               ratingBoost: { type: integer }
 
+    # ECO-08
+    PlayerEffect:
+      type: object
+      description: >-
+        A bought shop effect waiting to be used (applied by the injury and sim
+        code). injuryShield has reduction + matchesLeft; rehab has weeksOff;
+        staminaTopUp has amount.
+      required: [effectId, kind, purchasedAt, purchaseKey]
+      properties:
+        effectId: { type: string }
+        kind: { type: string, enum: [injuryShield, rehab, staminaTopUp] }
+        purchasedAt: { type: string, format: date-time }
+        purchaseKey: { type: string, description: Idempotency key of the purchase ledger entry }
+        reduction: { type: number, description: 'injuryShield: fraction taken off the injury chance' }
+        matchesLeft: { type: integer, description: 'injuryShield: matches still covered' }
+        weeksOff: { type: integer, description: 'rehab: weeks to take off the active injury' }
+        amount: { type: integer, description: 'staminaTopUp: stamina to add' }
+    SimBoost:
+      type: object
+      required: [playerId, boost, purchasedAt, purchaseKey]
+      properties:
+        playerId: { type: string }
+        boost: { type: number }
+        purchasedAt: { type: string, format: date-time }
+        purchaseKey: { type: string }
+    ShopPurchaseInput:
+      type: object
+      required: [item]
+      properties:
+        item: { type: string, enum: [injuryShield, rehab, staminaTopUp, simInterference] }
+        target: { type: string, description: 'simInterference only: the matchId' }
+        requestId: { type: string, maxLength: 100, description: 'Optional; resending the same id never charges twice (not used for simInterference, which allows one per match)' }
+    ShopPurchaseResult:
+      type: object
+      required: [item, entry, balance, alreadyApplied]
+      properties:
+        item: { type: string }
+        entry: { $ref: '#/components/schemas/LedgerEntry' }
+        balance: { type: integer }
+        effect: { $ref: '#/components/schemas/PlayerEffect' }
+        simBoost:
+          allOf:
+            - { $ref: '#/components/schemas/SimBoost' }
+            - type: object
+              properties:
+                matchId: { type: string }
+        alreadyApplied: { type: boolean }
+
     UpdateSiteConfigInput:
       type: object
       description: At least one of features or ticker. Both are partial patches.
@@ -1713,6 +1761,43 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/EconomyCatalog' }
         '500': { description: 'Server error', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ECO-08
+  /shop/purchase:
+    post:
+      tags: [Site Config]
+      summary: Buy a shop item for yourself
+      description: >-
+        Wrestler (the caller's own player). Needs the economy feature. Charges
+        the price as a \`purchase\` ledger entry and stores the effect in the same
+        transaction: injuryShield, rehab and staminaTopUp go on the player's
+        \`effects\`; simInterference goes on the match's \`simBoosts\` (a scheduled
+        match the buyer is in, one per player). A boost is refunded when the
+        result is recorded by hand or the scheduled match is deleted. Refusals
+        are 409 with a \`code\`: ITEM_DISABLED, IN_DEBT, INSUFFICIENT_FUNDS,
+        SHIELD_ACTIVE, NO_ACTIVE_INJURY, INJURY_TOO_SHORT, MATCH_NOT_SCHEDULED,
+        NOT_IN_MATCH, BOOST_ALREADY_BOUGHT. GM interference is not sold here.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShopPurchaseInput' }
+      responses:
+        '201':
+          description: Bought
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShopPurchaseResult' }
+        '200':
+          description: This requestId was already bought; nothing new was charged
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShopPurchaseResult' }
+        '400': { description: 'Unknown item, missing or unexpected target, bad requestId', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not a Wrestler, or the economy feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'No player profile for the caller, or the match does not exist', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Refused (see \`code\`), or the balance or match changed while buying', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /players/me:
     get:

@@ -1,7 +1,7 @@
 import type { AuthContext } from './auth';
 import { computeDiscipline, type PlayerDisciplineSummary } from './discipline';
 import { isStaff } from './optionalCaller';
-import type { PlayerDeactivation, PlayerStrike } from './repositories/types';
+import type { PlayerDeactivation, PlayerEffect, PlayerStrike } from './repositories/types';
 
 interface PrivateAccountFields {
   userId?: string;
@@ -9,6 +9,8 @@ interface PrivateAccountFields {
   hasWrestlerRole?: boolean;
   /** ECO-02: money is private to staff and the player. */
   balance?: number;
+  /** ECO-08: bought shop effects, private like the balance. */
+  effects?: PlayerEffect[];
 }
 
 /** Stored discipline state. Never leaves in raw form: readers get `discipline`. */
@@ -42,7 +44,7 @@ export function toPublicPlayer<TPlayer extends PrivatePlayerFields>(
   caller: AuthContext | null,
 ): PublicPlayer<TPlayer> {
   const {
-    userId, canUploadVideos, hasWrestlerRole, balance,
+    userId, canUploadVideos, hasWrestlerRole, balance, effects,
     strikes, deactivatedAt,
     deactivations: _deactivations, disciplineVersion: _disciplineVersion, signupGuardKey: _signupGuardKey,
     ...rest
@@ -56,6 +58,7 @@ export function toPublicPlayer<TPlayer extends PrivatePlayerFields>(
     ...(mayReadPrivate && canUploadVideos !== undefined ? { canUploadVideos } : {}),
     ...(mayReadPrivate && hasWrestlerRole !== undefined ? { hasWrestlerRole } : {}),
     ...(mayReadPrivate && balance !== undefined ? { balance } : {}),
+    ...(mayReadPrivate && effects !== undefined ? { effects } : {}),
     ...(mayReadPrivate ? { discipline: computeDiscipline({ strikes, deactivatedAt }) } : {}),
   };
 }

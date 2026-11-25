@@ -373,6 +373,12 @@ functions:
           path: economy/catalog
           method: get
           cors: *corsConfig
+      # ECO-08
+      - http:
+          path: shop/purchase
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
 
   # Players (Phase 2 consolidated: getPlayers, createPlayer, updatePlayer, deletePlayer, getMyProfile, updateMyProfile)
   players:

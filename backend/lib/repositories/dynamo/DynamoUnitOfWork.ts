@@ -32,6 +32,7 @@ import { RatingAlreadyExistsError } from '../matchRatings';
 import { ConcurrencyError, NotFoundError } from '../errors';
 import {
   buildLedgerEntries,
+  collectAppendedEffects,
   DuplicatePostingError,
   InvalidLedgerPostingError,
   ledgerSortKey,
@@ -915,16 +916,28 @@ export class DynamoUnitOfWork implements UnitOfWork {
         ':updatedAt': new Date().toISOString(),
       };
       if (hasBalance) values[':expectedBalance'] = startingBalance;
+      const names: Record<string, string> = {
+        '#balance': 'balance',
+        '#updatedAt': 'updatedAt',
+        '#deletedAt': 'deletedAt',
+      };
+      let updateExpression = 'SET #balance = if_not_exists(#balance, :zero) + :delta, #updatedAt = :updatedAt';
+
+      // ECO-08: shop effects ride on the balance write (one operation per item).
+      const appendedEffects = collectAppendedEffects(postings);
+      if (appendedEffects.length > 0) {
+        names['#effects'] = 'effects';
+        values[':effects'] = appendedEffects;
+        values[':noEffects'] = [];
+        updateExpression += ', #effects = list_append(if_not_exists(#effects, :noEffects), :effects)';
+      }
+
       items.push({
         Update: {
           TableName: TableNames.PLAYERS,
           Key: { playerId },
-          UpdateExpression: 'SET #balance = if_not_exists(#balance, :zero) + :delta, #updatedAt = :updatedAt',
-          ExpressionAttributeNames: {
-            '#balance': 'balance',
-            '#updatedAt': 'updatedAt',
-            '#deletedAt': 'deletedAt',
-          },
+          UpdateExpression: updateExpression,
+          ExpressionAttributeNames: names,
           ExpressionAttributeValues: values,
           ConditionExpression: `attribute_exists(playerId) AND attribute_not_exists(#deletedAt) AND ${
             hasBalance ? '#balance = :expectedBalance' : 'attribute_not_exists(#balance)'

@@ -276,6 +276,16 @@ export interface Player {
    * negative. Written only by `tx.postLedgerEntry`; never on `PlayerPatch`.
    */
   balance?: number;
+
+  // ECO-08
+  /**
+   * Shop effects the player bought and that have not been used up yet. Written
+   * only through `tx.postLedgerEntry({ appendPlayerEffects })`, so the
+   * purchase and its effect commit together; never on `PlayerPatch`. Private
+   * to staff and the player.
+   */
+  effects?: PlayerEffect[];
+
   /**
    * ECO-03: the player's one active contract, denormalized so free-agent
    * checks need no Contracts query. Not on `PlayerPatch`: write it only
@@ -775,6 +785,9 @@ export interface Match {
    * GM's note live on the ledger entry, not here: match rows are public.
    */
   noShows?: MatchNoShow[];
+  // ECO-08
+  /** Sim interference bought by participants; one per player. Consumed by the sim (ECO-10). */
+  simBoosts?: SimBoost[];
 
   createdAt: string;
   updatedAt?: string;
@@ -786,6 +799,48 @@ export interface MatchNoShow {
   playerId: string;
   markedAt: string;
   undoneAt?: string;
+}
+
+// ECO-08
+/** Fields every bought shop effect carries. */
+interface PlayerEffectBase {
+  /** Unique id, so a consumer (ECO-10) can remove or update exactly this effect. */
+  effectId: string;
+  purchasedAt: string;
+  /** Idempotency key of the `purchase` ledger entry that paid for it. */
+  purchaseKey: string;
+}
+
+/** Cuts the injury chance by `reduction` (0-1) for the next `matchesLeft` matches. */
+export interface InjuryShieldEffect extends PlayerEffectBase {
+  kind: 'injuryShield';
+  reduction: number;
+  matchesLeft: number;
+}
+
+/** Waiting to take `weeksOff` weeks off the player's active injury (ECO-10). */
+export interface RehabEffect extends PlayerEffectBase {
+  kind: 'rehab';
+  weeksOff: number;
+}
+
+/** Waiting to add `amount` stamina, capped at the maximum (ECO-10). */
+export interface StaminaTopUpEffect extends PlayerEffectBase {
+  kind: 'staminaTopUp';
+  amount: number;
+}
+
+export type PlayerEffect = InjuryShieldEffect | RehabEffect | StaminaTopUpEffect;
+export type PlayerEffectKind = PlayerEffect['kind'];
+
+/** A participant's paid run-in for a simulated match. */
+export interface SimBoost {
+  playerId: string;
+  /** `shop.simInterference.ratingBoost` at purchase time; ECO-10 applies it. */
+  boost: number;
+  purchasedAt: string;
+  /** Idempotency key of the `purchase` ledger entry; the refund key derives from it. */
+  purchaseKey: string;
 }
 
 /**

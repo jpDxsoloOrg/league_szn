@@ -10,6 +10,7 @@ import { RESULT_NEEDS_CHAMPION_MESSAGE, championIsOnASide } from '../../lib/chal
 import { updateGroupStats } from './updateGroupStats';
 import { resolveChampionTagTeamId } from '../../lib/tagTeams/championTagTeam';
 import { settleMatchPay } from '../../lib/economy/matchPay';
+import { refundSimBoosts } from '../../lib/economy/refundSimBoosts';
 
 interface RecordResultBody {
   winners: string[];
@@ -164,6 +165,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       await settleMatchPay(matchId);
     } catch (err) {
       console.error(`Match pay failed for ${matchId}:`, err);
+    }
+
+    // ── ECO-08: sim interference on a hand-recorded match is refunded ──
+    // Every result recorded here is manual (the sim is not built yet), so a
+    // bought boost was never used. Refunds are idempotent; a failure is logged.
+    if (match.simBoosts?.length) {
+      try {
+        await refundSimBoosts(match, 'manualResult');
+      } catch (err) {
+        console.warn('Sim boost refund failed:', err);
+      }
     }
 
     // ── Championship handling (separate from core transaction) ─────────

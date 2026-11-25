@@ -22,6 +22,7 @@ import { RatingAlreadyExistsError } from '../matchRatings';
 import { ConcurrencyError, NotFoundError } from '../errors';
 import {
   buildLedgerEntries,
+  collectAppendedEffects,
   DuplicatePostingError,
   InvalidLedgerPostingError,
   ledgerSortKey,
@@ -32,7 +33,7 @@ import {
   type StagedLedgerEntry,
 } from '../ledger';
 import { v4 as uuidv4 } from 'uuid';
-import type { MatchRating, PlayerProgression, ProgressionConsideration, ProgressionEvent } from '../types';
+import type { MatchRating, PlayerEffect, PlayerProgression, ProgressionConsideration, ProgressionEvent } from '../types';
 import { applyEventAppend, applyProgressionUpsert, playerProgressionKey } from './InMemoryProgressionRepository';
 
 type StagedOp = () => void;
@@ -568,7 +569,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       byPlayer.set(posting.input.playerId, list);
     }
 
-    const writes: Array<{ playerId: string; entries: LedgerEntry[]; balance: number }> = [];
+    const writes: Array<{ playerId: string; entries: LedgerEntry[]; balance: number; effects: PlayerEffect[] }> = [];
     for (const [playerId, postings] of byPlayer) {
       if (this.playerWrites.has(playerId)) {
         throw new InvalidLedgerPostingError(
@@ -579,7 +580,12 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       if (!player || player.deletedAt) throw new NotFoundError('Player', playerId);
       const startingBalance = typeof player.balance === 'number' ? player.balance : 0;
       const entries = buildLedgerEntries(startingBalance, postings);
-      writes.push({ playerId, entries, balance: entries[entries.length - 1].balanceAfter });
+      writes.push({
+        playerId,
+        entries,
+        balance: entries[entries.length - 1].balanceAfter,
+        effects: collectAppendedEffects(postings),
+      });
     }
 
     return () => {
@@ -597,6 +603,11 @@ export class InMemoryUnitOfWork implements UnitOfWork {
         const player = this.stores.players.get(write.playerId);
         if (player) {
           player.balance = write.balance;
+          // ECO-08: effects bought with this posting.
+          if (write.effects.length > 0) {
+            const existing = Array.isArray(player.effects) ? (player.effects as PlayerEffect[]) : [];
+            player.effects = [...existing, ...structuredClone(write.effects)];
+          }
           player.updatedAt = new Date().toISOString();
         }
       }

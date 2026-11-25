@@ -40,6 +40,7 @@ const SELF_SERVICE_WRITES = new Set([
   'PUT /players/me',
   'POST /promos',
   'POST /promos/{promoId}/react',
+  'POST /shop/purchase', // ECO-08
   'PUT /rivalry-requests/{rivalryId}',
   'POST /rivalries/{rivalryId}/messages',
   'POST /rivalries/{rivalryId}/notes',

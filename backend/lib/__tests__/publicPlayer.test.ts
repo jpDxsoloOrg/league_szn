@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { toOwnPlayer, toPublicPlayer } from '../publicPlayer';
 import type { AuthContext, UserRole } from '../auth';
+import type { PlayerEffect } from '../repositories/types';
 
 function caller(sub: string, ...groups: UserRole[]): AuthContext {
   return { sub, groups, username: sub, email: '' };
@@ -80,6 +81,22 @@ describe('toPublicPlayer', () => {
       ['a Moderator', caller('staff-sub', 'Moderator')],
     ])('shows it to %s', (_label, viewer) => {
       expect(toPublicPlayer(paid, viewer).balance).toBe(-40);
+    });
+  });
+
+  // ECO-08
+  describe('shop effects', () => {
+    const effects: PlayerEffect[] = [{
+      effectId: 'e1', purchasedAt: '2026-11-24T00:00:00.000Z', purchaseKey: 'k', kind: 'staminaTopUp', amount: 20,
+    }];
+    const shopper = { ...player, effects };
+
+    it('hides them from another wrestler', () => {
+      expect(toPublicPlayer(shopper, caller('other-sub', 'Wrestler'))).not.toHaveProperty('effects');
+    });
+
+    it('shows them to the player', () => {
+      expect(toPublicPlayer(shopper, caller('owner-sub', 'Wrestler')).effects).toEqual(effects);
     });
   });
 

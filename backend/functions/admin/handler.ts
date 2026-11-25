@@ -8,6 +8,7 @@ import { handler as updateHeatConfigHandler } from './updateHeatConfig';
 import { handler as getEconomyConfigHandler } from './getEconomyConfig';
 import { handler as updateEconomyConfigHandler } from './updateEconomyConfig';
 import { handler as getEconomyCatalogHandler } from './getEconomyCatalog';
+import { handler as shopPurchaseHandler } from '../shop/purchase'; // ECO-08
 import { createRouter, type RouteConfig, ADMIN_ONLY, STAFF } from '../../lib/router';
 
 /**
@@ -75,6 +76,14 @@ export const routes: ReadonlyArray<RouteConfig> = [
     method: 'GET',
     handler: getEconomyCatalogHandler,
     access: 'public',
+  },
+
+  // ECO-08: the player buys for themselves; the handler checks the Wrestler role.
+  {
+    resource: '/shop/purchase',
+    method: 'POST',
+    handler: shopPurchaseHandler,
+    access: 'self-service',
   },
 ];
 

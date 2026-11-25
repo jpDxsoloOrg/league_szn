@@ -7,6 +7,7 @@ import { requireRole } from '../../lib/auth';
 import { invokeAsync } from '../../lib/asyncLambda';
 import { revertGroupStats } from './revertGroupStats';
 import { reverseMatchPay } from '../../lib/economy/matchPay';
+import { refundSimBoosts } from '../../lib/economy/refundSimBoosts';
 
 interface BracketMatch {
   participant1?: string;
@@ -72,6 +73,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Delete the match record
     await matches.delete(matchId, match.date);
+
+    // ECO-08: a deleted match is never simulated, so refund bought boosts. A
+    // completed match was refunded (or used its boosts) when it was recorded.
+    if (match.status !== 'completed' && match.simBoosts?.length) {
+      try {
+        await refundSimBoosts(match, 'matchDeleted');
+      } catch (err) {
+        console.warn('Sim boost refund failed:', err);
+      }
+    }
 
     // If match was linked to an event, remove it from the event's matchCards
     if (match.eventId) {
