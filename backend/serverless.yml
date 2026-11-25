@@ -612,6 +612,12 @@ functions:
           method: delete
           cors: *corsConfig
 
+      # GM preview sim (BLD-08). Staff only, no writes; access is declared in functions/matches/handler.ts.
+      - http:
+          path: simulate
+          method: post
+          cors: *corsConfig
+
       - http:
           path: matches/{matchId}
           method: any

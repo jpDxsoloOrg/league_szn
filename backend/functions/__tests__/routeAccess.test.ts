@@ -112,6 +112,8 @@ const STAFF_ROUTES = [
   // ECO-07
   'POST /matches/{matchId}/no-show',
   'DELETE /matches/{matchId}/no-show/{playerId}',
+  // BLD-08: GM preview sim, no writes
+  'POST /simulate',
   'POST /players/{playerId}/fines',
   'POST /fines/{entryId}/rescind',
   // ECO-14

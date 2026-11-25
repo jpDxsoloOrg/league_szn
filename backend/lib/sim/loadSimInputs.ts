@@ -143,6 +143,8 @@ export interface SimInputs {
   /** Players whose saved build is over their budget and was scaled down. */
   scaledPlayerIds: string[];
   formWindow: FormWindow;
+  /** The loaded players by id, for names and movesets (BLD-08 play-by-play). */
+  playersById: ReadonlyMap<string, Player>;
 }
 
 export type LoadSimInputsResult =
@@ -212,6 +214,7 @@ export async function loadSimInputs(request: LoadSimInputsRequest): Promise<Load
       competitors: sides.flatMap((side) => [...side.members]),
       scaledPlayerIds,
       formWindow,
+      playersById,
     },
   };
 }
