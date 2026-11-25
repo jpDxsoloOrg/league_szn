@@ -10,6 +10,7 @@ import {
   serverError,
 } from '../../lib/response';
 import { getAuthContext, hasRole, requireRole } from '../../lib/auth';
+import { anyMatchHasSimBoosts, resolveSimBoostViewer, withVisibleSimBoosts } from '../../lib/economy/simBoostVisibility';
 import { isConcurrentWriteError } from '../../lib/repositories/errors';
 
 /**
@@ -57,7 +58,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Already empty? Idempotent success — nothing to do.
     if (!slot.playerId) {
-      return success(match);
+      return success(withVisibleSimBoosts(match, await resolveSimBoostViewer(authContext, anyMatchHasSimBoosts([match]))));
     }
 
     if (slot.lockedByAdmin && !isAdmin) {
@@ -120,7 +121,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       updatedAt: now,
     };
 
-    return success(updated);
+    // Only the caller's own sim boost goes back (staff see all).
+    return success(withVisibleSimBoosts(updated, await resolveSimBoostViewer(authContext, anyMatchHasSimBoosts([match]))));
   } catch (err) {
     console.error('Error releasing slot:', err);
     return serverError('Failed to release slot');

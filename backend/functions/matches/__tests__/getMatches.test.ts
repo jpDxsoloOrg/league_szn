@@ -566,6 +566,73 @@ describe('getMatches', () => {
   });
 });
 
+// Who paid for a sim boost is private (ECO-08).
+describe('getMatches sim boost privacy', () => {
+  const boostOf = (playerId: string) => ({
+    playerId, boost: 5, purchasedAt: '2099-01-01T00:00:00.000Z', purchaseKey: `purchase:${playerId}`,
+  });
+
+  function callerEvent(sub: string, groups: string): APIGatewayProxyEvent {
+    return makeEvent({
+      requestContext: {
+        authorizer: { principalId: sub, username: 'tester', email: '', groups },
+      } as unknown as APIGatewayProxyEvent['requestContext'],
+    });
+  }
+
+  async function seedBoostedMatch(): Promise<{ meId: string; themId: string }> {
+    const me = await repos.roster.players.create({ name: 'Me', currentWrestler: 'Me' });
+    await repos.roster.players.update(me.playerId, { userId: 'sub-me' });
+    const them = await repos.roster.players.create({ name: 'Them', currentWrestler: 'Them' });
+    await repos.roster.players.update(them.playerId, { userId: 'sub-them' });
+    const outsider = await repos.roster.players.create({ name: 'Outsider', currentWrestler: 'Outsider' });
+    await repos.roster.players.update(outsider.playerId, { userId: 'sub-outsider' });
+    await repos.competition.matches.create({
+      matchId: 'boosted', date: '2099-01-02T00:00:00.000Z', status: 'scheduled',
+      participants: [me.playerId, them.playerId],
+      simBoosts: [boostOf(me.playerId), boostOf(them.playerId)],
+      createdAt: new Date().toISOString(),
+    });
+    return { meId: me.playerId, themId: them.playerId };
+  }
+
+  async function boostsFor(event: APIGatewayProxyEvent): Promise<unknown> {
+    const result = await getMatches(event, ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    const [match] = JSON.parse(result!.body) as Array<Record<string, unknown>>;
+    return match.simBoosts;
+  }
+
+  it('shows staff every boost', async () => {
+    const { meId, themId } = await seedBoostedMatch();
+    for (const groups of ['Admin', 'Moderator']) {
+      expect(await boostsFor(callerEvent('sub-staff', groups))).toEqual([boostOf(meId), boostOf(themId)]);
+    }
+  });
+
+  it('shows a signed-in player only their own boost', async () => {
+    const { meId } = await seedBoostedMatch();
+    expect(await boostsFor(callerEvent('sub-me', 'Wrestler'))).toEqual([
+      { playerId: meId, boost: 5, purchasedAt: '2099-01-01T00:00:00.000Z' },
+    ]);
+  });
+
+  it('shows another player no boosts', async () => {
+    await seedBoostedMatch();
+    expect(await boostsFor(callerEvent('sub-outsider', 'Wrestler'))).toBeUndefined();
+  });
+
+  it('shows anonymous callers no boosts', async () => {
+    await seedBoostedMatch();
+    expect(await boostsFor(makeEvent())).toBeUndefined();
+  });
+
+  it('shows a signed-in user without a player no boosts', async () => {
+    await seedBoostedMatch();
+    expect(await boostsFor(callerEvent('sub-fan', 'Fantasy'))).toBeUndefined();
+  });
+});
+
 describe('getMatches side billing (TTB-01)', () => {
   it('adds sideTagTeams aligned with teams, and leaves matches without teams alone', async () => {
     const usos = await repos.roster.tagTeams.create({

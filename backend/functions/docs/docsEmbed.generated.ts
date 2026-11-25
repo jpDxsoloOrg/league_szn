@@ -2071,6 +2071,11 @@ paths:
     get:
       tags: [Matches]
       summary: List matches
+      description: >-
+        Public. A bearer token is optional. \`simBoosts\` (sim interference bought
+        in the shop) is private: Admins and Moderators get every boost, a
+        signed-in player gets only their own entry, and anonymous callers and
+        other players get no \`simBoosts\` field.
       parameters:
         - name: status
           in: query

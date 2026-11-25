@@ -13,6 +13,7 @@ import { getAuthContext, requireRole } from '../../lib/auth';
 import { isConcurrentWriteError } from '../../lib/repositories/errors';
 import { isPlayerVisible, realWrestlerName, SET_WRESTLER_NAME_MESSAGE } from '../../lib/needsWrestler';
 import { callerRefusal } from '../../lib/discipline';
+import { playerSimBoostViewer, withVisibleSimBoosts } from '../../lib/economy/simBoostVisibility';
 
 interface ClaimSlotBody {
   wrestlerChoice?: 'main' | 'alternate';
@@ -72,6 +73,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest(SET_WRESTLER_NAME_MESSAGE);
     }
     const callerPlayerId = callerPlayer.playerId;
+    // Only the caller's own sim boost goes back (staff see all).
+    const boostViewer = playerSimBoostViewer(getAuthContext(event), callerPlayerId);
 
     // MSL-03: resolve which wrestler the player is bringing.
     // - If they have no alternate, default silently to 'main'.
@@ -115,7 +118,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     if (slot.playerId === callerPlayerId) {
       // Idempotent re-claim — no-op success
-      return success(match);
+      return success(withVisibleSimBoosts(match, boostViewer));
     }
 
     if (slot.lockedByAdmin) {
@@ -237,7 +240,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       updatedAt: now,
     };
 
-    return success(updated);
+    return success(withVisibleSimBoosts(updated, boostViewer));
   } catch (err) {
     console.error('Error claiming slot:', err);
     return serverError('Failed to claim slot');
