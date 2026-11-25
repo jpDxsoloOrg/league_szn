@@ -44,6 +44,14 @@ export interface Player {
   divisionJoinedAt?: string;
   /** Standings only (PRL-09): record since the player joined their current division. */
   divisionRecord?: DivisionRecord;
+  /** Standings only (STR-03): league points for the season or all-time view. */
+  points?: number;
+  qualityWins?: number;
+  streakBonuses?: number;
+  /** Strength of schedule: mean points per match of the opponents faced. */
+  sos?: number;
+  /** 1-based league rank in the standings response; tied rows share a rank. */
+  rank?: number;
   /** Sent only to staff and to the player themselves. */
   discipline?: PlayerDisciplineSummary;
 }
@@ -57,6 +65,13 @@ export interface DivisionRecord {
   currentStreak: { type: 'W' | 'L' | 'D'; count: number };
   /** The join time the record counts from; absent when the player has never moved division. */
   since?: string;
+  /** League points (STR-03) counting only results since joining, judged within the division. */
+  points?: number;
+  qualityWins?: number;
+  streakBonuses?: number;
+  sos?: number;
+  /** 1-based rank within the division. */
+  rank?: number;
 }
 
 export type DisciplineStatus = 'clear' | 'warned' | 'signup-blocked' | 'cooldown' | 'deactivated';
@@ -221,6 +236,13 @@ export interface SlotInput {
   teamLabel?: string;
 }
 
+/** The registered tag team a side was on the match date (TTB-01). */
+export interface SideTagTeam {
+  tagTeamId: string;
+  name: string;
+  imageUrl?: string;
+}
+
 export interface Match {
   matchId: string;
   date: string;
@@ -228,6 +250,8 @@ export interface Match {
   stipulationId?: string; // References Stipulations table
   participants: string[]; // playerIds
   teams?: string[][]; // Array of teams, each team is an array of playerIds (for tag team matches)
+  /** Tag team per side, aligned with `teams`; null for a side that is not a team (TTB-01). */
+  sideTagTeams?: (SideTagTeam | null)[];
   winners?: string[]; // playerIds
   losers?: string[]; // playerIds
   isDraw?: boolean;
@@ -348,6 +372,9 @@ export interface RoundRobinStanding {
 export interface Standings {
   players: Player[];
   seasonId?: string;
+  /** Present from STR-03: rows are in league points order. */
+  rankedBy?: 'points';
+  /** Always false from STR-03; kept for one release. */
   sortedByWins: boolean;
 }
 
@@ -392,6 +419,12 @@ export interface DashboardMatch {
   /** Everyone in a drawn match, as "A vs B". Only set when `isDraw` is true. */
   participantsName?: string;
   eventId?: string;
+  /** Player ids per side, as booked. Only set when the match has sides. */
+  teams?: string[][];
+  /** Winning player ids. Only set with `teams`, to tell which side won (TTB-02). */
+  winners?: string[];
+  /** Tag team per side, aligned with `teams` (TTB-01). */
+  sideTagTeams?: (SideTagTeam | null)[];
 }
 
 export interface DashboardSeason {

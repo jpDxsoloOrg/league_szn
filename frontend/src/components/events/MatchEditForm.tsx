@@ -26,7 +26,8 @@ import type {
 import type { TagTeam } from '../../types/tagTeam';
 import type { LeagueEvent, MatchDesignation } from '../../types/event';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
-import { pickablePlayers, pickableTagTeams } from '../../utils/pickablePlayers';
+import { pickablePlayers, tagTeamPickerOptions } from '../../utils/pickablePlayers';
+import { findTagTeamForSide } from '../../utils/tagTeamSides';
 import SearchableSelect from '../admin/SearchableSelect';
 import Button from '../ui/Button';
 import Skeleton from '../ui/Skeleton';
@@ -318,7 +319,7 @@ export default function MatchEditForm({
     ...(originalMatch?.teams ?? []).flat(),
   ];
   const bookablePlayers = pickablePlayers(players, bookedPlayerIds);
-  const bookableTagTeams = pickableTagTeams(activeTagTeams, players, bookedPlayerIds);
+  const tagTeamOptions = tagTeamPickerOptions(activeTagTeams, players, bookedPlayerIds);
 
   const filteredPlayers =
     !divisionFilter || divisionFilter === 'all'
@@ -350,15 +351,20 @@ export default function MatchEditForm({
     });
   };
 
-  const getTagTeamForTeam = (teamIndex: number): string => {
-    const team = teams[teamIndex];
-    if (!team || team.length !== 2) return '';
-    const found = activeTagTeams.find(
-      (tt) =>
-        (tt.player1Id === team[0] && tt.player2Id === team[1]) ||
-        (tt.player1Id === team[1] && tt.player2Id === team[0])
-    );
-    return found?.tagTeamId ?? '';
+  const getTagTeamForTeam = (teamIndex: number): string =>
+    findTagTeamForSide(activeTagTeams, teams[teamIndex])?.tagTeamId ?? '';
+
+  /** "Team 1: The Usos" when the side is a registered pair, otherwise "Team 1". */
+  const sideLabel = (teamIndex: number): string => {
+    const number = teamIndex + 1;
+    const tagTeam = findTagTeamForSide(activeTagTeams, teams[teamIndex]);
+    return tagTeam
+      ? t('scheduleMatch.tagTeam.teamWithName', {
+          number,
+          name: tagTeam.name,
+          defaultValue: `Team ${number}: ${tagTeam.name}`,
+        })
+      : `${t('scheduleMatch.tagTeam.team', 'Team')} ${number}`;
   };
 
   if (loading) {
@@ -598,7 +604,7 @@ export default function MatchEditForm({
                 <div key={teamIndex} className="match-edit-form__team">
                   <div className="match-edit-form__team-header">
                     <h4>
-                      {teamLabel}
+                      {sideLabel(teamIndex)}
                       <span className={`match-edit-form__team-count${team.length >= 2 ? ' is-valid' : ''}`}>
                         {team.length} {t('scheduleMatch.tagTeam.members', 'members')}
                       </span>
@@ -619,8 +625,8 @@ export default function MatchEditForm({
                       <option value="">
                         {t('scheduleMatch.tagTeam.selectTagTeam', 'Select a Tag Team...')}
                       </option>
-                      {bookableTagTeams
-                        .filter((tt) => {
+                      {tagTeamOptions
+                        .filter(({ team: tt }) => {
                           const assignedToOther = teams.some((otherTeam, i) => {
                             if (i === teamIndex) return false;
                             return (
@@ -630,10 +636,19 @@ export default function MatchEditForm({
                           });
                           return !assignedToOther;
                         })
-                        .map((tt) => (
-                          <option key={tt.tagTeamId} value={tt.tagTeamId}>
+                        .map(({ team: tt, unavailableMemberCount }) => (
+                          <option
+                            key={tt.tagTeamId}
+                            value={tt.tagTeamId}
+                            disabled={unavailableMemberCount > 0}
+                          >
                             {tt.name} ({tt.player1Name ?? getPlayerName(tt.player1Id)} &amp;{' '}
                             {tt.player2Name ?? getPlayerName(tt.player2Id)})
+                            {unavailableMemberCount > 0 &&
+                              ` ${t('scheduleMatch.tagTeam.membersUnavailable', {
+                                count: unavailableMemberCount,
+                                defaultValue: `(${unavailableMemberCount} member unavailable)`,
+                              })}`}
                           </option>
                         ))}
                     </select>

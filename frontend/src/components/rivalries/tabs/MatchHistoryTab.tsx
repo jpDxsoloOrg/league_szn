@@ -6,7 +6,7 @@ import { matchesApi } from '../../../services/api';
 import type { Match, Player } from '../../../types';
 import type { HydratedRivalry } from '../../../types/rivalry';
 import { formatMatchDate } from '../../../utils/dateUtils';
-import { describeSides, groupMatchSides } from '../../../utils/matchDisplay';
+import { describeMatchSides, resultTagTeams } from '../../../utils/matchDisplay';
 import Badge from '../../ui/Badge';
 import EmptyState from '../../ui/EmptyState';
 import Skeleton from '../../ui/Skeleton';
@@ -104,10 +104,7 @@ export default function MatchHistoryTab({ hydrated, players }: TabProps) {
           <Link to={`/matches?matchId=${m.matchId}`} className="rivalry-detail-matches__row">
             <span className="rivalry-detail-matches__text">
               <span className="rivalry-detail-matches__teams">
-                {describeSides(
-                  groupMatchSides(m.participants, (id) => id, m.teams, m.matchFormat).map((side) => side.map(labelOf)),
-                  t('common.vs'),
-                )}
+                {describeMatchSides(m, labelOf, t('common.vs'))}
               </span>
               <span className="rivalry-detail-matches__date">{formatMatchDate(m.date)}</span>
               {isDrawnMatch(m) && (
@@ -115,7 +112,7 @@ export default function MatchHistoryTab({ hydrated, players }: TabProps) {
               )}
               {!isDrawnMatch(m) && m.winners && m.winners.length > 0 && (
                 <span className="rivalry-detail-matches__winner">
-                  W: {m.winners.map(labelOf).join(', ')}
+                  W: {resultTagTeams(m)?.winner?.name ?? m.winners.map(labelOf).join(', ')}
                 </span>
               )}
             </span>

@@ -133,6 +133,28 @@ describe('getEvent', () => {
     expect(JSON.parse(result!.body).enrichedMatches[0].matchData.teams).toEqual([['p1', 'p3'], ['p2', 'p4']]);
   });
 
+  it('bills each tag side by its team, aligned with teams (TTB-01)', async () => {
+    const usos = await repos.roster.tagTeams.create({
+      name: 'The Usos', player1Id: 'p1', player2Id: 'p3', status: 'active',
+    });
+    const match = await repos.competition.matches.create({
+      matchId: 'tag-billed', date: '2099-01-01T00:00:00.000Z', matchFormat: 'tag-team',
+      participants: ['p1', 'p2', 'p3', 'p4'], teams: [['p3', 'p1'], ['p2', 'p4']],
+      isChampionship: false, status: 'scheduled', createdAt: new Date().toISOString(),
+    });
+    const eventItem = await repos.leagueOps.events.create({ name: 'Raw', eventType: 'weekly', date: '2099-01-01' });
+    await repos.leagueOps.events.update(eventItem.eventId, {
+      matchCards: [{ position: 1, matchId: match.matchId, designation: 'midcard' as const }],
+    });
+
+    const result = await getEvent(makeEvent({ pathParameters: { eventId: eventItem.eventId } }), ctx, cb);
+
+    expect(JSON.parse(result!.body).enrichedMatches[0].matchData.sideTagTeams).toEqual([
+      { tagTeamId: usos.tagTeamId, name: 'The Usos' },
+      null,
+    ]);
+  });
+
   it('returns matchData null when matchId is missing from card', async () => {
     const eventItem = await repos.leagueOps.events.create({
       name: 'Raw', eventType: 'weekly', date: '2024-01-01',

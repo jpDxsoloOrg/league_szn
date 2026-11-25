@@ -565,3 +565,31 @@ describe('getMatches', () => {
     });
   });
 });
+
+describe('getMatches side billing (TTB-01)', () => {
+  it('adds sideTagTeams aligned with teams, and leaves matches without teams alone', async () => {
+    const usos = await repos.roster.tagTeams.create({
+      name: 'The Usos', player1Id: 'jey', player2Id: 'jimmy', imageUrl: 'https://img/usos.png', status: 'active',
+    });
+    await repos.competition.matches.create({
+      matchId: 'tag', date: '2099-01-02T00:00:00.000Z', status: 'scheduled', matchFormat: 'tag',
+      participants: ['jey', 'jimmy', 'a', 'b'], teams: [['a', 'b'], ['jimmy', 'jey']],
+      createdAt: new Date().toISOString(),
+    });
+    await repos.competition.matches.create({
+      matchId: 'singles', date: '2099-01-01T00:00:00.000Z', status: 'scheduled',
+      participants: ['a', 'b'], createdAt: new Date().toISOString(),
+    });
+
+    const result = await getMatches(makeEvent(), ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    const tag = body.find((m: { matchId: string }) => m.matchId === 'tag');
+    const singles = body.find((m: { matchId: string }) => m.matchId === 'singles');
+    expect(tag.sideTagTeams).toEqual([
+      null,
+      { tagTeamId: usos.tagTeamId, name: 'The Usos', imageUrl: 'https://img/usos.png' },
+    ]);
+    expect(singles).not.toHaveProperty('sideTagTeams');
+  });
+});

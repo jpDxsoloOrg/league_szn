@@ -200,6 +200,22 @@ describe('MatchResultForm', () => {
     expect(screen.getByText('Undertaker & Triple H')).toBeInTheDocument();
   });
 
+  it('names a winning-team option by the team the side was billed as (TTB-02)', () => {
+    render(
+      <MatchResultForm
+        match={{ ...tagMatch, sideTagTeams: [{ tagTeamId: 'tt1', name: 'Cenation' }, null] }}
+        players={mockPlayers}
+        tagTeams={[]}
+        onSuccess={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Cenation')).toBeInTheDocument();
+    expect(screen.queryByText('John Cena & The Rock')).not.toBeInTheDocument();
+    expect(screen.getByText('Undertaker & Triple H')).toBeInTheDocument();
+  });
+
   it('participants are real toggle buttons a keyboard user can press', async () => {
     const user = userEvent.setup();
     render(

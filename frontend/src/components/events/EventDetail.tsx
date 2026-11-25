@@ -20,7 +20,7 @@ import type {
   EventCheckInRoster,
 } from '../../types/event';
 import { isAbortError, withoutSeasonRecords } from '../../utils/bookingSummary';
-import type { Match, Player, MatchStatus, PlayerBookingInfo } from '../../types';
+import type { Match, Player, MatchStatus, PlayerBookingInfo, SideTagTeam } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
@@ -44,7 +44,7 @@ import { StarRating } from '../matches/StarRating';
 import { RateMatchWidget } from '../matches/RateMatchWidget';
 import { MotnToggleButton } from '../matches/MotnToggleButton';
 import { formatCalendarDate, toCalendarDate } from '../../utils/dateUtils';
-import { describeSides, formatMatchType, groupMatchSides } from '../../utils/matchDisplay';
+import { describeSides, formatMatchType, groupMatchSides, sideTagTeamFor } from '../../utils/matchDisplay';
 import { DESIGNATION_LABEL_KEYS, EVENT_STATUS_TONES, EVENT_TYPE_TONES } from './eventDisplay';
 import { findMoveTarget, isPreShowCard, swapCards } from './cardOrder';
 import type { CardMoveDirection } from './cardOrder';
@@ -724,12 +724,13 @@ export default function EventDetail() {
 
   const describeMatch = (match: typeof enrichedMatches[number]) => {
     if (!match.matchData) return t('events.detail.matchTBA', 'Match TBA');
-    const { matchFormat, participants, teams } = match.matchData;
+    const { matchFormat, participants, teams, sideTagTeams } = match.matchData;
     if (participants.length === 0) return formatMatchType(matchFormat, t);
     const sides = groupMatchSides(participants, (participant) => participant.playerId, teams, matchFormat);
     return describeSides(
       sides.map((side) => side.map((participant) => participant.wrestlerName)),
       t('common.vs'),
+      sides.map((side) => sideTagTeamFor(side.map((participant) => participant.playerId), teams, sideTagTeams)?.name),
     );
   };
 
@@ -1147,6 +1148,7 @@ interface MatchEntryProps {
       stipulationName?: string;
       participants: MatchSideParticipant[];
       teams?: string[][];
+      sideTagTeams?: (SideTagTeam | null)[];
       winners?: string[];
       losers?: string[];
       isChampionship: boolean;
@@ -1250,6 +1252,7 @@ function MatchEntry({
       <MatchSides
         participants={matchData.participants}
         teams={matchData.teams}
+        sideTagTeams={matchData.sideTagTeams}
         matchFormat={matchData.matchFormat}
         winners={isCompleted && !isDraw ? matchData.winners : undefined}
         losers={isCompleted ? matchData.losers : undefined}

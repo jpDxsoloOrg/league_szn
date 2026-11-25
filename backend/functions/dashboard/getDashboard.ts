@@ -7,6 +7,7 @@ import { FORMER_MEMBER, isNeedsWrestler, isPlayerVisible } from '../../lib/needs
 import { authenticate } from '../../lib/authenticate';
 import { getAuthContext } from '../../lib/auth';
 import { matchWinners } from '../../lib/matchResult';
+import { anyMatchHasTeams, loadTagTeamIndex, resolveSideTagTeams, type SideTagTeam } from '../../lib/tagTeams/sideBilling';
 
 const RECENT_RESULTS_LIMIT = 5;
 
@@ -51,6 +52,12 @@ interface DashboardMatch {
   /** Everyone in a drawn match, as "A vs B". Only set when `isDraw` is true. */
   participantsName?: string;
   eventId?: string;
+  /** Player ids per side, as booked. Only set when the match has sides. */
+  teams?: string[][];
+  /** Winning player ids, so a client can tell which side in `teams` won. Only set with `teams` (TTB-02). */
+  winners?: string[];
+  /** The tag team each side in `teams` was on the match date, aligned with `teams` (TTB-01). */
+  sideTagTeams?: (SideTagTeam | null)[];
   /** True iff the calling user has rated this match. False for guests (RIV-24). */
   userHasRated: boolean;
   /** This user's rating for the match, or null if unrated / unauthenticated (RIV-24). */
@@ -277,6 +284,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       userRatingsByMatchId = new Map(userRatings.map((r) => [r.matchId, r.rating]));
     }
 
+    // TTB-01: bill tag sides by team name; one index load, only when needed.
+    const tagTeamIndex = anyMatchHasTeams(recentResultMatches) ? await loadTagTeamIndex() : null;
+
     const recentResults: DashboardMatch[] = recentResultMatches.map((m) => {
       const winnerIds = matchWinners(m);
       const isDraw = Boolean(m.isDraw);
@@ -304,6 +314,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const matchType = m.matchFormat ?? m.matchType ?? 'singles';
       const isChampionship = Boolean(m.isChampionship && champId);
       const userRatingForMatch = userRatingsByMatchId.get(m.matchId);
+      const hasSides = Boolean(m.teams && m.teams.length > 0);
+      const sideTagTeams = hasSides && tagTeamIndex ? resolveSideTagTeams(m, tagTeamIndex) : undefined;
       return {
         matchId: m.matchId,
         date: m.date,
@@ -327,6 +339,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         isDraw,
         participantsName: participantsName || undefined,
         eventId: m.eventId,
+        ...(hasSides && { teams: m.teams, winners: winnerIds }),
+        ...(sideTagTeams && { sideTagTeams }),
         userHasRated: userRatingForMatch !== undefined,
         userRating: userRatingForMatch ?? null,
       };

@@ -1,4 +1,4 @@
-import type { MatchStatus, HydratedMatchSlot, WrestlerMove } from './index';
+import type { MatchStatus, HydratedMatchSlot, SideTagTeam, WrestlerMove } from './index';
 
 export type EventType = 'ppv' | 'weekly' | 'special' | 'house';
 
@@ -48,6 +48,8 @@ export interface EnrichedMatchData {
   }[];
   /** Sides of a team match, as lists of playerIds. */
   teams?: string[][];
+  /** Tag team per side, aligned with `teams` (TTB-01). */
+  sideTagTeams?: (SideTagTeam | null)[];
   winners?: string[];
   losers?: string[];
   isChampionship: boolean;

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi, eventsApi, tagTeamsApi, stipulationsApi } from '../../services/api';
 import { formatCalendarDate } from '../../utils/dateUtils';
+import { describeSide, sideLabel } from '../../utils/matchDisplay';
 import type { Match, Player, Stipulation } from '../../types';
 import type { LeagueEvent } from '../../types/event';
 import type { TagTeam } from '../../types/tagTeam';
@@ -95,7 +96,9 @@ export default function StandaloneMatches() {
 
   const formatMatchPreview = (match: Match): string => {
     if (match.teams && match.teams.length >= 2) {
-      return match.teams.map(team => team.map(getPlayerName).join(' & ')).join(' vs ');
+      return match.teams
+        .map((team, teamIndex) => describeSide(team.map(getPlayerName), sideLabel(teamIndex, match)))
+        .join(' vs ');
     }
     if (match.participants.length === 0) return t('adminRoster.standalone.openMatch', 'Open for signups');
     return match.participants.map(getPlayerName).join(' vs ');

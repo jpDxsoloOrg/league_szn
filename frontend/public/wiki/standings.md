@@ -12,12 +12,13 @@ The page opens on the active season and the Heavyweight division, when the leagu
 
 ## What You Can See
 
-The top three appear on a podium once at least three players have had a match. Everyone else is listed underneath.
+The top three appear on a podium, with their points under their names, once at least three players have had a match. Everyone else is listed underneath.
 
 | Column | Description |
 |--------|-------------|
-| **Rank** | Player's position in the current list |
+| **Rank** | Player's position in the current list. Players who are level on every tiebreaker share a rank |
 | **Player** | The player's name, with their wrestler underneath |
+| **Pts** | League points. Click or tap them to see the breakdown |
 | **Record** | Wins, losses and draws |
 | **Win %** | Win percentage calculated from their record |
 | **Last 5** | Their last five results |
@@ -29,12 +30,12 @@ Only players with a wrestler name appear here. See [Getting Started](getting-sta
 
 ## How Rankings Work
 
-Players are ordered by most wins, then by fewest losses. Players who haven't had a match in the selected season come last. Draws count in the record and in Win %, but they don't decide the order.
+Players are ordered by league points: 3 for a win, 1 for a draw and 0 for a loss, plus 1 bonus point for a quality win and 1 for every third win in a row. When players are level on points, strength of schedule, head-to-head, Win % and wins decide the order. Players who haven't had a match in the selected season come last. The **How standings work** link under the table explains it all, with an example: see [How Standings Work](how-standings-work).
 
 **Formula:** Win % = Wins ÷ (Wins + Losses + Draws) × 100
 
 ## One division's table
 
-When you pick a single division, each player's Record, Win %, Last 5 and Streak count only matches since they joined that division (within the selected season). Someone who has just been promoted, relegated or moved starts at the bottom at 0-0-0 and climbs from there. Players who have never moved division keep their full record.
+When you pick a single division, each player's points, Record, Win %, Last 5 and Streak count only matches since they joined that division (within the selected season). Someone who has just been promoted, relegated or moved starts at the bottom with 0 points and a 0-0-0 record, and climbs from there. Players who have never moved division keep their full record.
 
-The **All** view and player profiles always show the full career record. A move never changes it. See [Promotion and Relegation](division-movement) for more.
+The **All** view and the career record on player profiles always count every match. A move never changes it. See [Promotion and Relegation](division-movement) for more.

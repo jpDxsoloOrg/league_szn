@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import type { Match } from '../../types';
 import { formatMatchDate } from '../../utils/dateUtils';
-import { describeSides, formatMatchType, getMatchResult, groupMatchSides } from '../../utils/matchDisplay';
+import { describeSides, formatMatchType, getMatchResult, groupMatchSides, sideTagTeamFor } from '../../utils/matchDisplay';
 import type { FormResult } from '../../utils/matchDisplay';
 import { missingPlayerLabel } from '../../utils/playerName';
 import Badge from '../ui/Badge';
@@ -35,8 +35,14 @@ export default function RecentMatches({ playerId, matches, names }: RecentMatche
     .slice(0, MATCHES_SHOWN)
     .map((match): MatchRow => {
       const sides = groupMatchSides(match.participants, (id) => id, match.teams, match.matchFormat);
-      const opposition = sides.filter((side) => !side.includes(playerId)).map((side) => side.map(nameOf));
-      return { match, result: getMatchResult(match, playerId), opponents: describeSides(opposition, t('common.vs')) };
+      const opposition = sides.filter((side) => !side.includes(playerId));
+      // TTB-02: an opposing tag side reads "The Usos (Jey & Jimmy)".
+      const oppositionTeams = opposition.map((side) => sideTagTeamFor(side, match.teams, match.sideTagTeams)?.name);
+      return {
+        match,
+        result: getMatchResult(match, playerId),
+        opponents: describeSides(opposition.map((side) => side.map(nameOf)), t('common.vs'), oppositionTeams),
+      };
     });
 
   if (rows.length === 0) return null;

@@ -220,6 +220,10 @@
     "seasonRecords": "Saison-Bilanzen",
     "record": "Bilanz",
     "winPercent": "Siegquote",
+    "points": "Punkte",
+    "rank": "Platz",
+    "rankInDivision": "Platz {{rank}} in {{division}}",
+    "rankOverall": "Platz {{rank}} gesamt",
     "viewHeadToHead": "Direktvergleich anzeigen",
     "fullStats": "Alle Statistiken",
     "challenge": "Herausfordern",
@@ -477,6 +481,7 @@
       "rivalryHeatExplained": "Wie Rivalitäts-Hitze funktioniert",
       "callUps": "Call-Ups: Von den Young Boys in den Hauptkader",
       "divisionMovement": "Auf- und Abstieg",
+      "howStandingsWork": "So funktioniert die Tabelle",
       "strikesAndSuspensions": "Strikes und Sperren",
       "adminStrikes": "Admin: Strikes",
       "installApp": "App installieren",
@@ -526,6 +531,7 @@
       "rank": "Rang",
       "image": "Bild",
       "player": "Spieler",
+      "points": "Pkt.",
       "wrestler": "Wrestler",
       "overall": "OVR",
       "overallTitle": "WWE 2K Gesamtwertung",
@@ -566,7 +572,19 @@
       "promotionLegend_other": "Aufstiegszone: die obersten {{count}} Plätze",
       "relegationLegend_one": "Abstiegszone: der unterste Platz",
       "relegationLegend_other": "Abstiegszone: die untersten {{count}} Plätze"
-    }
+    },
+    "points": {
+      "value_one": "{{count}} Pkt.",
+      "value_other": "{{count}} Pkt.",
+      "showBreakdown": "{{name}}: {{points}} Punkte. Aufschlüsselung anzeigen",
+      "breakdown": "{{total}} = {{parts}}",
+      "fromResults": "{{count}} aus Ergebnissen",
+      "qualityWins_one": "{{count}} Qualitätssieg",
+      "qualityWins_other": "{{count}} Qualitätssiege",
+      "streakBonuses_one": "{{count}} Serienbonus",
+      "streakBonuses_other": "{{count}} Serienboni"
+    },
+    "howItWorks": "So funktioniert die Tabelle"
   },
   "championships": {
     "title": "Meisterschaften",
@@ -619,6 +637,9 @@
     "error": "Kampf konnte nicht geplant werden",
     "minParticipantsError": "Bitte wählen Sie mindestens 2 Teilnehmer aus",
     "tagTeam": {
+      "teamWithName": "Team {{number}}: {{name}}",
+      "membersUnavailable_one": "({{count}} Mitglied nicht verfügbar)",
+      "membersUnavailable_other": "({{count}} Mitglieder nicht verfügbar)",
       "selectTeams": "Teams auswählen",
       "team": "Team",
       "addTeam": "Team hinzufügen",
@@ -2678,6 +2699,8 @@
     "allMyRivalries": "Alle meine Rivalitäten",
     "topOfTable": "Tabellenspitze",
     "fullStandings": "Zur Tabelle",
+    "points_one": "{{count}} Pkt.",
+    "points_other": "{{count}} Pkt.",
     "noStandings": "Die Tabelle füllt sich, sobald gelistete Wrestler Ergebnisse haben.",
     "standingsError": "Die Tabelle konnte nicht geladen werden.",
     "loadError": "Die Startseite konnte nicht geladen werden.",

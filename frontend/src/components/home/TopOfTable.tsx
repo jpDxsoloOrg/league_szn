@@ -12,7 +12,10 @@ import HomeSection from './HomeSection';
 
 const PLAYERS_SHOWN = 5;
 
-/** Players with no matches have no place in the table yet. */
+/**
+ * Players with no matches have no place in the table yet. The API already
+ * sends the rest in league points order (STR-03), so the order is kept as is.
+ */
 function withMatches(players: Player[]): Player[] {
   return players.filter((player) => player.wins + player.losses + player.draws > 0);
 }
@@ -83,13 +86,17 @@ export default function TopOfTable({ seasonId, seasonName }: TopOfTableProps) {
               return (
                 <li key={player.playerId}>
                   <Link to={`/player/${player.playerId}`} className="home-table__row">
-                    <span className="home-table__rank">{index + 1}</span>
+                    {/* Tied players share the API rank. */}
+                    <span className="home-table__rank">{player.rank ?? index + 1}</span>
                     <Avatar src={player.imageUrl} name={displayName} size="sm" />
                     <span className="home-table__names">
                       <span className="home-table__wrestler">{displayName}</span>
                       {player.currentWrestler && <span className="home-table__player">{player.name}</span>}
                     </span>
                     <span className="home-table__record">
+                      {player.points !== undefined && (
+                        <span className="home-table__points">{t('home.points', { count: player.points })}</span>
+                      )}
                       <span className="home-table__wld">{player.wins}-{player.losses}-{player.draws}</span>
                       {/* The API sends newest first; FormDots reads oldest to newest. */}
                       {player.recentForm && player.recentForm.length > 0 && (

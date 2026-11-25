@@ -16,7 +16,10 @@ vi.mock('../../../lib/repositories', () => ({
       overalls: { listAll: mockOverallsListAll },
       players: { list: mockPlayersList },
     },
-    competition: { matches: { listCompleted: mockMatchesListCompleted } },
+    competition: {
+      matches: { listCompleted: mockMatchesListCompleted },
+      championships: { listAllHistory: async () => [] },
+    },
     season: { standings: { listBySeason: mockSeasonStandingsListBySeason } },
   }),
 }));
@@ -122,6 +125,11 @@ describe('getStandings — divisionRecord (PRL-09)', () => {
       recentForm: [],
       currentStreak: { type: 'W', count: 0 },
       since: JOINED_AT,
+      points: 0,
+      qualityWins: 0,
+      streakBonuses: 0,
+      sos: 0,
+      rank: 1,
     });
   });
 
@@ -169,6 +177,12 @@ describe('getStandings — divisionRecord (PRL-09)', () => {
       draws: 0,
       recentForm: ['W', 'W', 'W', 'W', 'W'],
       currentStreak: { type: 'W', count: 5 },
+      // 5 wins plus one streak bonus at the third win.
+      points: 16,
+      qualityWins: 0,
+      streakBonuses: 1,
+      sos: 0,
+      rank: 1,
     });
   });
 
@@ -210,5 +224,86 @@ describe('getStandings — divisionRecord (PRL-09)', () => {
 
     expect(player.divisionRecord).toMatchObject({ wins: 2, losses: 1, draws: 0 });
     expect(player.divisionRecord.since).toBeUndefined();
+  });
+});
+
+// ─── Division league points (STR-03) ─────────────────────────────────
+
+interface LeaguePlayerBody extends StandingsPlayerBody {
+  points: number;
+  qualityWins: number;
+  rank: number;
+  divisionRecord: StandingsPlayerBody['divisionRecord'] & {
+    points: number;
+    qualityWins: number;
+    streakBonuses: number;
+    sos: number;
+    rank: number;
+  };
+}
+
+function byId(players: StandingsPlayerBody[], playerId: string): LeaguePlayerBody {
+  const player = players.find((candidate) => candidate.playerId === playerId);
+  if (!player) throw new Error(`no row for ${playerId}`);
+  return player as LeaguePlayerBody;
+}
+
+describe('getStandings — division league points (STR-03)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockOverallsListAll.mockResolvedValue([]);
+  });
+
+  it('starts a mover at 0 division points, ranked below a member who has played', async () => {
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Aaron', currentWrestler: 'A', divisionId: 'd1', divisionJoinedAt: JOINED_AT, wins: 5, losses: 0, draws: 0 },
+      { playerId: 'p3', name: 'Zed', currentWrestler: 'C', divisionId: 'd1', wins: 0, losses: 1, draws: 0 },
+      { playerId: 'p2', name: 'Other', currentWrestler: 'B', divisionId: 'd2', wins: 0, losses: 6, draws: 0 },
+    ]);
+    mockMatchesListCompleted.mockResolvedValue([...careerWins, winFor('p2', 'p3', '2026-11-24T00:00:00.000Z')]);
+
+    const players = await fetchPlayers();
+    const mover = byId(players, 'p1');
+    const member = byId(players, 'p3');
+
+    // All-time: the mover's earlier wins still count.
+    expect(mover).toMatchObject({ points: 16, rank: 1 });
+    // Division: only results since joining, so 0 points and last.
+    expect(mover.divisionRecord).toMatchObject({ wins: 0, points: 0, rank: 2 });
+    expect(member.divisionRecord).toMatchObject({ losses: 1, points: 0, rank: 1 });
+    // Each division ranks from 1.
+    expect(byId(players, 'p2').divisionRecord.rank).toBe(1);
+  });
+
+  it("judges a quality win on the opponent's points in this division only", async () => {
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Mover', currentWrestler: 'A', divisionId: 'd1', divisionJoinedAt: JOINED_AT, wins: 2, losses: 1 },
+      { playerId: 'p3', name: 'Member', currentWrestler: 'C', divisionId: 'd1', wins: 1, losses: 0 },
+      { playerId: 'p2', name: 'Old rival', currentWrestler: 'B', divisionId: 'd2', wins: 0, losses: 2 },
+    ]);
+    mockMatchesListCompleted.mockResolvedValue([
+      winFor('p1', 'p2', '2026-10-01T00:00:00.000Z'),
+      winFor('p1', 'p2', '2026-10-02T00:00:00.000Z'),
+      winFor('p3', 'p1', '2026-11-24T00:00:00.000Z'),
+    ]);
+
+    const member = byId(await fetchPlayers(), 'p3');
+
+    // All-time the mover sat on 6 points, so beating them is a quality win.
+    expect(member).toMatchObject({ points: 4, qualityWins: 1 });
+    // In d1 the mover had 0 points when they met: no bonus.
+    expect(member.divisionRecord).toMatchObject({ points: 3, qualityWins: 0, sos: 0, rank: 1 });
+  });
+
+  it('keeps the stored W-L-D for an unmoved player while points come from the matches', async () => {
+    mockSeasonStandingsListBySeason.mockResolvedValue([
+      { seasonId: 's1', playerId: 'p1', wins: 4, losses: 0, draws: 0 },
+    ]);
+    mockPlayersList.mockResolvedValue([{ playerId: 'p1', name: 'Unmoved', currentWrestler: 'A', divisionId: 'd1' }]);
+    mockMatchesListCompleted.mockResolvedValue([winFor('p1', 'p2', '2026-10-01T00:00:00.000Z', { seasonId: 's1' })]);
+
+    const [player] = await fetchPlayers({ seasonId: 's1' });
+
+    expect((player as LeaguePlayerBody).divisionRecord).toMatchObject({ wins: 4, points: 3, rank: 1 });
   });
 });

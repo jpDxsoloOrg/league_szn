@@ -36,7 +36,11 @@ Solange dich ein [Strike](strikes-and-suspensions) für Anmeldungen sperrt, sind
 
 ## Matches
 
-Der Tab **Matches** listet alle Matches. Suche nach Namen, wähle Alle, Abgeschlossen oder Geplant, oder nutze **Filter** für Spieler, Kampftyp, Stipulation, Meisterschaft, Saison und Datum. **Details** öffnet ein Match. Dort kannst du es nach dem Ende [bewerten](rate-matches). Die Liste zeigt jeweils 50 Matches, am Ende steht **Mehr anzeigen**.
+Der Tab **Matches** listet alle Matches. Suche nach Namen oder Tag-Team-Namen, wähle Alle, Abgeschlossen oder Geplant, oder nutze **Filter** für Spieler, Kampftyp, Stipulation, Meisterschaft, Saison und Datum. **Details** öffnet ein Match. Dort kannst du es nach dem Ende [bewerten](rate-matches). Die Liste zeigt jeweils 50 Matches, am Ende steht **Mehr anzeigen**.
+
+## Tag-Team-Namen
+
+Ist eine Seite eines Matches ein eingetragenes Tag Team, zeigt die Match-Card den Teamnamen und darunter die Mitglieder, zum Beispiel **The Usos** über Jey und Jimmy. Ergebnisse lauten dann *The Usos def. The New Day*. Das gilt für Event-Cards, Ergebnisse, den Tab Matches, das Dashboard, Rivalitäten und Profile. Eine Seite zählt als Team, wenn ihre zwei Wrestler am Tag des Matches ein Team waren, auch wenn sie einzeln gebucht wurden. Seiten ohne eingetragenes Team zeigen wie bisher ihre Mitglieder. Wie Teams entstehen, steht unter [So funktionieren die Tag-Team-Ranglisten](tag-team-rankings).
 
 ## So entstehen Cards
 

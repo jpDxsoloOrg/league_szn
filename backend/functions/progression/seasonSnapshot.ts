@@ -5,7 +5,7 @@
  * `invokeAsync('progression', { action: 'seasonSnapshot', seasonId })`. The
  * progression Lambda then stores one `SeasonMovementReview` per player in a
  * division with an active promotion or relegation track: their best progress
- * on each kind, their rank in the division's season standings, whether a GM
+ * on each kind, their rank in the division's season league table, whether a GM
  * flagged them, and a recommendation. GMs review and apply the batch through
  * `reviews.ts`.
  *
@@ -16,6 +16,8 @@
 
 import { getRepositories } from '../../lib/repositories';
 import type {
+  Match,
+  Player,
   PlayerProgression,
   ProgressionTrack,
   SeasonMovementChoice,
@@ -23,6 +25,9 @@ import type {
   SeasonStanding,
 } from '../../lib/repositories';
 import { isPlayerVisible } from '../../lib/needsWrestler';
+import { rankLeagueTable, type LeagueRow } from '../../lib/policies/leaguePoints';
+import { computeDivisionLeagues, toLeagueMatch } from '../../lib/stats/leagueStandings';
+import { loadTitleReignIndex, type IsChampionAt } from '../../lib/stats/titleReigns';
 
 /** Progress (0-100) at which a promotion track recommends promoting. */
 export const SEASON_REVIEW_PROMOTE_PCT = 100;
@@ -60,9 +65,10 @@ export function recommendMovement(input: RecommendationInput): SeasonMovementCho
 }
 
 /**
- * Rank players by season record (wins desc, then losses asc, as the season
- * standings page does). Only players with at least one season match rank.
- * Ties share a rank.
+ * Rank players by stored season record (wins desc, then losses asc). Only
+ * players with at least one season match rank; ties share a rank. The live
+ * snapshot ranks by league points (`rankDivisionsByLeaguePoints`); this stays
+ * for seed data that has season records but no matches behind them.
  */
 export function rankBySeasonRecord(standings: readonly SeasonStanding[]): Map<string, number> {
   const played = standings
@@ -74,6 +80,35 @@ export function rankBySeasonRecord(standings: readonly SeasonStanding[]): Map<st
     const tied = previous && previous.wins === row.wins && previous.losses === row.losses;
     ranks.set(row.playerId, tied ? (ranks.get(previous.playerId) as number) : index + 1);
   });
+  return ranks;
+}
+
+/**
+ * Rank each division's players by league points over the season's completed
+ * matches (STR-03), the same division table the standings page shows: a
+ * player is credited only for results since they joined the division (PRL-09).
+ * Every player feeds the tables as an opponent; only `rankedPlayers` with at
+ * least one credited match rank, within their own division. Ties share a rank.
+ */
+export function rankDivisionsByLeaguePoints(
+  seasonMatches: readonly Match[],
+  allPlayers: readonly Player[],
+  rankedPlayers: readonly Player[],
+  isChampionAt: IsChampionAt,
+): Map<string, number> {
+  const divisionRows = computeDivisionLeagues(seasonMatches.map(toLeagueMatch), allPlayers, isChampionAt);
+  const rowsByDivision = new Map<string, LeagueRow[]>();
+  for (const player of rankedPlayers) {
+    const row = divisionRows.get(player.playerId);
+    if (!player.divisionId || !row || row.matchesPlayed === 0) continue;
+    const rows = rowsByDivision.get(player.divisionId) ?? [];
+    rows.push({ ...row, name: player.name });
+    rowsByDivision.set(player.divisionId, rows);
+  }
+  const ranks = new Map<string, number>();
+  for (const rows of rowsByDivision.values()) {
+    for (const ranked of rankLeagueTable(rows)) ranks.set(ranked.playerId, ranked.rank);
+  }
   return ranks;
 }
 
@@ -114,8 +149,8 @@ export interface SeasonSnapshotResult {
 export async function snapshotSeasonReviews(seasonId: string): Promise<SeasonSnapshotResult> {
   const {
     progression,
+    competition: { matches },
     roster: { players },
-    season: { standings },
   } = getRepositories();
 
   const tracks = (await progression.listTracks({ isActive: true }))
@@ -129,9 +164,10 @@ export async function snapshotSeasonReviews(seasonId: string): Promise<SeasonSna
   }
   if (tracksByDivision.size === 0) return { seasonId, created: 0, keptDecided: 0 };
 
-  const [allPlayers, seasonStandings, existing, ...trackRows] = await Promise.all([
+  const [allPlayers, completedMatches, isChampionAt, existing, ...trackRows] = await Promise.all([
     players.list(),
-    standings.listBySeason(seasonId),
+    matches.listCompleted(),
+    loadTitleReignIndex(),
     progression.listSeasonReviews(seasonId),
     ...tracks.map((track) => progression.listByTrack(track.trackId)),
   ]);
@@ -145,17 +181,13 @@ export async function snapshotSeasonReviews(seasonId: string): Promise<SeasonSna
   const eligible = allPlayers.filter(
     (player) => player.divisionId && tracksByDivision.has(player.divisionId) && isPlayerVisible(player),
   );
-  const standingByPlayer = new Map(seasonStandings.map((row) => [row.playerId, row]));
-
-  // Season rank is within the division.
-  const rankByPlayer = new Map<string, number>();
-  for (const divisionId of tracksByDivision.keys()) {
-    const divisionStandings = eligible
-      .filter((player) => player.divisionId === divisionId)
-      .map((player) => standingByPlayer.get(player.playerId))
-      .filter((row): row is SeasonStanding => row !== undefined);
-    for (const [playerId, rank] of rankBySeasonRecord(divisionStandings)) rankByPlayer.set(playerId, rank);
-  }
+  // Season rank is within the division, by league points since joining it.
+  const rankByPlayer = rankDivisionsByLeaguePoints(
+    completedMatches.filter((match) => match.seasonId === seasonId),
+    allPlayers,
+    eligible,
+    isChampionAt,
+  );
 
   const now = new Date().toISOString();
   const reviews: SeasonMovementReview[] = [];

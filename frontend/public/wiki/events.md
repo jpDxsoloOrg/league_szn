@@ -36,7 +36,11 @@ While a [strike](strikes-and-suspensions) blocks you from signing up, **Availabl
 
 ## Matches
 
-The **Matches** tab lists every match. Search by name, choose All, Completed or Scheduled, or use **Filters** for player, match type, stipulation, championship, season and dates. **Details** opens a match, and that's where you can [rate it](rate-matches) once it's completed. The list shows 50 matches at a time, with **Show more** at the bottom.
+The **Matches** tab lists every match. Search by name or tag team name, choose All, Completed or Scheduled, or use **Filters** for player, match type, stipulation, championship, season and dates. **Details** opens a match, and that's where you can [rate it](rate-matches) once it's completed. The list shows 50 matches at a time, with **Show more** at the bottom.
+
+## Tag team names
+
+When a side of a match is a registered tag team, match cards show the team name with its members underneath, for example **The Usos** over Jey and Jimmy. Results read *The Usos def. The New Day*. This works on event cards, results, the Matches tab, the dashboard, rivalries and profiles. A side counts as a team when its two wrestlers were a team on the day of the match, even if they were booked one by one. Sides that aren't a registered team show their members as before. See [How Tag Team Rankings Work](tag-team-rankings) for how teams are formed.
 
 ## How Cards Are Built
 

@@ -4,7 +4,7 @@ import { matchesApi } from '../../services/api';
 import type { Match, Player } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
 import { formatMatchDate } from '../../utils/dateUtils';
-import { formatMatchType } from '../../utils/matchDisplay';
+import { formatMatchType, sideLabel } from '../../utils/matchDisplay';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import './MatchResultForm.css';
@@ -49,8 +49,13 @@ export default function MatchResultForm({
     return player ? player.name : t('common.unknown');
   };
 
-  /** Get display name for a team: tag team name if it exists, or "Player1 & Player2" */
-  const getTeamDisplayName = (teamMembers: string[]): string => {
+  /**
+   * Display name for a side: the team it was billed as on the match date (TTB-02),
+   * else a registered team for the pair, else "Player1 & Player2".
+   */
+  const getTeamDisplayName = (teamMembers: string[], teamIndex: number): string => {
+    const billedName = sideLabel(teamIndex, match);
+    if (billedName) return billedName;
     if (teamMembers.length === 2) {
       const tt = tagTeams.find(
         tag => (tag.player1Id === teamMembers[0] && tag.player2Id === teamMembers[1])
@@ -168,7 +173,7 @@ export default function MatchResultForm({
               onClick={() => handleTeamWinnerSelect(teamIndex)}
             >
               <span className="match-result-form__option-text">
-                <span className="match-result-form__option-name">{getTeamDisplayName(team)}</span>
+                <span className="match-result-form__option-name">{getTeamDisplayName(team, teamIndex)}</span>
                 <span className="match-result-form__option-meta">
                   {team.map(playerId => getPlayerName(playerId)).join(', ')}
                 </span>

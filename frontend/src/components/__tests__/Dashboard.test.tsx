@@ -327,6 +327,29 @@ describe('Dashboard', () => {
     expect(screen.queryByText('Sting')).not.toBeInTheDocument();
   });
 
+  it('keeps the API points order and shows each leader rank and points', async () => {
+    mockGetDashboard.mockResolvedValue({
+      ...emptyDashboard,
+      seasonInfo: { seasonId: 's1', name: 'Season 1', status: 'active' },
+    });
+    mockGetStandings.mockResolvedValue({
+      rankedBy: 'points',
+      sortedByWins: false,
+      players: [
+        { playerId: 'p2', name: 'Ben', currentWrestler: 'Sting', wins: 1, losses: 0, draws: 4, points: 7, rank: 1 },
+        { playerId: 'p1', name: 'Ann', currentWrestler: 'Edge', wins: 2, losses: 0, draws: 0, points: 6, rank: 2 },
+        { playerId: 'p3', name: 'Cal', currentWrestler: 'Kane', wins: 2, losses: 0, draws: 0, points: 6, rank: 2 },
+      ],
+    });
+
+    renderDashboard();
+
+    const rows = await screen.findAllByRole('link', { name: /Sting|Edge|Kane/ });
+    expect(rows.map((row) => row.getAttribute('href'))).toEqual(['/player/p2', '/player/p1', '/player/p3']);
+    expect(rows.map((row) => row.querySelector('.home-table__rank')?.textContent)).toEqual(['1', '2', '2']);
+    expect(rows[0].querySelector('.home-table__points')).toHaveTextContent('home.points');
+  });
+
   it('falls back to all time when no listed wrestler has a result this season', async () => {
     mockGetDashboard.mockResolvedValue({
       ...emptyDashboard,

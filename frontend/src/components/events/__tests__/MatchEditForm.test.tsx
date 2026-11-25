@@ -47,7 +47,8 @@ vi.mock('../../../services/api', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, fallback?: string) => fallback ?? key,
+    t: (key: string, fallback?: string | { defaultValue?: string }) =>
+      (typeof fallback === 'string' ? fallback : fallback?.defaultValue) ?? key,
   }),
 }));
 
@@ -188,6 +189,58 @@ describe('MatchEditForm', () => {
 
     await waitFor(() => expect(mockUpdateMatch).toHaveBeenCalledTimes(1));
     expect(mockUpdateMatch.mock.calls[0]![1]).toMatchObject({ participants: ['p1', 'p9'] });
+  });
+
+  describe('team names on each side of a tag match', () => {
+    const usos = { tagTeamId: 'tt-usos', name: 'The Usos', player1Id: 'p1', player2Id: 'p2' };
+    const tagMatch = {
+      ...scheduledMatch,
+      matchFormat: 'tag team',
+      participants: ['p1', 'p2', 'p3', 'p9'],
+      teams: [['p2', 'p1'], ['p3', 'p9']],
+    };
+
+    it('bills a booked pair by its team name and leaves an unregistered pair as "Team 2"', async () => {
+      setupDefaultMocks();
+      mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);
+      mockGetAllMatches.mockResolvedValue([tagMatch]);
+      mockGetAllTagTeams.mockResolvedValue([usos]);
+
+      render(<MatchEditForm matchId="m1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+      expect(await screen.findByRole('heading', { name: /^Team 1: The Usos/ })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /^Team 2\b/ })).not.toHaveTextContent('The Usos');
+    });
+
+    it('updates the side name when the GM picks a team from the list', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetAllMatches.mockResolvedValue([{ ...tagMatch, teams: [['p1', 'p3'], ['p2']] }]);
+      mockGetAllTagTeams.mockResolvedValue([usos]);
+
+      render(<MatchEditForm matchId="m1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+      const picker = await screen.findByLabelText('Team 2: Select a Tag Team...');
+      expect(screen.queryByRole('heading', { name: /The Usos/ })).not.toBeInTheDocument();
+      await user.selectOptions(picker, 'tt-usos');
+
+      expect(screen.getByRole('heading', { name: /^Team 2: The Usos/ })).toBeInTheDocument();
+    });
+
+    it('shows a team with a hidden member as unavailable instead of dropping it', async () => {
+      setupDefaultMocks();
+      mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);
+      mockGetAllMatches.mockResolvedValue([{ ...tagMatch, participants: ['p1', 'p2', 'p3'], teams: [['p1', 'p2'], ['p3']] }]);
+      mockGetAllTagTeams.mockResolvedValue([
+        { tagTeamId: 'tt-half', name: 'Half Hidden', player1Id: 'p3', player2Id: 'p9' },
+      ]);
+
+      render(<MatchEditForm matchId="m1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+      const [option] = await screen.findAllByRole('option', { name: /Half Hidden/ });
+      expect(option).toBeDisabled();
+      expect(option).toHaveTextContent('(1 member unavailable)');
+    });
   });
 
   it('loads existing match data into form fields', async () => {

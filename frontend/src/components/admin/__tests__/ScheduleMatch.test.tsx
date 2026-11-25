@@ -811,7 +811,7 @@ describe('ScheduleMatch', () => {
     });
   });
 
-  it('does not offer a tag team with a hidden member', async () => {
+  it('lists a tag team with a hidden member as unavailable instead of offering it', async () => {
     const user = userEvent.setup();
     setupDefaultMocks();
     mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);
@@ -824,8 +824,63 @@ describe('ScheduleMatch', () => {
     await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
     await user.selectOptions(screen.getByLabelText('Match Format'), 'Tag Team');
 
-    expect((await screen.findAllByRole('option', { name: /Clean Team/ })).length).toBeGreaterThan(0);
-    expect(screen.queryByRole('option', { name: /Half Hidden/ })).not.toBeInTheDocument();
+    const [cleanOption] = await screen.findAllByRole('option', { name: /Clean Team/ });
+    expect(cleanOption).toBeEnabled();
+    const [halfHiddenOption] = screen.getAllByRole('option', { name: /Half Hidden/ });
+    expect(halfHiddenOption).toBeDisabled();
+    expect(halfHiddenOption).toHaveTextContent('(1 member unavailable)');
+  });
+
+  describe('team names on each side', () => {
+    const usos = { tagTeamId: 'tt-usos', name: 'The Usos', player1Id: 'p1', player2Id: 'p2' };
+
+    it('bills a side picked from the tag team list by its team name', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetAllTagTeams.mockResolvedValue([usos]);
+      renderScheduleMatch();
+
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+      await user.selectOptions(screen.getByLabelText('Match Format'), 'Tag Team');
+      await user.selectOptions(screen.getByLabelText('Team 1: Select a Tag Team...'), 'tt-usos');
+
+      expect(screen.getByRole('heading', { name: 'Team 1: The Usos' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Team 2' })).toBeInTheDocument();
+      expect(screen.getByText('Team 1: The Usos · 2 members')).toBeInTheDocument();
+    });
+
+    it('bills a side by its team name when the GM picks both members individually', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetAllTagTeams.mockResolvedValue([usos]);
+      renderScheduleMatch();
+
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+      await user.selectOptions(screen.getByLabelText('Match Format'), 'Tag Team');
+      await user.click(screen.getByRole('button', { name: 'Pick Individuals' }));
+      // Each team panel lists every player; the first card is in Team 1's panel.
+      await user.click(screen.getAllByRole('button', { name: /Dwayne Johnson/ })[0]!);
+      expect(screen.getByRole('heading', { name: 'Team 1' })).toBeInTheDocument();
+      await user.click(screen.getAllByRole('button', { name: /John Cena/ })[0]!);
+
+      expect(screen.getByRole('heading', { name: 'Team 1: The Usos' })).toBeInTheDocument();
+    });
+
+    it('keeps the plain side label for a pair that is not a registered team', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetAllTagTeams.mockResolvedValue([usos]);
+      renderScheduleMatch();
+
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+      await user.selectOptions(screen.getByLabelText('Match Format'), 'Tag Team');
+      await user.click(screen.getByRole('button', { name: 'Pick Individuals' }));
+      await user.click(screen.getAllByRole('button', { name: /John Cena/ })[0]!);
+      await user.click(screen.getAllByRole('button', { name: /Mark Calaway/ })[0]!);
+
+      expect(screen.getByRole('heading', { name: 'Team 1' })).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: /The Usos/ })).not.toBeInTheDocument();
+    });
   });
 
   it('labels a blank-name player instead of leaving empty brackets', async () => {

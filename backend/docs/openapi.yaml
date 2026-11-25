@@ -107,9 +107,19 @@ components:
         Record in the player's current division. Counts only completed matches
         whose result time (completedAt, else date) is on or after divisionJoinedAt,
         within the requested season when seasonId is given. A player with no
-        divisionJoinedAt gets the same record as the row (career or season).
-      required: [wins, losses, draws, recentForm, currentStreak]
+        divisionJoinedAt gets the same W-L-D as the row (career or season).
+        League points use the same rule: each player is credited only for results
+        since they joined, and opponents are judged on their points in this
+        division's table, so a player who just moved starts at 0 points.
+      required: [wins, losses, draws, recentForm, currentStreak, points, qualityWins, streakBonuses, sos, rank]
       properties:
+        points: { type: integer, description: League points in this division's table. }
+        qualityWins: { type: integer }
+        streakBonuses: { type: integer }
+        sos: { type: number, description: Strength of schedule within this division's table. }
+        rank:
+          type: integer
+          description: 1-based rank among the returned players of this division, by league points. Tied rows share a rank.
         wins: { type: integer }
         losses: { type: integer }
         draws: { type: integer }
@@ -128,8 +138,28 @@ components:
       allOf:
         - $ref: '#/components/schemas/Player'
         - type: object
-          required: [divisionRecord]
+          required: [divisionRecord, points, qualityWins, streakBonuses, sos, rank]
           properties:
+            points:
+              type: integer
+              description: >-
+                League points for the requested window (season or all time): 3 per
+                win, 1 per draw, plus quality-win and streak bonuses. Hidden
+                opponents still count.
+            qualityWins:
+              type: integer
+              description: Wins over an opponent who had more points going in, or held a title.
+            streakBonuses:
+              type: integer
+              description: Bonuses for every third win in a row.
+            sos:
+              type: number
+              description: Strength of schedule, the mean points per match of every opponent faced (3 decimals).
+            rank:
+              type: integer
+              description: >-
+                1-based rank in the returned list. Players with no matches come
+                last; then points, sos, head-to-head, win %, wins. Tied rows share a rank.
             divisionJoinedAt: { type: string, format: date-time }
             mainOverall: { type: integer }
             recentForm:
@@ -321,6 +351,17 @@ components:
         stipulationId: { type: string }
         participants: { type: array, items: { type: string } }
         teams: { type: array, items: { type: array, items: { type: string } } }
+        sideTagTeams:
+          type: array
+          description: >-
+            Read-only, set when the match has `teams`. One entry per side, aligned
+            with `teams`: the tag team that side's pair was on the match date, or
+            null for a side that isn't a registered pair. Resolved at read time, so
+            a renamed team shows its current name. Also set on event
+            `enrichedMatches[].matchData` and dashboard `recentResults[]`.
+          items:
+            nullable: true
+            allOf: [{ $ref: '#/components/schemas/SideTagTeam' }]
         winners: { type: array, items: { type: string } }
         losers: { type: array, items: { type: string } }
         winningTeam: { type: integer }
@@ -333,6 +374,14 @@ components:
         createdAt: { type: string }
         challengeId: { type: string }
         promoId: { type: string }
+
+    SideTagTeam:
+      type: object
+      required: [tagTeamId, name]
+      properties:
+        tagTeamId: { type: string }
+        name: { type: string }
+        imageUrl: { type: string }
 
     ScheduleMatchInput:
       type: object
@@ -431,9 +480,10 @@ components:
     Standings:
       type: object
       properties:
-        players: { type: array, items: { $ref: '#/components/schemas/Player' } }
+        players: { type: array, items: { $ref: '#/components/schemas/StandingsPlayer' } }
         seasonId: { type: string }
-        sortedByWins: { type: boolean }
+        rankedBy: { type: string, enum: [points] }
+        sortedByWins: { type: boolean, deprecated: true }
 
     Season:
       type: object
@@ -1657,9 +1707,10 @@ paths:
       tags: [Standings]
       summary: Get standings
       description: >-
-        Career (or season, with seasonId) W-L-D per visible player, plus a
-        divisionRecord counting only results since the player joined their
-        current division.
+        Visible players ranked by league points over the season (with seasonId)
+        or all time, with their stored W-L-D, plus a divisionRecord counting
+        only results since the player joined their current division (its own
+        points and rank within the division).
       parameters:
         - name: seasonId
           in: query
@@ -1671,13 +1722,18 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [players, sortedByWins]
+                required: [players, rankedBy, sortedByWins]
                 properties:
                   players:
                     type: array
+                    description: In rank order.
                     items: { $ref: '#/components/schemas/StandingsPlayer' }
                   seasonId: { type: string }
-                  sortedByWins: { type: boolean }
+                  rankedBy: { type: string, enum: [points] }
+                  sortedByWins:
+                    type: boolean
+                    deprecated: true
+                    description: Always false. Kept for one release for older clients; read rankedBy.
 
   /seasons:
     get:

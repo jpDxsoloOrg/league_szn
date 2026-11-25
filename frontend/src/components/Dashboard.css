@@ -126,6 +126,7 @@
   font-size: clamp(1.25rem, 3vw, 1.75rem);
   font-weight: 700;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .home-hero__match-detail {
@@ -352,10 +353,21 @@
   gap: 0.25rem;
 }
 
+.home-table__points {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
 .home-table__wld {
   font-family: var(--font-heading);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+.home-table__points + .home-table__wld {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
 }
 
 /* Rivalries */

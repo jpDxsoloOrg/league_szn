@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.4.0",
+      "date": "2026-11-24",
+      "title": "League Points and Tag Team Names",
+      "titleDe": "Ligapunkte und Tag-Team-Namen",
+      "file": "v1.4.0.md",
+      "summary": "The standings now rank by league points, with bonuses for quality wins and win streaks, a points breakdown and fair tiebreakers, and points start fresh in your division after a move. Tag team matches show the team name on cards and results.",
+      "summaryDe": "Die Tabelle sortiert jetzt nach Ligapunkten, mit Boni für Qualitätssiege und Siegesserien, einer Punkte-Aufschlüsselung und fairen Regeln bei Gleichstand, und nach einem Wechsel starten die Punkte in deiner Division neu. Tag-Team-Matches zeigen den Teamnamen auf Cards und bei Ergebnissen."
+    },
+    {
       "version": "1.3.0",
       "date": "2026-11-24",
       "title": "A Fresh Start After Every Move",
