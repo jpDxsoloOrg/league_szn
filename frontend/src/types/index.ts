@@ -1,3 +1,6 @@
+import type { SimCategory } from '../constants/simCategories';
+import type { MatchResultSource, StoredMatchSimulation } from './sim';
+
 export interface Player {
   playerId: string;
   /** Sent only to staff and to the player themselves. */
@@ -175,6 +178,8 @@ export interface DisciplineActionResult {
 export interface WrestlerMove {
   gameName: string;
   customName: string;
+  /** BLD-03: move level 1-5; unset reads as 1. Set through the build, not the moveset editor. */
+  level?: number;
 }
 
 /** Max signatures / max finishers per player (each list). Mirrors backend/lib/movesets.ts. */
@@ -287,6 +292,11 @@ export interface Match {
   noShows?: MatchNoShow[];
   /** Sim interference bought by participants (ECO-08), one per player. */
   simBoosts?: MatchSimBoost[];
+  // BLD-14
+  /** `simulation` when a GM settled the match with the sim (BLD-10). */
+  resultSource?: MatchResultSource;
+  /** The official sim; odds only for staff. */
+  simulation?: StoredMatchSimulation;
 }
 
 // ECO-14
@@ -532,6 +542,8 @@ export interface Stipulation {
   stipulationId: string;
   name: string;
   description?: string;
+  /** BLD-16: sim category; missing = `standard`. */
+  simCategory?: SimCategory;
   createdAt: string;
   updatedAt: string;
 }
@@ -540,6 +552,8 @@ export interface MatchType {
   matchTypeId: string;
   name: string;
   description?: string;
+  /** BLD-16: sim category; missing = `standard`. */
+  simCategory?: SimCategory;
   createdAt: string;
   updatedAt: string;
 }
@@ -659,7 +673,9 @@ export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_s
   // ECO-13: contracts and the league economy
   | 'contract_offer' | 'contract_offer_accepted' | 'contract_offer_declined' | 'contract_offer_expired' | 'contract_released' | 'contract_completed'
   | 'no_show_marked' | 'fine_issued' | 'fine_rescinded' | 'balance_negative'
-  | 'progression_consideration' | 'progression_executed' | 'progression_milestone' | 'progression_goals_reset';
+  | 'progression_consideration' | 'progression_executed' | 'progression_milestone' | 'progression_goals_reset'
+  // BLD-04: a division move left the build over a smaller budget
+  | 'build_over_budget';
 
 export interface AppNotification {
   notificationId: string;
@@ -667,7 +683,7 @@ export interface AppNotification {
   type: NotificationType | GmInterferenceNotificationType;
   message: string;
   sourceId: string;
-  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'rivalry' | 'storyline_request' | 'discipline' | 'progression' | 'contract' | 'economy';
+  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'rivalry' | 'storyline_request' | 'discipline' | 'progression' | 'contract' | 'economy' | 'build';
   isRead: boolean;
   createdAt: string;
 }
@@ -775,3 +791,5 @@ export * from './location';
 export * from './factionMessage';
 export * from './rivalry';
 export * from './progression';
+// BLD-14
+export * from './sim';

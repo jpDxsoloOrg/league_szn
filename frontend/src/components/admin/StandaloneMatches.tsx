@@ -10,6 +10,7 @@ import type { TagTeam } from '../../types/tagTeam';
 import MatchResultForm from '../events/MatchResultForm';
 import MatchEditForm from '../events/MatchEditForm';
 import NoShowButton from '../economy/NoShowButton';
+import SimMatchActions from '../sim/SimMatchActions';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
@@ -46,6 +47,8 @@ export default function StandaloneMatches() {
   const [failedSources, setFailedSources] = useState<StandaloneSource[]>([]);
   const [recordingMatchId, setRecordingMatchId] = useState<string | null>(null);
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
+  // BLD-14
+  const [simulatingMatchId, setSimulatingMatchId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Match | null>(null);
   const [deletingMatchId, setDeletingMatchId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -95,6 +98,12 @@ export default function StandaloneMatches() {
     return player ? player.name : t('common.unknown');
   };
 
+  const getBilledName = (playerId: string): string => {
+    const player = players.find(p => p.playerId === playerId);
+    if (!player) return t('common.unknown');
+    return player.currentWrestler || player.name;
+  };
+
   const formatMatchPreview = (match: Match): string => {
     if (match.teams && match.teams.length >= 2) {
       return match.teams
@@ -111,6 +120,7 @@ export default function StandaloneMatches() {
   const handleRefresh = async () => {
     setRecordingMatchId(null);
     setEditingMatchId(null);
+    setSimulatingMatchId(null);
     setActionError(null);
     await loadData();
   };
@@ -202,6 +212,7 @@ export default function StandaloneMatches() {
                       onClick={() => {
                         setRecordingMatchId(match.matchId);
                         setEditingMatchId(null);
+                        setSimulatingMatchId(null);
                         setActionError(null);
                       }}
                     >
@@ -211,9 +222,24 @@ export default function StandaloneMatches() {
                       variant="secondary"
                       size="sm"
                       disabled={busy}
+                      aria-expanded={simulatingMatchId === match.matchId}
+                      onClick={() => {
+                        setSimulatingMatchId(simulatingMatchId === match.matchId ? null : match.matchId);
+                        setRecordingMatchId(null);
+                        setEditingMatchId(null);
+                        setActionError(null);
+                      }}
+                    >
+                      {t('sim.actions.simulate')}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={busy}
                       onClick={() => {
                         setEditingMatchId(match.matchId);
                         setRecordingMatchId(null);
+                        setSimulatingMatchId(null);
                         setActionError(null);
                       }}
                     >
@@ -242,6 +268,11 @@ export default function StandaloneMatches() {
                       onCancel={() => setRecordingMatchId(null)}
                       showNoShow={false}
                     />
+                  </div>
+                )}
+                {simulatingMatchId === match.matchId && (
+                  <div className="standalone-match__form">
+                    <SimMatchActions match={match} nameOf={getBilledName} onRecorded={handleRefresh} />
                   </div>
                 )}
                 {editingMatchId === match.matchId && (

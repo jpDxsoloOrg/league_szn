@@ -31,15 +31,24 @@ import { handler as clearAll } from '../clearAll';
 import { buildTagTeamIndex, splitSidesIntoTeams } from '../../../lib/tagTeams/resolveTagTeams';
 import type {
   Contract,
+  Division,
   Match,
+  MatchSimulation,
   Player,
   PlayerProgression,
   ProgressionEvent,
   ProgressionTrack,
+  Stipulation,
   TagTeam,
+  WrestlerBuild,
 } from '../../../lib/repositories/types';
 import type { LedgerEntry } from '../../../lib/repositories/ledger';
 import type { GmInterferenceRequest } from '../../../lib/repositories/gmInterference';
+import { OVER_BUDGET_SEED_WRESTLER, SEEDED_BUILDS } from '../seedBuilds';
+import { STYLE_IDS, budgetForDivision, isSpecialtyAllowed, type SimCategory } from '../../../lib/policies/buildRules';
+import { validateBuild } from '../../../lib/policies/wrestlerBuild';
+import { toPlayerBuildView } from '../../../lib/builds/playerBuild';
+import { competitorFromBuild, simulate, type SimSide } from '../../../lib/policies/matchSim';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
@@ -718,5 +727,93 @@ describe('clearAll', () => {
 
     expect(result!.statusCode).toBe(500);
     expect(JSON.parse(result!.body).message).toBe('Failed to clear all data');
+  });
+
+  it('seeds wrestler builds, an over-budget relegation and a simulated match (BLD-15)', async () => {
+    mockImportAllData.mockResolvedValue({});
+
+    const result = await seedData(makeEvent(), ctx, cb);
+    expect(result!.statusCode).toBe(200);
+
+    const importData = mockImportAllData.mock.calls[0][0] as Record<string, Record<string, unknown>[]>;
+    const divisions = importData.divisions as unknown as Division[];
+    const players = importData.players as unknown as Player[];
+    const divisionOf = (player: Player): Division | undefined =>
+      divisions.find((division) => division.divisionId === player.divisionId);
+    const byWrestler = (wrestler: string): Player => {
+      const found = players.find((player) => player.currentWrestler === wrestler);
+      if (!found) throw new Error(`No seeded ${wrestler}`);
+      return found;
+    };
+
+    // Every style is represented, each with a specialty its style allows.
+    const built = players.filter((player) => player.build);
+    expect(built).toHaveLength(Object.keys(SEEDED_BUILDS).length);
+    expect(new Set(built.map((player) => player.build?.style))).toEqual(new Set(STYLE_IDS));
+    for (const player of built) {
+      const build = player.build as WrestlerBuild;
+      expect(build.specialty, player.currentWrestler).toBeDefined();
+      expect(isSpecialtyAllowed(build.style, build.specialty as SimCategory), player.currentWrestler).toBe(true);
+    }
+    // Some move levels are bought; players without a seeded build keep the default.
+    const leveled = built.flatMap((player) => [...(player.signatures ?? []), ...(player.finishers ?? [])]);
+    expect(leveled.some((move) => (move.level ?? 1) > 1)).toBe(true);
+    expect(byWrestler('Seth Rollins').build).toBeUndefined();
+
+    // Every build fits its division's budget, except the relegated one.
+    for (const player of built) {
+      const validation = validateBuild(
+        player.build as WrestlerBuild,
+        { signatures: player.signatures, finishers: player.finishers },
+        budgetForDivision(divisionOf(player)),
+      );
+      if (player.currentWrestler === OVER_BUDGET_SEED_WRESTLER) {
+        expect(validation.ok).toBe(false);
+        if (!validation.ok) expect(validation.errors.map((error) => error.code)).toEqual(['OVER_BUDGET']);
+      } else {
+        expect(validation.ok, player.currentWrestler).toBe(true);
+      }
+    }
+    const roman = byWrestler(OVER_BUDGET_SEED_WRESTLER);
+    expect(toPlayerBuildView(roman, divisionOf(roman)).effective.scaled).toBe(true);
+    const events = importData.progressionEvents as unknown as ProgressionEvent[];
+    const romanMove = events.find((event) => event.playerId === roman.playerId && event.type === 'executed');
+    expect(romanMove).toMatchObject({ kind: 'relegation', toDivisionId: roman.divisionId });
+
+    // One completed match settled by the sim, with a stored, replayable simulation.
+    const simulated = (importData.matches as unknown as Match[]).filter((match) => match.resultSource === 'simulation');
+    expect(simulated).toHaveLength(1);
+    const [match] = simulated;
+    const simulation = match.simulation as MatchSimulation;
+    expect(match.status).toBe('completed');
+    const ladder = (importData.stipulations as unknown as Stipulation[]).find((row) => row.name === 'Ladder Match');
+    expect(match.stipulationId).toBe(ladder?.stipulationId);
+    expect(simulation.category).toBe('highRisk');
+    expect(simulation.playByPlay.length).toBeGreaterThan(0);
+    expect(simulation.probabilities.reduce((sum, entry) => sum + entry.pct, 0)).toBeCloseTo(100, 0);
+    const winnerSide = simulation.probabilities.find((entry) => entry.sideId === simulation.winnerSideId);
+    expect(match.winners).toEqual(winnerSide?.playerIds);
+    expect(match.losers).toHaveLength(1);
+
+    const sides: SimSide[] = (match.participants ?? []).map((playerId, index) => {
+      const player = players.find((candidate) => candidate.playerId === playerId) as Player;
+      return {
+        sideId: `side-${index + 1}`,
+        members: [competitorFromBuild(playerId, toPlayerBuildView(player, divisionOf(player)).effective)],
+      };
+    });
+    const replay = simulate(sides, { category: simulation.category, seed: simulation.seed });
+    expect(replay.winnerSideId).toBe(simulation.winnerSideId);
+    expect(replay.inputsDigest).toBe(simulation.inputsDigest);
+
+    // Stable: a second seed stores the same builds and the same sim.
+    await seedData(makeEvent(), ctx, cb);
+    const again = mockImportAllData.mock.calls[1][0] as Record<string, Record<string, unknown>[]>;
+    const buildsOf = (rows: Record<string, unknown>[]) =>
+      (rows as unknown as Player[]).map((player) => [player.currentWrestler, player.build?.style, player.build?.stats]);
+    expect(buildsOf(again.players)).toEqual(buildsOf(importData.players));
+    const againSim = (again.matches as unknown as Match[]).find((row) => row.resultSource === 'simulation');
+    expect(againSim?.simulation?.seed).toBe(simulation.seed);
+    expect(againSim?.simulation?.playByPlay.map((beat) => beat.key)).toEqual(simulation.playByPlay.map((beat) => beat.key));
   });
 });

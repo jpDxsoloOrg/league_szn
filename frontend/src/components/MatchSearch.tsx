@@ -24,6 +24,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { formatMatchDate } from '../utils/dateUtils';
 import { formatMatchType, groupMatchSides, sideTagTeamFor } from '../utils/matchDisplay';
 import MatchSideLabel from './matches/MatchSideLabel';
+import { SimulatedBadge, SimulatedMatchStory } from './sim/SimulatedMatch';
+import { isSimulatedMatch } from './sim/simSides';
 import './MatchSearch.css';
 
 const STATUS_TONES: Partial<Record<Match['status'], BadgeTone>> = {
@@ -455,6 +457,7 @@ export default function MatchSearch() {
                 <div className="match-row__side">
                   {match.isChampionship && <Badge tone="warning">{t('matchSearch.card.titleMatch', 'Title Match')}</Badge>}
                   {match.matchOfTheNight && <Badge tone="violet">{t('match.matchOfTheNight')}</Badge>}
+                  {isSimulatedMatch(match) && <SimulatedBadge />}
                   <Badge tone={STATUS_TONES[match.status] ?? 'neutral'}>{statusLabel(match.status)}</Badge>
                   {hasStars && <StarRating starRating={match.starRating} ratingsCount={match.ratingsCount} size="sm" />}
                   <Button
@@ -522,6 +525,17 @@ export default function MatchSearch() {
             </dl>
             {detailMatch.ratingsCount != null && detailMatch.ratingsCount > 0 && (
               <StarRating starRating={detailMatch.starRating} ratingsCount={detailMatch.ratingsCount} />
+            )}
+            {/* BLD-14: a sim-settled match shows its story; odds only for staff. */}
+            {isSimulatedMatch(detailMatch) && (
+              <div className="match-detail__sim">
+                <SimulatedBadge />
+                <SimulatedMatchStory
+                  match={detailMatch}
+                  simulation={detailMatch.simulation}
+                  nameOf={(playerId) => getPlayerName(detailMatch, playerId)}
+                />
+              </div>
             )}
             {detailMatch.status === 'completed' && (
               <div className="match-rate-widget-wrap">

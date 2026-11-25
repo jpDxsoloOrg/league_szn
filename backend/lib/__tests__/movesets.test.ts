@@ -3,6 +3,7 @@ import {
   MAX_BIO_LENGTH,
   MAX_MOVE_NAME_LENGTH,
   MAX_MOVES,
+  carryOverMoveLevels,
   hasMoveset,
   parseBio,
   parseMoveList,
@@ -60,6 +61,50 @@ describe('parseMoveList', () => {
 
   it('accepts an empty array (clears the list)', () => {
     expect(parseMoveList([], 'finishers')).toEqual({ value: [] });
+  });
+
+  // BLD-03
+  it('keeps a move level from 2 to 5 and stores level 1 as no level', () => {
+    expect(
+      parseMoveList([{ gameName: 'A', level: 3 }, { gameName: 'B', level: 1 }, { gameName: 'C' }], 'signatures'),
+    ).toEqual({
+      value: [
+        { gameName: 'A', customName: '', level: 3 },
+        { gameName: 'B', customName: '' },
+        { gameName: 'C', customName: '' },
+      ],
+    });
+  });
+
+  it('rejects a level that is not a whole number from 1 to 5', () => {
+    for (const level of [0, 6, 2.5, '3']) {
+      expect(parseMoveList([{ gameName: 'A', level }], 'finishers')).toHaveProperty('error');
+    }
+  });
+});
+
+describe('carryOverMoveLevels (BLD-03)', () => {
+  it('matches on gameName, starts new moves at 1 and drops sent levels', () => {
+    const previous = [
+      { gameName: 'A', customName: '', level: 4 },
+      { gameName: 'B', customName: '' },
+    ];
+    const next = [
+      { gameName: 'B', customName: 'Bee', level: 5 },
+      { gameName: 'A', customName: 'Ay' },
+      { gameName: 'C', customName: '' },
+    ];
+    expect(carryOverMoveLevels(next, previous)).toEqual([
+      { gameName: 'B', customName: 'Bee' },
+      { gameName: 'A', customName: 'Ay', level: 4 },
+      { gameName: 'C', customName: '' },
+    ]);
+  });
+
+  it('handles a player with no stored moves', () => {
+    expect(carryOverMoveLevels([{ gameName: 'A', customName: '' }], undefined)).toEqual([
+      { gameName: 'A', customName: '' },
+    ]);
   });
 });
 

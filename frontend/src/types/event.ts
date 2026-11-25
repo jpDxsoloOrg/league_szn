@@ -1,4 +1,5 @@
 import type { MatchStatus, HydratedMatchSlot, MatchNoShow, SideTagTeam, WrestlerMove } from './index';
+import type { MatchResultSource, StoredMatchSimulation } from './sim';
 
 export type EventType = 'ppv' | 'weekly' | 'special' | 'house';
 
@@ -67,6 +68,10 @@ export interface EnrichedMatchData {
   // ECO-14
   completedAt?: string;
   noShows?: MatchNoShow[];
+  // BLD-14
+  resultSource?: MatchResultSource;
+  /** The official sim; odds only for staff. */
+  simulation?: StoredMatchSimulation;
 }
 
 export interface EventWithMatches extends LeagueEvent {

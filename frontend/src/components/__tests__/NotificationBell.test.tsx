@@ -46,8 +46,13 @@ function notification(overrides: Partial<AppNotification>): AppNotification {
 }
 
 function CurrentPath() {
-  const { pathname } = useLocation();
-  return <output data-testid="path">{pathname}</output>;
+  const { pathname, state } = useLocation();
+  return (
+    <>
+      <output data-testid="path">{pathname}</output>
+      <output data-testid="state">{JSON.stringify(state)}</output>
+    </>
+  );
 }
 
 async function openWith(item: AppNotification, startPath = '/') {
@@ -122,6 +127,23 @@ describe('NotificationBell source types', () => {
 
     await userEvent.click(screen.getByText('Something happened'));
     await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent('/rivalries'));
+  });
+
+  // BLD-15
+  it('opens the build editor on the profile for an over-budget build', async () => {
+    await openWith(notification({ type: 'build_over_budget', sourceType: 'build' }), '/events');
+
+    await userEvent.click(screen.getByText('Something happened'));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent('/profile'));
+    expect(JSON.parse(screen.getByTestId('state').textContent ?? 'null')).toEqual({ editBuild: true });
+  });
+
+  it('opens the profile without the editor for other build notifications', async () => {
+    await openWith(notification({ sourceType: 'build' }), '/events');
+
+    await userEvent.click(screen.getByText('Something happened'));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent('/profile'));
+    expect(screen.getByTestId('state')).toHaveTextContent('null');
   });
 });
 

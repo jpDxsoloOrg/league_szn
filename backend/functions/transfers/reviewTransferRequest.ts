@@ -7,6 +7,7 @@ import { createNotification } from '../../lib/notifications';
 import { triggerProgressionRecompute } from '../../lib/progression/trigger';
 import { triggerContenderRecalculation } from '../../lib/contenderTrigger';
 import { divisionMovePatch } from '../../lib/divisions';
+import { notifyBuildOverBudgetAfterMove } from '../../lib/builds/budgetNotice';
 
 interface ReviewTransferBody {
   status: 'approved' | 'rejected';
@@ -84,6 +85,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         message,
         sourceId: requestId,
         sourceType: 'transfer',
+      });
+    }
+
+    // BLD-04: a transfer to a smaller budget can leave the build over it. Never throws.
+    if (status === 'approved' && player) {
+      await notifyBuildOverBudgetAfterMove({
+        player,
+        fromDivisionId: transferRequest.fromDivisionId,
+        toDivisionId: transferRequest.toDivisionId,
       });
     }
 

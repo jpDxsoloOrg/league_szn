@@ -9,4 +9,6 @@ description = "Values that match a rule but are not secrets"
 regexes = [
   # sessionStorage key name in PresenceContext.tsx
   '''wwe2k\.presenceEnabled''',
+  # i18n keys for match sim play-by-play beats (`key: 'sim.beats.<type>.v<n>'`)
+  '''sim\.beats\.[A-Za-z]+\.v[0-9]+''',
 ]

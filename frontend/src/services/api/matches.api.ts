@@ -1,4 +1,11 @@
-import type { Match, MatchFilters, ScheduleMatchInput } from '../../types';
+import type {
+  Match,
+  MatchFilters,
+  ScheduleMatchInput,
+  SimulateOfficialResponse,
+  SimulatePreviewRequest,
+  SimulatePreviewResponse,
+} from '../../types';
 import type { RivalryHeat } from '../../types/rivalry';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
@@ -56,6 +63,23 @@ export const matchesApi = {
     return fetchWithAuth(`${API_BASE_URL}/matches/${matchId}/result`, {
       method: 'PUT',
       body: JSON.stringify(result),
+    });
+  },
+
+  // BLD-14
+  /** GM preview (POST /simulate, staff only). Writes nothing; send `seed` back to replay. */
+  simulate: async (request: SimulatePreviewRequest): Promise<SimulatePreviewResponse> => {
+    return fetchWithAuth(`${API_BASE_URL}/simulate`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  /** Official sim (staff only): settles a scheduled match with a fresh seed and records the result. */
+  simulateOfficial: async (matchId: string): Promise<SimulateOfficialResponse> => {
+    return fetchWithAuth(`${API_BASE_URL}/matches/${matchId}/simulate`, {
+      method: 'POST',
+      body: JSON.stringify({ commit: true }),
     });
   },
 

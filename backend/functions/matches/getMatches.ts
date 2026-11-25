@@ -3,10 +3,11 @@ import { getRepositories } from '../../lib/repositories';
 import type { MatchSlot, Player } from '../../lib/repositories/types';
 import { success, serverError } from '../../lib/response';
 import { authenticate } from '../../lib/authenticate';
-import { getAuthContext, type AuthContext } from '../../lib/auth';
+import { getAuthContext, hasRole, type AuthContext } from '../../lib/auth';
 import {
   anyMatchHasSimBoosts, resolveSimBoostViewer, withVisibleSimBoosts, type SimBoostViewer,
 } from '../../lib/economy/simBoostVisibility';
+import { withPublicSimulation } from '../../lib/sim/publicSimulation';
 import { collectSlotPlayerIds, hydrateMatchSlots } from './hydrateSlots';
 import { anyMatchHasTeams, loadTagTeamIndex, sideTagTeamsField } from '../../lib/tagTeams/sideBilling';
 
@@ -156,12 +157,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // the whole match list — admin pages depend on this endpoint
     // returning *some* data even when rating enrichment is broken.
     let caller: AuthContext | null = null;
+    // BLD-10: only staff see a simulated match's odds and audit fields.
+    let isStaff = false;
     try {
       if (event.headers?.Authorization || event.headers?.authorization) {
         await authenticate(event).catch(() => undefined);
       }
       if (event.requestContext) {
         caller = getAuthContext(event);
+        isStaff = hasRole(caller, 'Moderator');
       }
     } catch (authErr) {
       console.warn('getMatches: optional auth failed, continuing as anonymous', authErr);
@@ -198,7 +202,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const id = m.matchId as string | undefined;
       const rating = id ? userRatingsByMatchId.get(id) : undefined;
       return {
-        ...withVisibleSimBoosts(m, simBoostViewer),
+        ...withVisibleSimBoosts(isStaff ? m : withPublicSimulation(m), simBoostViewer),
         userHasRated: rating !== undefined,
         userRating: rating ?? null,
       };

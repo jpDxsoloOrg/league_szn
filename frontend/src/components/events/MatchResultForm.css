@@ -124,3 +124,13 @@
   display: flex;
   justify-content: flex-end;
 }
+
+/* BLD-14: GM sim controls above the submit row. */
+.match-result-form__sim {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.match-result-form__sim:empty {
+  display: none;
+}

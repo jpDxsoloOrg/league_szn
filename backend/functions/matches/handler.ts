@@ -9,6 +9,7 @@ import { handler as adminUpdateSlotHandler } from './adminUpdateSlot';
 import { handler as setMatchOfTheNightHandler } from './setMatchOfTheNight';
 import { handler as submitRatingHandler } from './submitRating';
 import { markNoShowHandler, undoNoShowHandler } from './noShow';
+import { handler as simulateMatchHandler, simulateOfficialHandler } from './simulateMatch';
 import { createRouter, type RouteConfig, STAFF } from '../../lib/router';
 
 /**
@@ -76,6 +77,22 @@ export const routes: ReadonlyArray<RouteConfig> = [
     resource: '/matches/{matchId}/no-show/{playerId}',
     method: 'DELETE',
     handler: undoNoShowHandler,
+    access: STAFF,
+  },
+
+  // GM preview sim (BLD-08). Staff only; never writes.
+  {
+    resource: '/simulate',
+    method: 'POST',
+    handler: simulateMatchHandler,
+    access: STAFF,
+  },
+
+  // Official sim (BLD-10). Staff only; records the result.
+  {
+    resource: '/matches/{matchId}/simulate',
+    method: 'POST',
+    handler: simulateOfficialHandler,
     access: STAFF,
   },
 

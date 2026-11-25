@@ -38,6 +38,7 @@ const SELF_SERVICE_WRITES = new Set([
   'DELETE /notifications/{notificationId}',
   'PUT /players/me/overall',
   'PUT /players/me',
+  'PUT /players/me/build', // BLD-03: the handler requires the Wrestler role and saves only the caller's player.
   'POST /promos',
   'POST /promos/{promoId}/react',
   'POST /shop/purchase', // ECO-08
@@ -111,6 +112,10 @@ const STAFF_ROUTES = [
   // ECO-07
   'POST /matches/{matchId}/no-show',
   'DELETE /matches/{matchId}/no-show/{playerId}',
+  // BLD-08: GM preview sim, no writes
+  'POST /simulate',
+  // BLD-10: official sim, records the result
+  'POST /matches/{matchId}/simulate',
   'POST /players/{playerId}/fines',
   'POST /fines/{entryId}/rescind',
   // ECO-14

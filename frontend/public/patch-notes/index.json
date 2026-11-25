@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.6.0",
+      "date": "2026-11-25",
+      "title": "Wrestler Builds and the Match Sim",
+      "titleDe": "Wrestler-Builds und die Match-Simulation",
+      "file": "v1.6.0.md",
+      "summary": "Build your wrestler with points from your division's budget: pick a style and a match specialty that fits it, raise four stats and level up your signatures and finishers. Builds show on your profile, follow you through division moves, and power the GMs' new match sim, whose results carry a Simulated badge and a play-by-play.",
+      "summaryDe": "Bau deinen Wrestler mit Punkten aus dem Budget deiner Division: Wähl einen Stil und eine passende Match-Spezialität, steigere vier Werte und verbessere deine Signature-Moves und Finisher. Builds stehen auf deinem Profil, ziehen bei Divisionswechseln mit um und treiben die neue Match-Simulation der GMs an, deren Ergebnisse ein Abzeichen Simuliert und einen Match-Verlauf tragen."
+    },
+    {
       "version": "1.5.0",
       "date": "2026-11-25",
       "title": "Contracts and Money",

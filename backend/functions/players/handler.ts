@@ -16,6 +16,9 @@ import { handler as adjustBalanceHandler } from '../economy/adjustBalance';
 import { handler as getMyLedgerHandler } from './getMyLedger';
 import { issueFineHandler, rescindFineHandler } from '../economy/fines';
 import { handler as getPlayerLedgerHandler } from '../economy/getPlayerLedger';
+import { handler as getPlayerBuildHandler } from './getPlayerBuild';
+import { handler as getBuildRulesHandler } from './getBuildRules';
+import { updateMyBuildHandler, updatePlayerBuildHandler } from './updatePlayerBuild';
 
 
 /**
@@ -103,6 +106,34 @@ export const routes: ReadonlyArray<RouteConfig> = [
     handler: reactivatePlayerHandler,
     access: ADMIN_ONLY,
   },
+
+  // BLD-03: wrestler builds. Reading is public; a Wrestler saves their own
+  // (the handler checks the role), staff save anyone's.
+  {
+    resource: '/builds/rules',
+    method: 'GET',
+    handler: getBuildRulesHandler,
+    access: 'public',
+  },
+  {
+    resource: '/players/{playerId}/build',
+    method: 'GET',
+    handler: getPlayerBuildHandler,
+    access: 'public',
+  },
+  {
+    resource: '/players/me/build',
+    method: 'PUT',
+    handler: updateMyBuildHandler,
+    access: 'self-service',
+  },
+  {
+    resource: '/players/{playerId}/build',
+    method: 'PUT',
+    handler: updatePlayerBuildHandler,
+    access: STAFF,
+  },
+
   // Ledger (ECO-02)
   {
     resource: '/players/{playerId}/ledger/adjust',

@@ -1,3 +1,5 @@
+import type { CoreStat, SimCategory, StyleId } from '../policies/buildRules';
+
 export interface Division {
   divisionId: string;
   name: string;
@@ -23,6 +25,8 @@ export interface Stipulation {
   stipulationId: string;
   name: string;
   description?: string;
+  /** BLD-16: sim category for the match sim and specialties. Missing = `standard`. */
+  simCategory?: SimCategory;
   createdAt: string;
   updatedAt: string;
 }
@@ -31,6 +35,8 @@ export interface MatchType {
   matchTypeId: string;
   name: string;
   description?: string;
+  /** BLD-16: sim category for the match sim and specialties. Missing = `standard`. */
+  simCategory?: SimCategory;
   createdAt: string;
   updatedAt: string;
 }
@@ -259,6 +265,14 @@ export interface Player {
   signatures?: WrestlerMove[];
   /** Up to MAX_MOVES finishers; see lib/movesets.ts for the limits. */
   finishers?: WrestlerMove[];
+
+  // BLD-03
+  /**
+   * The player's saved build. Absent until the first save; readers fall back
+   * to `defaultBuild()`. Move levels live on `signatures` / `finishers`.
+   */
+  build?: WrestlerBuild;
+
   /**
    * Discipline fields. These are not on `PlayerPatch`: write them only through
    * `players.updateDiscipline`, and read them only through `lib/discipline.ts`.
@@ -304,6 +318,18 @@ export interface Player {
 export interface WrestlerMove {
   gameName: string;
   customName: string;
+  /** BLD-02: move level 1..MOVE_LEVEL_MAX (lib/policies/buildRules.ts). Unset = 1. */
+  level?: number;
+}
+
+// BLD-02: wrestler build (style, specialty, core stats). Priced and validated
+// by lib/policies/wrestlerBuild.ts; move levels live on WrestlerMove.level.
+export interface WrestlerBuild {
+  style: StyleId;
+  /** Must be one of the style's STYLE_SPECIALTIES; `standard` is never allowed. */
+  specialty?: SimCategory;
+  stats: Record<CoreStat, number>;
+  updatedAt: string;
 }
 
 export type ChallengeStatus = 'pending' | 'accepted' | 'declined' | 'countered' | 'scheduled' | 'expired' | 'cancelled';
@@ -789,8 +815,58 @@ export interface Match {
   /** Sim interference bought by participants; one per player. Consumed by the sim (ECO-10). */
   simBoosts?: SimBoost[];
 
+  // BLD-10
+  /** How the result was settled. Unset means a hand-entered (manual) result. */
+  resultSource?: StoredResultSource;
+  /** The official sim that settled the match, when `resultSource` is `simulation`. */
+  simulation?: MatchSimulation;
+
   createdAt: string;
   updatedAt?: string;
+}
+
+// BLD-10
+export type StoredResultSource = 'manual' | 'simulation';
+
+/** One play-by-play beat: an i18n key (`sim.beats.*`) and its params. */
+export interface MatchSimulationBeat {
+  key: string;
+  params: Record<string, string>;
+}
+
+/** A side's win chance in the sim. Staff only: never in public payloads. */
+export interface MatchSimulationOdds {
+  sideId: string;
+  playerIds: string[];
+  /** Percent, one decimal place. */
+  pct: number;
+}
+
+/**
+ * The official sim stored on a match (BLD-10), enough to replay and audit it:
+ * the same `seed` with inputs matching `inputsDigest` under the same
+ * `rulesVersion` gives the same winner and play-by-play. Public payloads get
+ * `toPublicMatchSimulation` (lib/sim/publicSimulation.ts), which drops the odds
+ * and the audit fields.
+ */
+export interface MatchSimulation {
+  seed: number;
+  category: SimCategory;
+  rulesVersion: number;
+  inputsDigest: string;
+  winnerSideId: string;
+  /** Staff only. */
+  probabilities: MatchSimulationOdds[];
+  playByPlay: MatchSimulationBeat[];
+  /** Players fighting in their specialty. */
+  specialtyHits: string[];
+  /** Staff only: players whose over-budget build was scaled down. */
+  scaledPlayerIds: string[];
+  /** Staff only: the matches the form score was read from. */
+  formWindow: { kind: 'season'; seasonId: string } | { kind: 'recent'; matchLimit: number };
+  simulatedAt: string;
+  /** Staff only: the GM who ran it (Cognito sub). */
+  simulatedBy?: string;
 }
 
 // ECO-07

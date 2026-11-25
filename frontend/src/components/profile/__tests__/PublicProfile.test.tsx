@@ -28,6 +28,12 @@ vi.mock('../../../services/api', () => ({
   isApiError: (err: unknown, status: number) => (err as { status?: number }).status === status,
 }));
 
+vi.mock('../BuildCard', () => ({
+  default: ({ playerId, isOwnProfile }: { playerId: string; isOwnProfile?: boolean }) => (
+    <div data-testid="build-card-stub">{`${playerId} own:${String(isOwnProfile)}`}</div>
+  ),
+}));
+
 vi.mock('../../../contexts/AuthContext', () => ({ useAuth: () => authState }));
 vi.mock('../../../contexts/SiteConfigContext', () => ({ useSiteConfig: () => ({ features, tickerSettings: { publicRelegationWatch: false } }) }));
 
@@ -201,5 +207,16 @@ describe('PublicProfile', () => {
 
     expect(await screen.findByText('publicProfile.notFoundTitle')).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent('publicProfile.notFound');
+  });
+
+  it('shows the build card, marked as the viewer\'s own only on their own profile', async () => {
+    renderProfile();
+    expect(await screen.findByTestId('build-card-stub')).toHaveTextContent('p1 own:false');
+  });
+
+  it('passes isOwnProfile when the viewer is the player', async () => {
+    Object.assign(authState, { isAuthenticated: true, isWrestler: true, playerId: 'p1' });
+    renderProfile();
+    expect(await screen.findByTestId('build-card-stub')).toHaveTextContent('p1 own:true');
   });
 });

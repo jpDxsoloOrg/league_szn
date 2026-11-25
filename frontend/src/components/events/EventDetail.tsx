@@ -38,9 +38,11 @@ import MatchSides from './MatchSides';
 import type { MatchSideParticipant } from './MatchSides';
 import MatchSlots from './MatchSlots';
 import NoShowButton from '../economy/NoShowButton';
+import { SimulatedBadge, SimulatedMatchStoryButton } from '../sim/SimulatedMatch';
+import { isSimulatedMatch } from '../sim/simSides';
 import SlotEditDialog from './SlotEditDialog';
 import { buildCheckInStatusMap } from '../../utils/checkInStatus';
-import type { HydratedMatchSlot, MatchNoShow } from '../../types';
+import type { HydratedMatchSlot, MatchNoShow, MatchResultSource, StoredMatchSimulation } from '../../types';
 import { StarRating } from '../matches/StarRating';
 import { RateMatchWidget } from '../matches/RateMatchWidget';
 import { MotnToggleButton } from '../matches/MotnToggleButton';
@@ -1163,6 +1165,9 @@ interface MatchEntryProps {
       // ECO-14
       completedAt?: string;
       noShows?: MatchNoShow[];
+      // BLD-14
+      resultSource?: MatchResultSource;
+      simulation?: StoredMatchSimulation;
     } | null;
   };
   isCompleted: boolean;
@@ -1247,6 +1252,7 @@ function MatchEntry({
         {isCompleted && matchData.matchOfTheNight && (
           <Badge tone="violet">{t('match.matchOfTheNightBadge')}</Badge>
         )}
+        {isCompleted && isSimulatedMatch(matchData) && <SimulatedBadge />}
         {isCompleted && matchData.starRating != null && (
           <StarRating starRating={matchData.starRating} ratingsCount={matchData.ratingsCount} size="sm" />
         )}
@@ -1275,6 +1281,18 @@ function MatchEntry({
             userRating={matchData.userRating ?? null}
             onRated={onMatchUpdated}
           />
+          {isSimulatedMatch(matchData) && (
+            <SimulatedMatchStoryButton
+              match={{
+                participants: matchData.participants.map((participant) => participant.playerId),
+                teams: matchData.teams,
+                sideTagTeams: matchData.sideTagTeams,
+              }}
+              simulation={matchData.simulation}
+              nameOf={(playerId) => matchData.participants.find((participant) => participant.playerId === playerId)?.wrestlerName
+                ?? t('common.unknown')}
+            />
+          )}
           {isAdmin && (
             <MotnToggleButton
               matchId={matchData.matchId}

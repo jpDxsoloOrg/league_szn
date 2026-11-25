@@ -1,0 +1,52 @@
+/* BLD-14: Admin → Match Simulator. */
+.match-simulator__sides {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 1rem;
+}
+
+.match-simulator__side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+}
+
+.match-simulator__member {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.match-simulator__member .ar-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.match-simulator__side-actions,
+.match-simulator__submit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.match-simulator__result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+}
+
+@media (max-width: 600px) {
+  .match-simulator .ar-form__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

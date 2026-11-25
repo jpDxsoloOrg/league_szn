@@ -460,6 +460,21 @@ functions:
           path: players/{playerId}/reactivate
           method: post
           cors: *corsConfig
+
+      # BLD-03: wrestler builds. Access is declared in functions/players/handler.ts.
+      - http:
+          path: builds/rules
+          method: get
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/build
+          method: any
+          cors: *corsConfig
+      - http:
+          path: players/me/build
+          method: put
+          cors: *corsConfig
+
       # Ledger (ECO-02). Admin only; access is declared in functions/players/handler.ts.
       - http:
           path: players/{playerId}/ledger/adjust
@@ -595,6 +610,18 @@ functions:
       - http:
           path: matches/{matchId}/no-show/{playerId}
           method: delete
+          cors: *corsConfig
+
+      # GM preview sim (BLD-08). Staff only, no writes; access is declared in functions/matches/handler.ts.
+      - http:
+          path: simulate
+          method: post
+          cors: *corsConfig
+
+      # Official sim (BLD-10). Staff only, records the result; access is declared in functions/matches/handler.ts.
+      - http:
+          path: matches/{matchId}/simulate
+          method: post
           cors: *corsConfig
 
       - http:

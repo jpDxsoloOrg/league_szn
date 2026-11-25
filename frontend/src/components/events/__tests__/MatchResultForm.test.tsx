@@ -16,6 +16,10 @@ vi.mock('../../../services/api', () => ({
 
 // ECO-14: the no-show control is covered in economy/__tests__/fines.test.tsx.
 vi.mock('../../economy/NoShowButton', () => ({ default: () => null }));
+// BLD-14: the sim controls are covered in sim/__tests__/SimMatchActions.test.tsx.
+vi.mock('../../sim/SimMatchActions', () => ({
+  default: ({ match }: { match: { matchId: string } }) => <div data-testid="sim-actions">{match.matchId}</div>,
+}));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {

@@ -382,6 +382,8 @@ export default function ProfileEditForm({ player, overall, onCancel, onSaved }: 
             value={formData.finishers}
             onChange={(finishers: WrestlerMove[]) => setFormData({ ...formData, finishers })}
           />
+          {/* BLD-12: levels are bought in the build editor on the profile page. */}
+          <p className="me-hint">{t('builds.editor.movesetHint')}</p>
         </Card>
       </section>
 

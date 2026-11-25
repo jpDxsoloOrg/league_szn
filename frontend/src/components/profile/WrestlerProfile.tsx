@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Pencil, UserRound } from 'lucide-react';
+import { Pencil, SlidersHorizontal, UserRound } from 'lucide-react';
 import { divisionsApi, isApiError, overallsApi, profileApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
@@ -20,6 +20,8 @@ import EmptyState from '../ui/EmptyState';
 import Skeleton from '../ui/Skeleton';
 import Tabs from '../ui/Tabs';
 import type { Division, Player, WrestlerOverall } from '../../types';
+import BuildCard from './BuildCard';
+import BuildEditor from './BuildEditor';
 import MovesetSection from './MovesetSection';
 import ProfileEditForm from './ProfileEditForm';
 import ProfileHero from './ProfileHero';
@@ -43,7 +45,10 @@ export default function WrestlerProfile() {
   const location = useLocation();
   const navigate = useNavigate();
   // Set by the links that promise the form, so one tap gets there.
-  const editorRequested = (location.state as { editProfile?: boolean } | null)?.editProfile === true;
+  const linkState = location.state as { editProfile?: boolean; editBuild?: boolean } | null;
+  const editorRequested = linkState?.editProfile === true;
+  // BLD-12: the dashboard build nudge opens the build editor.
+  const buildEditorRequested = linkState?.editBuild === true;
   const openEditorOnLoad = useRef(editorRequested);
   const [player, setPlayer] = useState<PlayerProfile | null>(null);
   const [overall, setOverall] = useState<WrestlerOverall | null>(null);
@@ -54,12 +59,15 @@ export default function WrestlerProfile() {
   const [success, setSuccess] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [tab, setTab] = useState<ProfileTab>('overview');
+  const [buildEditing, setBuildEditing] = useState(buildEditorRequested);
+  // Bumped after a build save so the build card reloads.
+  const [buildVersion, setBuildVersion] = useState(0);
 
   // The request is used up once read. Left in history it would reopen the form
   // on reload, and any later navigation here would change it and reset the page.
   useEffect(() => {
-    if (editorRequested) navigate(location.pathname + location.search, { replace: true, state: null });
-  }, [editorRequested, location.pathname, location.search, navigate]);
+    if (editorRequested || buildEditorRequested) navigate(location.pathname + location.search, { replace: true, state: null });
+  }, [editorRequested, buildEditorRequested, location.pathname, location.search, navigate]);
 
   useEffect(() => {
     const loadOverall = async () => {
@@ -104,6 +112,18 @@ export default function WrestlerProfile() {
     setEditing(true);
     setError(null);
     setSuccess(null);
+  };
+
+  const openBuildEditor = () => {
+    setBuildEditing(true);
+    setError(null);
+    setSuccess(null);
+  };
+
+  const handleBuildSaved = () => {
+    setBuildEditing(false);
+    setBuildVersion((version) => version + 1);
+    setSuccess(t('builds.editor.saved'));
   };
 
   const handleSaved = async (updated: Player, savedOverall: WrestlerOverall | null) => {
@@ -202,6 +222,30 @@ export default function WrestlerProfile() {
             <DivisionProgress playerId={player.playerId} viewer="owner" />
             <DivisionHistory playerId={player.playerId} />
             <MovesetSection player={player} showEmpty />
+            {player.playerId && (buildEditing ? (
+              <BuildEditor
+                playerId={player.playerId}
+                onSaved={handleBuildSaved}
+                onCancel={() => setBuildEditing(false)}
+              />
+            ) : (
+              <BuildCard
+                key={buildVersion}
+                playerId={player.playerId}
+                isOwnProfile
+                setupAction={<Button onClick={openBuildEditor}>{t('builds.editor.setUp')}</Button>}
+                editAction={(
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={<SlidersHorizontal aria-hidden="true" size={16} />}
+                    onClick={openBuildEditor}
+                  >
+                    {t('builds.editor.edit')}
+                  </Button>
+                )}
+              />
+            ))}
             {overall && (
               <section className="profile-section" aria-labelledby="profile-overalls-title">
                 <h2 className="profile-section__title" id="profile-overalls-title">{t('overalls.profile.title')}</h2>

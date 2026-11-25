@@ -25,6 +25,7 @@ Zwei Aufgaben liegen außerhalb des Admin-Bereichs. Events werden im Bereich **E
 - [Events](admin-events) — Events erstellen und die Kampfkarte auf der Event-Seite aufbauen und sortieren
 - [Match planen](admin-schedule-match) — Matches erstellen, Typen, Stipulationen, Titel/Turnier
 - [Ergebnisse eintragen](admin-record-results) — Sieger oder Unentschieden eintragen; was sich automatisch aktualisiert
+- [Match-Simulator](admin-match-simulator) — Ein Match in der Vorschau ansehen oder ein angesetztes Match mit der Match-Simulation entscheiden; die Chancen sehen nur GMs
 - [Turniere](admin-tournaments) — K.-o.-System und Jeder gegen jeden
 
 ## Inhalte & Herausforderer

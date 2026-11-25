@@ -38,7 +38,9 @@ export type NotificationType =
   | 'progression_consideration'
   | 'progression_executed'
   | 'progression_milestone'
-  | 'progression_goals_reset';
+  | 'progression_goals_reset'
+  // BLD-04: a division move left the build over a smaller budget
+  | 'build_over_budget';
 
 /** Set of notification types scoped to a rivalry source. */
 export type RivalryNotificationType =
@@ -47,7 +49,7 @@ export type RivalryNotificationType =
   | 'rivalry_status_change'
   | 'rivalry_reviewed';
 
-export type NotificationSourceType = 'promo' | 'challenge' | 'contract' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'storyline_request' | 'rivalry' | 'discipline' | 'progression' | 'economy';
+export type NotificationSourceType = 'promo' | 'challenge' | 'contract' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'storyline_request' | 'rivalry' | 'discipline' | 'progression' | 'economy' | 'build';
 
 export interface CreateNotificationParams {
   userId: string;

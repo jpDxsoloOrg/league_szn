@@ -1,3 +1,4 @@
+import type { SimCategory } from '../policies/buildRules';
 import type { CrudRepository } from './CrudRepository';
 import type {
   Match,
@@ -97,11 +98,15 @@ export interface RankingHistoryInput {
 export interface MatchTypeCreateInput {
   name: string;
   description?: string;
+  /** BLD-16 */
+  simCategory?: SimCategory;
 }
 
 export interface MatchTypePatch {
   name?: string;
   description?: string;
+  /** BLD-16 */
+  simCategory?: SimCategory;
 }
 
 // ─── Stipulation input types ────────────────────────────────────────
@@ -109,11 +114,15 @@ export interface MatchTypePatch {
 export interface StipulationCreateInput {
   name: string;
   description?: string;
+  /** BLD-16 */
+  simCategory?: SimCategory;
 }
 
 export interface StipulationPatch {
   name?: string;
   description?: string;
+  /** BLD-16 */
+  simCategory?: SimCategory;
 }
 
 // ─── Sub-interfaces ─────────────────────────────────────────────────

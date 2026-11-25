@@ -39,6 +39,8 @@ vi.mock('../ManageChampionships', () => ({ default: () => <div data-testid="mana
 vi.mock('../CreateTournament', () => ({ default: () => <div data-testid="create-tournament">CreateTournament</div> }));
 vi.mock('../AdminPromos', () => ({ default: () => <div data-testid="admin-promos">AdminPromos</div> }));
 vi.mock('../StandaloneMatches', () => ({ default: () => <div data-testid="standalone">StandaloneMatches</div> }));
+// BLD-14
+vi.mock('../MatchSimulator', () => ({ default: () => <div data-testid="match-simulator">MatchSimulator</div> }));
 vi.mock('../ManageOveralls', () => ({ default: () => <div data-testid="overalls">ManageOveralls</div> }));
 vi.mock('../ManageSeasons', () => ({ default: () => <div data-testid="manage-seasons">ManageSeasons</div> }));
 vi.mock('../AdminChallenges', () => ({ default: () => <div data-testid="admin-challenges">AdminChallenges</div> }));
@@ -260,6 +262,19 @@ describe('AdminPanel', () => {
     renderAdminPanel('/admin/standalone-matches');
     expect(screen.getByText('Admin Access Required')).toBeInTheDocument();
     expect(screen.queryByTestId('standalone')).not.toBeInTheDocument();
+  });
+
+  // BLD-14: sim previews are GM-only.
+  it('serves the Match Simulator to GMs only', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdminOrModerator: false, isSuperAdmin: false });
+    const { unmount } = renderAdminPanel('/admin/match-simulator');
+    expect(screen.getByText('Admin Access Required')).toBeInTheDocument();
+    expect(screen.queryByTestId('match-simulator')).not.toBeInTheDocument();
+    unmount();
+
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: false });
+    renderAdminPanel('/admin/match-simulator');
+    expect(await screen.findByTestId('match-simulator')).toBeInTheDocument();
   });
 
   it('sends the old Match Card Builder URL to the events page', () => {

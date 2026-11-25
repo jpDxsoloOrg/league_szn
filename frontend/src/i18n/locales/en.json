@@ -448,6 +448,7 @@
       "standings": "Standings",
       "seasons": "Seasons",
       "divisions": "Divisions",
+      "wrestlerBuilds": "Wrestler Builds",
       "championships": "Championships",
       "events": "Events & PPV",
       "tournaments": "Tournaments",
@@ -464,6 +465,7 @@
       "adminGuide": "Admin",
       "adminQuickstart": "Admin: Quickstart",
       "adminMatchConfig": "Admin: Match Config",
+      "adminMatchSimulator": "Admin: Match Simulator",
       "adminSeasonAwards": "Admin: Season Awards",
       "adminUserManagement": "Admin: User Management",
       "adminDivisions": "Admin: Divisions",
@@ -495,6 +497,7 @@
     "navLabels": {
       "adminQuickstart": "Quickstart",
       "adminMatchConfig": "Match Config",
+      "adminMatchSimulator": "Match Simulator",
       "adminSeasonAwards": "Season Awards",
       "adminUserManagement": "User Management",
       "adminDivisions": "Divisions",
@@ -1026,6 +1029,7 @@
         "stipulations": "Stipulations",
         "matchConfig": "Match Config",
         "scheduleMatch": "Schedule Match",
+        "matchSimulator": "Match Simulator",
         "standaloneMatches": "Standalone Matches",
         "championships": "Championships",
         "tournaments": "Tournaments",
@@ -3447,6 +3451,10 @@
       "tierHint": "1 is the top. Divisions on the same tier are siblings. Leave empty for no tier. Developmental divisions always rank below every tier.",
       "tierBadge": "Tier {{tier}}",
       "tierInvalid": "Tier must be a whole number from {{min}} to {{max}}, or empty.",
+      "budgetColumn": "Build budget",
+      "budgetHint": "Build budget: {{budget}} points",
+      "overBudgetWarning_one": "{{count}} wrestler will be over budget",
+      "overBudgetWarning_other": "{{count}} wrestlers will be over budget",
       "promotionZoneLabel": "Promotion zone size",
       "relegationZoneLabel": "Relegation zone size",
       "zoneHint": "Places shown as the promotion (top) and relegation (bottom) zones when standings are filtered to this division. 0 turns a zone off. The top tier never shows a promotion zone, and the lowest division never shows a relegation zone.",
@@ -3917,6 +3925,8 @@
       "noMatchTypesText": "Create your first match type.",
       "noStipulations": "No stipulations yet",
       "noStipulationsText": "Create your first stipulation.",
+      "simCategory": "Sim category",
+      "simCategoryHint": "The match sim weights stats by this. A stipulation's category wins over the match type's.",
       "stipulationCreated": "Stipulation created successfully!",
       "stipulationDeleteFailed": "Failed to delete stipulation",
       "stipulationDeleted": "Stipulation deleted successfully!",
@@ -4034,6 +4044,231 @@
     "sixPack": "6-Pack Challenge",
     "battleRoyal": "Battle Royal",
     "royalRumble": "Royal Rumble"
+  },
+  "builds": {
+    "styles": {
+      "powerhouse": "Powerhouse",
+      "technician": "Technician",
+      "highFlyer": "High-flyer",
+      "brawler": "Brawler",
+      "striker": "Striker",
+      "allRounder": "All-rounder"
+    },
+    "stats": {
+      "strikes": "Strikes",
+      "grapple": "Grapple",
+      "agility": "Agility",
+      "endurance": "Endurance"
+    },
+    "specialist": "Specialist: {{category}}",
+    "styleBonus": "+{{bonus}} style",
+    "statValueWithBonus": "{{value}}, including +{{bonus}} from the style",
+    "moveLevel": "Lv {{level}}",
+    "card": {
+      "title": "Build",
+      "stats": "Stats",
+      "signatureLevels": "Signatures",
+      "finisherLevels": "Finishers",
+      "setupTitle": "Set up your build",
+      "setupBody": "Pick a style and spend your build points. Until then you use the default build, and it stays off your public profile."
+    },
+    "editor": {
+      "title": "Edit build",
+      "setUp": "Set up build",
+      "edit": "Edit build",
+      "loadFailed": "Couldn't load your build. Try again later.",
+      "saveFailed": "Couldn't save your build.",
+      "saved": "Build saved.",
+      "spent": "Spent",
+      "budget": "Budget",
+      "remaining": "Remaining",
+      "meterLabel": "{{spent}} of {{budget}} build points spent",
+      "overBudget_one": "Over budget by {{count}} point.",
+      "overBudget_other": "Over budget by {{count}} points.",
+      "overBudgetHint": "Your division's budget went down. Lower your stats or move levels until the build fits; until then your matches use a scaled-down version.",
+      "style": "Style",
+      "statBonus": "+{{bonus}} {{stat}}",
+      "strongAgainst": "Strong against {{style}}",
+      "weakAgainst": "Weak against {{style}}",
+      "noEdge": "No edge or weakness",
+      "specialty": "Match specialty",
+      "specialtyHint": "Free, but it has to fit your style. You get a bonus in matches of this type.",
+      "noSpecialty": "No specialty",
+      "specialtyNotAllowed": "A {{style}} can't specialize in {{category}} matches.",
+      "specialtyCleared": "Your {{category}} specialty was cleared: a {{style}} can't use it. Pick another one.",
+      "stats": "Stats",
+      "statsHint": "Every stat starts at {{base}} and caps at {{cap}}. Higher points cost more.",
+      "statSlider": "{{stat}} slider",
+      "nextPoint_one": "Next point: {{count}} pt",
+      "nextPoint_other": "Next point: {{count}} pts",
+      "statMaxed": "Maxed out",
+      "moves": "Move upgrades",
+      "levelCost_one": "{{count}} pt per level",
+      "levelCost_other": "{{count}} pts per level",
+      "lowerLevel": "Lower {{move}} level",
+      "raiseLevel": "Raise {{move}} level",
+      "noMoves": "Add signatures and finishers to your moveset to level them up.",
+      "movesetHint": "Move levels are bought in the build editor on your profile. Removing a move refunds its points.",
+      "reset": "Reset to default",
+      "save": "Save build",
+      "errors": {
+        "SPECIALTY_NOT_ALLOWED": "That specialty doesn't fit your style.",
+        "OVER_BUDGET": "This build costs {{cost}} points but your budget is {{budget}}.",
+        "INVALID_STAT": "Stats must be whole numbers from {{min}} to {{max}}.",
+        "INVALID_MOVE_LEVEL": "Your moveset changed. Reload the editor and try again."
+      }
+    },
+    "nudge": {
+      "title": "Your build",
+      "unspent_one": "{{count}} unspent point",
+      "unspent_other": "{{count}} unspent points",
+      "overBudget_one": "Build over budget by {{count}} point",
+      "overBudget_other": "Build over budget by {{count}} points",
+      "pickSpecialty": "Pick a specialty",
+      "open": "Open build editor"
+    }
+  },
+  "simCategories": {
+    "standard": "Standard",
+    "highRisk": "High risk",
+    "technical": "Technical",
+    "endurance": "Endurance",
+    "hardcore": "Hardcore",
+    "cage": "Cage",
+    "examples": {
+      "standard": "Normal rules.",
+      "highRisk": "e.g. Ladder, TLC, Scaffold.",
+      "technical": "e.g. Submission, I Quit, 2 out of 3 Falls.",
+      "endurance": "e.g. Iron Man, Last Man Standing.",
+      "hardcore": "e.g. Street Fight, Extreme Rules, Tables, Falls Count Anywhere.",
+      "cage": "e.g. Steel Cage, Hell in a Cell."
+    }
+  },
+  "sim": {
+    "badge": "Simulated",
+    "badgeHint": "The GM settled this match with the match sim.",
+    "storyTitle": "How the match went",
+    "panel": {
+      "category": "Category: {{category}}",
+      "sidesLabel": "Sides",
+      "winner": "Winner",
+      "pct": "{{pct}}%",
+      "oddsFor": "{{side}}: {{pct}}% to win",
+      "specialtyHint": "Fighting in their specialty, which gives them an edge.",
+      "inSpecialty": "in specialty",
+      "inSpecialtyNamed": "{{name}} in specialty",
+      "playByPlay": "Play-by-play",
+      "skip": "Show all"
+    },
+    "actions": {
+      "simulate": "Simulate",
+      "preview": "Preview",
+      "previewAgain": "Preview again",
+      "previewNote": "Preview only. Nothing is recorded, and another run can end differently.",
+      "previewError": "The sim could not run. Try again.",
+      "simulateRecord": "Simulate & record",
+      "confirmTitle": "Simulate and record this match?",
+      "confirmMessage": "The sim decides the winner and the result counts like any other: records, standings and titles update. This cannot be undone here.",
+      "loadingOdds": "Working out the odds…",
+      "confirmRecord": "Simulate & record",
+      "recordError": "The match could not be simulated. Try again.",
+      "resultTitle": "Result recorded",
+      "done": "Done"
+    },
+    "simulator": {
+      "title": "Match Simulator",
+      "description": "Pick the sides and a stipulation to see the odds and a sample match. Previews are only visible to GMs and are never recorded.",
+      "side": "Side {{number}}",
+      "memberLabel": "Side {{side}}, wrestler {{member}}",
+      "pickWrestler": "Pick a wrestler",
+      "removeMember": "Remove wrestler {{member}} from side {{side}}",
+      "addPartner": "Add partner",
+      "removeSide": "Remove side",
+      "addSide": "Add side",
+      "stipulation": "Stipulation",
+      "noStipulation": "No stipulation",
+      "matchType": "Match type",
+      "anyMatchType": "Any match type",
+      "hint": "Each wrestler can only be on one side. The stipulation or match type sets the sim category.",
+      "reset": "Reset"
+    },
+    "beats": {
+      "opening": {
+        "v1": "{{wrestler}} and {{opponent}} lock up at the bell.",
+        "v2": "{{wrestler}} charges straight at {{opponent}} as the bell rings.",
+        "v3": "{{wrestler}} and {{opponent}} circle each other, sizing each other up."
+      },
+      "openingTag": {
+        "v1": "{{wrestler}} starts for their team against {{opponent}}.",
+        "v2": "{{wrestler}} and {{opponent}} kick things off for their teams.",
+        "v3": "{{wrestler}} steps in first and goes right after {{opponent}}."
+      },
+      "openingMulti": {
+        "v1": "{{wrestler}} goes after {{opponent}} as chaos breaks out at the bell.",
+        "v2": "Bodies everywhere at the bell, and {{wrestler}} singles out {{opponent}}.",
+        "v3": "{{wrestler}} strikes first in the free-for-all, taking down {{opponent}}."
+      },
+      "momentumStrikes": {
+        "v1": "{{wrestler}} lights up {{opponent}} with a flurry of strikes.",
+        "v2": "{{wrestler}} rocks {{opponent}} with a stiff forearm.",
+        "v3": "{{wrestler}} backs {{opponent}} into the corner with heavy chops."
+      },
+      "momentumGrapple": {
+        "v1": "{{wrestler}} takes {{opponent}} down with a crisp suplex.",
+        "v2": "{{wrestler}} grounds {{opponent}} with a tight headlock.",
+        "v3": "{{wrestler}} works over {{opponent}}'s arm with a nasty joint lock."
+      },
+      "momentumAgility": {
+        "v1": "{{wrestler}} flies off the top rope onto {{opponent}}.",
+        "v2": "{{wrestler}} dives through the ropes and wipes out {{opponent}}.",
+        "v3": "{{wrestler}} outpaces {{opponent}} with a springboard dropkick."
+      },
+      "momentumEndurance": {
+        "v1": "{{wrestler}} shrugs off {{opponent}}'s offence and keeps coming.",
+        "v2": "{{wrestler}} grinds {{opponent}} down with a long, punishing stretch.",
+        "v3": "{{wrestler}} weathers the storm and wears {{opponent}} out."
+      },
+      "signature": {
+        "v1": "{{wrestler}} hits {{opponent}} with the {{move}}!",
+        "v2": "{{wrestler}} catches {{opponent}} with the {{move}} out of nowhere!",
+        "v3": "{{wrestler}} sets up and nails the {{move}} on {{opponent}}!"
+      },
+      "signatureGeneric": {
+        "v1": "{{wrestler}} hits {{opponent}} with a big move!",
+        "v2": "{{wrestler}} catches {{opponent}} with something big!",
+        "v3": "{{wrestler}} plants {{opponent}} with a huge move!"
+      },
+      "nearFall": {
+        "v1": "{{wrestler}} covers {{opponent}}: one, two… {{opponent}} kicks out!",
+        "v2": "{{wrestler}} thinks it's over, but {{opponent}} gets a shoulder up at two!",
+        "v3": "So close! {{opponent}} escapes {{wrestler}}'s pin at the last second."
+      },
+      "finisherKickout": {
+        "v1": "{{wrestler}} hits the {{move}}… but {{opponent}} kicks out at two!",
+        "v2": "The {{move}} from {{wrestler}}! One, two… {{opponent}} survives!",
+        "v3": "{{wrestler}} can't believe it: {{opponent}} kicks out of the {{move}}!"
+      },
+      "finisher": {
+        "v1": "{{wrestler}} hits {{opponent}} with the {{move}}!",
+        "v2": "{{wrestler}} calls for it… the {{move}} on {{opponent}}!",
+        "v3": "{{wrestler}} counters {{opponent}} straight into the {{move}}!"
+      },
+      "finisherGeneric": {
+        "v1": "{{wrestler}} hits {{opponent}} with their finisher!",
+        "v2": "{{wrestler}} calls for the finisher and drills {{opponent}}!",
+        "v3": "{{wrestler}} puts {{opponent}} away with their biggest move!"
+      },
+      "finishPin": {
+        "v1": "{{wrestler}} covers {{opponent}}: one, two, three! {{wrestler}} wins!",
+        "v2": "{{wrestler}} hooks the leg on {{opponent}} for the three count and the win!",
+        "v3": "{{opponent}} can't kick out: {{wrestler}} gets the pin!"
+      },
+      "finishSubmission": {
+        "v1": "{{wrestler}} locks {{opponent}} in a submission and {{opponent}} taps! {{wrestler}} wins!",
+        "v2": "{{opponent}} has nowhere to go and taps out to {{wrestler}}!",
+        "v3": "{{wrestler}} cranks the hold until {{opponent}} gives up!"
+      }
+    }
   },
   "discipline": {
     "status": {
