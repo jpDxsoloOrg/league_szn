@@ -454,6 +454,7 @@
       "contenders": "Herausforderer-Ranglisten",
       "tagTeamRankings": "So funktionieren die Tag-Team-Ranglisten",
       "profile": "Mein Profil",
+      "contractsAndMoney": "Verträge und Geld",
       "challenges": "Herausforderungen",
       "promos": "Promos",
       "tips": "Tipps",
@@ -487,6 +488,7 @@
       "howStandingsWork": "So funktioniert die Tabelle",
       "strikesAndSuspensions": "Strikes und Sperren",
       "adminStrikes": "Admin: Strikes",
+      "adminEconomy": "Admin: Wirtschaft",
       "installApp": "App installieren",
       "news": "News und der Liga-Ticker"
     },
@@ -509,7 +511,8 @@
       "adminDataManagement": "Datenverwaltung",
       "adminWorkflow": "Typischer Wochenablauf",
       "adminRivalries": "Rivalitäten",
-      "adminStrikes": "Strikes"
+      "adminStrikes": "Strikes",
+      "adminEconomy": "Wirtschaft"
     },
     "articleNotFound": "Artikel nicht gefunden",
     "articleNotFoundHint": "Dieser Hilfeartikel wurde vielleicht verschoben. Sieh dir stattdessen die ganze Liste an.",

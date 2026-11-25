@@ -454,6 +454,7 @@
       "contenders": "Contender Rankings",
       "tagTeamRankings": "How Tag Team Rankings Work",
       "profile": "My Profile",
+      "contractsAndMoney": "Contracts and Money",
       "challenges": "Challenges",
       "promos": "Promos",
       "tips": "Tips",
@@ -487,6 +488,7 @@
       "howStandingsWork": "How Standings Work",
       "strikesAndSuspensions": "Strikes and suspensions",
       "adminStrikes": "Admin: Strikes",
+      "adminEconomy": "Admin: Economy",
       "installApp": "Install the App",
       "news": "News and the League Wire"
     },
@@ -509,7 +511,8 @@
       "adminDataManagement": "Data Management",
       "adminWorkflow": "Typical Workflow",
       "adminRivalries": "Rivalries",
-      "adminStrikes": "Strikes"
+      "adminStrikes": "Strikes",
+      "adminEconomy": "Economy"
     },
     "articleNotFound": "Article not found",
     "articleNotFoundHint": "This help article may have moved. Browse the full list instead.",

@@ -17,6 +17,7 @@ Use the links below to open each part of the admin guide.
 - [Manage Players](admin-manage-players) — Edit players, find hidden players, remove players
 - [Seasons](admin-seasons) — Create, end, and delete seasons; season standings
 - [Season Awards](admin-season-awards) — Review auto-awards and add custom season awards
+- [Economy](admin-economy) — Contracts, pay, fines, the shop and GM interference. Switch the Economy feature on first
 
 ## Titles & events
 
