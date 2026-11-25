@@ -1,3 +1,5 @@
+import type { CoreStat, SimCategory, StyleId } from '../policies/buildRules';
+
 export interface Division {
   divisionId: string;
   name: string;
@@ -304,6 +306,18 @@ export interface Player {
 export interface WrestlerMove {
   gameName: string;
   customName: string;
+  /** BLD-02: move level 1..MOVE_LEVEL_MAX (lib/policies/buildRules.ts). Unset = 1. */
+  level?: number;
+}
+
+// BLD-02: wrestler build (style, specialty, core stats). Priced and validated
+// by lib/policies/wrestlerBuild.ts; move levels live on WrestlerMove.level.
+export interface WrestlerBuild {
+  style: StyleId;
+  /** Must be one of the style's STYLE_SPECIALTIES; `standard` is never allowed. */
+  specialty?: SimCategory;
+  stats: Record<CoreStat, number>;
+  updatedAt: string;
 }
 
 export type ChallengeStatus = 'pending' | 'accepted' | 'declined' | 'countered' | 'scheduled' | 'expired' | 'cancelled';
