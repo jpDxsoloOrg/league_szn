@@ -39,13 +39,13 @@ Ein vom Liga-Team entfernter Spieler verlässt das Roster, seine Ergebnisse blei
 ## Tabelle und Ranglisten
 
 **Wie wird die Tabelle sortiert?**  
-Zuerst nach den meisten Siegen, dann nach den wenigsten Niederlagen. Spieler ohne Match stehen unten. Unentschieden zählen für deine Bilanz und deine Siegquote, entscheiden aber nicht über die Reihenfolge.
+Nach Ligapunkten: 3 für einen Sieg, 1 für ein Unentschieden, 0 für eine Niederlage, dazu Bonuspunkte für einen Sieg gegen jemanden über dir oder einen Champion und für jeden dritten Sieg in Folge. Spieler ohne Match stehen unten. Boni und Gleichstand erklärt [So funktioniert die Tabelle](how-standings-work).
 
 **Was ist der Unterschied zwischen Gesamt- und Saison-Tabelle?**  
 Die Gesamt-Tabelle zeigt jedes jemals erfasste Match. Die Saison-Tabelle zeigt nur Matches der gewählten Saison. Über das Saison-Dropdown auf der Tabellen-Seite wechselst du.
 
 **Wie zählt ein Unentschieden?**  
-Es geht für alle Beteiligten als Unentschieden in die Bilanz ein, weder als Sieg noch als Niederlage. Es beendet eine Sieges- oder Niederlagenserie, ein Titel kann dabei nicht wechseln, und bei Jeder gegen Jeden bringt es 1 Punkt.
+Es geht für alle Beteiligten als Unentschieden in die Bilanz ein, und jeder bekommt 1 Ligapunkt. Es ist weder Sieg noch Niederlage. Es beendet eine Sieges- oder Niederlagenserie, ein Titel kann dabei nicht wechseln, und bei Jeder gegen Jeden bringt es 1 Punkt.
 
 **Wie oft werden die Herausforderer-Ranglisten aktualisiert?**  
 Nach jedem eingetragenen Ergebnis und alle 6 Stunden. Siehe [Herausforderer-Ranglisten](contenders).

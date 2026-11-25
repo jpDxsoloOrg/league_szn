@@ -40,6 +40,6 @@ Gewinnt ein registriertes Team einen Tag-Titel, wird die Regentschaft mit diesem
 
 ## Teams erstellen und bearbeiten
 
-Spieler gründen Teams, indem sie einen Partner einladen, und das Liga-Team gibt die Anfrage frei. Das Liga-Team kann ein Team auch direkt unter **Tag Teams verwalten** mit **Tag Team erstellen** anlegen: Das Team ist sofort aktiv, und offene Anfragen mit einem der beiden Spieler werden geschlossen. Name und Bild eines Teams kann das Liga-Team jederzeit ändern; der neue Name erscheint überall, auch bei früheren Regentschaften.
+Spieler gründen Teams, indem sie einen Partner einladen, und das Liga-Team gibt die Anfrage frei. Das Liga-Team kann ein Team auch direkt unter **Tag Teams verwalten** mit **Tag Team erstellen** anlegen: Das Team ist sofort aktiv, und offene Anfragen mit einem der beiden Spieler werden geschlossen. Name und Bild eines Teams kann das Liga-Team jederzeit ändern; der neue Name erscheint überall, auch bei früheren Regentschaften und auf Match-Cards. Matches, in denen das Team eine Seite war, zeigen den Teamnamen über seinen Mitgliedern; siehe [Events & PPV](events).
 
 Ein Spieler kann immer nur in einem aktiven Team sein, und zwei aktive Teams können nicht denselben Namen tragen.

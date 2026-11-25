@@ -40,6 +40,6 @@ When a registered team wins a tag title, the reign is linked to that team:
 
 ## Creating and Editing Teams
 
-Players form teams by inviting a partner, and staff approve the request. Staff can also create a team directly from **Manage Tag Teams** with **Create Tag Team**: the team is active at once and any pending requests involving either player are closed. Staff can rename a team or change its image at any time, and the new name shows on every page, including past reigns.
+Players form teams by inviting a partner, and staff approve the request. Staff can also create a team directly from **Manage Tag Teams** with **Create Tag Team**: the team is active at once and any pending requests involving either player are closed. Staff can rename a team or change its image at any time, and the new name shows on every page, including past reigns and match cards. Matches where the team was one side show the team name over its members; see [Events & PPV](events).
 
 A player can only be in one active team at a time, and two active teams can't share a name.

@@ -6,8 +6,8 @@ Das Dashboard ist die erste Seite im Bereich Start. Es zeigt dir auf einen Blick
 
 - **Nächstes Event** — Ganz oben steht das laufende Event, markiert mit **Live**. Läuft gerade nichts, siehst du das nächste Event mit Countdown und, sobald es gebucht ist, dem Main Event. Mit **Zur Match Card** öffnest du es. Gibt es noch kein angelegtes Event, siehst du die nächste geplante Show. Weitere laufende und kommende Events stehen darunter.
 - **Aktuelle Champions** — Aktive Titel mit ihren Champions, der Dauer der Regentschaft und den Titelverteidigungen. Ein Klick führt zur Titel-Seite.
-- **Letzte Ergebnisse** — Die fünf neuesten abgeschlossenen Matches. Ein Unentschieden wird als solches angezeigt. Ein Klick öffnet das zugehörige Event oder den Tab Matches, wenn das Match zu keinem Event gehört.
-- **Tabellenspitze** — Die fünf besten Spieler der aktiven Saison. Ohne aktive Saison oder solange darin noch niemand gekämpft hat, siehst du die Gesamtführenden. Spieler ohne Match erscheinen hier nicht.
+- **Letzte Ergebnisse** — Die fünf neuesten abgeschlossenen Matches. Ein Unentschieden wird als solches angezeigt. Ist eine Seite ein eingetragenes Tag Team, nennt das Ergebnis den Teamnamen, zum Beispiel *The Usos def. The New Day*. Ein Klick öffnet das zugehörige Event oder den Tab Matches, wenn das Match zu keinem Event gehört.
+- **Tabellenspitze** — Die fünf besten Spieler der aktiven Saison, nach Ligapunkten sortiert und mit ihren Punkten. Wer bei jedem Kriterium gleichauf ist, teilt sich den Platz. Siehe [So funktioniert die Tabelle](how-standings-work). Ohne aktive Saison oder solange darin noch niemand gekämpft hat, siehst du die Gesamtführenden. Spieler ohne Match erscheinen hier nicht.
 - **Meine Rivalitäten** — Bis zu drei deiner aktiven Rivalitäten, falls du welche hast.
 - **Saison-Fortschritt** — Name und Startdatum der aktiven Saison, dazu ein Fortschrittsbalken, wenn sie ein Enddatum hat.
 - **Schnellstatistiken** — Anzahl der Spieler, Matches dieser Saison, Matches gesamt, aktive Titel und der Spieler mit den meisten Siegen.

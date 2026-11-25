@@ -39,13 +39,13 @@ A player removed by staff leaves the roster, but their results stay in the histo
 ## Standings and rankings
 
 **How are standings ordered?**  
-Most wins first, then fewest losses. Players who haven't had a match go to the bottom. Draws count in your record and your win percentage, but they don't decide the order.
+By league points: 3 for a win, 1 for a draw, 0 for a loss, plus bonus points for beating someone above you or a champion, and for every third win in a row. Players who haven't had a match go to the bottom. See [How Standings Work](how-standings-work) for the bonuses and tiebreakers.
 
 **What's the difference between All-Time and Season standings?**  
 All-Time shows every match ever recorded. Season standings show only matches that are part of the selected season. Use the Season dropdown on the Standings page to switch.
 
 **How does a draw count?**  
-It goes in your record as a draw for everyone in the match. It isn't a win or a loss. It ends a winning or losing streak, a title can't change hands on a draw, and a round-robin draw is worth 1 point.
+It goes in your record as a draw for everyone in the match, and everyone gets 1 league point. It isn't a win or a loss. It ends a winning or losing streak, a title can't change hands on a draw, and a round-robin draw is worth 1 point.
 
 **How often do contender rankings update?**  
 After each recorded result and every 6 hours. See [Contender Rankings](contenders).

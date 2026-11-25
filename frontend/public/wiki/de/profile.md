@@ -36,4 +36,4 @@ Wenn die Liga Statistiken eingeschaltet hat, zeigt der Tab Statistiken alle dein
 
 ## Dein öffentliches Profil
 
-Jeder kann das öffentliche Profil eines Wrestlers ansehen. Es öffnet sich mit einem Klick auf den Namen in der [Tabelle](standings). Es zeigt gehaltene Titel, die aktuelle Form, letzte Matches, Rivalitäten, Saison-Bilanzen und das Moveset. Auf dem Profil eines anderen Wrestlers sehen angemeldete Wrestler den Button **Herausfordern**, der einen [Call-out](challenges) startet.
+Jeder kann das öffentliche Profil eines Wrestlers ansehen. Es öffnet sich mit einem Klick auf den Namen in der [Tabelle](standings). Es zeigt die Bilanz und die Ligapunkte aller Zeiten, den Tabellenplatz (zum Beispiel **Platz 3 in Mid Card**, gezählt seit dem Wechsel in diese Division), gehaltene Titel, die aktuelle Form, letzte Matches, Rivalitäten, Saison-Bilanzen und das Moveset. Bei den letzten Matches steht ein Tag Team mit seinem Namen, zum Beispiel *The Usos (Jey & Jimmy)*. Siehe [So funktioniert die Tabelle](how-standings-work). Auf dem Profil eines anderen Wrestlers sehen angemeldete Wrestler den Button **Herausfordern**, der einen [Call-out](challenges) startet.

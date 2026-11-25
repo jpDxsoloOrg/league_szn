@@ -24,6 +24,8 @@ Ausgeblendete Spieler ohne Wrestler-Namen stehen nicht in den Spielerlisten. Has
 
 Ein Format mit „tag“ im Namen fragt nach Teams. Stelle mindestens 2 Teams mit je 2 oder mehr Mitgliedern zusammen, entweder über **Tag Teams verwenden** oder mit **Einzelne auswählen**. **Team hinzufügen** ergänzt eine weitere Seite.
 
+Ist eine Seite ein eingetragenes Tag Team, lautet ihre Überschrift **Team 1: The Usos**, egal ob du das Team oder seine Mitglieder einzeln ausgewählt hast, und die Buchungsübersicht nennt die Seite mit ihrem Teamnamen. Das gilt auch, wenn du ein Tag-Match auf einer Event-Card bearbeitest. Ein Team mit einem versteckten Mitglied bleibt in der Liste, ausgegraut und mit **(1 Mitglied nicht verfügbar)**.
+
 ## Match für Anmeldungen öffnen
 
 Bei allen Formaten außer Tag Team kannst du **Match für Anmeldungen öffnen** ankreuzen und die **Anzahl der Plätze** festlegen. Plätze können offen bleiben, damit Wrestler sie sich sichern, von dir besetzt oder besetzt und gesperrt werden. Ein Ergebnis kannst du erst eintragen, wenn alle Plätze besetzt sind.

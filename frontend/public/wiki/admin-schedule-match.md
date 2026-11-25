@@ -24,6 +24,8 @@ Hidden players, who have no wrestler name, aren't offered in the player lists. I
 
 A format with "tag" in its name asks for teams. Build at least 2 teams of 2 or more, either from **Use Tag Teams** or with **Pick Individuals**. **Add Team** adds another side.
 
+When a side is a registered tag team, its header reads **Team 1: The Usos**, whether you picked the team or its members one by one, and the booking summary lists the side by its team name. The same goes for editing a tag match on an event card. A team with a hidden member stays in the list, greyed out with **(1 member unavailable)**.
+
 ## Open Match for Signups
 
 For any format except tag team, you can tick **Open match for signups** and set the **Number of spots**. Spots can be left open for wrestlers to claim, filled by you, or filled and locked. You can't record a result until every spot is filled.

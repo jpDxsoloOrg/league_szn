@@ -36,4 +36,4 @@ When the league has statistics turned on, the Stats tab shows your full numbers.
 
 ## Your public profile
 
-Everyone can see a public profile for each wrestler, opened by clicking a name in the [Standings](standings). It shows titles held, recent form, recent matches, rivalries, season records and moveset. On another wrestler's profile, signed-in wrestlers get a **Challenge** button that starts a [call-out](challenges).
+Everyone can see a public profile for each wrestler, opened by clicking a name in the [Standings](standings). It shows the wrestler's record and all-time league points, their place in the table (such as **#3 in Mid Card**, counted since they joined that division), titles held, recent form, recent matches, rivalries, season records and moveset. In recent matches, a tag team partner shows with the team name, such as *The Usos (Jey & Jimmy)*. See [How Standings Work](how-standings-work). On another wrestler's profile, signed-in wrestlers get a **Challenge** button that starts a [call-out](challenges).
