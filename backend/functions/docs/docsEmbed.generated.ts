@@ -328,6 +328,138 @@ components:
         accountEnabled: { type: boolean, nullable: true, description: Null when unlinked or on a Cognito error. }
         holdings: { $ref: '#/components/schemas/DisciplineHoldings' }
 
+    LedgerEntry:
+      type: object
+      required: [playerId, entryId, createdAt, sortKey, kind, amount, balanceAfter, idempotencyKey]
+      properties:
+        playerId: { type: string }
+        entryId: { type: string }
+        createdAt: { type: string, format: date-time }
+        sortKey: { type: string, description: '\`createdAt#entryId\`' }
+        kind:
+          type: string
+          enum: [perMatchPay, winBonus, salary, fine, fineRescinded, purchase, refund, gmAdjust, reversal]
+        amount: { type: integer, description: Signed amount }
+        balanceAfter: { type: integer }
+        refType: { type: string }
+        refId: { type: string }
+        note: { type: string }
+        actorUserId: { type: string }
+        idempotencyKey: { type: string }
+    # ECO-13
+    OwnLedgerEntry:
+      type: object
+      required: [playerId, entryId, createdAt, sortKey, kind, amount, balanceAfter]
+      properties:
+        playerId: { type: string }
+        entryId: { type: string }
+        createdAt: { type: string, format: date-time }
+        sortKey: { type: string }
+        kind:
+          type: string
+          enum: [perMatchPay, winBonus, salary, fine, fineRescinded, purchase, refund, gmAdjust, reversal]
+        amount: { type: integer, description: Signed amount }
+        balanceAfter: { type: integer }
+        refType: { type: string }
+        refId: { type: string }
+        note: { type: string, description: The fine reason or GM note }
+
+    AdjustBalanceResult:
+      type: object
+      required: [entry, balance, alreadyApplied]
+      properties:
+        entry: { $ref: '#/components/schemas/LedgerEntry' }
+        balance: { type: integer }
+        alreadyApplied: { type: boolean }
+
+    # ECO-04: contracts
+    Contract:
+      type: object
+      required: [contractId, playerId, type, status, matchesPlayed, perMatchPay, weeklySalary, winBonus, offeredBy, offeredAt, offerExpiresAt, createdAt, updatedAt]
+      properties:
+        contractId: { type: string }
+        playerId: { type: string }
+        type: { type: string, enum: [tryout, matches, season] }
+        status: { type: string, enum: [offered, active, declined, withdrawn, expired, completed, released] }
+        matchesTotal: { type: integer, description: Tryout and matches contracts only }
+        matchesPlayed: { type: integer }
+        seasonId: { type: string, description: Season contracts only }
+        perMatchPay: { type: integer }
+        weeklySalary: { type: integer }
+        winBonus: { type: integer }
+        offeredBy: { type: string, description: User id of the GM who made the offer }
+        offeredAt: { type: string, format: date-time }
+        offerExpiresAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: string, format: date-time }
+        endReason:
+          type: string
+          enum: [offerDeclined, offerWithdrawn, otherOfferAccepted, offerExpired, matchesCompleted, seasonEnded, released]
+        note: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    PublicContract:
+      type: object
+      description: A contract without money, the offering GM or notes.
+      required: [contractId, playerId, type, status, matchesPlayed]
+      properties:
+        contractId: { type: string }
+        playerId: { type: string }
+        type: { type: string, enum: [tryout, matches, season] }
+        status: { type: string, enum: [offered, active, declined, withdrawn, expired, completed, released] }
+        matchesTotal: { type: integer }
+        matchesPlayed: { type: integer }
+        seasonId: { type: string }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: string, format: date-time }
+    ContractOfferInput:
+      type: object
+      required: [playerId, type]
+      description: >-
+        Pay fields left out take the economy settings' defaults for the type.
+        A tryout's matchesTotal defaults to the tryout length; a season
+        contract's seasonId defaults to the active season.
+      properties:
+        playerId: { type: string }
+        type: { type: string, enum: [tryout, matches, season] }
+        matchesTotal: { type: integer, minimum: 1 }
+        seasonId: { type: string }
+        perMatchPay: { type: integer, minimum: 0 }
+        weeklySalary: { type: integer, minimum: 0 }
+        winBonus: { type: integer, minimum: 0 }
+        note: { type: string, maxLength: 500 }
+    # ECO-07
+    MatchNoShow:
+      type: object
+      required: [playerId, markedAt]
+      description: One no-show mark. Undoing it stamps \`undoneAt\`; active marks have none.
+      properties:
+        playerId: { type: string }
+        markedAt: { type: string, format: date-time }
+        undoneAt: { type: string, format: date-time }
+    NoShowResult:
+      type: object
+      required: [matchId, playerId, noShow, entry, balance, alreadyApplied]
+      properties:
+        matchId: { type: string }
+        playerId: { type: string }
+        noShow: { $ref: '#/components/schemas/MatchNoShow' }
+        entry:
+          type: object
+          allOf: [{ $ref: '#/components/schemas/LedgerEntry' }]
+          nullable: true
+          description: The fine (mark) or its refund (undo); null when nothing was posted.
+        balance: { type: integer }
+        alreadyApplied: { type: boolean }
+    RescindFineResult:
+      type: object
+      required: [entry, fine, balance, alreadyApplied]
+      properties:
+        entry: { $ref: '#/components/schemas/LedgerEntry' }
+        fine: { $ref: '#/components/schemas/LedgerEntry' }
+        balance: { type: integer }
+        alreadyApplied: { type: boolean }
+
     DisciplineActionResult:
       type: object
       required: [playerId, version, summary, accountSync, softHoldsCleared, holdings]
@@ -373,6 +505,10 @@ components:
         tournamentId: { type: string }
         seasonId: { type: string }
         status: { type: string, enum: [scheduled, completed] }
+        noShows:
+          type: array
+          description: No-show marks (ECO-07), oldest first; active ones have no \`undoneAt\`.
+          items: { $ref: '#/components/schemas/MatchNoShow' }
         createdAt: { type: string }
         challengeId: { type: string }
         promoId: { type: string }
@@ -807,6 +943,7 @@ components:
         notifications: { type: boolean }
         transfers: { type: boolean }
         ticker: { type: boolean, description: 'League ticker. Off removes it everywhere and GET /ticker returns no segments.' }
+        economy: { type: boolean, description: 'Contracts, wallets, fines and the shop. Off by default.' }
 
     TickerSettings:
       type: object
@@ -825,6 +962,230 @@ components:
       properties:
         features: { $ref: '#/components/schemas/SiteFeatures' }
         ticker: { $ref: '#/components/schemas/TickerSettings' }
+
+    ContractPayTerms:
+      type: object
+      required: [perMatchPay, weeklySalary, winBonus]
+      properties:
+        perMatchPay: { type: integer, minimum: 0 }
+        weeklySalary: { type: integer, minimum: 0 }
+        winBonus: { type: integer, minimum: 0 }
+
+    FinePreset:
+      type: object
+      required: [key, label, amount]
+      properties:
+        key: { type: string, description: 'Unique among the presets.' }
+        label: { type: string }
+        amount: { type: integer, minimum: 0 }
+
+    EconomyShopSettings:
+      type: object
+      properties:
+        injuryShield:
+          type: object
+          properties:
+            enabled: { type: boolean }
+            price: { type: integer, minimum: 0 }
+            chanceReduction: { type: number, minimum: 0, maximum: 1, description: 'Fraction taken off the injury chance.' }
+            matches: { type: integer, minimum: 1 }
+        rehab:
+          type: object
+          properties:
+            enabled: { type: boolean }
+            price: { type: integer, minimum: 0 }
+            weeksOff: { type: integer, minimum: 1 }
+        staminaTopUp:
+          type: object
+          properties:
+            enabled: { type: boolean }
+            price: { type: integer, minimum: 0 }
+            amount: { type: integer, minimum: 0 }
+        simInterference:
+          type: object
+          properties:
+            enabled: { type: boolean }
+            price: { type: integer, minimum: 0 }
+            ratingBoost: { type: integer, minimum: 0 }
+        gmInterference:
+          type: object
+          properties:
+            enabled: { type: boolean }
+            price: { type: integer, minimum: 0 }
+
+    EconomySettings:
+      type: object
+      description: League economy settings. Amounts are whole numbers of the league currency (max 1000000).
+      properties:
+        currencyName: { type: string, example: League Dollars }
+        currencySymbol: { type: string, example: $ }
+        contractDefaults:
+          type: object
+          description: Pay terms each contract offer starts from. GMs can override each offer.
+          properties:
+            tryout:
+              allOf:
+                - $ref: '#/components/schemas/ContractPayTerms'
+                - type: object
+                  properties:
+                    matches: { type: integer, minimum: 1 }
+            matches: { $ref: '#/components/schemas/ContractPayTerms' }
+            season: { $ref: '#/components/schemas/ContractPayTerms' }
+        freeAgentWinBonus: { type: integer, minimum: 0 }
+        offerExpiryDays: { type: integer, minimum: 1 }
+        noShowFine: { type: integer, minimum: 0 }
+        finePresets: { type: array, items: { $ref: '#/components/schemas/FinePreset' } }
+        shop: { $ref: '#/components/schemas/EconomyShopSettings' }
+        version: { type: integer, description: '0 until first saved; each save adds 1. The last 20 versions are kept.' }
+        updatedAt: { type: string, format: date-time, nullable: true }
+        updatedBy: { type: string, nullable: true }
+
+    UpdateEconomySettingsInput:
+      type: object
+      required: [settings]
+      properties:
+        settings:
+          type: object
+          description: >-
+            A full or partial EconomySettings (without version, updatedAt, updatedBy). Nested objects
+            merge into the current settings; finePresets replaces the list. The merged result is validated.
+        expectedVersion:
+          type: integer
+          minimum: 0
+          description: The version the edit was based on. A save over a newer version returns 409.
+
+    EconomyCatalog:
+      type: object
+      properties:
+        currencyName: { type: string }
+        currencySymbol: { type: string }
+        version: { type: integer }
+        items:
+          type: array
+          description: Enabled shop items only, in a fixed order.
+          items:
+            type: object
+            properties:
+              key: { type: string, enum: [injuryShield, rehab, staminaTopUp, simInterference, gmInterference] }
+              enabled: { type: boolean }
+              price: { type: integer }
+              chanceReduction: { type: number }
+              matches: { type: integer }
+              weeksOff: { type: integer }
+              amount: { type: integer }
+              ratingBoost: { type: integer }
+
+    # ECO-08
+    PlayerEffect:
+      type: object
+      description: >-
+        A bought shop effect waiting to be used (applied by the injury and sim
+        code). injuryShield has reduction + matchesLeft; rehab has weeksOff;
+        staminaTopUp has amount.
+      required: [effectId, kind, purchasedAt, purchaseKey]
+      properties:
+        effectId: { type: string }
+        kind: { type: string, enum: [injuryShield, rehab, staminaTopUp] }
+        purchasedAt: { type: string, format: date-time }
+        purchaseKey: { type: string, description: Idempotency key of the purchase ledger entry }
+        reduction: { type: number, description: 'injuryShield: fraction taken off the injury chance' }
+        matchesLeft: { type: integer, description: 'injuryShield: matches still covered' }
+        weeksOff: { type: integer, description: 'rehab: weeks to take off the active injury' }
+        amount: { type: integer, description: 'staminaTopUp: stamina to add' }
+    SimBoost:
+      type: object
+      required: [playerId, boost, purchasedAt, purchaseKey]
+      properties:
+        playerId: { type: string }
+        boost: { type: number }
+        purchasedAt: { type: string, format: date-time }
+        purchaseKey: { type: string }
+    ShopPurchaseInput:
+      type: object
+      required: [item]
+      properties:
+        item: { type: string, enum: [injuryShield, rehab, staminaTopUp, simInterference] }
+        target: { type: string, description: 'simInterference only: the matchId' }
+        requestId: { type: string, maxLength: 100, description: 'Optional; resending the same id never charges twice (not used for simInterference, which allows one per match)' }
+    ShopPurchaseResult:
+      type: object
+      required: [item, entry, balance, alreadyApplied]
+      properties:
+        item: { type: string }
+        entry: { $ref: '#/components/schemas/LedgerEntry' }
+        balance: { type: integer }
+        effect: { $ref: '#/components/schemas/PlayerEffect' }
+        simBoost:
+          allOf:
+            - { $ref: '#/components/schemas/SimBoost' }
+            - type: object
+              properties:
+                matchId: { type: string }
+        alreadyApplied: { type: boolean }
+
+    # ECO-09
+    GmInterferenceInput:
+      type: object
+      required: [request]
+      properties:
+        request: { type: string, minLength: 1, maxLength: 500, description: 'What the player asks the GM for (trimmed)' }
+        matchId: { type: string, description: 'Optional scheduled match the request is about' }
+    PlayerGmInterference:
+      type: object
+      description: The player's view of their own request. No private note, no GM id.
+      required: [requestId, request, status, price, createdAt]
+      properties:
+        requestId: { type: string }
+        request: { type: string }
+        matchId: { type: string }
+        status: { type: string, enum: [pending, delivered, partial, taken, refunded] }
+        price: { type: integer }
+        createdAt: { type: string, format: date-time }
+        resolvedAt: { type: string, format: date-time }
+        publicNote: { type: string }
+        outcomeMessage: { type: string, description: 'Outcome line once resolved, e.g. "The GM took your money. Better luck next time."' }
+    GmInterferenceRequest:
+      type: object
+      description: Staff view of a request.
+      required: [requestId, playerId, request, status, price, sequence, chargeEntryId, chargeKey, createdAt, updatedAt]
+      properties:
+        requestId: { type: string }
+        playerId: { type: string }
+        playerName: { type: string }
+        request: { type: string }
+        matchId: { type: string }
+        status: { type: string, enum: [pending, delivered, partial, taken, refunded] }
+        price: { type: integer }
+        sequence: { type: integer, description: "1-based count of the player's requests" }
+        chargeEntryId: { type: string }
+        chargeKey: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        resolvedAt: { type: string, format: date-time }
+        resolvedBy: { type: string, description: 'Cognito sub of the GM' }
+        publicNote: { type: string }
+        privateNote: { type: string }
+        refundEntryId: { type: string }
+    GmInterferenceRequestResult:
+      type: object
+      required: [request, entry, balance]
+      properties:
+        request: { $ref: '#/components/schemas/PlayerGmInterference' }
+        entry: { $ref: '#/components/schemas/LedgerEntry' }
+        balance: { type: integer }
+    ResolveGmInterferenceInput:
+      type: object
+      required: [outcome]
+      properties:
+        outcome: { type: string, enum: [delivered, partial, taken, refunded], description: 'Only refunded gives the money back' }
+        publicNote: { type: string, maxLength: 1000, description: 'Shown to the player' }
+        privateNote: { type: string, maxLength: 1000, description: 'Staff only' }
+    ResolveGmInterferenceResult:
+      type: object
+      required: [request]
+      properties:
+        request: { $ref: '#/components/schemas/GmInterferenceRequest' }
+        refund: { $ref: '#/components/schemas/LedgerEntry' }
 
     UpdateSiteConfigInput:
       type: object
@@ -1434,6 +1795,193 @@ paths:
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  /admin/economy-config:
+    get:
+      tags: [Site Config]
+      summary: Get the economy settings (Moderator, Admin)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Current settings, merged over the defaults
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings: { $ref: '#/components/schemas/EconomySettings' }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    put:
+      tags: [Site Config]
+      summary: Save the economy settings as a new version (Admin)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateEconomySettingsInput' }
+      responses:
+        '200':
+          description: The saved settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings: { $ref: '#/components/schemas/EconomySettings' }
+        '400': { description: 'Invalid settings: negative or fractional amount, duplicate preset key, shield reduction outside [0, 1], unknown key', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'expectedVersion is stale, or another save won the race', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /economy/catalog:
+    get:
+      tags: [Site Config]
+      summary: Shop catalog (enabled items and prices)
+      responses:
+        '200':
+          description: The catalog
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EconomyCatalog' }
+        '500': { description: 'Server error', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ECO-08
+  /shop/purchase:
+    post:
+      tags: [Site Config]
+      summary: Buy a shop item for yourself
+      description: >-
+        Wrestler (the caller's own player). Needs the economy feature. Charges
+        the price as a \`purchase\` ledger entry and stores the effect in the same
+        transaction: injuryShield, rehab and staminaTopUp go on the player's
+        \`effects\`; simInterference goes on the match's \`simBoosts\` (a scheduled
+        match the buyer is in, one per player). A boost is refunded when the
+        result is recorded by hand or the scheduled match is deleted. Refusals
+        are 409 with a \`code\`: ITEM_DISABLED, IN_DEBT, INSUFFICIENT_FUNDS,
+        SHIELD_ACTIVE, NO_ACTIVE_INJURY, INJURY_TOO_SHORT, MATCH_NOT_SCHEDULED,
+        NOT_IN_MATCH, BOOST_ALREADY_BOUGHT. GM interference is not sold here.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShopPurchaseInput' }
+      responses:
+        '201':
+          description: Bought
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShopPurchaseResult' }
+        '200':
+          description: This requestId was already bought; nothing new was charged
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShopPurchaseResult' }
+        '400': { description: 'Unknown item, missing or unexpected target, bad requestId', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not a Wrestler, or the economy feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'No player profile for the caller, or the match does not exist', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Refused (see \`code\`), or the balance or match changed while buying', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ECO-09
+  /shop/gm-interference:
+    post:
+      tags: [Site Config]
+      summary: Pay for GM interference
+      description: >-
+        Wrestler (the caller's own player). Needs the economy feature. Charges
+        \`shop.gmInterference.price\` up front as a \`purchase\` ledger entry and
+        creates a pending request in the same transaction, then notifies every
+        GM. The GM may deliver all, some or nothing and keeps the money unless
+        they refund it. One pending request per player. Refusals are 409 with a
+        \`code\`: ITEM_DISABLED, IN_DEBT, INSUFFICIENT_FUNDS, REQUEST_PENDING,
+        MATCH_NOT_SCHEDULED.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GmInterferenceInput' }
+      responses:
+        '201':
+          description: Paid; the request is pending
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GmInterferenceRequestResult' }
+        '400': { description: 'Missing or too long request, bad matchId', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not a Wrestler, or the economy feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'No player profile for the caller, or the match does not exist', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Refused (see \`code\`), or the balance changed while paying', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    get:
+      tags: [Site Config]
+      summary: My GM interference requests
+      description: Wrestler (the caller's own player). Newest first, with the outcome and public note only.
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: The caller's requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requests: { type: array, items: { $ref: '#/components/schemas/PlayerGmInterference' } }
+        '403': { description: 'Not a Wrestler', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'No player profile for the caller', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /gm-interference:
+    get:
+      tags: [Site Config]
+      summary: GM interference queue
+      description: Admin and Moderator. Every request, or one status, newest first, with player names and private notes.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, delivered, partial, taken, refunded] }
+      responses:
+        '200':
+          description: Requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requests: { type: array, items: { $ref: '#/components/schemas/GmInterferenceRequest' } }
+        '400': { description: 'Unknown status', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not staff', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /gm-interference/{requestId}/resolve:
+    post:
+      tags: [Site Config]
+      summary: Resolve a GM interference request
+      description: >-
+        Admin and Moderator. \`refunded\` posts a \`refund\` of the price in the
+        same transaction; delivered, partial and taken keep the money. A
+        request resolves once. A GM cannot resolve their own request
+        (409 OWN_REQUEST). The player is notified with the outcome and the
+        public note; the private note stays with staff.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResolveGmInterferenceInput' }
+      responses:
+        '200':
+          description: Resolved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResolveGmInterferenceResult' }
+        '400': { description: 'Bad outcome or note too long', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not staff', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Request (or its player) not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'ALREADY_RESOLVED, OWN_REQUEST, or the balance changed while refunding', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   /players/me:
     get:
       tags: [Profile]
@@ -1523,6 +2071,11 @@ paths:
     get:
       tags: [Matches]
       summary: List matches
+      description: >-
+        Public. A bearer token is optional. \`simBoosts\` (sim interference bought
+        in the shop) is private: Admins and Moderators get every boost, a
+        signed-in player gets only their own entry, and anonymous callers and
+        other players get no \`simBoosts\` field.
       parameters:
         - name: status
           in: query
@@ -2752,6 +3305,425 @@ paths:
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '409': { description: 'NOT_DEACTIVATED or DISCIPLINE_CONFLICT', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
+
+  # ── Ledger (ECO-02) ──────────────────────────────────────────────
+
+  /players/{playerId}/ledger/adjust:
+    post:
+      tags: [Players]
+      summary: Correct a player's balance with a gmAdjust ledger entry (Admin only)
+      description: >-
+        Appends one \`gmAdjust\` entry to the player's ledger and updates the
+        cached balance. The balance may go negative. Resending the same
+        \`requestId\` never posts twice: the first entry comes back with
+        \`alreadyApplied: true\`.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, note]
+              properties:
+                amount:
+                  type: integer
+                  description: Signed, non-zero. Positive pays the player, negative takes money.
+                note: { type: string, minLength: 1, maxLength: 500 }
+                requestId:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  description: Optional client-generated id that makes a retry safe.
+      responses:
+        '201':
+          description: Entry posted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdjustBalanceResult' }
+        '200':
+          description: This requestId was already posted; nothing new was written
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdjustBalanceResult' }
+        '400': { description: 'Bad amount, note or requestId', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'The balance changed while saving; try again', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ECO-14
+  /players/{playerId}/ledger:
+    get:
+      tags: [Players]
+      summary: One page of a player's ledger, newest first (Moderator, Admin)
+      description: >-
+        The GM fines view reads fines and their \`fineRescinded\` refunds from
+        here. A \`fineRescinded\` entry points at its fine with
+        \`refType: ledgerEntry\` and \`refId\` set to the fine's \`entryId\`.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - { name: cursor, in: query, schema: { type: string }, description: 'nextCursor from the previous page' }
+      responses:
+        '200':
+          description: One page of entries
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [playerId, balance, items]
+                properties:
+                  playerId: { type: string }
+                  balance: { type: integer }
+                  items: { type: array, items: { $ref: '#/components/schemas/LedgerEntry' } }
+                  nextCursor: { type: string, description: Absent on the last page }
+        '400': { description: 'Bad limit or cursor', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ECO-13: the signed-in player's own wallet history
+  /players/me/ledger:
+    get:
+      tags: [Profile]
+      summary: The signed-in player's ledger entries, newest first, with their balance
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: cursor, in: query, schema: { type: string }, description: nextCursor from the previous page }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+      responses:
+        '200':
+          description: >-
+            One page of the player's own entries. The GM's user id and the
+            internal idempotency key are left out.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [playerId, balance, items]
+                properties:
+                  playerId: { type: string }
+                  balance: { type: integer }
+                  items: { type: array, items: { $ref: '#/components/schemas/OwnLedgerEntry' } }
+                  nextCursor: { type: string, description: Absent on the last page }
+        '400': { description: 'Bad cursor or limit', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'No player profile for this user', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Contracts (ECO-04) ───────────────────────────────────────────
+
+  /contracts:
+    get:
+      tags: [Players]
+      summary: List contracts and offers with their money (Moderator, Admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [offered, active, declined, withdrawn, expired, completed, released] } }
+        - { name: playerId, in: query, schema: { type: string } }
+        - { name: type, in: query, schema: { type: string, enum: [tryout, matches, season] } }
+      responses:
+        '200':
+          description: Contracts, newest first
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Contract' } }
+        '400': { description: 'Unknown status or type', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    post:
+      tags: [Players]
+      summary: Offer a contract to a player (Moderator, Admin)
+      description: >-
+        A player may hold several open offers but only one active contract.
+        The offer expires after the economy settings' offerExpiryDays. The
+        player is notified.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContractOfferInput' }
+      responses:
+        '201':
+          description: The offer
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Contract' }
+        '400': { description: 'Invalid offer (an \`errors\` array lists each rule broken), or the player has no linked account', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'PLAYER_DEACTIVATED', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /contracts/{contractId}/accept:
+    post:
+      tags: [Players]
+      summary: Accept an offer (the player it was made to)
+      description: >-
+        One transaction activates the contract, sets the player's
+        activeContractId (only if none is set) and withdraws the player's
+        other open offers. GMs are notified.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: contractId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The active contract and the ids of the offers withdrawn with it
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contract: { $ref: '#/components/schemas/Contract' }
+                  withdrawnOfferIds: { type: array, items: { type: string } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not the player this offer was made to', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Contract not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Already under contract, the offer is not open or has expired, the season ended, or a concurrent change', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /contracts/{contractId}/decline:
+    post:
+      tags: [Players]
+      summary: Decline an offer (the player it was made to)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: contractId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The declined offer
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Contract' }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not the player this offer was made to', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Contract not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'The offer is not open or has expired', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /contracts/{contractId}/withdraw:
+    post:
+      tags: [Players]
+      summary: Withdraw an open offer (Moderator, Admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: contractId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The withdrawn offer
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Contract' }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Contract not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Not an open offer', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /contracts/{contractId}/release:
+    post:
+      tags: [Players]
+      summary: Release a player from an active contract now (Moderator, Admin)
+      description: Ends the contract, clears the player's activeContractId and notifies the player. The note replaces the contract's note.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: contractId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [note]
+              properties:
+                note: { type: string, minLength: 1, maxLength: 500 }
+      responses:
+        '200':
+          description: The released contract
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Contract' }
+        '400': { description: 'Missing or too long note', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Contract not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Not an active contract, or a concurrent change', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /players/me/contracts:
+    get:
+      tags: [Profile]
+      summary: The signed-in player's contract, open offers and history, with money
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: >-
+            An offer past its expiry that the hourly sweep has not reached yet
+            is listed in pastContracts as expired.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [playerId, balance, activeContract, offers, pastContracts]
+                properties:
+                  playerId: { type: string }
+                  balance: { type: integer }
+                  activeContract: { type: object, allOf: [{ $ref: '#/components/schemas/Contract' }], nullable: true }
+                  offers: { type: array, items: { $ref: '#/components/schemas/Contract' }, description: Soonest to expire first }
+                  pastContracts: { type: array, items: { $ref: '#/components/schemas/Contract' }, description: Newest first }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'No player profile for this user', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /players/{playerId}/contract:
+    get:
+      tags: [Players]
+      summary: A player's contract badge (public, no money)
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The active contract, or freeAgent true
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [playerId, freeAgent, contract]
+                properties:
+                  playerId: { type: string }
+                  freeAgent: { type: boolean }
+                  contract: { type: object, allOf: [{ $ref: '#/components/schemas/PublicContract' }], nullable: true }
+        '404': { description: 'Player not found or hidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /free-agents:
+    get:
+      tags: [Players]
+      summary: Visible players with no active contract (public)
+      responses:
+        '200':
+          description: Players in the same public shape as GET /players, sorted by wrestler name
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Player' } }
+
+  # ── Fines (ECO-07) ───────────────────────────────────────────────
+
+  /matches/{matchId}/no-show:
+    post:
+      tags: [Matches]
+      summary: Mark a participant as a no-show and fine them (Admin, Moderator)
+      description: >-
+        Works on scheduled matches and on completed ones up to 7 days after the
+        result. Adds a mark to \`match.noShows\`, posts a \`fine\` of the economy
+        settings' \`noShowFine\` (key \`match#{matchId}#noshow#{playerId}\`; a
+        re-mark after an undo appends \`#2\`, \`#3\`...) and notifies the player.
+        The match is not cancelled. Marking an already-marked player fines once
+        and returns 200 with \`alreadyApplied: true\`. With \`noShowFine\` 0 the
+        mark is recorded and nothing is posted. The balance may go negative.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: matchId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [playerId]
+              properties:
+                playerId: { type: string, description: Must be a participant of the match }
+                note: { type: string, maxLength: 500, description: Added to the fine's ledger note }
+      responses:
+        '201': { description: Marked, content: { application/json: { schema: { $ref: '#/components/schemas/NoShowResult' } } } }
+        '200': { description: Already marked; nothing new was written, content: { application/json: { schema: { $ref: '#/components/schemas/NoShowResult' } } } }
+        '400': { description: 'Missing playerId, bad note, or the player is not in the match', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Match or player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Match is not scheduled or just completed, or it changed while saving', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /matches/{matchId}/no-show/{playerId}:
+    delete:
+      tags: [Matches]
+      summary: Undo a no-show and refund its fine (Admin, Moderator)
+      description: >-
+        Stamps \`undoneAt\` on the player's active mark and posts a
+        \`fineRescinded\` entry for its fine, unless that fine was already
+        rescinded through \`POST /fines/{entryId}/rescind\`.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: matchId, in: path, required: true, schema: { type: string } }
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Undone, content: { application/json: { schema: { $ref: '#/components/schemas/NoShowResult' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Match not found, or the player has no active no-show on it', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'The match or balance changed while saving; try again', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /players/{playerId}/fines:
+    post:
+      tags: [Players]
+      summary: Fine a player (Admin, Moderator)
+      description: >-
+        Posts one \`fine\` entry. Send \`presetKey\` (amount and label from the
+        economy settings' \`finePresets\`; \`reason\` is optional and appended) or a
+        custom \`amount\` with a \`reason\`. The note is shown to the player, who is
+        notified, and notified again when the fine takes the balance below
+        zero. Debt is allowed. Resending the same \`requestId\` never fines twice.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                presetKey: { type: string }
+                amount: { type: integer, minimum: 1, description: Positive; the fine takes this much }
+                reason: { type: string, maxLength: 500, description: Required with a custom amount }
+                matchId: { type: string, description: Optional match the fine is about }
+                requestId: { type: string, minLength: 1, maxLength: 100 }
+      responses:
+        '201': { description: Fined, content: { application/json: { schema: { $ref: '#/components/schemas/AdjustBalanceResult' } } } }
+        '200': { description: This requestId was already posted, content: { application/json: { schema: { $ref: '#/components/schemas/AdjustBalanceResult' } } } }
+        '400': { description: 'Unknown preset, both or neither of presetKey/amount, bad amount, or a custom amount without a reason', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Player or match not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'The balance changed while saving; try again', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /fines/{entryId}/rescind:
+    post:
+      tags: [Players]
+      summary: Rescind a fine (Admin, Moderator)
+      description: >-
+        Posts a \`fineRescinded\` entry refunding the fine. A fine is refunded at
+        most once (also across the no-show undo route); a repeat returns 200
+        with \`alreadyApplied: true\`. The body is optional.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: entryId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string, maxLength: 500 }
+      responses:
+        '201': { description: Rescinded, content: { application/json: { schema: { $ref: '#/components/schemas/RescindFineResult' } } } }
+        '200': { description: Already rescinded, content: { application/json: { schema: { $ref: '#/components/schemas/RescindFineResult' } } } }
+        '400': { description: 'The entry is not a fine, or a bad note', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Fine not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'The balance changed while saving; try again', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   # ── Companies ─────────────────────────────────────────────────────
 

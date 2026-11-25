@@ -276,15 +276,18 @@
     "wiki": "Wiki",
     "admin": "Admin",
     "contenders": "Herausforderer",
+    "freeAgents": "Free Agents",
     "matchSearch": "Kampf-Suche",
     "seasonAwards": "Saison-Auszeichnungen",
     "factions": "Faktionen",
     "tagTeams": "Tag Teams",
     "myFaction": "Meine Faktion",
     "myTagTeam": "Mein Tag Team",
+    "myContract": "Mein Vertrag",
     "highlights": "Highlights",
     "profile": "Mein Profil",
     "myVideos": "Meine Videos",
+    "shop": "Shop",
     "groups": {
       "core": "Liga",
       "league": "Liga",
@@ -451,6 +454,7 @@
       "contenders": "Herausforderer-Ranglisten",
       "tagTeamRankings": "So funktionieren die Tag-Team-Ranglisten",
       "profile": "Mein Profil",
+      "contractsAndMoney": "Verträge und Geld",
       "challenges": "Herausforderungen",
       "promos": "Promos",
       "tips": "Tipps",
@@ -484,6 +488,7 @@
       "howStandingsWork": "So funktioniert die Tabelle",
       "strikesAndSuspensions": "Strikes und Sperren",
       "adminStrikes": "Admin: Strikes",
+      "adminEconomy": "Admin: Wirtschaft",
       "installApp": "App installieren",
       "news": "News und der Liga-Ticker"
     },
@@ -506,7 +511,8 @@
       "adminDataManagement": "Datenverwaltung",
       "adminWorkflow": "Typischer Wochenablauf",
       "adminRivalries": "Rivalitäten",
-      "adminStrikes": "Strikes"
+      "adminStrikes": "Strikes",
+      "adminEconomy": "Wirtschaft"
     },
     "articleNotFound": "Artikel nicht gefunden",
     "articleNotFoundHint": "Dieser Hilfeartikel wurde vielleicht verschoben. Sieh dir stattdessen die ganze Liste an.",
@@ -847,6 +853,158 @@
       "promoMaxReactionCount": "Gezählte Reaktionen pro Typ",
       "promoMaxReactionCountHint": "Nur die ersten N Feuer/Müll-Reaktionen wirken sich auf den Bonus aus."
     },
+    "economyConfig": {
+      "title": "Wirtschaftseinstellungen",
+      "subtitle": "Lege die Ligawährung, Vertragsgehälter, Strafen und Shoppreise fest. Änderungen gelten für neue Angebote, Strafen und Käufe.",
+      "featureOff": "Die Wirtschaft ist ausgeschaltet, Spieler sehen davon also noch nichts. Ein Admin kann sie in der Funktionsverwaltung einschalten.",
+      "readOnly": "Du kannst diese Einstellungen ansehen. Nur Admins können sie ändern.",
+      "loadFailed": "Die Wirtschaftseinstellungen konnten nicht geladen werden.",
+      "retry": "Erneut versuchen",
+      "version": "Version {{version}}, gespeichert von {{user}} am {{date}}.",
+      "notSaved": "Noch nicht gespeichert: Das sind die Startwerte.",
+      "save": "Wirtschaftseinstellungen speichern",
+      "discard": "Änderungen verwerfen",
+      "saved": "Wirtschaftseinstellungen gespeichert.",
+      "saveFailed": "Die Wirtschaftseinstellungen konnten nicht gespeichert werden",
+      "conflict": "Jemand anderes hat diese Einstellungen gespeichert, nachdem du die Seite geöffnet hast. Lade neu, um diese Version zu sehen, und nimm deine Änderungen dann erneut vor.",
+      "reload": "Neu laden",
+      "problems": {
+        "currency": "Gib der Währung einen Namen und ein Symbol.",
+        "amounts": "Trag überall eine ganze Zahl ab 0 ein. Anzahlen wie Matches, Wochen und Angebotstage beginnen bei 1, und der Schutz liegt zwischen 0 und 100 %.",
+        "presetLabels": "Gib jeder Strafvorlage eine Bezeichnung.",
+        "tooManyPresets": "Es sind höchstens {{max}} Strafvorlagen möglich."
+      },
+      "currency": {
+        "title": "Währung",
+        "name": "Name der Währung",
+        "symbol": "Symbol"
+      },
+      "contracts": {
+        "title": "Standardverträge",
+        "description": "Jedes neue Angebot startet mit diesen Bedingungen. GMs können sie bei jedem einzelnen Angebot ändern.",
+        "types": {
+          "tryout": "Probevertrag",
+          "matches": "Match-Vertrag",
+          "season": "Saisonvertrag"
+        },
+        "tryoutMatches": "Dauer des Probevertrags (Matches)",
+        "perMatchPay": "Gage pro Match",
+        "weeklySalary": "Wochengehalt",
+        "winBonus": "Siegprämie"
+      },
+      "general": {
+        "title": "Prämien, Angebote und Strafen",
+        "freeAgentWinBonus": "Siegprämie für Free Agents",
+        "freeAgentWinBonusHint": "Wird bei einem Sieg an Wrestler ohne Vertrag gezahlt.",
+        "offerExpiryDays": "Angebot läuft ab nach (Tagen)",
+        "offerExpiryDaysHint": "So lange bleibt ein Vertragsangebot offen.",
+        "noShowFine": "Strafe fürs Nichterscheinen",
+        "noShowFineHint": "Wird fällig, wenn ein angesetztes Match verpasst wird."
+      },
+      "fines": {
+        "title": "Strafvorlagen",
+        "description": "Strafen, die GMs mit einem Klick verhängen können.",
+        "empty": "Noch keine Strafvorlagen.",
+        "label": "Bezeichnung",
+        "amount": "Betrag",
+        "remove": "Entfernen",
+        "removeNamed": "Strafvorlage {{number}} entfernen",
+        "add": "Strafvorlage hinzufügen"
+      },
+      "shop": {
+        "title": "Shop-Artikel",
+        "description": "Schalte Artikel an oder aus und lege Preis und Wirkung fest. Ausgeschaltete Artikel erscheinen nicht im Shop.",
+        "enabled": "Im Shop",
+        "price": "Preis",
+        "chanceReduction": "Weniger Verletzungsrisiko (%)",
+        "shieldMatches": "Hält (Matches)",
+        "weeksOff": "Wochen weniger Verletzungspause",
+        "staminaAmount": "Zusätzliche Ausdauer",
+        "ratingBoost": "Rating-Bonus",
+        "items": {
+          "injuryShield": {
+            "name": "Verletzungsschutz",
+            "description": "Senkt für ein paar Matches das Risiko, sich zu verletzen."
+          },
+          "rehab": {
+            "name": "Reha",
+            "description": "Verkürzt eine laufende Verletzungspause."
+          },
+          "staminaTopUp": {
+            "name": "Ausdauer-Boost",
+            "description": "Füllt Ausdauer wieder auf."
+          },
+          "simInterference": {
+            "name": "Sim-Einmischung",
+            "description": "Erhöht das Rating des Käufers in einem simulierten Match."
+          },
+          "gmInterference": {
+            "name": "GM-Einmischung",
+            "description": "Bezahlt den GM dafür, in ein Match einzugreifen."
+          }
+        }
+      },
+      "budget": {
+        "title": "Saisonbudget-Check",
+        "description": "Was ein Saisonvertrag mit den Bedingungen oben einbringt, um Shoppreise und Strafen zu prüfen.",
+        "weeks": "Wochen",
+        "matches": "Matches",
+        "wins": "Siege",
+        "salary": "Gehalt",
+        "matchPay": "Match-Gagen",
+        "winBonuses": "Siegprämien",
+        "total": "Summe der Saison",
+        "incomplete": "Trag die Bedingungen des Saisonvertrags und die Zahlen oben ein, um eine Summe zu sehen."
+      }
+    },
+    "gmInterference": {
+      "title": "GM-Eingriffe",
+      "subtitle": "Spieler zahlen vorab und bitten den GM um etwas. Du kannst alles, einen Teil oder nichts davon umsetzen. Das Geld bleibt bei der Liga, außer du erstattest es.",
+      "filterLabel": "Anzeigen",
+      "filters": {
+        "pending": "Offen",
+        "all": "Alle Anfragen",
+        "delivered": "Umgesetzt",
+        "partial": "Teilweise umgesetzt",
+        "taken": "Geld behalten",
+        "refunded": "Erstattet"
+      },
+      "loadFailed": "Die Anfragen konnten nicht geladen werden.",
+      "emptyPending": "Keine Anfrage wartet auf einen GM.",
+      "empty": "Hier gibt es keine Anfragen.",
+      "linkedMatch": "Zum Match: {{match}}",
+      "matchUnavailable": "ein Match, das nicht mehr angesetzt ist",
+      "matchLine": "{{date}}: {{players}}",
+      "publicNoteShown": "Notiz an den Spieler: {{note}}",
+      "privateNoteShown": "Interne Notiz: {{note}}",
+      "resolve": "Entscheiden",
+      "resolveTitle": "Anfrage von {{name}} entscheiden",
+      "resolved": "Anfrage entschieden. Der Spieler wurde benachrichtigt.",
+      "resolveFailed": "Die Anfrage konnte nicht entschieden werden.",
+      "outcome": "Ergebnis",
+      "outcomes": {
+        "delivered": {
+          "label": "Umgesetzt",
+          "hint": "Du hast getan, worum gebeten wurde. Die Liga behält {{price}}."
+        },
+        "partial": {
+          "label": "Teilweise umgesetzt",
+          "hint": "Du hast einen Teil davon umgesetzt. Die Liga behält {{price}}."
+        },
+        "taken": {
+          "label": "Geld behalten",
+          "hint": "Du tust nichts und behältst {{price}}. Der Spieler liest: „Der GM hat dein Geld genommen. Mehr Glück beim nächsten Mal.“"
+        },
+        "refunded": {
+          "label": "Erstatten",
+          "hint": "Du lehnst ab und {{price}} geht an den Spieler zurück."
+        }
+      },
+      "publicNote": "Notiz an den Spieler (optional)",
+      "publicNoteHint": "Der Spieler sieht sie zusammen mit dem Ergebnis.",
+      "privateNote": "Interne Notiz (optional)",
+      "privateNoteHint": "Nur GMs sehen sie. Sie erreicht den Spieler nie."
+    },
     "hub": {
       "back": "Admin-Bereich",
       "superAdminOnly": "Nur Super-Admins",
@@ -890,8 +1048,11 @@
         "videos": "Videos verwalten",
         "transfers": "Divisionstransfers",
         "storylineRequests": "Storyline-Anfragen",
+        "gmInterference": "GM-Eingriffe",
         "rivalries": "Rivalitäten",
         "heatConfig": "Heat-Einstellungen",
+        "economyConfig": "Wirtschaft",
+        "contracts": "Verträge",
         "dangerZone": "Gefahrenzone"
       },
       "groups": {
@@ -2612,6 +2773,215 @@
       "dissolved": "Aufgelöst"
     }
   },
+  "contracts": {
+    "types": {
+      "tryout": "Probevertrag",
+      "matches": "Match-Vertrag",
+      "season": "Saisonvertrag"
+    },
+    "statuses": {
+      "offered": "Angeboten",
+      "active": "Aktiv",
+      "declined": "Abgelehnt",
+      "withdrawn": "Zurückgezogen",
+      "expired": "Abgelaufen",
+      "completed": "Erfüllt",
+      "released": "Entlassen"
+    },
+    "length": {
+      "matches": "Noch {{left}} von {{total}} Matches",
+      "season": "Bis {{season}}",
+      "seasonUnknown": "Bis Saisonende"
+    },
+    "badge": {
+      "freeAgent": "Free Agent",
+      "season": "{{type}} bis {{season}}",
+      "matches": "{{type}}, noch {{left}} von {{total}} Matches"
+    },
+    "desk": {
+      "title": "Verträge",
+      "subtitle": "Biete Verträge an, behalte offene Angebote im Blick und entlasse Spieler. Spieler beantworten Angebote über ihr eigenes Konto.",
+      "loadFailed": "Die Verträge konnten nicht geladen werden.",
+      "offerContract": "Vertrag anbieten",
+      "offer": "Anbieten",
+      "underContract": "Unter Vertrag",
+      "unknownPlayer": "Unbekannter Spieler",
+      "withdraw": "Zurückziehen",
+      "withdrawTitle": "Angebot zurückziehen?",
+      "withdrawText": "{{name}} kann es dann nicht mehr annehmen.",
+      "withdrawn": "Angebot zurückgezogen.",
+      "withdrawFailed": "Das Angebot konnte nicht zurückgezogen werden",
+      "release": "Entlassen",
+      "releaseTitle": "{{name}} entlassen",
+      "releaseText": "Der Vertrag endet sofort und der Spieler wird Free Agent. Er sieht deine Notiz.",
+      "releaseNote": "Grund",
+      "released": "Vertrag beendet. Der Spieler ist wieder Free Agent.",
+      "releaseFailed": "Der Vertrag konnte nicht beendet werden",
+      "adjustBalance": "Guthaben anpassen",
+      "tabs": {
+        "active": "Aktiv",
+        "offered": "Angeboten",
+        "freeAgents": "Free Agents",
+        "history": "Verlauf"
+      },
+      "empty": {
+        "active": "Noch niemand steht unter Vertrag.",
+        "offered": "Keine offenen Angebote.",
+        "freeAgents": "Alle Spieler stehen unter Vertrag.",
+        "history": "Noch keine früheren Verträge oder Angebote."
+      },
+      "columns": {
+        "player": "Spieler",
+        "type": "Vertrag",
+        "length": "Restliche Matches / Saison",
+        "pay": "Gage pro Match",
+        "salary": "Wochengehalt",
+        "bonus": "Siegprämie",
+        "started": "Beginn",
+        "expires": "Angebot läuft ab",
+        "ended": "Beendet",
+        "status": "Status",
+        "note": "Notiz",
+        "record": "Bilanz",
+        "balance": "Guthaben",
+        "actions": "Aktionen"
+      }
+    },
+    "offer": {
+      "title": "Vertrag anbieten",
+      "titleFor": "{{name}} einen Vertrag anbieten",
+      "submit": "Angebot senden",
+      "sent": "Angebot an {{name}} gesendet.",
+      "failed": "Das Angebot konnte nicht gesendet werden",
+      "loadFailed": "Die Vertragsvorgaben konnten nicht geladen werden.",
+      "player": "Spieler",
+      "pickPlayer": "Spieler auswählen",
+      "noAccount": "Kein verknüpftes Konto",
+      "type": "Vertragsart",
+      "season": "Saison",
+      "noSeason": "Keine aktive Saison",
+      "matchesTotal": "Laufzeit (Matches)",
+      "perMatchPay": "Gage pro Match",
+      "weeklySalary": "Wochengehalt",
+      "winBonus": "Siegprämie",
+      "tryoutSalaryHint": "Probeverträge zahlen nur pro Match.",
+      "note": "Notiz an den Spieler (optional)",
+      "expires": "Wenn der Spieler nicht antwortet, läuft das Angebot am {{date}} ab.",
+      "problems": {
+        "amounts": "Trag bei jedem Betrag eine ganze Zahl ab 0 ein.",
+        "matchesTotal": "Der Vertrag braucht mindestens 1 Match.",
+        "noPay": "Setz eine Gage pro Match oder ein Wochengehalt über 0.",
+        "tryoutPay": "Ein Probevertrag braucht eine Gage pro Match über 0 und kein Wochengehalt.",
+        "noActiveSeason": "Es gibt keine aktive Saison, daher kann gerade kein Saisonvertrag angeboten werden."
+      },
+      "serverErrors": {
+        "invalidType": "Wähl eine Vertragsart.",
+        "missingPlayer": "Wähl einen Spieler.",
+        "matchesTotalRequired": "Der Vertrag braucht eine Laufzeit in Matches.",
+        "matchesTotalNotAllowed": "Ein Saisonvertrag hat keine Match-Anzahl.",
+        "seasonRequired": "Ein Saisonvertrag braucht die aktive Saison.",
+        "seasonNotActive": "Ein Saisonvertrag kann nur für die aktive Saison gelten.",
+        "seasonNotAllowed": "Nur Saisonverträge nennen eine Saison.",
+        "invalidAmount": "Jeder Betrag muss eine ganze Zahl ab 0 sein.",
+        "noPay": "Setz eine Gage pro Match oder ein Wochengehalt über 0.",
+        "tryoutSalaryNotAllowed": "Ein Probevertrag zahlt nur pro Match, ohne Wochengehalt.",
+        "invalidExpiry": "Die Angebotsfrist in den Wirtschaftseinstellungen ist ungültig."
+      }
+    },
+    "balance": {
+      "title": "Guthaben von {{name}} anpassen",
+      "current": "Aktuelles Guthaben: {{balance}}",
+      "submit": "Guthaben anpassen",
+      "amount": "Betrag",
+      "amountHint": "Mit einem Minus ziehst du Geld ab. Das Guthaben kann unter null fallen.",
+      "note": "Grund",
+      "saved": "Das Guthaben beträgt jetzt {{balance}}.",
+      "failed": "Das Guthaben konnte nicht angepasst werden"
+    },
+    "freeAgents": {
+      "title": "Free Agents",
+      "subtitle": "Wrestler ohne Vertrag, bereit zur Unterschrift.",
+      "loadFailed": "Die Free Agents konnten nicht geladen werden.",
+      "empty": "Gerade stehen alle Wrestler unter Vertrag.",
+      "noDivision": "Keine Division",
+      "offer": "Vertrag anbieten",
+      "columns": {
+        "player": "Wrestler",
+        "record": "Bilanz",
+        "division": "Division",
+        "offer": "Vertrag"
+      }
+    }
+  },
+  "myContract": {
+    "title": "Mein Vertrag",
+    "subtitle": "Dein Vertrag, deine Angebote und dein Geld.",
+    "loadFailed": "Dein Vertrag konnte nicht geladen werden.",
+    "tabsLabel": "Vertrag und Geldbörse",
+    "tabs": {
+      "contract": "Vertrag",
+      "wallet": "Geldbörse"
+    },
+    "progress": "{{played}} von {{total}} Matches bestritten",
+    "current": {
+      "title": "Aktueller Vertrag",
+      "freeAgent": "Du bist Free Agent.",
+      "freeAgentHint": "Du bekommst weiterhin den Siegbonus für Free Agents. Angebote der GMs erscheinen unten."
+    },
+    "terms": {
+      "perMatchPay": "Gage pro Match",
+      "weeklySalary": "Wochengehalt",
+      "winBonus": "Siegbonus"
+    },
+    "offers": {
+      "title": "Angebote",
+      "empty": "Gerade keine offenen Angebote.",
+      "matches_one": "{{count}} Match",
+      "matches_other": "{{count}} Matches",
+      "daysLeft_one": "Noch {{count}} Tag",
+      "daysLeft_other": "Noch {{count}} Tage",
+      "hoursLeft_one": "Noch {{count}} Stunde",
+      "hoursLeft_other": "Noch {{count}} Stunden",
+      "expired": "Abgelaufen",
+      "underContract": "Du hast schon einen Vertrag. Annehmen kannst du, sobald er endet.",
+      "accept": "Annehmen",
+      "decline": "Ablehnen",
+      "accepted": "Vertrag unterschrieben. Willkommen an Bord!",
+      "declined": "Angebot abgelehnt.",
+      "answerFailed": "Das Angebot konnte nicht beantwortet werden."
+    },
+    "past": {
+      "title": "Frühere Verträge",
+      "empty": "Hier ist noch nichts."
+    }
+  },
+  "wallet": {
+    "balance": "Kontostand",
+    "debtNote": "Du bist im Minus. Der Shop bleibt gesperrt, bis dein Kontostand wieder über null liegt.",
+    "card": {
+      "title": "Deine Geldbörse",
+      "link": "Kontoverlauf",
+      "thisWeek": "Diese Woche verdient",
+      "nextPayday": "Nächster Zahltag"
+    },
+    "ledger": {
+      "empty": "Bisher ist kein Geld geflossen. Gagen, Boni und Strafen erscheinen hier.",
+      "loadFailed": "Dein Kontoverlauf konnte nicht geladen werden.",
+      "loadMore": "Ältere Einträge anzeigen",
+      "balanceAfter": "Kontostand {{amount}}"
+    },
+    "kinds": {
+      "perMatchPay": "Match-Gage",
+      "winBonus": "Siegbonus",
+      "salary": "Wochengehalt",
+      "fine": "Strafe",
+      "fineRescinded": "Strafe aufgehoben",
+      "purchase": "Shop-Kauf",
+      "refund": "Erstattung",
+      "gmAdjust": "Korrektur",
+      "reversal": "Match-Gage storniert"
+    }
+  },
   "notifications": {
     "title": "Benachrichtigungen",
     "bell": "Benachrichtigungen",
@@ -2633,7 +3003,10 @@
     "typeRivalry": "Rivalität",
     "typeStoryline": "Storyline",
     "typeDiscipline": "Strikes",
-    "typeProgression": "Call-ups"
+    "typeProgression": "Call-ups",
+    "typeContract": "Vertrag",
+    "typeEconomy": "Geldbörse",
+    "typeGmInterference": "GM-Eingriff"
   },
   "overalls": {
     "admin": {
@@ -3452,6 +3825,10 @@
       },
       "disable": "{{name}} deaktivieren",
       "disabled": "Deaktiviert",
+      "economy": {
+        "description": "Verträge, Konten, Strafen und der Shop. Aus, bis die Liga-Wirtschaft startet.",
+        "name": "Wirtschaft"
+      },
       "enable": "{{name}} aktivieren",
       "enabled": "Aktiviert",
       "notifications": {
@@ -3770,6 +4147,145 @@
         "remove": "Strike entfernt.",
         "reactivate": "Spieler reaktiviert."
       }
+    }
+  },
+  "economyShop": {
+    "title": "Shop",
+    "subtitle": "Gib deine Einnahmen für einen Vorteil aus. Die Preise legen die GMs fest.",
+    "balance": "Kontostand: {{amount}}",
+    "staleData": "Einige Shop-Daten konnten nicht aktualisiert werden. Was du siehst, ist eventuell nicht aktuell.",
+    "debtLocked": "Du hast Schulden. Der Shop ist gesperrt, bis dein Kontostand wieder bei null ist.",
+    "empty": "Gerade gibt es nichts zu kaufen.",
+    "itemsLabel": "Shop-Artikel",
+    "loadFailed": "Der Shop konnte nicht geladen werden.",
+    "comingSoon": "Bald verfügbar",
+    "buy": "Kaufen",
+    "buyItem": "{{item}} kaufen",
+    "bought": "{{item}} gekauft. Dein Kontostand ist jetzt {{balance}}.",
+    "buyFailed": "Der Kauf hat nicht geklappt. Versuch es noch einmal.",
+    "matchOption": "{{date}} gegen {{opponents}}",
+    "confirmTitle": "{{item}} kaufen?",
+    "confirmBuy": "{{price}} bezahlen",
+    "pickMatch": "Match",
+    "simRefundHint": "Wenn der GM dieses Match von Hand einträgt statt es zu simulieren, bekommst du dein Geld zurück.",
+    "price": "Preis",
+    "balanceAfter": "Kontostand danach",
+    "items": {
+      "injuryShield": {
+        "name": "Verletzungsschutz",
+        "effect_one": "Senkt dein Verletzungsrisiko um {{percent}} % für dein nächstes Match.",
+        "effect_other": "Senkt dein Verletzungsrisiko um {{percent}} % für deine nächsten {{count}} Matches."
+      },
+      "rehab": {
+        "name": "Reha",
+        "effect_one": "Verkürzt eine aktive Verletzung um {{count}} Woche.",
+        "effect_other": "Verkürzt eine aktive Verletzung um {{count}} Wochen."
+      },
+      "staminaTopUp": {
+        "name": "Ausdauer-Auffüllung",
+        "effect": "Gibt dir {{amount}} Ausdauer zurück, bis zu deinem Maximum."
+      },
+      "simInterference": {
+        "name": "Sim-Eingriff",
+        "effect": "Erhöht deine Wertung in einem deiner simulierten Matches um {{boost}}."
+      },
+      "gmInterference": {
+        "name": "GM-Eingriff",
+        "effect": "Bezahl den GM und bitte um alles Mögliche: ein Titelmatch, einen Run-in, einen schlechten Abend für deinen Rivalen."
+      }
+    },
+    "blocked": {
+      "comingSoon": "Wirkt, sobald Verletzungen und die Match-Simulation starten.",
+      "inDebt": "Schulden: Der Shop ist gesperrt, bis dein Kontostand wieder bei null ist.",
+      "insufficientFunds": "Dafür hast du nicht genug Geld.",
+      "shieldActive": "Du hast schon einen aktiven Verletzungsschutz.",
+      "noActiveInjury": "Braucht eine aktive Verletzung.",
+      "noScheduledMatch": "Braucht ein angesetztes Match, für das du noch keinen Eingriff gekauft hast.",
+      "requestPending": "Du hast schon eine Anfrage, die auf den GM wartet."
+    },
+    "refusals": {
+      "ITEM_DISABLED": "Dieser Artikel ist gerade nicht zu kaufen.",
+      "IN_DEBT": "Du hast Schulden. Der Shop ist gesperrt, bis dein Kontostand wieder bei null ist.",
+      "INSUFFICIENT_FUNDS": "Dafür hast du nicht genug Geld.",
+      "SHIELD_ACTIVE": "Du hast schon einen aktiven Verletzungsschutz.",
+      "NO_ACTIVE_INJURY": "Reha braucht eine aktive Verletzung.",
+      "INJURY_TOO_SHORT": "Reha braucht noch mindestens 2 Wochen Verletzung.",
+      "MATCH_NOT_SCHEDULED": "Dieses Match ist nicht mehr angesetzt.",
+      "NOT_IN_MATCH": "Du kannst nur für ein Match eingreifen, in dem du selbst stehst.",
+      "BOOST_ALREADY_BOUGHT": "Für dieses Match hast du schon einen Eingriff gekauft.",
+      "REQUEST_PENDING": "Du hast schon eine Anfrage, die auf den GM wartet.",
+      "ALREADY_RESOLVED": "Ein anderer GM hat diese Anfrage schon entschieden.",
+      "OWN_REQUEST": "Das ist deine eigene Anfrage. Ein anderer GM muss sie entscheiden."
+    },
+    "gm": {
+      "warning": "Der GM kann dein Geld behalten und nichts tun.",
+      "open": "Anfrage stellen",
+      "formTitle": "Den GM fragen",
+      "requestLabel": "Was willst du?",
+      "requestHint": "{{length}} von {{max}} Zeichen",
+      "matchLabel": "Zu einem Match (optional)",
+      "noMatch": "Kein Match",
+      "understand": "Mir ist klar, dass der GM mein Geld behalten und nichts tun kann.",
+      "pay": "{{price}} zahlen und senden",
+      "sent": "Anfrage gesendet. Dein Kontostand ist jetzt {{balance}}.",
+      "sendFailed": "Die Anfrage hat nicht geklappt. Versuch es noch einmal.",
+      "myRequests": "Meine Anfragen",
+      "noRequests": "Du hast den GM noch um nichts gebeten.",
+      "linkedMatch": "Zum Match: {{match}}",
+      "gmNote": "Notiz vom GM: {{note}}",
+      "status": {
+        "pending": "Wartet auf den GM",
+        "delivered": "Umgesetzt",
+        "partial": "Teilweise umgesetzt",
+        "taken": "Geld behalten",
+        "refunded": "Erstattet"
+      },
+      "outcome": {
+        "delivered": "Der GM hat deine Anfrage erfüllt.",
+        "partial": "Der GM hat deine Anfrage teilweise erfüllt.",
+        "taken": "Der GM hat dein Geld genommen. Mehr Glück beim nächsten Mal.",
+        "refunded": "Der GM hat deine Anfrage abgelehnt und dir das Geld erstattet."
+      }
+    }
+  },
+  "economyFines": {
+    "open": "Strafen",
+    "title": "Strafen: {{name}}",
+    "loadFailed": "Nicht alles konnte geladen werden. Eventuell fehlen Strafen in der Liste.",
+    "balance": "Kontostand: {{amount}}",
+    "issueHeading": "Diesen Spieler bestrafen",
+    "fineLabel": "Strafe",
+    "pickFine": "Vorlage oder eigenen Betrag wählen",
+    "custom": "Eigener Betrag",
+    "amount": "Betrag",
+    "reasonRequired": "Grund (sieht der Spieler)",
+    "reasonOptional": "Details (optional, sieht der Spieler)",
+    "reasonHint": "Der Spieler sieht das zusammen mit der Strafe.",
+    "issue": "{{name}} bestrafen",
+    "issued": "{{name}} wurde mit {{amount}} bestraft.",
+    "issueFailed": "Die Strafe hat nicht geklappt. Versuch es noch einmal.",
+    "history": "Bisherige Strafen",
+    "noFines": "Noch keine Strafen.",
+    "rescindedBadge": "Zurückgenommen",
+    "rescind": "Zurücknehmen",
+    "rescindConfirm": "Diese Strafe über {{amount}} erstatten?",
+    "rescindYes": "Erstatten",
+    "rescinded": "Strafe zurückgenommen und erstattet.",
+    "rescindFailed": "Die Strafe konnte nicht zurückgenommen werden.",
+    "loadMore": "Ältere Einträge zeigen",
+    "noShow": {
+      "open": "No-Shows",
+      "title": "No-Shows",
+      "description": "Ein No-Show bestraft den Spieler mit der No-Show-Strafe der Liga. Rückgängig machen erstattet die Strafe. Das Match selbst bleibt, wie es ist.",
+      "note": "Notiz zur Strafe (optional)",
+      "badge": "No-Show",
+      "mark": "Als No-Show markieren",
+      "markFor": "{{name}} als No-Show markieren",
+      "undo": "Rückgängig",
+      "undoFor": "No-Show von {{name}} rückgängig machen",
+      "marked": "{{name}} wurde als No-Show markiert.",
+      "undone": "Der No-Show von {{name}} wurde rückgängig gemacht.",
+      "failed": "Der No-Show konnte nicht gespeichert werden."
     }
   },
   "pwa": {

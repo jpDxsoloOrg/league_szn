@@ -1,0 +1,98 @@
+/* Economy settings page (ECO-11). Shared form styles come from adminContent.css. */
+
+.economy-config__fieldset {
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.economy-config__fieldset > * {
+  min-width: 0;
+}
+
+.economy-config__version {
+  font-size: var(--text-dense);
+}
+
+.economy-config__group {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  margin: 0;
+  padding: 1rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.economy-config__legend {
+  float: left;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.economy-config__presets {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.economy-config__preset {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.economy-config__budget {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.economy-config__budget > div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.economy-config__budget dt {
+  color: var(--color-text-muted);
+  font-size: var(--text-dense);
+}
+
+.economy-config__budget dd {
+  margin: 0;
+  color: var(--color-text);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.economy-config__budget-total dd {
+  color: var(--color-cyan);
+  font-size: 1.125rem;
+}
+
+@media (max-width: 768px) {
+  .economy-config__preset {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .economy-config__preset-label {
+    grid-column: 1 / -1;
+  }
+
+  .economy-config__preset-remove {
+    justify-self: start;
+  }
+}

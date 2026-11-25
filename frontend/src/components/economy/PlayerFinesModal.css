@@ -1,0 +1,97 @@
+/* GM fines dialog (ECO-14). */
+
+.fines-modal {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.fines-modal__error {
+  margin: 0;
+  color: var(--color-loss);
+}
+
+.fines-modal__balance {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.fines-modal__balance--debt {
+  color: var(--color-loss);
+}
+
+.fines-modal__form,
+.fines-modal__history {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.fines-modal__heading {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.fines-modal__field {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.fines-modal__label {
+  font-weight: 600;
+}
+
+.fines-modal__input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.fines-modal__hint,
+.fines-modal__muted {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-dense);
+}
+
+.fines-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.fines-modal__list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fines-modal__entry {
+  display: grid;
+  justify-items: start;
+  gap: 0.375rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  min-width: 0;
+}
+
+.fines-modal__entry-head,
+.fines-modal__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fines-modal__note {
+  overflow-wrap: anywhere;
+}

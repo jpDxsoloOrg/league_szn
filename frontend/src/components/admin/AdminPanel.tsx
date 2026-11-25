@@ -35,6 +35,8 @@ const TAB_COMPONENTS: Record<AdminTab, LazyExoticComponent<ComponentType>> = {
   overalls: lazy(() => import('./ManageOveralls')),
   divisions: lazy(() => import('./ManageDivisions')),
   transfers: lazy(() => import('./ManageTransfers')),
+  // ECO-12
+  contracts: lazy(() => import('./ManageContracts')),
   'tag-teams': lazy(() => import('./ManageTagTeams')),
   factions: lazy(() => import('./ManageFactions')),
   seasons: lazy(() => import('./ManageSeasons')),
@@ -48,11 +50,14 @@ const TAB_COMPONENTS: Record<AdminTab, LazyExoticComponent<ComponentType>> = {
   rivalries: lazy(() => import('./AdminRivalries')),
   'heat-config': lazy(() => import('./AdminHeatConfig')),
   'storyline-requests': lazy(() => import('./ManageStorylineRequests')),
+  // ECO-14
+  'gm-interference': lazy(() => import('./ManageGmInterference')),
   announcements: lazy(() => import('./ManageAnnouncements')),
   videos: lazy(() => import('./ManageVideos')),
   companies: lazy(() => import('./ManageCompanies')),
   shows: lazy(() => import('./ManageShows')),
   locations: lazy(() => import('./ManageLocations')),
+  'economy-config': lazy(() => import('./AdminEconomyConfig')),
   features: lazy(() => import('./ManageFeatures')),
   danger: lazy(() => import('./ClearAllData')),
 };

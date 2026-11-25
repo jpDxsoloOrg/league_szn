@@ -17,11 +17,14 @@ import {
   ChartColumn,
   CircleHelp,
   ClipboardList,
+  Coins,
   Crown,
   FileText,
+  FileSignature,
   Film,
   Flag,
   Flame,
+  Gavel,
   GitBranch,
   House,
   LayoutGrid,
@@ -36,6 +39,7 @@ import {
   Rocket,
   ScrollText,
   Shield,
+  ShoppingBag,
   SlidersHorizontal,
   Star,
   Swords,
@@ -47,13 +51,15 @@ import {
   Tv,
   User,
   UserPlus,
+  UserSearch,
   Users,
   UsersRound,
   Video,
+  Wallet,
 } from 'lucide-react';
 import type { SiteFeatures } from '../services/api';
 
-export type NavFeature = 'challenges' | 'promos' | 'contenders' | 'statistics' | 'stables' | 'rivalries';
+export type NavFeature = 'challenges' | 'promos' | 'contenders' | 'statistics' | 'stables' | 'rivalries' | 'economy';
 
 export type SectionKey = 'home' | 'events' | 'rankings' | 'storylines' | 'me';
 
@@ -143,6 +149,8 @@ export const NAV_SECTIONS: NavSection[] = [
       { path: '/standings', labelKey: 'nav.standings', icon: ListOrdered, matches: ['/player'] },
       { path: '/championships', labelKey: 'nav.tabs.titles', icon: Crown },
       { path: '/contenders', labelKey: 'nav.contenders', icon: Target, feature: 'contenders' },
+      // ECO-12
+      { path: '/free-agents', labelKey: 'nav.freeAgents', icon: UserSearch, feature: 'economy' },
       { path: '/stats', labelKey: 'nav.statistics', icon: ChartColumn, feature: 'statistics', children: STATS_TABS },
       { path: '/awards', labelKey: 'nav.tabs.awards', icon: Award },
     ],
@@ -169,7 +177,11 @@ export const NAV_SECTIONS: NavSection[] = [
       { path: '/challenges', labelKey: 'nav.tabs.callOuts', icon: Megaphone, feature: 'challenges', wrestlerOnly: true },
       { path: '/my-faction', labelKey: 'nav.myFaction', icon: Flag, feature: 'stables', wrestlerOnly: true },
       { path: '/my-tag-team', labelKey: 'nav.myTagTeam', icon: Link2, feature: 'stables', wrestlerOnly: true },
+      // ECO-13
+      { path: '/my-contract', labelKey: 'nav.myContract', icon: Wallet, feature: 'economy', wrestlerOnly: true },
       { path: '/my-videos', labelKey: 'nav.myVideos', icon: Video, wrestlerOnly: true },
+      // ECO-14
+      { path: '/shop', labelKey: 'nav.shop', icon: ShoppingBag, feature: 'economy', wrestlerOnly: true },
       { path: '/guide', labelKey: 'nav.help', icon: CircleHelp },
       { path: '/guide/wiki/league-rules', labelKey: 'nav.leagueRules', icon: BookOpen },
     ],
@@ -278,6 +290,8 @@ export const ADMIN_TABS = [
   'overalls',
   'divisions',
   'transfers',
+  // ECO-12
+  'contracts',
   'tag-teams',
   'factions',
   'seasons',
@@ -291,11 +305,15 @@ export const ADMIN_TABS = [
   'rivalries',
   'heat-config',
   'storyline-requests',
+  // ECO-14
+  'gm-interference',
   'announcements',
   'videos',
   'companies',
   'shows',
   'locations',
+  // ECO-11
+  'economy-config',
   'features',
   'danger',
 ] as const;
@@ -340,6 +358,8 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { tab: 'overalls', labelKey: 'overalls.admin.title', icon: TrendingUp, minRole: 'Moderator' },
       { tab: 'divisions', labelKey: 'admin.panel.tabs.divisions', icon: LayoutGrid, minRole: 'Moderator' },
       { tab: 'transfers', labelKey: 'admin.panel.tabs.transfers', icon: ArrowLeftRight, minRole: 'Moderator', feature: 'transfers' },
+      // ECO-12
+      { tab: 'contracts', labelKey: 'admin.panel.tabs.contracts', icon: FileSignature, minRole: 'Moderator', feature: 'economy' },
       { tab: 'tag-teams', labelKey: 'admin.panel.tabs.tagTeams', icon: Users, minRole: 'Moderator' },
       { tab: 'factions', labelKey: 'admin.panel.tabs.factions', icon: UsersRound, minRole: 'Moderator' },
     ],
@@ -365,6 +385,8 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { tab: 'rivalries', labelKey: 'admin.panel.tabs.rivalries', icon: Flame, minRole: 'Moderator' },
       { tab: 'heat-config', labelKey: 'admin.panel.tabs.heatConfig', icon: Thermometer, minRole: 'Admin' },
       { tab: 'storyline-requests', labelKey: 'admin.panel.tabs.storylineRequests', icon: FileText, minRole: 'Moderator' },
+      // ECO-14
+      { tab: 'gm-interference', labelKey: 'admin.panel.tabs.gmInterference', icon: Gavel, minRole: 'Moderator', feature: 'economy' },
       { tab: 'announcements', labelKey: 'admin.panel.tabs.announcements', icon: Megaphone, minRole: 'Moderator' },
       { tab: 'videos', labelKey: 'admin.panel.tabs.videos', icon: Video, minRole: 'Moderator' },
     ],
@@ -376,6 +398,8 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { tab: 'companies', labelKey: 'admin.panel.tabs.companies', icon: Building2, minRole: 'Moderator' },
       { tab: 'shows', labelKey: 'admin.panel.tabs.shows', icon: Tv, minRole: 'Moderator' },
       { tab: 'locations', labelKey: 'admin.panel.tabs.locations', icon: MapPin, minRole: 'Moderator' },
+      // ECO-11: Moderators view, only Admins save. Not gated on the economy flag so GMs can set prices first.
+      { tab: 'economy-config', labelKey: 'admin.panel.tabs.economyConfig', icon: Coins, minRole: 'Moderator' },
       { tab: 'features', labelKey: 'admin.panel.tabs.features', icon: Flag, minRole: 'Admin' },
       { tab: 'danger', labelKey: 'admin.panel.tabs.dangerZone', icon: TriangleAlert, minRole: 'Admin', danger: true },
     ],

@@ -18,6 +18,14 @@ export { adminApi } from './admin.api';
 export { usersApi, BULK_USERS_MAX } from './users.api';
 export type { BulkUserAction, BulkUserRole, BulkUserResult } from './users.api';
 export { siteConfigApi } from './siteConfig.api';
+export { economyApi } from './economy.api';
+// ECO-12
+export { contractsApi } from './contracts.api';
+
+// ECO-14
+export { shopApi, gmInterferenceApi } from './shop.api';
+export { finesApi, noShowsApi } from './fines.api';
+
 export { authApi } from './auth.api';
 export { profileApi } from './profile.api';
 export { statisticsApi } from './statistics.api';

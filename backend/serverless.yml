@@ -48,6 +48,8 @@ provider:
     PROGRESSION_TRACKS_TABLE: ${self:service}-progression-tracks-${self:provider.stage}
     PLAYER_PROGRESSION_TABLE: ${self:service}-player-progression-${self:provider.stage}
     PROGRESSION_EVENTS_TABLE: ${self:service}-progression-events-${self:provider.stage}
+    # ECO-03
+    CONTRACTS_TABLE: ${self:service}-contracts-${self:provider.stage}
     VIDEOS_TABLE: ${self:service}-videos-${self:provider.stage}
     ANNOUNCEMENTS_TABLE: ${self:service}-announcements-${self:provider.stage}
     NOTIFICATIONS_TABLE: ${self:service}-notifications-${self:provider.stage}
@@ -58,6 +60,13 @@ provider:
     PRESENCE_TABLE: ${self:service}-presence-${self:provider.stage}
     MATCHMAKING_QUEUE_TABLE: ${self:service}-matchmaking-queue-${self:provider.stage}
     MATCH_INVITATIONS_TABLE: ${self:service}-match-invitations-${self:provider.stage}
+    # Ledger (ECO-02)
+    LEDGER_TABLE: ${self:service}-ledger-${self:provider.stage}
+    LEDGER_IDEMPOTENCY_TABLE: ${self:service}-ledger-idempotency-${self:provider.stage}
+
+    # ECO-09
+    GM_INTERFERENCE_TABLE: ${self:service}-gm-interference-${self:provider.stage}
+
     DYNAMODB_ENDPOINT: ${env:DYNAMODB_ENDPOINT, 'http://localhost:8000'}
     DB_DRIVER: ${env:DB_DRIVER, 'dynamo'}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
@@ -139,6 +148,9 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PLAYER_PROGRESSION_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PLAYER_PROGRESSION_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PROGRESSION_EVENTS_TABLE}
+            # ECO-03
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CONTRACTS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CONTRACTS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.ANNOUNCEMENTS_TABLE}
@@ -156,6 +168,15 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCHMAKING_QUEUE_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCH_INVITATIONS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCH_INVITATIONS_TABLE}/index/*
+            # Ledger (ECO-02)
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.LEDGER_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.LEDGER_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.LEDGER_IDEMPOTENCY_TABLE}
+
+            # ECO-09
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GM_INTERFERENCE_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GM_INTERFERENCE_TABLE}/index/*
+
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -347,6 +368,49 @@ functions:
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
+      - http:
+          path: admin/economy-config
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/economy-config
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: economy/catalog
+          method: get
+          cors: *corsConfig
+      # ECO-08
+      - http:
+          path: shop/purchase
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+      # ECO-09: GM interference. Access is declared in functions/admin/handler.ts.
+      - http:
+          path: shop/gm-interference
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: shop/gm-interference
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: gm-interference
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: gm-interference/{requestId}/resolve
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
 
   # Players (Phase 2 consolidated: getPlayers, createPlayer, updatePlayer, deletePlayer, getMyProfile, updateMyProfile)
   players:
@@ -394,6 +458,33 @@ functions:
           cors: *corsConfig
       - http:
           path: players/{playerId}/reactivate
+          method: post
+          cors: *corsConfig
+      # Ledger (ECO-02). Admin only; access is declared in functions/players/handler.ts.
+      - http:
+          path: players/{playerId}/ledger/adjust
+          method: post
+          cors: *corsConfig
+
+      # Own wallet history (ECO-13). Self-service; access is declared in functions/players/handler.ts.
+      - http:
+          path: players/me/ledger
+          method: get
+          cors: *corsConfig
+
+      # ECO-14: GM ledger read for the fines view. Access is declared in functions/players/handler.ts.
+      - http:
+          path: players/{playerId}/ledger
+          method: get
+          cors: *corsConfig
+
+      # Fines (ECO-07). GM only; access is declared in functions/players/handler.ts.
+      - http:
+          path: players/{playerId}/fines
+          method: post
+          cors: *corsConfig
+      - http:
+          path: fines/{entryId}/rescind
           method: post
           cors: *corsConfig
 
@@ -495,6 +586,17 @@ functions:
           path: matches/{matchId}/ratings
           method: post
           cors: *corsConfig
+
+      # No-shows (ECO-07). GM only; access is declared in functions/matches/handler.ts.
+      - http:
+          path: matches/{matchId}/no-show
+          method: post
+          cors: *corsConfig
+      - http:
+          path: matches/{matchId}/no-show/{playerId}
+          method: delete
+          cors: *corsConfig
+
       - http:
           path: matches/{matchId}
           method: any
@@ -1001,6 +1103,65 @@ functions:
     timeout: 60
     events:
       - schedule: rate(1 hour)
+
+  # ECO-04: hourly sweep that expires contract offers past offerExpiresAt.
+  # New function, log group, Events::Rule and permission all route to
+  # Overflow through stacks-map.js.
+  expireContractOffers:
+    handler: functions/contracts/expireOffers.handler
+    timeout: 60
+    events:
+      - schedule: rate(1 hour)
+
+  # ECO-06: shared weekly jobs (weekly payroll; INJ-05 recovery joins it).
+  # Hourly rather than a cron: the league week starts Sunday 00:00 league time,
+  # and EventBridge cron is UTC without DST. Each job keeps a once-per-week
+  # marker in SiteConfig. Function, log group, Events::Rule and permission
+  # route to Overflow through stacks-map.js.
+  weeklyJobs:
+    handler: functions/weeklyJobs/weeklyJobs.handler
+    timeout: 300
+    events:
+      - schedule: rate(1 hour)
+
+  # ECO-04: contract offers, the player's own contracts, public contract badge
+  # and the free agent pool. No gateway authorizer: access is declared per
+  # route in functions/contracts/handler.ts and enforced by the router.
+  contracts:
+    handler: functions/contracts/handler.handler
+    events:
+      - http:
+          path: contracts
+          method: any
+          cors: *corsConfig
+      - http:
+          path: contracts/{contractId}/accept
+          method: post
+          cors: *corsConfig
+      - http:
+          path: contracts/{contractId}/decline
+          method: post
+          cors: *corsConfig
+      - http:
+          path: contracts/{contractId}/withdraw
+          method: post
+          cors: *corsConfig
+      - http:
+          path: contracts/{contractId}/release
+          method: post
+          cors: *corsConfig
+      - http:
+          path: players/me/contracts
+          method: get
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/contract
+          method: get
+          cors: *corsConfig
+      - http:
+          path: free-agents
+          method: get
+          cors: *corsConfig
 
   # Recalculates contender rankings for every active title, one title at a time
   # in this single invocation, so it holds one of the account's 10 concurrent
@@ -2458,6 +2619,39 @@ resources:
           - AttributeName: createdAtEventId
             KeyType: RANGE
 
+    # ECO-03: contract offers and contracts. PlayerIndex lists one player's
+    # contracts newest first. New table, so stacks-map.js routes it (and its
+    # GSI, which is part of the table resource) into the Overflow stack.
+    ContractsTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.CONTRACTS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        AttributeDefinitions:
+          - AttributeName: contractId
+            AttributeType: S
+          - AttributeName: playerId
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: contractId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: PlayerIndex
+            KeySchema:
+              - AttributeName: playerId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
     VideosTable:
       Type: AWS::DynamoDB::Table
       DeletionPolicy: Retain
@@ -2724,6 +2918,92 @@ resources:
         TimeToLiveSpecification:
           AttributeName: ttl
           Enabled: true
+
+    # ── Ledger (ECO-02) ── routed to the Overflow stack by stacks-map.js
+    # (AWS::DynamoDB::Table). Append-only money log, newest first per player.
+    LedgerTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.LEDGER_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        AttributeDefinitions:
+          - AttributeName: playerId
+            AttributeType: S
+          - AttributeName: sortKey
+            AttributeType: S
+          - AttributeName: entryId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: playerId
+            KeyType: HASH
+          - AttributeName: sortKey
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: EntryIdIndex
+            KeySchema:
+              - AttributeName: entryId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    # One row per posting key, written with attribute_not_exists in the same
+    # transaction as the entry so a retried posting never pays twice.
+    LedgerIdempotencyTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.LEDGER_IDEMPOTENCY_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        AttributeDefinitions:
+          - AttributeName: idempotencyKey
+            AttributeType: S
+        KeySchema:
+          - AttributeName: idempotencyKey
+            KeyType: HASH
+    # ── end Ledger (ECO-02) ──
+
+    # ── GM interference (ECO-09) ── routed to the Overflow stack by
+    # stacks-map.js (AWS::DynamoDB::Table). Paid requests to the GM;
+    # PlayerIndex lists one player's requests newest first.
+    GmInterferenceTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.GM_INTERFERENCE_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        AttributeDefinitions:
+          - AttributeName: requestId
+            AttributeType: S
+          - AttributeName: playerId
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: requestId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: PlayerIndex
+            KeySchema:
+              - AttributeName: playerId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+    # ── end GM interference (ECO-09) ──
 
     ImagesBucket:
       Type: AWS::S3::Bucket

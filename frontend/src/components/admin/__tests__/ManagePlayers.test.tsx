@@ -26,6 +26,18 @@ vi.mock('../../../services/api', () => ({
   wrestlersApi: mockWrestlersApi,
 }));
 
+// ECO-14: the fines dialog is covered in economy/__tests__/fines.test.tsx.
+const { mockUseSiteConfig } = vi.hoisted(() => ({ mockUseSiteConfig: vi.fn() }));
+vi.mock('../../../contexts/SiteConfigContext', () => ({ useSiteConfig: mockUseSiteConfig }));
+beforeEach(() => {
+  mockUseSiteConfig.mockReturnValue({ features: { economy: false } });
+});
+vi.mock('../../economy/PlayerFinesModal', () => ({
+  default: ({ player }: { player: { name: string } | null }) => (
+    player ? <div data-testid="fines-modal">{player.name}</div> : null
+  ),
+}));
+
 vi.mock('../PlayerDisciplineModal', () => ({
   default: ({ player }: { player: { name: string } | null }) => (
     player ? <div data-testid="discipline-modal">{player.name}</div> : null
@@ -108,6 +120,22 @@ describe('ManagePlayers', () => {
     mockWrestlersApi.getAll.mockReturnValue(new Promise(() => {}));
     renderComponent();
     expect(screen.getByRole('status')).toBeInTheDocument();
+  });
+
+  // ECO-14
+  it('offers fines only while the economy is on', async () => {
+    renderComponent();
+    await screen.findByText('All Players (2)');
+    expect(screen.queryByRole('button', { name: 'economyFines.open' })).not.toBeInTheDocument();
+  });
+
+  it('opens the fines dialog for a player when the economy is on', async () => {
+    const user = userEvent.setup();
+    mockUseSiteConfig.mockReturnValue({ features: { economy: true } });
+    renderComponent();
+    await screen.findByText('All Players (2)');
+    await user.click(screen.getAllByRole('button', { name: 'economyFines.open' })[0]);
+    expect(screen.getByTestId('fines-modal')).toBeInTheDocument();
   });
 
   it('renders player list from API after loading', async () => {

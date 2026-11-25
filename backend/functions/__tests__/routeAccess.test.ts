@@ -24,6 +24,9 @@ const SELF_SERVICE_WRITES = new Set([
   'POST /challenges',
   'POST /challenges/{challengeId}/respond',
   'POST /challenges/{challengeId}/cancel',
+  // ECO-04: the handlers allow only the player the offer was made to.
+  'POST /contracts/{contractId}/accept',
+  'POST /contracts/{contractId}/decline',
   'POST /events/{eventId}/check-in',
   'DELETE /events/{eventId}/check-in',
   'POST /matches/{matchId}/slots/{slotId}/claim',
@@ -37,6 +40,8 @@ const SELF_SERVICE_WRITES = new Set([
   'PUT /players/me',
   'POST /promos',
   'POST /promos/{promoId}/react',
+  'POST /shop/purchase', // ECO-08
+  'POST /shop/gm-interference', // ECO-09
   'PUT /rivalry-requests/{rivalryId}',
   'POST /rivalries/{rivalryId}/messages',
   'POST /rivalries/{rivalryId}/notes',
@@ -66,6 +71,7 @@ const ADMIN_ONLY_ROUTES = new Set([
   'GET /admin/export-data',
   'GET /admin/heat-config',
   'PUT /admin/heat-config',
+  'PUT /admin/economy-config',
   'GET /admin/users',
   'POST /admin/users/role',
   'POST /admin/users/toggle-enabled',
@@ -79,6 +85,7 @@ const ADMIN_ONLY_ROUTES = new Set([
   'POST /players/{playerId}/strikes',
   'POST /players/{playerId}/strikes/{strikeId}/remove',
   'POST /players/{playerId}/reactivate',
+  'POST /players/{playerId}/ledger/adjust',
 ]);
 
 /** The audit's unprotected routes: these must stay closed to non-staff. */
@@ -101,6 +108,13 @@ const STAFF_ROUTES = [
   'POST /matches',
   'PUT /matches/{matchId}/result',
   'PUT /matches/{matchId}',
+  // ECO-07
+  'POST /matches/{matchId}/no-show',
+  'DELETE /matches/{matchId}/no-show/{playerId}',
+  'POST /players/{playerId}/fines',
+  'POST /fines/{entryId}/rescind',
+  // ECO-14
+  'GET /players/{playerId}/ledger',
   'POST /players',
   'DELETE /players/{playerId}',
   'POST /shows',
@@ -111,6 +125,9 @@ const STAFF_ROUTES = [
   'POST /wrestlers',
   'PUT /wrestlers/{wrestlerId}',
   'DELETE /wrestlers/{wrestlerId}',
+  // ECO-09
+  'GET /gm-interference',
+  'POST /gm-interference/{requestId}/resolve',
   'POST /admin/contenders/recalculate',
   'GET /admin/contenders/overrides',
   'POST /admin/contenders/overrides',

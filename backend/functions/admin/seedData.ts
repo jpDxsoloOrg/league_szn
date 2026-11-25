@@ -21,8 +21,19 @@ import { planDefaultLadderTracks } from '../../lib/progression/ladderTemplates';
 import { divisionMovePatch } from '../../lib/divisions';
 import { toProgressionEventItem, toSeasonReviewItem } from '../../lib/repositories/dynamo/progressionRows';
 import { rankBySeasonRecord, recommendMovement } from '../progression/seasonSnapshot';
+
+// ECO-15
+import { DEFAULT_ECONOMY_SETTINGS } from '../../lib/policies/economyDefaults';
+import { matchPayKey, matchWinBonusKey } from '../../lib/economy/matchPay';
+import { salaryKey } from '../../lib/economy/payroll';
+import { buildPlayerEffect, itemPurchaseKey } from '../../lib/economy/effects';
+import { leagueWeekOf } from '../../lib/leagueWeek';
+import { ledgerSortKey, type LedgerEntry, type LedgerIdempotencyRecord } from '../../lib/repositories/ledger';
+import { gmInterferenceChargeKey, type GmInterferenceRequest } from '../../lib/repositories/gmInterference';
+
 import type { Rivalry, RivalryHeat, RivalryStatus } from '../../lib/repositories';
 import type {
+  Contract,
   Match,
   Player,
   PlayerProgression,
@@ -1158,6 +1169,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
           promos: true,
           contenders: true,
           statistics: true,
+          // ECO-15: the seed demonstrates the economy, so it starts switched on.
+          economy: true,
         },
         updatedAt: now,
       },
@@ -1979,12 +1992,228 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       }
     }
 
+    // ── Contracts & economy (ECO-15) ─────────────────────────────
+    // Makes the economy demonstrable straight after a seed (the `economy`
+    // flag is switched on in Site Config above). Pay follows the default
+    // settings and the fixed DMV-10 bouts, so every balance is the same on
+    // every seed:
+    //   Stone Cold   → season contract: salary, match pay, win bonuses, bought an injury shield
+    //   The Rock     → matches contract, a signing bonus, a pending GM interference request
+    //   Edge         → tryout, two of three matches played
+    //   Shawn        → matches contract, fined into debt (shop locked)
+    //   Undertaker   → finished his tryout, now a free agent on the base win
+    //                  bonus, with an open offer waiting
+    //   Bret Hart    → free agent with an open season offer
+    //   CM Punk      → released, a free agent with no money
+    // Everyone else has no contract (the free agent pool) and no money.
+    console.log('Creating contracts, wallets, fines and a GM interference request...');
+    const economy = DEFAULT_ECONOMY_SETTINGS;
+    const contractTerms = economy.contractDefaults;
+    const economyActor = 'seed-script';
+    const contracts: Contract[] = [];
+    const ledgerDrafts: Array<Omit<LedgerEntry, 'balanceAfter' | 'sortKey'>> = [];
+    const gmInterferenceRequests: GmInterferenceRequest[] = [];
+    const economyPatches = new Map<string, Pick<Player, 'balance' | 'activeContractId' | 'effects'>>();
+
+    const minutesAfter = (iso: string, minutes: number): string =>
+      new Date(Date.parse(iso) + minutes * 60_000).toISOString();
+    const postSeedEntry = (entry: Omit<LedgerEntry, 'balanceAfter' | 'sortKey' | 'entryId'>): LedgerEntry['entryId'] => {
+      const entryId = uuidv4();
+      ledgerDrafts.push({ ...entry, entryId });
+      return entryId;
+    };
+    const seedContract = (input: Omit<Contract, 'contractId' | 'offeredBy' | 'createdAt' | 'updatedAt'>): Contract => {
+      const contract: Contract = {
+        contractId: uuidv4(),
+        offeredBy: economyActor,
+        ...input,
+        createdAt: input.offeredAt,
+        updatedAt: input.endedAt ?? input.startedAt ?? input.offeredAt,
+      };
+      contracts.push(contract);
+      if (contract.status === 'active') {
+        economyPatches.set(contract.playerId, { ...economyPatches.get(contract.playerId), activeContractId: contract.contractId });
+      }
+      return contract;
+    };
+    /** Match pay exactly as recordResult posts it: pay, then the win bonus. */
+    const payBout = (match: Match, playerId: string, contract: Contract | null): void => {
+      const paidAt = minutesAfter(match.date, 30);
+      const ref = { refType: 'match', refId: match.matchId };
+      if (contract && contract.perMatchPay > 0) {
+        postSeedEntry({
+          playerId, kind: 'perMatchPay', amount: contract.perMatchPay, createdAt: paidAt,
+          idempotencyKey: matchPayKey(match.matchId, playerId), ...ref,
+        });
+      }
+      const winBonus = contract ? contract.winBonus : economy.freeAgentWinBonus;
+      if (match.winners?.includes(playerId) && winBonus > 0) {
+        postSeedEntry({
+          playerId, kind: 'winBonus', amount: winBonus, createdAt: minutesAfter(paidAt, 1),
+          idempotencyKey: matchWinBonusKey(match.matchId, playerId), ...ref,
+        });
+      }
+    };
+    /** The player's DMV-10 bouts, oldest first. */
+    const boutsOf = (playerId: string): Match[] => ladderMatches
+      .filter((match) => match.participants.includes(playerId))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const contractStart = daysAgo(20).toISOString();
+    const offerOf = (days: number): Pick<Contract, 'offeredAt' | 'offerExpiresAt'> => ({
+      offeredAt: daysAgo(days).toISOString(),
+      offerExpiresAt: new Date(daysAgo(days).getTime() + economy.offerExpiryDays * 86_400_000).toISOString(),
+    });
+
+    // Stone Cold: a season contract with two Sundays of salary.
+    const stoneColdBouts = boutsOf(stoneCold.playerId);
+    const stoneColdContract = seedContract({
+      playerId: stoneCold.playerId, type: 'season', status: 'active', seasonId: season.seasonId,
+      matchesPlayed: stoneColdBouts.length, ...contractTerms.season,
+      ...offerOf(21), startedAt: contractStart,
+    });
+    for (const daysBack of [14, 7]) {
+      const week = leagueWeekOf(daysAgo(daysBack));
+      postSeedEntry({
+        playerId: stoneCold.playerId, kind: 'salary', amount: stoneColdContract.weeklySalary,
+        createdAt: minutesAfter(week.weekStart.toISOString(), 5),
+        idempotencyKey: salaryKey(week.weekKey, stoneColdContract.contractId),
+        refType: 'contract', refId: stoneColdContract.contractId, note: `Weekly salary, week of ${week.weekKey}`,
+      });
+    }
+    stoneColdBouts.forEach((match) => payBout(match, stoneCold.playerId, stoneColdContract));
+    const shieldBoughtAt = hoursAgo(2).toISOString();
+    const shieldKey = itemPurchaseKey('injuryShield', stoneCold.playerId, 'seed');
+    postSeedEntry({
+      playerId: stoneCold.playerId, kind: 'purchase', amount: -economy.shop.injuryShield.price,
+      createdAt: shieldBoughtAt, idempotencyKey: shieldKey, refType: 'shop', refId: 'injuryShield',
+      note: 'injuryShield', actorUserId: economyActor,
+    });
+    economyPatches.set(stoneCold.playerId, {
+      ...economyPatches.get(stoneCold.playerId),
+      effects: [buildPlayerEffect('injuryShield', economy.shop, { effectId: uuidv4(), purchasedAt: shieldBoughtAt, purchaseKey: shieldKey })],
+    });
+
+    // The Rock: a matches contract, a signing bonus, and he paid for a GM favour.
+    const rockBouts = boutsOf(theRock.playerId);
+    const rockContract = seedContract({
+      playerId: theRock.playerId, type: 'matches', status: 'active', matchesTotal: 8,
+      matchesPlayed: rockBouts.length, ...contractTerms.matches, ...offerOf(21), startedAt: contractStart,
+    });
+    postSeedEntry({
+      playerId: theRock.playerId, kind: 'gmAdjust', amount: 1000, createdAt: minutesAfter(contractStart, 10),
+      idempotencyKey: `seed#signingBonus#${theRock.playerId}`, note: 'Signing bonus', actorUserId: economyActor,
+    });
+    rockBouts.forEach((match) => payBout(match, theRock.playerId, rockContract));
+    const gmRequestId = uuidv4();
+    const gmRequestedAt = hoursAgo(1).toISOString();
+    const gmChargeKey = gmInterferenceChargeKey(theRock.playerId, 1);
+    const gmChargeEntryId = postSeedEntry({
+      playerId: theRock.playerId, kind: 'purchase', amount: -economy.shop.gmInterference.price,
+      createdAt: gmRequestedAt, idempotencyKey: gmChargeKey, refType: 'gmInterference', refId: gmRequestId,
+      note: 'gmInterference', actorUserId: economyActor,
+    });
+    gmInterferenceRequests.push({
+      requestId: gmRequestId,
+      playerId: theRock.playerId,
+      request: 'Give me a rematch with Stone Cold in the main event of the next show, and keep his buddies out of it.',
+      status: 'pending',
+      price: economy.shop.gmInterference.price,
+      sequence: 1,
+      chargeEntryId: gmChargeEntryId,
+      chargeKey: gmChargeKey,
+      createdAt: gmRequestedAt,
+      updatedAt: gmRequestedAt,
+    });
+
+    // Edge: a tryout with one match left.
+    const edgeBouts = boutsOf(edge.playerId);
+    const edgeContract = seedContract({
+      playerId: edge.playerId, type: 'tryout', status: 'active', matchesTotal: contractTerms.tryout.matches,
+      matchesPlayed: edgeBouts.length, perMatchPay: contractTerms.tryout.perMatchPay,
+      weeklySalary: contractTerms.tryout.weeklySalary, winBonus: contractTerms.tryout.winBonus,
+      ...offerOf(5), startedAt: daysAgo(4).toISOString(),
+    });
+    edgeBouts.forEach((match) => payBout(match, edge.playerId, edgeContract));
+
+    // Shawn: a matches contract, then two fines push him into debt.
+    const shawnBouts = boutsOf(shawn.playerId);
+    const shawnContract = seedContract({
+      playerId: shawn.playerId, type: 'matches', status: 'active', matchesTotal: 6,
+      matchesPlayed: shawnBouts.length, ...contractTerms.matches, ...offerOf(21), startedAt: contractStart,
+    });
+    shawnBouts.forEach((match) => payBout(match, shawn.playerId, shawnContract));
+    const pausePreset = economy.finePresets.find((preset) => preset.key === 'pause-abuse') ?? economy.finePresets[0];
+    postSeedEntry({
+      playerId: shawn.playerId, kind: 'fine', amount: -pausePreset.amount, createdAt: hoursAgo(18).toISOString(),
+      idempotencyKey: `fine#${shawn.playerId}#seed-preset`, note: pausePreset.label, actorUserId: economyActor,
+    });
+    postSeedEntry({
+      playerId: shawn.playerId, kind: 'fine', amount: -400, createdAt: hoursAgo(16).toISOString(),
+      idempotencyKey: `fine#${shawn.playerId}#seed-custom`, note: 'Skipped a booked promo segment without telling the GM',
+      actorUserId: economyActor,
+    });
+
+    // Undertaker: a finished tryout, then base win bonuses as a free agent,
+    // and an offer for a real contract waiting in his inbox.
+    const undertakerBouts = boutsOf(undertaker.playerId);
+    const tryoutMatches = contractTerms.tryout.matches;
+    const undertakerTryout = seedContract({
+      playerId: undertaker.playerId, type: 'tryout', status: 'completed', matchesTotal: tryoutMatches,
+      matchesPlayed: tryoutMatches, perMatchPay: contractTerms.tryout.perMatchPay,
+      weeklySalary: contractTerms.tryout.weeklySalary, winBonus: contractTerms.tryout.winBonus,
+      ...offerOf(6), startedAt: daysAgo(5).toISOString(),
+      endedAt: minutesAfter(undertakerBouts[tryoutMatches - 1].date, 30), endReason: 'matchesCompleted',
+    });
+    undertakerBouts.forEach((match, index) => {
+      payBout(match, undertaker.playerId, index < tryoutMatches ? undertakerTryout : null);
+    });
+    seedContract({
+      playerId: undertaker.playerId, type: 'matches', status: 'offered', matchesTotal: 10,
+      matchesPlayed: 0, ...contractTerms.matches, perMatchPay: 200, ...offerOf(1),
+      note: 'Strong tryout. We want you on the main roster.',
+    });
+
+    // Bret: a free agent who won a bout on the base bonus, with a season offer.
+    boutsOf(bret.playerId).forEach((match) => payBout(match, bret.playerId, null));
+    seedContract({
+      playerId: bret.playerId, type: 'season', status: 'offered', seasonId: season.seasonId,
+      matchesPlayed: 0, ...contractTerms.season, ...offerOf(1),
+    });
+
+    // CM Punk: released from his contract, a free agent with nothing earned.
+    seedContract({
+      playerId: punk.playerId, type: 'matches', status: 'released', matchesTotal: 6, matchesPlayed: 0,
+      ...contractTerms.matches, ...offerOf(25), startedAt: daysAgo(24).toISOString(),
+      endedAt: daysAgo(10).toISOString(), endReason: 'released', note: 'Released at his own request',
+    });
+
+    // Every player's postings in time order, with the running balance.
+    const ledgerEntries: LedgerEntry[] = [];
+    const ledgerIdempotency: LedgerIdempotencyRecord[] = [];
+    const sortedDrafts = [...ledgerDrafts].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    for (const draft of sortedDrafts) {
+      const patch = economyPatches.get(draft.playerId) ?? {};
+      const balanceAfter = (patch.balance ?? 0) + draft.amount;
+      economyPatches.set(draft.playerId, { ...patch, balance: balanceAfter });
+      const entry: LedgerEntry = { ...draft, balanceAfter, sortKey: ledgerSortKey(draft) };
+      ledgerEntries.push(entry);
+      ledgerIdempotency.push({
+        idempotencyKey: entry.idempotencyKey,
+        playerId: entry.playerId,
+        entryId: entry.entryId,
+        sortKey: entry.sortKey,
+        createdAt: entry.createdAt,
+      });
+    }
+    const withEconomy = <TPlayer extends { playerId: string }>(player: TPlayer): TPlayer =>
+      ({ ...player, ...economyPatches.get(player.playerId) });
+
     // ── Import all data via repository layer ───────────────────
     console.log('Importing all seed data via repository layer...');
     const { importAllData } = getRepositories();
     const seedData: Required<ExportData> = {
       divisions,
-      players: [...players, ...prospects.map((prospect) => ({ ...prospect }))],
+      players: [...players.map(withEconomy), ...prospects.map((prospect) => ({ ...prospect }))],
       seasons: [season, pilotSeason],
       seasonStandings: [...seasonStandingsItems, ...pilotStandings.map((row) => ({ ...row }))],
       championships,
@@ -2018,6 +2247,11 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         ...progressionEventRows.map(toProgressionEventItem),
         ...pilotReviews.map(toSeasonReviewItem),
       ],
+      // ECO-15: wallets, contracts and a pending GM interference request.
+      ledger: ledgerEntries.map((entry) => ({ ...entry })),
+      ledgerIdempotency: ledgerIdempotency.map((row) => ({ ...row })),
+      gmInterference: gmInterferenceRequests.map((request) => ({ ...request })),
+      contracts: contracts.map((contract) => ({ ...contract })),
     };
 
     const createdCounts = await importAllData(seedData);

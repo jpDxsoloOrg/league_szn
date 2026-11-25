@@ -1,0 +1,254 @@
+/* Player shop and GM interference (ECO-14). */
+
+.shop-page {
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.shop-page__balance {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.shop-page__balance--debt {
+  color: var(--color-loss);
+}
+
+.shop-page__notice {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  color: var(--color-text-secondary);
+}
+
+.shop-page__notice--debt {
+  border-color: var(--color-loss);
+  color: var(--color-loss);
+}
+
+.shop-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shop-page__grid > li {
+  display: flex;
+  min-width: 0;
+}
+
+.shop-item,
+.shop-gm__card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.shop-item > :last-child {
+  margin-top: auto;
+}
+
+.shop-item--blocked .shop-item__price,
+.shop-item--blocked .shop-item__effect {
+  color: var(--color-text-muted);
+}
+
+.shop-item__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shop-item__name {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.shop-item__price {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.shop-item__effect,
+.shop-item__reason {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.shop-item__reason {
+  color: var(--color-warning);
+  font-size: var(--text-dense);
+}
+
+.shop-confirm {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.shop-confirm p {
+  margin: 0;
+}
+
+.shop-confirm__error {
+  color: var(--color-loss);
+}
+
+.shop-confirm__hint {
+  color: var(--color-text-muted);
+  font-size: var(--text-dense);
+}
+
+.shop-confirm__sums {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.shop-confirm__sums > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.shop-confirm__sums dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.shop-gm {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.shop-gm__warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+.shop-gm__warning > svg {
+  flex-shrink: 0;
+}
+
+.shop-gm__warning--big {
+  padding: 1rem;
+  border: 2px solid var(--color-warning);
+  border-radius: var(--radius-card);
+  font-size: 1.125rem;
+}
+
+.shop-gm__heading {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.shop-gm__muted {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-dense);
+}
+
+.shop-gm__list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shop-gm__request {
+  display: grid;
+  gap: 0.375rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  min-width: 0;
+}
+
+.shop-gm__request-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shop-gm__text,
+.shop-gm__outcome,
+.shop-gm__note {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.shop-gm__outcome {
+  font-weight: 600;
+}
+
+.shop-gm__note {
+  color: var(--color-text-secondary);
+}
+
+.shop-gm__form {
+  display: grid;
+  gap: 1rem;
+}
+
+.shop-gm__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.shop-field {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.shop-field__label {
+  font-weight: 600;
+}
+
+.shop-field__input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  resize: vertical;
+}
+
+.shop-field__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-dense);
+}
+
+.shop-field__check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}

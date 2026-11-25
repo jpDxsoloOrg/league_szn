@@ -271,6 +271,27 @@ export interface Player {
   disciplineVersion?: number;
   /** toSignupGuardKey(email), stored at any strike that blocks or deactivates. Only used while isSignupBlocked. */
   signupGuardKey?: string;
+  /**
+   * ECO-02: cached sum of the player's ledger entries; missing = 0, may be
+   * negative. Written only by `tx.postLedgerEntry`; never on `PlayerPatch`.
+   */
+  balance?: number;
+
+  // ECO-08
+  /**
+   * Shop effects the player bought and that have not been used up yet. Written
+   * only through `tx.postLedgerEntry({ appendPlayerEffects })`, so the
+   * purchase and its effect commit together; never on `PlayerPatch`. Private
+   * to staff and the player.
+   */
+  effects?: PlayerEffect[];
+
+  /**
+   * ECO-03: the player's one active contract, denormalized so free-agent
+   * checks need no Contracts query. Not on `PlayerPatch`: write it only
+   * through `tx.setPlayerActiveContract` / `tx.clearPlayerActiveContract`.
+   */
+  activeContractId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -693,6 +714,28 @@ export interface MatchSlot {
   wrestlerNameSnapshot?: string;
 }
 
+// ECO-05
+/**
+ * What match pay did for one participant (`lib/economy/matchPay.ts`). Holds no
+ * amounts (match rows are public; the money lives on the ledger), only what a
+ * revert needs: which contract the match counted against.
+ */
+export interface MatchPaySettlementPlayer {
+  /** The active contract this match counted against; absent for a free agent. */
+  contractId?: string;
+  /** True when this match was the contract's last one and completed it. */
+  completedContract?: boolean;
+  /** Set once a revert reversed this player's pay and contract count. */
+  reversedAt?: string;
+}
+
+// ECO-05
+/** Match pay bookkeeping on a completed match. A player listed here was settled. */
+export interface MatchPaySettlement {
+  settledAt: string;
+  players: Record<string, MatchPaySettlementPlayer>;
+}
+
 export interface Match {
   matchId: string;
   date: string;
@@ -725,13 +768,79 @@ export interface Match {
   /** Number of user ratings submitted for this match. */
   ratingsCount?: number;
   matchOfTheNight?: boolean;
+  /** ECO-05: per-player match pay record; written after the result commits. */
+  paySettlement?: MatchPaySettlement;
   /**
    * ISO time the result was recorded (PRL-02). Set once by recordResult;
    * older matches are backfilled from `updatedAt`. Read via `matchResultTime`.
    */
   completedAt?: string;
+
+  // ECO-07
+  /**
+   * Every time a GM marked a participant as a no-show, oldest first. Undoing
+   * a mark stamps `undoneAt` instead of removing it, so the n-th mark for a
+   * player always has its own fine key. Active marks are the ones without
+   * `undoneAt` (see `activeNoShows` in lib/fines.ts). The fine amount and the
+   * GM's note live on the ledger entry, not here: match rows are public.
+   */
+  noShows?: MatchNoShow[];
+  // ECO-08
+  /** Sim interference bought by participants; one per player. Consumed by the sim (ECO-10). */
+  simBoosts?: SimBoost[];
+
   createdAt: string;
   updatedAt?: string;
+}
+
+// ECO-07
+/** One no-show mark on a match. Public: carries no amount, note or actor. */
+export interface MatchNoShow {
+  playerId: string;
+  markedAt: string;
+  undoneAt?: string;
+}
+
+// ECO-08
+/** Fields every bought shop effect carries. */
+interface PlayerEffectBase {
+  /** Unique id, so a consumer (ECO-10) can remove or update exactly this effect. */
+  effectId: string;
+  purchasedAt: string;
+  /** Idempotency key of the `purchase` ledger entry that paid for it. */
+  purchaseKey: string;
+}
+
+/** Cuts the injury chance by `reduction` (0-1) for the next `matchesLeft` matches. */
+export interface InjuryShieldEffect extends PlayerEffectBase {
+  kind: 'injuryShield';
+  reduction: number;
+  matchesLeft: number;
+}
+
+/** Waiting to take `weeksOff` weeks off the player's active injury (ECO-10). */
+export interface RehabEffect extends PlayerEffectBase {
+  kind: 'rehab';
+  weeksOff: number;
+}
+
+/** Waiting to add `amount` stamina, capped at the maximum (ECO-10). */
+export interface StaminaTopUpEffect extends PlayerEffectBase {
+  kind: 'staminaTopUp';
+  amount: number;
+}
+
+export type PlayerEffect = InjuryShieldEffect | RehabEffect | StaminaTopUpEffect;
+export type PlayerEffectKind = PlayerEffect['kind'];
+
+/** A participant's paid run-in for a simulated match. */
+export interface SimBoost {
+  playerId: string;
+  /** `shop.simInterference.ratingBoost` at purchase time; ECO-10 applies it. */
+  boost: number;
+  purchasedAt: string;
+  /** Idempotency key of the `purchase` ledger entry; the refund key derives from it. */
+  purchaseKey: string;
 }
 
 /**
@@ -954,4 +1063,74 @@ export interface SeasonMovementReview {
   /** Set when an applied promote / relegate moved the player. */
   toDivisionId?: string;
   createdAt: string;
+}
+
+// ─── Contracts (ECO-03) ──────────────────────────────────────────────
+
+/**
+ * - `tryout`: a few matches (per-match pay only allowed).
+ * - `matches`: a fixed number of matches.
+ * - `season`: runs until its season ends.
+ */
+export type ContractType = 'tryout' | 'matches' | 'season';
+
+/**
+ * Lifecycle (see `canTransition` in `lib/policies/contracts.ts`):
+ * offered -> active | declined | withdrawn | expired;
+ * active -> completed | released. Every other status is terminal.
+ */
+export type ContractStatus =
+  | 'offered'
+  | 'active'
+  | 'declined'
+  | 'withdrawn'
+  | 'expired'
+  | 'completed'
+  | 'released';
+
+/** Why a contract or offer left the offered/active states. */
+export type ContractEndReason =
+  | 'offerDeclined'
+  | 'offerWithdrawn'
+  /** Withdrawn automatically because the player accepted another offer. */
+  | 'otherOfferAccepted'
+  | 'offerExpired'
+  | 'matchesCompleted'
+  | 'seasonEnded'
+  | 'released';
+
+export interface Contract {
+  contractId: string;
+  playerId: string;
+  type: ContractType;
+  status: ContractStatus;
+  /** Required for `tryout` and `matches`; absent for `season`. */
+  matchesTotal?: number;
+  matchesPlayed: number;
+  /** Required for `season` contracts. */
+  seasonId?: string;
+  perMatchPay: number;
+  weeklySalary: number;
+  winBonus: number;
+  /** userId (Cognito sub) of the GM who made the offer. */
+  offeredBy: string;
+  offeredAt: string;
+  offerExpiresAt: string;
+  startedAt?: string;
+  endedAt?: string;
+  endReason?: ContractEndReason;
+  note?: string;
+  /** Same as `offeredAt`; the PlayerIndex sort key. */
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Fields a contract write may change after creation. `null` removes the attribute. */
+export interface ContractPatch {
+  status?: ContractStatus;
+  matchesPlayed?: number;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  endReason?: ContractEndReason | null;
+  note?: string | null;
 }

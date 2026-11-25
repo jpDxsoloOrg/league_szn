@@ -1,5 +1,7 @@
 import type { DivisionPatch } from './LeagueOpsRepository';
 import type { FactionMessage, FactionDirectMessage } from './factionMessages';
+import type { PostLedgerEntryInput, StagedLedgerEntry } from './ledger';
+import type { GmInterferenceRequest, GmInterferenceResolution } from './gmInterference'; // ECO-09
 import type {
   Rivalry,
   RivalryMessage,
@@ -9,6 +11,9 @@ import type {
 } from './rivalries';
 import type {
   ChallengeStatus,
+  Contract,
+  ContractPatch,
+  ContractStatus,
   PlayerProgression,
   ProgressionConsideration,
   ProgressionEvent,
@@ -255,6 +260,81 @@ export interface UnitOfWork {
    * still holds the wrestler at commit time.
    */
   releaseWrestlerFromPlayer(params: { wrestlerId: string; expectedPlayerId?: string }): void;
+
+  // ── Ledger (ECO-02) ──────────────────────────────────────────────
+  /**
+   * Stage one money movement: an idempotency row (`attribute_not_exists`), the
+   * append-only ledger entry and the change to `Player.balance`, all in the
+   * same transaction. A negative balance is allowed.
+   *
+   * At commit the player's balance is read (consistent read) to fill
+   * `balanceAfter`, and the balance write is guarded on that value, so a
+   * concurrent posting fails this unit of work with
+   * `ConcurrencyError('Player', playerId)`; retrying is safe.
+   *
+   * Throws at commit, and nothing in the unit of work is written:
+   * - `DuplicatePostingError` when the key was already used ("already done");
+   * - `NotFoundError` when the player does not exist (or is soft-deleted);
+   * - `InvalidLedgerPostingError` when the same unit of work also writes the
+   *   player row another way (one DynamoDB operation per item), or the
+   *   postings alone exceed one 100-item transaction.
+   * Throws `InvalidLedgerPostingError` immediately for a zero or fractional
+   * amount, a bad key, or a key already staged in this unit of work.
+   *
+   * Several postings for one player in one unit of work are fine: they apply
+   * in staging order and share one balance write. Ledger writes are flushed in
+   * the first transaction chunk, so they never split across chunks.
+   *
+   * ECO-08: `appendPlayerEffects` appends shop effects to `Player.effects` in
+   * that same balance write, so a purchase and its effect commit together.
+   */
+  postLedgerEntry(input: PostLedgerEntryInput): StagedLedgerEntry;
+
+  // ── GM interference (ECO-09) ─────────────────────────────────────
+  /**
+   * Stage creating a request row. Fails the whole unit of work with
+   * `ConcurrencyError('GmInterference', requestId)` if the id already exists.
+   */
+  createGmInterferenceRequest(request: GmInterferenceRequest): void;
+
+  /**
+   * Stage resolving a request. The row must exist and still be `pending`, or
+   * the whole unit of work fails with `ConcurrencyError('GmInterference', requestId)`.
+   */
+  resolveGmInterferenceRequest(requestId: string, resolution: GmInterferenceResolution): void;
+
+  // ── Contracts (ECO-03) ──────────────────────────────────────────
+  /**
+   * Stage creating a contract row (build it with `buildContract`). Fails the
+   * whole unit of work with `ConcurrencyError` if the id already exists.
+   */
+  createContract(contract: Contract): void;
+
+  /**
+   * Stage a contract update. The row must exist and its stored status must
+   * still equal `expectedStatus`, or the whole unit of work fails with
+   * `ConcurrencyError`. `null` in the patch removes the attribute.
+   * With `expectedMatchesPlayed` (ECO-05), the stored `matchesPlayed` must
+   * also still equal it, so two results never count over each other.
+   */
+  updateContract(
+    contractId: string,
+    patch: ContractPatch,
+    expectedStatus: ContractStatus,
+    expectedMatchesPlayed?: number,
+  ): void;
+
+  /**
+   * Stage setting `player.activeContractId`. Fails with `ConcurrencyError`
+   * unless the player exists and has no active contract at commit time.
+   */
+  setPlayerActiveContract(playerId: string, contractId: string): void;
+
+  /**
+   * Stage removing `player.activeContractId`. Fails with `ConcurrencyError`
+   * unless it still equals `expectedContractId` at commit time.
+   */
+  clearPlayerActiveContract(playerId: string, expectedContractId: string): void;
 
   /** Flush all staged operations. */
   commit(): Promise<void>;

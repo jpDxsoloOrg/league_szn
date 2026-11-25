@@ -1,7 +1,13 @@
 import { QueryCommandInput } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import { dynamoDb, TableNames } from '../../dynamodb';
-import { NotFoundError } from '../errors';
+import { ConflictError, NotFoundError } from '../errors';
+import {
+  appendEconomyVersion,
+  mergeEconomySettings,
+  type EconomySettings,
+  type EconomySettingsInput,
+} from '../../policies/economyDefaults';
 import { buildUpdateExpression } from './util';
 import type {
   UserRepository,
@@ -485,6 +491,9 @@ class FantasyDelegate implements FantasyMethods {
 
 // ─── Site config sub-object ────────────────────────────────────────
 
+const ECONOMY_CONFIG_KEY = 'economySettings';
+const weeklyJobConfigKey = (job: string): string => `weeklyJob#${job}`; // ECO-06
+
 class SiteConfigDelegate implements SiteConfigMethods {
   async getFeatures(): Promise<FeatureFlags> {
     const result = await dynamoDb.get({
@@ -567,6 +576,88 @@ class SiteConfigDelegate implements SiteConfigMethods {
     });
 
     return updated;
+  }
+
+  // ECO-06: weekly job markers, one row per job (`weeklyJob#<job>`).
+  async getWeeklyJobWeek(job: string): Promise<string | null> {
+    const result = await dynamoDb.get({
+      TableName: TableNames.SITE_CONFIG,
+      Key: { configKey: weeklyJobConfigKey(job) },
+    });
+    const weekKey = result.Item?.weekKey;
+    return typeof weekKey === 'string' ? weekKey : null;
+  }
+
+  async markWeeklyJobWeek(job: string, weekKey: string): Promise<boolean> {
+    try {
+      await dynamoDb.put({
+        TableName: TableNames.SITE_CONFIG,
+        Item: { configKey: weeklyJobConfigKey(job), weekKey, updatedAt: new Date().toISOString() },
+        ConditionExpression: 'attribute_not_exists(configKey) OR weekKey <> :weekKey',
+        ExpressionAttributeValues: { ':weekKey': weekKey },
+      });
+      return true;
+    } catch (err) {
+      if (err instanceof Error && err.name === 'ConditionalCheckFailedException') return false;
+      throw err;
+    }
+  }
+
+  /** The stored economy versions, newest first. One row holds them all. */
+  private async readEconomyVersions(): Promise<EconomySettings[]> {
+    const result = await dynamoDb.get({
+      TableName: TableNames.SITE_CONFIG,
+      Key: { configKey: ECONOMY_CONFIG_KEY },
+    });
+    const versions = result.Item?.versions;
+    return Array.isArray(versions) ? (versions as EconomySettings[]) : [];
+  }
+
+  async getEconomySettings(): Promise<EconomySettings> {
+    const [current] = await this.readEconomyVersions();
+    return mergeEconomySettings(current);
+  }
+
+  async saveEconomySettings(
+    input: EconomySettingsInput,
+    updatedBy: string,
+    expectedVersion?: number,
+  ): Promise<EconomySettings> {
+    const versions = await this.readEconomyVersions();
+    const currentVersion = versions[0]?.version ?? 0;
+    if (expectedVersion !== undefined && expectedVersion !== currentVersion) {
+      throw new ConflictError(`Economy settings are at version ${currentVersion}, not ${expectedVersion}`);
+    }
+    const now = new Date().toISOString();
+    const updatedVersions = appendEconomyVersion(versions, input, updatedBy, now);
+
+    try {
+      // Guarded on the version read above, so two saves at once can't both
+      // claim the same version number.
+      await dynamoDb.put({
+        TableName: TableNames.SITE_CONFIG,
+        Item: {
+          configKey: ECONOMY_CONFIG_KEY,
+          currentVersion: updatedVersions[0].version,
+          versions: updatedVersions,
+          updatedAt: now,
+        },
+        ConditionExpression: 'attribute_not_exists(configKey) OR currentVersion = :readVersion',
+        ExpressionAttributeValues: { ':readVersion': currentVersion },
+      });
+    } catch (err) {
+      if (err instanceof Error && err.name === 'ConditionalCheckFailedException') {
+        throw new ConflictError('Economy settings were changed by another save; reload and try again');
+      }
+      throw err;
+    }
+
+    return mergeEconomySettings(updatedVersions[0]);
+  }
+
+  async listEconomySettingsVersions(): Promise<EconomySettings[]> {
+    const versions = await this.readEconomyVersions();
+    return versions.map((version) => mergeEconomySettings(version));
   }
 }
 

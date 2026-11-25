@@ -1,0 +1,8 @@
+/* Contracts desk (ECO-12). Layout comes from adminRoster.css and adminContent.css. */
+.manage-contracts .ac-actions {
+  flex-wrap: wrap;
+}
+
+.manage-contracts .ar-sub {
+  display: block;
+}

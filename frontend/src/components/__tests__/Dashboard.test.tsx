@@ -69,6 +69,10 @@ vi.mock('../progression/DashboardCallUp', () => ({
   default: () => null,
 }));
 
+vi.mock('../economy/DashboardWallet', () => ({
+  default: () => null,
+}));
+
 import Dashboard from '../Dashboard';
 
 const emptyDashboard = {

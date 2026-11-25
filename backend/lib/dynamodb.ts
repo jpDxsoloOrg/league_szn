@@ -153,6 +153,7 @@ export const TableNames = {
   PROGRESSION_TRACKS: process.env.PROGRESSION_TRACKS_TABLE!,
   PLAYER_PROGRESSION: process.env.PLAYER_PROGRESSION_TABLE!,
   PROGRESSION_EVENTS: process.env.PROGRESSION_EVENTS_TABLE!,
+  CONTRACTS: process.env.CONTRACTS_TABLE!,
   VIDEOS: process.env.VIDEOS_TABLE!,
   ANNOUNCEMENTS: process.env.ANNOUNCEMENTS_TABLE!,
   NOTIFICATIONS: process.env.NOTIFICATIONS_TABLE!,
@@ -163,6 +164,13 @@ export const TableNames = {
   PRESENCE: process.env.PRESENCE_TABLE!,
   MATCHMAKING_QUEUE: process.env.MATCHMAKING_QUEUE_TABLE!,
   MATCH_INVITATIONS: process.env.MATCH_INVITATIONS_TABLE!,
+  // Ledger (ECO-02)
+  LEDGER: process.env.LEDGER_TABLE!,
+  LEDGER_IDEMPOTENCY: process.env.LEDGER_IDEMPOTENCY_TABLE!,
+
+  // ECO-09
+  GM_INTERFERENCE: process.env.GM_INTERFERENCE_TABLE!,
+
 };
 
 type DynamoRecord = Record<string, unknown>;

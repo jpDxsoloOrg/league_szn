@@ -1,0 +1,40 @@
+/* Dashboard wallet card (ECO-13). */
+.dashboard-wallet {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1rem;
+  min-width: 0;
+}
+
+.dashboard-wallet__stat {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.dashboard-wallet__label {
+  color: var(--color-text-muted);
+  font-size: var(--text-dense);
+}
+
+.dashboard-wallet__value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-wallet__value--date {
+  font-size: 1.125rem;
+}
+
+.dashboard-wallet__value--debt,
+.dashboard-wallet__debt {
+  color: var(--color-loss);
+}
+
+.dashboard-wallet__debt {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: var(--text-dense);
+}

@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.5.0",
+      "date": "2026-11-25",
+      "title": "Contracts and Money",
+      "titleDe": "Verträge und Geld",
+      "file": "v1.5.0.md",
+      "summary": "The league has its own money: contracts with offers you accept from your inbox, pay for every match, win bonuses and a Sunday salary, a wallet, fines and no-shows, and a shop with a risky GM interference. The GMs switch the economy on for the league.",
+      "summaryDe": "Die Liga hat ihr eigenes Geld: Verträge mit Angeboten, die du in deinem Postfach annimmst, Gage für jedes Match, Siegbonus und Sonntagsgehalt, eine Geldbörse, Strafen und No-Shows und einen Shop mit einem riskanten GM-Eingriff. Die GMs schalten die Wirtschaft für die Liga ein."
+    },
+    {
       "version": "1.4.0",
       "date": "2026-11-24",
       "title": "League Points and Tag Team Names",

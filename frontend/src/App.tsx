@@ -59,6 +59,9 @@ const Achievements = lazy(() => import('./components/statistics/Achievements'));
 const MatchTypeLeaderboards = lazy(() => import('./components/statistics/MatchTypeLeaderboards'));
 const ContenderRankings = lazy(() => import('./components/contenders/ContenderRankings'));
 const MyContenderStatus = lazy(() => import('./components/contenders/MyContenderStatus'));
+// ECO-12
+const FreeAgents = lazy(() => import('./components/economy/FreeAgents'));
+const MyContract = lazy(() => import('./components/economy/MyContract'));
 const EventsCalendar = lazy(() => import('./components/events/EventsCalendar'));
 const EventDetail = lazy(() => import('./components/events/EventDetail'));
 const EventResults = lazy(() => import('./components/events/EventResults'));
@@ -77,6 +80,8 @@ const MyFaction = lazy(() => import('./components/factions/MyFaction'));
 const TagTeamsList = lazy(() => import('./components/tagTeams/TagTeamsList'));
 const TagTeamDetail = lazy(() => import('./components/tagTeams/TagTeamDetail'));
 const MyTagTeam = lazy(() => import('./components/tagTeams/MyTagTeam'));
+// ECO-14
+const Shop = lazy(() => import('./components/economy/Shop'));
 const RivalryHub = lazy(() => import('./components/rivalries/RivalryHub'));
 const RivalryDetail = lazy(() => import('./components/rivalries/RivalryDetail'));
 const RequestRivalry = lazy(() => import('./components/rivalries/RequestRivalry'));
@@ -339,12 +344,34 @@ function AppLayout() {
               </FeatureRoute>
             } />
 
+            {/* ECO-14: player shop - feature-gated */}
+            <Route path="/shop" element={
+              <FeatureRoute feature="economy">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <Shop />
+                </ProtectedRoute>
+              </FeatureRoute>
+            } />
+
             {/* Contender Routes - feature-gated */}
             <Route path="/contenders" element={
               <FeatureRoute feature="contenders"><ContenderRankings /></FeatureRoute>
             } />
             <Route path="/contenders/my-status" element={
               <FeatureRoute feature="contenders"><MyContenderStatus /></FeatureRoute>
+            } />
+
+            {/* ECO-12: free agent pool - feature-gated */}
+            <Route path="/free-agents" element={
+              <FeatureRoute feature="economy"><FreeAgents /></FeatureRoute>
+            } />
+            {/* ECO-13: the player's own contract, offers inbox and wallet. */}
+            <Route path="/my-contract" element={
+              <FeatureRoute feature="economy">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <MyContract />
+                </ProtectedRoute>
+              </FeatureRoute>
             } />
 
             {/* Catch-all 404 */}

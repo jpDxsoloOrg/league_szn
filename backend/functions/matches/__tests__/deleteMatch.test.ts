@@ -41,6 +41,8 @@ vi.mock('../../../lib/repositories', () => ({
 
 vi.mock('../../../lib/asyncLambda', () => ({ invokeAsync: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../revertGroupStats', () => ({ revertGroupStats: vi.fn().mockResolvedValue(undefined) }));
+// ECO-05: match pay reversal has its own tests (lib/economy/__tests__/matchPay.test.ts).
+vi.mock('../../../lib/economy/matchPay', () => ({ reverseMatchPay: vi.fn().mockResolvedValue(undefined) }));
 
 import { handler as deleteMatch } from '../deleteMatch';
 

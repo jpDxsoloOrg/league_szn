@@ -280,6 +280,28 @@ export interface Match {
   /** This user's rating for the match, if any (populated by RIV-24). */
   userRating: number | null;
   matchOfTheNight?: boolean;
+  // ECO-14
+  /** Set when the result was recorded. */
+  completedAt?: string;
+  /** No-show marks (ECO-07). A mark with `undoneAt` was undone. */
+  noShows?: MatchNoShow[];
+  /** Sim interference bought by participants (ECO-08), one per player. */
+  simBoosts?: MatchSimBoost[];
+}
+
+// ECO-14
+/** One no-show mark on a match. Public: no amount, note or actor. */
+export interface MatchNoShow {
+  playerId: string;
+  markedAt: string;
+  undoneAt?: string;
+}
+
+/** A participant's sim interference on a match (ECO-08). */
+export interface MatchSimBoost {
+  playerId: string;
+  boost: number;
+  purchasedAt: string;
 }
 
 // Input type for scheduling a new match (uses new field names, backend handles legacy fields)
@@ -633,18 +655,25 @@ export interface Video {
   updatedAt: string;
 }
 
-export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'tag_team_formed' | 'transfer_reviewed' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change' | 'strike_issued' | 'strike_removed' | 'account_reactivated' | 'progression_consideration' | 'progression_executed' | 'progression_milestone' | 'progression_goals_reset';
+export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'tag_team_formed' | 'transfer_reviewed' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change' | 'strike_issued' | 'strike_removed' | 'account_reactivated'
+  // ECO-13: contracts and the league economy
+  | 'contract_offer' | 'contract_offer_accepted' | 'contract_offer_declined' | 'contract_offer_expired' | 'contract_released' | 'contract_completed'
+  | 'no_show_marked' | 'fine_issued' | 'fine_rescinded' | 'balance_negative'
+  | 'progression_consideration' | 'progression_executed' | 'progression_milestone' | 'progression_goals_reset';
 
 export interface AppNotification {
   notificationId: string;
   userId: string;
-  type: NotificationType;
+  type: NotificationType | GmInterferenceNotificationType;
   message: string;
   sourceId: string;
-  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'rivalry' | 'storyline_request' | 'discipline' | 'progression';
+  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'rivalry' | 'storyline_request' | 'discipline' | 'progression' | 'contract' | 'economy';
   isRead: boolean;
   createdAt: string;
 }
+
+// ECO-14
+export type GmInterferenceNotificationType = 'gm_interference_requested' | 'gm_interference_resolved';
 
 export interface WrestlerOverall {
   playerId: string;

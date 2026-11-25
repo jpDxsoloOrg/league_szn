@@ -10,6 +10,9 @@ import type {
 } from '../unitOfWork';
 import type { DivisionPatch } from '../LeagueOpsRepository';
 import type { ChallengeStatus, PlayerProgression, ProgressionConsideration, ProgressionEvent, TagTeam } from '../types';
+import type { Contract, ContractPatch, ContractStatus } from '../types';
+import { buildContractUpdate } from './contractRows';
+import type { GmInterferenceRequest, GmInterferenceResolution } from '../gmInterference'; // ECO-09
 import {
   buildClearConsiderationUpdate,
   buildSetConsiderationUpdate,
@@ -27,7 +30,19 @@ import {
   type RivalryPatch,
 } from '../rivalries';
 import { RatingAlreadyExistsError } from '../matchRatings';
-import { ConcurrencyError } from '../errors';
+import { ConcurrencyError, NotFoundError } from '../errors';
+import {
+  buildLedgerEntries,
+  collectAppendedEffects,
+  DuplicatePostingError,
+  InvalidLedgerPostingError,
+  ledgerSortKey,
+  validateLedgerPosting,
+  type LedgerIdempotencyRecord,
+  type PostLedgerEntryInput,
+  type StagedLedgerEntry,
+} from '../ledger';
+import { v4 as uuidv4 } from 'uuid';
 
 interface TransactWriteItem {
   Put?: { TableName: string; Item: Record<string, unknown>; ConditionExpression?: string };
@@ -44,7 +59,16 @@ interface TransactWriteItem {
 
 type StagedMeta =
   | { kind: 'matchRating'; matchId: string; userId: string }
-  | { kind: 'guarded'; entityName: string; id: string };
+  | { kind: 'guarded'; entityName: string; id: string }
+  | { kind: 'ledgerIdempotency'; idempotencyKey: string };
+
+interface StagedLedgerPosting {
+  input: PostLedgerEntryInput;
+  staged: StagedLedgerEntry;
+}
+
+/** A transaction holds at most 100 items; ledger writes must fit in the first one. */
+const TRANSACTION_ITEM_LIMIT = 100;
 
 export class DynamoUnitOfWork implements UnitOfWork {
   private staged: TransactWriteItem[] = [];
@@ -53,6 +77,9 @@ export class DynamoUnitOfWork implements UnitOfWork {
   // table) back to a typed domain error like `RatingAlreadyExistsError`.
   private stagedMeta: Array<StagedMeta | undefined> = [];
   private committed = false;
+  // Ledger postings (ECO-02) are turned into items at commit, once the
+  // starting balances have been read.
+  private ledgerPostings: StagedLedgerPosting[] = [];
 
   /** Attach metadata to the item most recently pushed onto `staged`. */
   private tagLastStaged(meta: StagedMeta): void {
@@ -807,19 +834,260 @@ export class DynamoUnitOfWork implements UnitOfWork {
     });
   }
 
+  // ── Ledger (ECO-02) ──────────────────────────────────────────────
+  postLedgerEntry(input: PostLedgerEntryInput): StagedLedgerEntry {
+    validateLedgerPosting(input);
+    if (this.ledgerPostings.some((posting) => posting.input.idempotencyKey === input.idempotencyKey)) {
+      throw new InvalidLedgerPostingError(`idempotencyKey ${input.idempotencyKey} is staged twice`);
+    }
+    const entryId = uuidv4();
+    const createdAt = new Date().toISOString();
+    const staged: StagedLedgerEntry = { entryId, createdAt, sortKey: ledgerSortKey({ createdAt, entryId }) };
+    this.ledgerPostings.push({ input: { ...input }, staged });
+    return { ...staged };
+  }
+
+  /**
+   * Turn the staged postings into transaction items: per player, one
+   * idempotency PUT and one entry PUT per posting, then a single balance
+   * update guarded on the balance read here.
+   */
+  private async buildLedgerItems(): Promise<{ items: TransactWriteItem[]; meta: Array<StagedMeta | undefined> }> {
+    const byPlayer = new Map<string, StagedLedgerPosting[]>();
+    for (const posting of this.ledgerPostings) {
+      const list = byPlayer.get(posting.input.playerId) ?? [];
+      list.push(posting);
+      byPlayer.set(posting.input.playerId, list);
+    }
+
+    for (const playerId of byPlayer.keys()) {
+      const alsoWritten = this.staged.some((item) => {
+        const op = item.Update ?? item.Put ?? item.Delete;
+        if (!op || op.TableName !== TableNames.PLAYERS) return false;
+        const key = item.Put ? item.Put.Item : (op as { Key: Record<string, unknown> }).Key;
+        return key.playerId === playerId;
+      });
+      if (alsoWritten) {
+        throw new InvalidLedgerPostingError(
+          `Player ${playerId} has a ledger posting and another player write in the same unit of work; post in a separate unit of work`,
+        );
+      }
+    }
+
+    const items: TransactWriteItem[] = [];
+    const meta: Array<StagedMeta | undefined> = [];
+    for (const [playerId, postings] of byPlayer) {
+      const read = await dynamoDb.get({
+        TableName: TableNames.PLAYERS,
+        Key: { playerId },
+        ConsistentRead: true,
+        ProjectionExpression: '#playerId, #balance, #deletedAt',
+        ExpressionAttributeNames: { '#playerId': 'playerId', '#balance': 'balance', '#deletedAt': 'deletedAt' },
+      });
+      const player = read.Item as { balance?: unknown; deletedAt?: unknown } | undefined;
+      if (!player || player.deletedAt) throw new NotFoundError('Player', playerId);
+      const hasBalance = typeof player.balance === 'number';
+      const startingBalance = hasBalance ? (player.balance as number) : 0;
+
+      const entries = buildLedgerEntries(startingBalance, postings);
+      for (const entry of entries) {
+        const idempotency: LedgerIdempotencyRecord = {
+          idempotencyKey: entry.idempotencyKey,
+          playerId,
+          entryId: entry.entryId,
+          sortKey: entry.sortKey,
+          createdAt: entry.createdAt,
+        };
+        items.push({
+          Put: {
+            TableName: TableNames.LEDGER_IDEMPOTENCY,
+            Item: { ...idempotency },
+            ConditionExpression: 'attribute_not_exists(idempotencyKey)',
+          },
+        });
+        meta.push({ kind: 'ledgerIdempotency', idempotencyKey: entry.idempotencyKey });
+        items.push({ Put: { TableName: TableNames.LEDGER, Item: { ...entry } } });
+        meta.push(undefined);
+      }
+
+      const delta = postings.reduce((sum, posting) => sum + posting.input.amount, 0);
+      const values: Record<string, unknown> = {
+        ':delta': delta,
+        ':zero': 0,
+        ':updatedAt': new Date().toISOString(),
+      };
+      if (hasBalance) values[':expectedBalance'] = startingBalance;
+      const names: Record<string, string> = {
+        '#balance': 'balance',
+        '#updatedAt': 'updatedAt',
+        '#deletedAt': 'deletedAt',
+      };
+      let updateExpression = 'SET #balance = if_not_exists(#balance, :zero) + :delta, #updatedAt = :updatedAt';
+
+      // ECO-08: shop effects ride on the balance write (one operation per item).
+      const appendedEffects = collectAppendedEffects(postings);
+      if (appendedEffects.length > 0) {
+        names['#effects'] = 'effects';
+        values[':effects'] = appendedEffects;
+        values[':noEffects'] = [];
+        updateExpression += ', #effects = list_append(if_not_exists(#effects, :noEffects), :effects)';
+      }
+
+      items.push({
+        Update: {
+          TableName: TableNames.PLAYERS,
+          Key: { playerId },
+          UpdateExpression: updateExpression,
+          ExpressionAttributeNames: names,
+          ExpressionAttributeValues: values,
+          ConditionExpression: `attribute_exists(playerId) AND attribute_not_exists(#deletedAt) AND ${
+            hasBalance ? '#balance = :expectedBalance' : 'attribute_not_exists(#balance)'
+          }`,
+        },
+      });
+      meta.push({ kind: 'guarded', entityName: 'Player', id: playerId });
+    }
+
+    if (items.length > TRANSACTION_ITEM_LIMIT) {
+      throw new InvalidLedgerPostingError(
+        `Too many ledger postings for one unit of work (${items.length} items, limit ${TRANSACTION_ITEM_LIMIT})`,
+      );
+    }
+    return { items, meta };
+  }
+
+  // ── GM interference (ECO-09) ─────────────────────────────────────
+  createGmInterferenceRequest(request: GmInterferenceRequest): void {
+    this.staged.push({
+      Put: {
+        TableName: TableNames.GM_INTERFERENCE,
+        Item: { ...request },
+        ConditionExpression: 'attribute_not_exists(requestId)',
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'GmInterference', id: request.requestId });
+  }
+
+  resolveGmInterferenceRequest(requestId: string, resolution: GmInterferenceResolution): void {
+    const names: Record<string, string> = {
+      '#requestId': 'requestId',
+      '#status': 'status',
+      '#resolvedAt': 'resolvedAt',
+      '#resolvedBy': 'resolvedBy',
+      '#updatedAt': 'updatedAt',
+    };
+    const values: Record<string, unknown> = {
+      ':status': resolution.status,
+      ':pending': 'pending',
+      ':resolvedAt': resolution.resolvedAt,
+      ':resolvedBy': resolution.resolvedBy,
+    };
+    const sets = ['#status = :status', '#resolvedAt = :resolvedAt', '#resolvedBy = :resolvedBy', '#updatedAt = :resolvedAt'];
+    for (const field of ['publicNote', 'privateNote', 'refundEntryId'] as const) {
+      const value = resolution[field];
+      if (value === undefined) continue;
+      names[`#${field}`] = field;
+      values[`:${field}`] = value;
+      sets.push(`#${field} = :${field}`);
+    }
+    this.staged.push({
+      Update: {
+        TableName: TableNames.GM_INTERFERENCE,
+        Key: { requestId },
+        UpdateExpression: `SET ${sets.join(', ')}`,
+        ConditionExpression: 'attribute_exists(#requestId) AND #status = :pending',
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: values,
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'GmInterference', id: requestId });
+  }
+
+  // ── Contracts (ECO-03) ───────────────────────────────────────────
+  createContract(contract: Contract): void {
+    this.staged.push({
+      Put: {
+        TableName: TableNames.CONTRACTS,
+        Item: { ...contract },
+        ConditionExpression: 'attribute_not_exists(contractId)',
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'Contract', id: contract.contractId });
+  }
+
+  updateContract(
+    contractId: string,
+    patch: ContractPatch,
+    expectedStatus: ContractStatus,
+    expectedMatchesPlayed?: number,
+  ): void {
+    const parts = buildContractUpdate(patch, new Date().toISOString(), expectedStatus, expectedMatchesPlayed);
+    this.staged.push({
+      Update: {
+        TableName: TableNames.CONTRACTS,
+        Key: { contractId },
+        ...parts,
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'Contract', id: contractId });
+  }
+
+  setPlayerActiveContract(playerId: string, contractId: string): void {
+    this.staged.push({
+      Update: {
+        TableName: TableNames.PLAYERS,
+        Key: { playerId },
+        UpdateExpression: 'SET #activeContractId = :contractId, #updatedAt = :updatedAt',
+        ConditionExpression: 'attribute_exists(#playerId) AND attribute_not_exists(#activeContractId)',
+        ExpressionAttributeNames: {
+          '#activeContractId': 'activeContractId',
+          '#updatedAt': 'updatedAt',
+          '#playerId': 'playerId',
+        },
+        ExpressionAttributeValues: { ':contractId': contractId, ':updatedAt': new Date().toISOString() },
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'Player', id: playerId });
+  }
+
+  clearPlayerActiveContract(playerId: string, expectedContractId: string): void {
+    this.staged.push({
+      Update: {
+        TableName: TableNames.PLAYERS,
+        Key: { playerId },
+        UpdateExpression: 'REMOVE #activeContractId SET #updatedAt = :updatedAt',
+        ConditionExpression: '#activeContractId = :expectedContractId',
+        ExpressionAttributeNames: { '#activeContractId': 'activeContractId', '#updatedAt': 'updatedAt' },
+        ExpressionAttributeValues: {
+          ':expectedContractId': expectedContractId,
+          ':updatedAt': new Date().toISOString(),
+        },
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'Player', id: playerId });
+  }
+
   // ── Commit / Rollback ────────────────────────────────────────────
   async commit(): Promise<void> {
     if (this.committed) throw new Error('UnitOfWork already committed');
     this.committed = true;
 
-    if (this.staged.length === 0) return;
-
     // Pad stagedMeta so it stays index-aligned with staged. Only guarded
-    // items and ratings carry meta; everything else needs an `undefined`
-    // placeholder.
+    // items, ratings and idempotency rows carry meta; everything else needs
+    // an `undefined` placeholder.
     while (this.stagedMeta.length < this.staged.length) {
       this.stagedMeta.push(undefined);
     }
+
+    if (this.ledgerPostings.length > 0) {
+      // Ledger writes go first so they always share the first transaction
+      // chunk: an idempotency row must never commit without its balance.
+      const ledger = await this.buildLedgerItems();
+      this.staged = [...ledger.items, ...this.staged];
+      this.stagedMeta = [...ledger.meta, ...this.stagedMeta];
+    }
+
+    if (this.staged.length === 0) return;
 
     // Chunk into ≤100-item batches (DynamoDB TransactWriteItems limit)
     const CHUNK_SIZE = 100;
@@ -841,6 +1109,9 @@ export class DynamoUnitOfWork implements UnitOfWork {
           if (meta?.kind === 'matchRating') {
             throw new RatingAlreadyExistsError(meta.matchId, meta.userId);
           }
+          if (meta?.kind === 'ledgerIdempotency') {
+            throw new DuplicatePostingError(meta.idempotencyKey);
+          }
           if (meta?.kind === 'guarded') {
             throw new ConcurrencyError(meta.entityName, meta.id);
           }
@@ -853,6 +1124,7 @@ export class DynamoUnitOfWork implements UnitOfWork {
   rollback(): Promise<void> {
     this.staged = [];
     this.stagedMeta = [];
+    this.ledgerPostings = [];
     this.committed = true;
     return Promise.resolve();
   }

@@ -30,12 +30,16 @@ import { handler as seedData } from '../seedData';
 import { handler as clearAll } from '../clearAll';
 import { buildTagTeamIndex, splitSidesIntoTeams } from '../../../lib/tagTeams/resolveTagTeams';
 import type {
+  Contract,
   Match,
+  Player,
   PlayerProgression,
   ProgressionEvent,
   ProgressionTrack,
   TagTeam,
 } from '../../../lib/repositories/types';
+import type { LedgerEntry } from '../../../lib/repositories/ledger';
+import type { GmInterferenceRequest } from '../../../lib/repositories/gmInterference';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
@@ -462,6 +466,87 @@ describe('seedData', () => {
 
     // Zones of 1 or 2 on the three-player tables.
     expect(importData.divisions.find((division) => division.name === 'NXT')).toMatchObject({ promotionZoneSize: 2, relegationZoneSize: 1 });
+  });
+
+  it('seeds contracts, wallets, a debt, fines and a pending GM interference request (ECO-15)', async () => {
+    mockImportAllData.mockResolvedValue({});
+
+    const result = await seedData(makeEvent(), ctx, cb);
+    expect(result!.statusCode).toBe(200);
+
+    const importData = mockImportAllData.mock.calls[0][0] as Record<string, Record<string, unknown>[]>;
+    const players = importData.players as unknown as Player[];
+    const playerOf = (wrestler: string): Player => {
+      const found = players.find((player) => player.currentWrestler === wrestler);
+      if (!found) throw new Error(`No seeded player for ${wrestler}`);
+      return found;
+    };
+    const contracts = importData.contracts as unknown as Contract[];
+    const ledger = importData.ledger as unknown as LedgerEntry[];
+    const contractsOf = (wrestler: string): Contract[] =>
+      contracts.filter((contract) => contract.playerId === playerOf(wrestler).playerId);
+
+    // The economy flag is on, so the seeded data shows up.
+    const features = importData.siteConfig.find((row) => row.configKey === 'features')?.features as Record<string, boolean>;
+    expect(features.economy).toBe(true);
+
+    // Every contract type, plus open offers and a finished and a released contract.
+    expect(new Set(contracts.filter((contract) => contract.status === 'active').map((contract) => contract.type)))
+      .toEqual(new Set(['tryout', 'matches', 'season']));
+    expect(contracts.filter((contract) => contract.status === 'offered')).toHaveLength(2);
+    expect(contractsOf('The Undertaker').map((contract) => contract.status).sort()).toEqual(['completed', 'offered']);
+    expect(contractsOf('CM Punk')[0]).toMatchObject({ status: 'released', endReason: 'released' });
+    for (const contract of contracts) {
+      expect(contract.createdAt).toBe(contract.offeredAt);
+      if (contract.type === 'season') expect(contract.seasonId).toBeDefined();
+      else expect(contract.matchesTotal).toBeGreaterThan(0);
+    }
+
+    // activeContractId points at the one active contract; everyone else is a free agent.
+    for (const player of players) {
+      const active = contracts.find((contract) => contract.playerId === player.playerId && contract.status === 'active');
+      expect(player.activeContractId, player.currentWrestler).toBe(active?.contractId);
+    }
+    expect(players.filter((player) => player.activeContractId === undefined).length).toBeGreaterThan(5);
+
+    // Each cached balance is the last balanceAfter, and the running totals add up.
+    const byPlayer = new Map<string, LedgerEntry[]>();
+    for (const entry of ledger) byPlayer.set(entry.playerId, [...(byPlayer.get(entry.playerId) ?? []), entry]);
+    for (const [playerId, entries] of byPlayer) {
+      const ordered = [...entries].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+      let running = 0;
+      for (const entry of ordered) {
+        running += entry.amount;
+        expect(entry.balanceAfter).toBe(running);
+        expect(entry.sortKey).toBe(`${entry.createdAt}#${entry.entryId}`);
+      }
+      expect(players.find((player) => player.playerId === playerId)?.balance).toBe(running);
+    }
+    const keys = ledger.map((entry) => entry.idempotencyKey);
+    expect(new Set(keys).size).toBe(keys.length);
+    expect((importData.ledgerIdempotency ?? []).map((row) => row.idempotencyKey).sort()).toEqual([...keys].sort());
+
+    // Fixed amounts from the default settings and the DMV-10 bouts.
+    expect(playerOf('Stone Cold Steve Austin').balance).toBe(1100 - 300);
+    expect(playerOf('Stone Cold Steve Austin').effects).toEqual([expect.objectContaining({ kind: 'injuryShield' })]);
+    expect(playerOf('The Rock').balance).toBe(1000 + 3 * 150 - 1000);
+    expect(playerOf('Edge').balance).toBe(2 * (100 + 50));
+    expect(playerOf('The Undertaker').balance).toBe(3 * (100 + 50) + 4 * 50);
+    expect(playerOf('Bret Hart').balance).toBe(50);
+    expect(playerOf('CM Punk').balance).toBeUndefined();
+
+    // Shawn is in debt after two fines.
+    const shawn = playerOf('Shawn Michaels');
+    expect(shawn.balance).toBeLessThan(0);
+    expect(ledger.filter((entry) => entry.playerId === shawn.playerId && entry.kind === 'fine')).toHaveLength(2);
+
+    // One pending GM interference request, paid for by its charge entry.
+    const requests = importData.gmInterference as unknown as GmInterferenceRequest[];
+    expect(requests).toHaveLength(1);
+    const [request] = requests;
+    expect(request).toMatchObject({ playerId: playerOf('The Rock').playerId, status: 'pending', sequence: 1 });
+    const charge = ledger.find((entry) => entry.entryId === request.chargeEntryId);
+    expect(charge).toMatchObject({ kind: 'purchase', amount: -request.price, idempotencyKey: request.chargeKey });
   });
 
   it('returns 500 when importAllData throws', async () => {

@@ -3,7 +3,10 @@ import { getRepositories } from '../../lib/repositories';
 import type { MatchSlot, Player } from '../../lib/repositories/types';
 import { success, serverError } from '../../lib/response';
 import { authenticate } from '../../lib/authenticate';
-import { getAuthContext } from '../../lib/auth';
+import { getAuthContext, type AuthContext } from '../../lib/auth';
+import {
+  anyMatchHasSimBoosts, resolveSimBoostViewer, withVisibleSimBoosts, type SimBoostViewer,
+} from '../../lib/economy/simBoostVisibility';
 import { collectSlotPlayerIds, hydrateMatchSlots } from './hydrateSlots';
 import { anyMatchHasTeams, loadTagTeamIndex, sideTagTeamsField } from '../../lib/tagTeams/sideBilling';
 
@@ -152,17 +155,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // downgrades the response to the anonymous view rather than 500-ing
     // the whole match list — admin pages depend on this endpoint
     // returning *some* data even when rating enrichment is broken.
-    let userId: string | null = null;
+    let caller: AuthContext | null = null;
     try {
       if (event.headers?.Authorization || event.headers?.authorization) {
         await authenticate(event).catch(() => undefined);
       }
       if (event.requestContext) {
-        userId = getAuthContext(event).sub || null;
+        caller = getAuthContext(event);
       }
     } catch (authErr) {
       console.warn('getMatches: optional auth failed, continuing as anonymous', authErr);
     }
+    const userId = caller?.sub || null;
     let userRatingsByMatchId = new Map<string, number>();
     if (userId) {
       try {
@@ -179,11 +183,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
+    // Who paid for a sim boost is private: staff see all, a player sees
+    // their own entry (the shop needs it), everyone else sees none.
+    // A failed lookup falls back to the anonymous view (no boosts).
+    const simBoostViewer = await resolveSimBoostViewer(
+      caller?.sub ? caller : null,
+      anyMatchHasSimBoosts(hydratedMatches),
+    ).catch((viewerErr: unknown): SimBoostViewer => {
+      console.warn('getMatches: sim boost viewer lookup failed, hiding boosts', viewerErr);
+      return { kind: 'public' };
+    });
+
     const decoratedMatches = hydratedMatches.map((m) => {
       const id = m.matchId as string | undefined;
       const rating = id ? userRatingsByMatchId.get(id) : undefined;
       return {
-        ...m,
+        ...withVisibleSimBoosts(m, simBoostViewer),
         userHasRated: rating !== undefined,
         userRating: rating ?? null,
       };

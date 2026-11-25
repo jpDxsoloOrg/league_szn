@@ -14,6 +14,8 @@ vi.mock('../../../services/api', () => ({
   },
 }));
 
+// ECO-14: the no-show control is covered in economy/__tests__/fines.test.tsx.
+vi.mock('../../economy/NoShowButton', () => ({ default: () => null }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {

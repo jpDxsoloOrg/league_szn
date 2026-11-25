@@ -34,6 +34,9 @@ vi.mock('../../../lib/dynamodb', () => ({
 const { mockInvokeAsync } = vi.hoisted(() => ({ mockInvokeAsync: vi.fn() }));
 vi.mock('../../../lib/asyncLambda', () => ({ invokeAsync: mockInvokeAsync }));
 
+const { mockEndSeasonContracts } = vi.hoisted(() => ({ mockEndSeasonContracts: vi.fn() }));
+vi.mock('../../../lib/economy/payroll', () => ({ endSeasonContracts: mockEndSeasonContracts }));
+
 import { handler as updateSeason } from '../updateSeason';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
@@ -62,7 +65,10 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
 // ─── updateSeason ────────────────────────────────────────────────────
 
 describe('updateSeason', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockEndSeasonContracts.mockResolvedValue({ ended: [], failed: 0 });
+  });
 
   it('updates season name and returns updated attributes', async () => {
     mockGet.mockResolvedValue({ Item: { seasonId: 's1', name: 'Old', status: 'active' } });
@@ -129,6 +135,47 @@ describe('updateSeason', () => {
 
     expect(result!.statusCode).toBe(200);
     expect(mockInvokeAsync).toHaveBeenCalledWith('progression', { action: 'seasonSnapshot', seasonId: 's1' });
+  });
+
+  it('ends the season contracts when a season completes (ECO-06)', async () => {
+    mockGet.mockResolvedValue({ Item: { seasonId: 's1', status: 'active' } });
+    mockUpdate.mockResolvedValue({ Attributes: { seasonId: 's1', status: 'completed' } });
+
+    const result = await updateSeason(
+      makeEvent({ pathParameters: { seasonId: 's1' }, body: JSON.stringify({ status: 'completed' }) }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(200);
+    expect(mockEndSeasonContracts).toHaveBeenCalledWith('s1');
+  });
+
+  it('does not end contracts when the season is only renamed (ECO-06)', async () => {
+    mockGet.mockResolvedValue({ Item: { seasonId: 's1', status: 'active' } });
+    mockUpdate.mockResolvedValue({ Attributes: { seasonId: 's1', name: 'Renamed', status: 'active' } });
+
+    await updateSeason(
+      makeEvent({ pathParameters: { seasonId: 's1' }, body: JSON.stringify({ name: 'Renamed' }) }),
+      ctx,
+      cb,
+    );
+
+    expect(mockEndSeasonContracts).not.toHaveBeenCalled();
+  });
+
+  it('still ends the season when ending its contracts fails (ECO-06)', async () => {
+    mockGet.mockResolvedValue({ Item: { seasonId: 's1', status: 'active' } });
+    mockUpdate.mockResolvedValue({ Attributes: { seasonId: 's1', status: 'completed' } });
+    mockEndSeasonContracts.mockRejectedValueOnce(new Error('dynamo down'));
+
+    const result = await updateSeason(
+      makeEvent({ pathParameters: { seasonId: 's1' }, body: JSON.stringify({ status: 'completed' }) }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(200);
   });
 
   it('still ends the season when the snapshot request fails', async () => {

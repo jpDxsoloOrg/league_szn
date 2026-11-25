@@ -486,4 +486,24 @@ describe('claimSlot', () => {
     );
     expect(r!.statusCode).toBe(400);
   });
+
+  // ECO-08: who paid for a sim boost is private.
+  it('returns only the caller\'s own sim boost', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch({
+      participants: ['p-caller', 'p-other'],
+      slots: [
+        { slotId: 's1', position: 1, playerId: 'p-caller' },
+        { slotId: 's2', position: 2, playerId: 'p-other' },
+      ],
+      simBoosts: [
+        { playerId: 'p-caller', boost: 5, purchasedAt: 'x', purchaseKey: 'k1' },
+        { playerId: 'p-other', boost: 5, purchasedAt: 'y', purchaseKey: 'k2' },
+      ],
+    }));
+
+    const r = await claimSlot(ev(), ctx, cb);
+
+    expect(r!.statusCode).toBe(200);
+    expect(JSON.parse(r!.body).simBoosts).toEqual([{ playerId: 'p-caller', boost: 5, purchasedAt: 'x' }]);
+  });
 });

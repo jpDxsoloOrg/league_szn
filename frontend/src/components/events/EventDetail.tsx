@@ -37,9 +37,10 @@ import EventCheckInRosterPanel from './EventCheckInRosterPanel';
 import MatchSides from './MatchSides';
 import type { MatchSideParticipant } from './MatchSides';
 import MatchSlots from './MatchSlots';
+import NoShowButton from '../economy/NoShowButton';
 import SlotEditDialog from './SlotEditDialog';
 import { buildCheckInStatusMap } from '../../utils/checkInStatus';
-import type { HydratedMatchSlot } from '../../types';
+import type { HydratedMatchSlot, MatchNoShow } from '../../types';
 import { StarRating } from '../matches/StarRating';
 import { RateMatchWidget } from '../matches/RateMatchWidget';
 import { MotnToggleButton } from '../matches/MotnToggleButton';
@@ -1159,6 +1160,9 @@ interface MatchEntryProps {
       userHasRated?: boolean;
       userRating?: number | null;
       matchOfTheNight?: boolean;
+      // ECO-14
+      completedAt?: string;
+      noShows?: MatchNoShow[];
     } | null;
   };
   isCompleted: boolean;
@@ -1310,6 +1314,17 @@ function MatchEntry({
               {t('events.detail.deleteMatch', 'Delete')}
             </Button>
           )}
+          <NoShowButton
+            matchId={matchData.matchId}
+            status={matchData.status}
+            completedAt={matchData.completedAt}
+            noShows={matchData.noShows}
+            participants={matchData.participants.map((participant) => ({
+              playerId: participant.playerId,
+              name: participant.playerName,
+            }))}
+            onChanged={onMatchUpdated}
+          />
         </div>
       )}
     </article>

@@ -7,6 +7,7 @@ import { formatMatchDate } from '../../utils/dateUtils';
 import { formatMatchType, sideLabel } from '../../utils/matchDisplay';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
+import NoShowButton from '../economy/NoShowButton';
 import './MatchResultForm.css';
 
 /** The API's wording for a result it refuses, so it can show translated. */
@@ -20,6 +21,8 @@ interface MatchResultFormProps {
   tagTeams: (TagTeam & { player1Name?: string; player2Name?: string })[];
   onSuccess: () => void;
   onCancel: () => void;
+  /** ECO-14: the GM no-show control. Off where the row already offers it. */
+  showNoShow?: boolean;
 }
 
 export default function MatchResultForm({
@@ -28,6 +31,7 @@ export default function MatchResultForm({
   tagTeams,
   onSuccess,
   onCancel,
+  showNoShow = true,
 }: MatchResultFormProps) {
   const { t } = useTranslation();
   const [winners, setWinners] = useState<string[]>([]);
@@ -125,6 +129,19 @@ export default function MatchResultForm({
   return (
     <div className="match-result-form">
       {error && <p className="match-result-form__error" role="alert">{error}</p>}
+
+      {showNoShow && (
+        <div className="match-result-form__no-show">
+          <NoShowButton
+            matchId={match.matchId}
+            status={match.status}
+            date={match.date}
+            completedAt={match.completedAt}
+            noShows={match.noShows}
+            participants={match.participants.map((playerId) => ({ playerId, name: getPlayerNameShort(playerId) }))}
+          />
+        </div>
+      )}
 
       <dl className="match-result-form__details">
         <div>

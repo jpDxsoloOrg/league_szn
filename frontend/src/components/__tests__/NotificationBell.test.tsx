@@ -5,7 +5,7 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import type { AppNotification } from '../../types';
 
 const { mockFeatures, mockGetAll, mockGetUnreadCount, mockMarkRead } = vi.hoisted(() => ({
-  mockFeatures: { notifications: true, transfers: false },
+  mockFeatures: { notifications: true, transfers: false, economy: true },
   mockGetAll: vi.fn(),
   mockGetUnreadCount: vi.fn(),
   mockMarkRead: vi.fn(),
@@ -83,6 +83,18 @@ describe('NotificationBell source types', () => {
     await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(path));
   });
 
+  // ECO-14
+  it.each([
+    ['gm_interference_requested', '/admin/gm-interference'],
+    ['gm_interference_resolved', '/shop'],
+  ] as const)('labels and links a %s notification by its type', async (type, path) => {
+    await openWith(notification({ type }));
+
+    expect(screen.getByText('notifications.typeGmInterference')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Something happened'));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(path));
+  });
+
   it('sends a transfer notification home while transfers are off', async () => {
     await openWith(notification({ sourceType: 'transfer' }), '/events');
 
@@ -110,5 +122,60 @@ describe('NotificationBell source types', () => {
 
     await userEvent.click(screen.getByText('Something happened'));
     await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent('/rivalries'));
+  });
+});
+
+// ECO-13
+describe('NotificationBell contract and money notifications', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFeatures.economy = true;
+    mockGetUnreadCount.mockResolvedValue({ count: 0 });
+  });
+
+  it.each([
+    ['contract_offer', 'contract', 'notifications.typeContract', '/my-contract'],
+    ['contract_offer_expired', 'contract', 'notifications.typeContract', '/my-contract'],
+    ['contract_released', 'contract', 'notifications.typeContract', '/my-contract'],
+    ['contract_completed', 'contract', 'notifications.typeContract', '/my-contract'],
+    ['contract_offer_accepted', 'contract', 'notifications.typeContract', '/admin/contracts'],
+    ['contract_offer_declined', 'contract', 'notifications.typeContract', '/admin/contracts'],
+    ['fine_issued', 'economy', 'notifications.typeEconomy', '/my-contract'],
+    ['fine_rescinded', 'economy', 'notifications.typeEconomy', '/my-contract'],
+    ['balance_negative', 'economy', 'notifications.typeEconomy', '/my-contract'],
+    ['no_show_marked', 'match', 'notifications.typeMatch', '/my-contract'],
+    ['fine_issued', 'match', 'notifications.typeMatch', '/my-contract'],
+  ] as const)('labels and links a %s (%s) notification', async (type, sourceType, label, path) => {
+    await openWith(notification({ type, sourceType }), '/events');
+
+    expect(screen.getByText(label)).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Something happened'));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(path));
+  });
+
+  it('opens the wallet tab for a fine', async () => {
+    mockGetAll.mockResolvedValue({ notifications: [notification({ type: 'fine_issued', sourceType: 'economy' })] });
+    function CurrentSearch() {
+      const { search } = useLocation();
+      return <output data-testid="search">{search}</output>;
+    }
+    render(
+      <MemoryRouter initialEntries={['/events']}>
+        <NotificationBell />
+        <CurrentSearch />
+      </MemoryRouter>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'notifications.bell' }));
+    await userEvent.click(await screen.findByText('Something happened'));
+
+    await waitFor(() => expect(screen.getByTestId('search')).toHaveTextContent('?tab=wallet'));
+  });
+
+  it('sends economy notifications home while the economy is off', async () => {
+    mockFeatures.economy = false;
+    await openWith(notification({ type: 'contract_offer', sourceType: 'contract' }), '/events');
+
+    await userEvent.click(screen.getByText('Something happened'));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(/^\/$/));
   });
 });

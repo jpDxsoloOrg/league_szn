@@ -17,6 +17,7 @@ Zwei Aufgaben liegen außerhalb des Admin-Bereichs. Events werden im Bereich **E
 - [Spieler verwalten](admin-manage-players) — Spieler bearbeiten, ausgeblendete Spieler finden, Spieler entfernen
 - [Saisons](admin-seasons) — Saisons erstellen, beenden und löschen; Saisontabellen
 - [Saison-Auszeichnungen](admin-season-awards) — Automatische Auszeichnungen prüfen und eigene hinzufügen
+- [Wirtschaft](admin-economy) — Verträge, Bezahlung, Strafen, der Shop und GM-Eingriffe. Schalte zuerst die Funktion Wirtschaft ein
 
 ## Titel & Events
 

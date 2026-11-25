@@ -8,6 +8,7 @@ import type {
   WrestlerCost,
 } from './types';
 import type { FeatureFlags, RivalryHeatTunables, TickerSettings } from './SiteConfigRepository';
+import type { EconomySettings, EconomySettingsInput } from '../policies/economyDefaults';
 
 // ─── Notification types ─────────────────────────────────────────────
 
@@ -92,6 +93,27 @@ export interface SiteConfigMethods {
   updateHeatTunables(patch: Partial<RivalryHeatTunables>): Promise<RivalryHeatTunables>;
   getTickerSettings(): Promise<TickerSettings>;
   updateTickerSettings(patch: Partial<TickerSettings>): Promise<TickerSettings>;
+
+  // ECO-06: once-per-week markers for the weekly jobs (payroll; INJ-05 recovery).
+  /** The league week (`weekKey`) the named weekly job last finished, or null. */
+  getWeeklyJobWeek(job: string): Promise<string | null>;
+  /**
+   * Record that the named job has run for `weekKey`. Conditional: resolves
+   * false (and writes nothing) when that week is already recorded, so it also
+   * works as a claim that only one run wins.
+   */
+  markWeeklyJobWeek(job: string, weekKey: string): Promise<boolean>;
+
+  /** The current economy settings, merged over the defaults (version 0 if never saved). */
+  getEconomySettings(): Promise<EconomySettings>;
+  /**
+   * Saves a validated settings object as the next version and keeps the last
+   * ECONOMY_SETTINGS_VERSIONS_KEPT versions. With `expectedVersion`, throws
+   * ConflictError when the stored version has moved on.
+   */
+  saveEconomySettings(input: EconomySettingsInput, updatedBy: string, expectedVersion?: number): Promise<EconomySettings>;
+  /** Saved versions, newest first (empty if never saved). */
+  listEconomySettingsVersions(): Promise<EconomySettings[]>;
 }
 
 // ─── Aggregate interface ────────────────────────────────────────────

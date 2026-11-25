@@ -34,6 +34,7 @@ const ALL_ENABLED = {
   rivalries: true,
   transfers: false,
   ticker: true,
+  economy: false,
 };
 
 describe('SiteConfigContext', () => {
@@ -52,6 +53,7 @@ describe('SiteConfigContext', () => {
       rivalries: true,
       transfers: true,
       ticker: false,
+      economy: true,
     };
     mockGetFeatures.mockResolvedValue({ features: serverFeatures });
 
@@ -96,6 +98,7 @@ describe('SiteConfigContext', () => {
       rivalries: true,
       transfers: false,
       ticker: true,
+      economy: false,
     });
   });
 

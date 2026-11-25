@@ -1,0 +1,12 @@
+/* Profile contract badge (ECO-12). */
+.contract-badge {
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.contract-badge .ui-badge {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

@@ -5,7 +5,18 @@ import { handler as seedDataHandler } from './seedData';
 import { handler as exportDataHandler } from './exportData';
 import { handler as getHeatConfigHandler } from './getHeatConfig';
 import { handler as updateHeatConfigHandler } from './updateHeatConfig';
-import { createRouter, type RouteConfig, ADMIN_ONLY } from '../../lib/router';
+import { handler as getEconomyConfigHandler } from './getEconomyConfig';
+import { handler as updateEconomyConfigHandler } from './updateEconomyConfig';
+import { handler as getEconomyCatalogHandler } from './getEconomyCatalog';
+import { handler as shopPurchaseHandler } from '../shop/purchase'; // ECO-08
+// ECO-09
+import {
+  listGmInterference,
+  listMyGmInterference,
+  requestGmInterference,
+  resolveGmInterference,
+} from '../shop/gmInterference';
+import { createRouter, type RouteConfig, ADMIN_ONLY, STAFF } from '../../lib/router';
 
 /**
  * Single Lambda for admin: routes by HTTP method and resource.
@@ -54,6 +65,59 @@ export const routes: ReadonlyArray<RouteConfig> = [
     method: 'PUT',
     handler: updateHeatConfigHandler,
     access: ADMIN_ONLY,
+  },
+  {
+    resource: '/admin/economy-config',
+    method: 'GET',
+    handler: getEconomyConfigHandler,
+    access: STAFF,
+  },
+  {
+    resource: '/admin/economy-config',
+    method: 'PUT',
+    handler: updateEconomyConfigHandler,
+    access: ADMIN_ONLY,
+  },
+  {
+    resource: '/economy/catalog',
+    method: 'GET',
+    handler: getEconomyCatalogHandler,
+    access: 'public',
+  },
+
+  // ECO-08: the player buys for themselves; the handler checks the Wrestler role.
+  {
+    resource: '/shop/purchase',
+    method: 'POST',
+    handler: shopPurchaseHandler,
+    access: 'self-service',
+  },
+
+  // ECO-09: players request (handlers check the Wrestler role and use the
+  // caller's own player); GMs see the queue and resolve.
+  {
+    resource: '/shop/gm-interference',
+    method: 'POST',
+    handler: requestGmInterference,
+    access: 'self-service',
+  },
+  {
+    resource: '/shop/gm-interference',
+    method: 'GET',
+    handler: listMyGmInterference,
+    access: 'self-service',
+  },
+  {
+    resource: '/gm-interference',
+    method: 'GET',
+    handler: listGmInterference,
+    access: STAFF,
+  },
+  {
+    resource: '/gm-interference/{requestId}/resolve',
+    method: 'POST',
+    handler: resolveGmInterference,
+    access: STAFF,
   },
 ];
 

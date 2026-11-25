@@ -276,15 +276,18 @@
     "wiki": "Wiki",
     "admin": "Admin",
     "contenders": "Contenders",
+    "freeAgents": "Free Agents",
     "matchSearch": "Match Search",
     "seasonAwards": "Season Awards",
     "factions": "Factions",
     "tagTeams": "Tag Teams",
     "myFaction": "My Faction",
     "myTagTeam": "My Tag Team",
+    "myContract": "My Contract",
     "highlights": "Highlights",
     "profile": "My Profile",
     "myVideos": "My Videos",
+    "shop": "Shop",
     "groups": {
       "core": "League",
       "league": "League",
@@ -451,6 +454,7 @@
       "contenders": "Contender Rankings",
       "tagTeamRankings": "How Tag Team Rankings Work",
       "profile": "My Profile",
+      "contractsAndMoney": "Contracts and Money",
       "challenges": "Challenges",
       "promos": "Promos",
       "tips": "Tips",
@@ -484,6 +488,7 @@
       "howStandingsWork": "How Standings Work",
       "strikesAndSuspensions": "Strikes and suspensions",
       "adminStrikes": "Admin: Strikes",
+      "adminEconomy": "Admin: Economy",
       "installApp": "Install the App",
       "news": "News and the League Wire"
     },
@@ -506,7 +511,8 @@
       "adminDataManagement": "Data Management",
       "adminWorkflow": "Typical Workflow",
       "adminRivalries": "Rivalries",
-      "adminStrikes": "Strikes"
+      "adminStrikes": "Strikes",
+      "adminEconomy": "Economy"
     },
     "articleNotFound": "Article not found",
     "articleNotFoundHint": "This help article may have moved. Browse the full list instead.",
@@ -847,6 +853,158 @@
       "promoMaxReactionCount": "Reactions counted per type",
       "promoMaxReactionCountHint": "Only the first N fire / trash reactions affect the bonus."
     },
+    "economyConfig": {
+      "title": "Economy Settings",
+      "subtitle": "Set the league currency, contract pay, fines and shop prices. Changes apply to new offers, fines and purchases.",
+      "featureOff": "The economy is turned off, so players don't see any of this yet. An Admin can turn it on in Feature Management.",
+      "readOnly": "You can view these settings. Only Admins can change them.",
+      "loadFailed": "Could not load the economy settings.",
+      "retry": "Try again",
+      "version": "Version {{version}}, saved by {{user}} on {{date}}.",
+      "notSaved": "Not saved yet: these are the starting values.",
+      "save": "Save Economy Settings",
+      "discard": "Discard changes",
+      "saved": "Economy settings saved.",
+      "saveFailed": "Failed to save the economy settings",
+      "conflict": "Someone else saved these settings after you opened the page. Reload to see their version, then make your changes again.",
+      "reload": "Reload",
+      "problems": {
+        "currency": "Give the currency a name and a symbol.",
+        "amounts": "Fill in every amount with a whole number of 0 or more. Counts such as matches, weeks and offer days start at 1, and the shield reduction runs from 0 to 100%.",
+        "presetLabels": "Give every fine preset a label.",
+        "tooManyPresets": "There can be at most {{max}} fine presets."
+      },
+      "currency": {
+        "title": "Currency",
+        "name": "Currency name",
+        "symbol": "Symbol"
+      },
+      "contracts": {
+        "title": "Contract defaults",
+        "description": "Each new offer starts from these terms. GMs can change them on any single offer.",
+        "types": {
+          "tryout": "Tryout",
+          "matches": "Match contract",
+          "season": "Season contract"
+        },
+        "tryoutMatches": "Tryout length (matches)",
+        "perMatchPay": "Pay per match",
+        "weeklySalary": "Weekly salary",
+        "winBonus": "Win bonus"
+      },
+      "general": {
+        "title": "Bonuses, offers and fines",
+        "freeAgentWinBonus": "Free agent win bonus",
+        "freeAgentWinBonusHint": "Paid for a win to a wrestler without a contract.",
+        "offerExpiryDays": "Offer expiry (days)",
+        "offerExpiryDaysHint": "How long a contract offer stays open.",
+        "noShowFine": "No-show fine",
+        "noShowFineHint": "Charged for missing a booked match."
+      },
+      "fines": {
+        "title": "Fine presets",
+        "description": "One-click fines GMs can hand out.",
+        "empty": "No fine presets yet.",
+        "label": "Label",
+        "amount": "Amount",
+        "remove": "Remove",
+        "removeNamed": "Remove fine preset {{number}}",
+        "add": "Add fine preset"
+      },
+      "shop": {
+        "title": "Shop items",
+        "description": "Turn items on or off and set their price and effect. Turned-off items stay out of the shop.",
+        "enabled": "In the shop",
+        "price": "Price",
+        "chanceReduction": "Injury chance cut (%)",
+        "shieldMatches": "Lasts (matches)",
+        "weeksOff": "Weeks taken off the injury",
+        "staminaAmount": "Stamina added",
+        "ratingBoost": "Rating boost",
+        "items": {
+          "injuryShield": {
+            "name": "Injury shield",
+            "description": "Lowers the chance of getting injured for a few matches."
+          },
+          "rehab": {
+            "name": "Rehab",
+            "description": "Takes time off an active injury."
+          },
+          "staminaTopUp": {
+            "name": "Stamina top-up",
+            "description": "Adds stamina back."
+          },
+          "simInterference": {
+            "name": "Sim interference",
+            "description": "Boosts the buyer's rating in a simulated match."
+          },
+          "gmInterference": {
+            "name": "GM interference",
+            "description": "Pays the GM to step into a match."
+          }
+        }
+      },
+      "budget": {
+        "title": "Season budget check",
+        "description": "What a season contract pays with the terms above, to sanity-check shop prices and fines.",
+        "weeks": "Weeks",
+        "matches": "Matches",
+        "wins": "Wins",
+        "salary": "Salary",
+        "matchPay": "Match pay",
+        "winBonuses": "Win bonuses",
+        "total": "Season total",
+        "incomplete": "Fill in the season contract terms and the numbers above to see a total."
+      }
+    },
+    "gmInterference": {
+      "title": "GM Interference",
+      "subtitle": "Players pay up front and ask the GM for something. Deliver all, some or nothing. The money stays with the league unless you refund it.",
+      "filterLabel": "Show",
+      "filters": {
+        "pending": "Pending",
+        "all": "All requests",
+        "delivered": "Delivered",
+        "partial": "Partly delivered",
+        "taken": "Money taken",
+        "refunded": "Refunded"
+      },
+      "loadFailed": "Could not load the requests.",
+      "emptyPending": "No requests are waiting on a GM.",
+      "empty": "No requests here.",
+      "linkedMatch": "About: {{match}}",
+      "matchUnavailable": "a match that is no longer scheduled",
+      "matchLine": "{{date}}: {{players}}",
+      "publicNoteShown": "Note to the player: {{note}}",
+      "privateNoteShown": "Staff note: {{note}}",
+      "resolve": "Resolve",
+      "resolveTitle": "Resolve {{name}}'s request",
+      "resolved": "Request resolved. The player has been told.",
+      "resolveFailed": "Could not resolve the request.",
+      "outcome": "Outcome",
+      "outcomes": {
+        "delivered": {
+          "label": "Delivered",
+          "hint": "You did what they asked. The league keeps {{price}}."
+        },
+        "partial": {
+          "label": "Partly delivered",
+          "hint": "You did some of it. The league keeps {{price}}."
+        },
+        "taken": {
+          "label": "Take the money",
+          "hint": "You do nothing and keep {{price}}. The player reads \"The GM took your money. Better luck next time.\""
+        },
+        "refunded": {
+          "label": "Refund",
+          "hint": "You turn it down and {{price}} goes back to the player."
+        }
+      },
+      "publicNote": "Note to the player (optional)",
+      "publicNoteHint": "The player sees this with the outcome.",
+      "privateNote": "Staff note (optional)",
+      "privateNoteHint": "Only GMs see this. It never reaches the player."
+    },
     "hub": {
       "back": "Admin Panel",
       "superAdminOnly": "Super-admin only",
@@ -890,8 +1048,11 @@
         "videos": "Manage Videos",
         "transfers": "Division Transfers",
         "storylineRequests": "Storyline Requests",
+        "gmInterference": "GM Interference",
         "rivalries": "Rivalries",
         "heatConfig": "Heat Tunables",
+        "economyConfig": "Economy Settings",
+        "contracts": "Contracts",
         "dangerZone": "Danger Zone"
       },
       "groups": {
@@ -2612,6 +2773,215 @@
       "dissolved": "Dissolved"
     }
   },
+  "contracts": {
+    "types": {
+      "tryout": "Tryout",
+      "matches": "Match contract",
+      "season": "Season contract"
+    },
+    "statuses": {
+      "offered": "Offered",
+      "active": "Active",
+      "declined": "Declined",
+      "withdrawn": "Withdrawn",
+      "expired": "Expired",
+      "completed": "Completed",
+      "released": "Released"
+    },
+    "length": {
+      "matches": "{{left}} of {{total}} matches left",
+      "season": "Through {{season}}",
+      "seasonUnknown": "Until the season ends"
+    },
+    "badge": {
+      "freeAgent": "Free agent",
+      "season": "{{type}}, through {{season}}",
+      "matches": "{{type}}, {{left}} of {{total}} matches left"
+    },
+    "desk": {
+      "title": "Contracts",
+      "subtitle": "Offer contracts, follow open offers and release players. Players answer offers from their own account.",
+      "loadFailed": "Could not load contracts.",
+      "offerContract": "Offer contract",
+      "offer": "Offer",
+      "underContract": "Under contract",
+      "unknownPlayer": "Unknown player",
+      "withdraw": "Withdraw",
+      "withdrawTitle": "Withdraw this offer?",
+      "withdrawText": "{{name}} will no longer be able to accept it.",
+      "withdrawn": "Offer withdrawn.",
+      "withdrawFailed": "Failed to withdraw the offer",
+      "release": "Release",
+      "releaseTitle": "Release {{name}}",
+      "releaseText": "The contract ends now and the player becomes a free agent. They will see your note.",
+      "releaseNote": "Reason",
+      "released": "Contract released. The player is a free agent again.",
+      "releaseFailed": "Failed to release the contract",
+      "adjustBalance": "Adjust balance",
+      "tabs": {
+        "active": "Active",
+        "offered": "Offered",
+        "freeAgents": "Free agents",
+        "history": "History"
+      },
+      "empty": {
+        "active": "No one is under contract yet.",
+        "offered": "No open offers.",
+        "freeAgents": "Every player is under contract.",
+        "history": "No past contracts or offers."
+      },
+      "columns": {
+        "player": "Player",
+        "type": "Contract",
+        "length": "Matches left / season",
+        "pay": "Pay per match",
+        "salary": "Weekly salary",
+        "bonus": "Win bonus",
+        "started": "Started",
+        "expires": "Offer expires",
+        "ended": "Ended",
+        "status": "Status",
+        "note": "Note",
+        "record": "Record",
+        "balance": "Balance",
+        "actions": "Actions"
+      }
+    },
+    "offer": {
+      "title": "Offer a contract",
+      "titleFor": "Offer a contract to {{name}}",
+      "submit": "Send offer",
+      "sent": "Offer sent to {{name}}.",
+      "failed": "Failed to send the offer",
+      "loadFailed": "Could not load the contract defaults.",
+      "player": "Player",
+      "pickPlayer": "Pick a player",
+      "noAccount": "No linked account",
+      "type": "Contract type",
+      "season": "Season",
+      "noSeason": "No active season",
+      "matchesTotal": "Length (matches)",
+      "perMatchPay": "Pay per match",
+      "weeklySalary": "Weekly salary",
+      "winBonus": "Win bonus",
+      "tryoutSalaryHint": "Tryouts pay per match only.",
+      "note": "Note to the player (optional)",
+      "expires": "If the player doesn't answer, the offer expires on {{date}}.",
+      "problems": {
+        "amounts": "Fill in every amount with a whole number of 0 or more.",
+        "matchesTotal": "The contract needs at least 1 match.",
+        "noPay": "Set a pay per match or a weekly salary above 0.",
+        "tryoutPay": "A tryout needs a pay per match above 0 and no weekly salary.",
+        "noActiveSeason": "There is no active season, so a season contract can't be offered right now."
+      },
+      "serverErrors": {
+        "invalidType": "Pick a contract type.",
+        "missingPlayer": "Pick a player.",
+        "matchesTotalRequired": "The contract needs a length in matches.",
+        "matchesTotalNotAllowed": "A season contract has no match count.",
+        "seasonRequired": "A season contract needs the active season.",
+        "seasonNotActive": "A season contract can only be for the active season.",
+        "seasonNotAllowed": "Only season contracts name a season.",
+        "invalidAmount": "Every amount must be a whole number of 0 or more.",
+        "noPay": "Set a pay per match or a weekly salary above 0.",
+        "tryoutSalaryNotAllowed": "A tryout pays per match only, with no weekly salary.",
+        "invalidExpiry": "The offer expiry in the economy settings is not valid."
+      }
+    },
+    "balance": {
+      "title": "Adjust {{name}}'s balance",
+      "current": "Current balance: {{balance}}",
+      "submit": "Adjust balance",
+      "amount": "Amount",
+      "amountHint": "Use a minus sign to take money away. The balance can go below zero.",
+      "note": "Reason",
+      "saved": "Balance is now {{balance}}.",
+      "failed": "Failed to adjust the balance"
+    },
+    "freeAgents": {
+      "title": "Free Agents",
+      "subtitle": "Wrestlers without a contract, ready to sign.",
+      "loadFailed": "Could not load the free agents.",
+      "empty": "Every wrestler is under contract right now.",
+      "noDivision": "No division",
+      "offer": "Offer contract",
+      "columns": {
+        "player": "Wrestler",
+        "record": "Record",
+        "division": "Division",
+        "offer": "Contract"
+      }
+    }
+  },
+  "myContract": {
+    "title": "My Contract",
+    "subtitle": "Your contract, your offers and your money.",
+    "loadFailed": "Could not load your contract.",
+    "tabsLabel": "Contract and wallet",
+    "tabs": {
+      "contract": "Contract",
+      "wallet": "Wallet"
+    },
+    "progress": "{{played}} of {{total}} matches played",
+    "current": {
+      "title": "Current contract",
+      "freeAgent": "You're a free agent.",
+      "freeAgentHint": "You still earn the free-agent win bonus. Offers from the GMs show up below."
+    },
+    "terms": {
+      "perMatchPay": "Pay per match",
+      "weeklySalary": "Weekly salary",
+      "winBonus": "Win bonus"
+    },
+    "offers": {
+      "title": "Offers",
+      "empty": "No open offers right now.",
+      "matches_one": "{{count}} match",
+      "matches_other": "{{count}} matches",
+      "daysLeft_one": "{{count}} day left",
+      "daysLeft_other": "{{count}} days left",
+      "hoursLeft_one": "{{count}} hour left",
+      "hoursLeft_other": "{{count}} hours left",
+      "expired": "Expired",
+      "underContract": "You already have a contract. You can accept once it ends.",
+      "accept": "Accept",
+      "decline": "Decline",
+      "accepted": "Contract signed. Welcome aboard!",
+      "declined": "Offer declined.",
+      "answerFailed": "Could not answer the offer."
+    },
+    "past": {
+      "title": "Past contracts",
+      "empty": "Nothing here yet."
+    }
+  },
+  "wallet": {
+    "balance": "Balance",
+    "debtNote": "You're in debt. The shop stays locked until your balance is back above zero.",
+    "card": {
+      "title": "Your wallet",
+      "link": "Wallet history",
+      "thisWeek": "Earned this week",
+      "nextPayday": "Next payday"
+    },
+    "ledger": {
+      "empty": "No money has moved yet. Pay, bonuses and fines will show up here.",
+      "loadFailed": "Could not load your wallet history.",
+      "loadMore": "Show older entries",
+      "balanceAfter": "Balance {{amount}}"
+    },
+    "kinds": {
+      "perMatchPay": "Match pay",
+      "winBonus": "Win bonus",
+      "salary": "Weekly salary",
+      "fine": "Fine",
+      "fineRescinded": "Fine cancelled",
+      "purchase": "Shop purchase",
+      "refund": "Refund",
+      "gmAdjust": "Balance correction",
+      "reversal": "Match pay reversed"
+    }
+  },
   "notifications": {
     "title": "Notifications",
     "bell": "Notifications",
@@ -2633,7 +3003,10 @@
     "typeRivalry": "Rivalry",
     "typeStoryline": "Storyline",
     "typeDiscipline": "Strikes",
-    "typeProgression": "Call-ups"
+    "typeProgression": "Call-ups",
+    "typeContract": "Contract",
+    "typeEconomy": "Wallet",
+    "typeGmInterference": "GM interference"
   },
   "overalls": {
     "admin": {
@@ -3452,6 +3825,10 @@
       },
       "disable": "Disable {{name}}",
       "disabled": "Disabled",
+      "economy": {
+        "description": "Contracts, wallets, fines and the shop. Off until the league economy launches.",
+        "name": "Economy"
+      },
       "enable": "Enable {{name}}",
       "enabled": "Enabled",
       "notifications": {
@@ -3770,6 +4147,145 @@
         "remove": "Strike removed.",
         "reactivate": "Player reactivated."
       }
+    }
+  },
+  "economyShop": {
+    "title": "Shop",
+    "subtitle": "Spend your earnings on an edge. Prices are set by the GMs.",
+    "balance": "Balance: {{amount}}",
+    "staleData": "Some shop details could not be refreshed. What you see may be out of date.",
+    "debtLocked": "You are in debt, so the shop is locked until your balance is back to zero.",
+    "empty": "Nothing is for sale right now.",
+    "itemsLabel": "Shop items",
+    "loadFailed": "Could not load the shop.",
+    "comingSoon": "Coming soon",
+    "buy": "Buy",
+    "buyItem": "Buy {{item}}",
+    "bought": "Bought {{item}}. Your balance is now {{balance}}.",
+    "buyFailed": "The purchase did not go through. Try again.",
+    "matchOption": "{{date}} vs {{opponents}}",
+    "confirmTitle": "Buy {{item}}?",
+    "confirmBuy": "Pay {{price}}",
+    "pickMatch": "Match",
+    "simRefundHint": "If the GM records this match by hand instead of simulating it, you get your money back.",
+    "price": "Price",
+    "balanceAfter": "Balance after",
+    "items": {
+      "injuryShield": {
+        "name": "Injury shield",
+        "effect_one": "Cuts your injury chance by {{percent}}% for your next match.",
+        "effect_other": "Cuts your injury chance by {{percent}}% for your next {{count}} matches."
+      },
+      "rehab": {
+        "name": "Rehab",
+        "effect_one": "Takes {{count}} week off an active injury.",
+        "effect_other": "Takes {{count}} weeks off an active injury."
+      },
+      "staminaTopUp": {
+        "name": "Stamina top-up",
+        "effect": "Adds {{amount}} stamina back, up to your maximum."
+      },
+      "simInterference": {
+        "name": "Sim interference",
+        "effect": "Adds {{boost}} to your rating in one of your simulated matches."
+      },
+      "gmInterference": {
+        "name": "GM interference",
+        "effect": "Pay the GM and ask for anything: a title shot, a run-in, a rival's bad night."
+      }
+    },
+    "blocked": {
+      "comingSoon": "Takes effect once injuries and the match sim launch.",
+      "inDebt": "In debt: the shop is locked until your balance is back to zero.",
+      "insufficientFunds": "You don't have enough money for this.",
+      "shieldActive": "You already have an active injury shield.",
+      "noActiveInjury": "Needs an active injury.",
+      "noScheduledMatch": "Needs a scheduled match you haven't boosted yet.",
+      "requestPending": "You already have a request waiting on the GM."
+    },
+    "refusals": {
+      "ITEM_DISABLED": "This item is not for sale right now.",
+      "IN_DEBT": "You are in debt, so the shop is locked until your balance is back to zero.",
+      "INSUFFICIENT_FUNDS": "You don't have enough money for this.",
+      "SHIELD_ACTIVE": "You already have an active injury shield.",
+      "NO_ACTIVE_INJURY": "Rehab needs an active injury.",
+      "INJURY_TOO_SHORT": "Rehab needs at least 2 weeks left on the injury.",
+      "MATCH_NOT_SCHEDULED": "That match is no longer scheduled.",
+      "NOT_IN_MATCH": "You can only buy interference for a match you are in.",
+      "BOOST_ALREADY_BOUGHT": "You already bought interference for this match.",
+      "REQUEST_PENDING": "You already have a request waiting on the GM.",
+      "ALREADY_RESOLVED": "Another GM already resolved this request.",
+      "OWN_REQUEST": "This is your own request. Another GM has to resolve it."
+    },
+    "gm": {
+      "warning": "The GM may keep your money and do nothing.",
+      "open": "Make a request",
+      "formTitle": "Ask the GM",
+      "requestLabel": "What do you want?",
+      "requestHint": "{{length}} of {{max}} characters",
+      "matchLabel": "About a match (optional)",
+      "noMatch": "No match",
+      "understand": "I understand the GM can keep my money and do nothing.",
+      "pay": "Pay {{price}} and send",
+      "sent": "Request sent. Your balance is now {{balance}}.",
+      "sendFailed": "The request did not go through. Try again.",
+      "myRequests": "My requests",
+      "noRequests": "You haven't asked the GM for anything yet.",
+      "linkedMatch": "About: {{match}}",
+      "gmNote": "GM's note: {{note}}",
+      "status": {
+        "pending": "Waiting on the GM",
+        "delivered": "Delivered",
+        "partial": "Partly delivered",
+        "taken": "Money taken",
+        "refunded": "Refunded"
+      },
+      "outcome": {
+        "delivered": "The GM granted your request.",
+        "partial": "The GM granted part of your request.",
+        "taken": "The GM took your money. Better luck next time.",
+        "refunded": "The GM turned your request down and refunded your money."
+      }
+    }
+  },
+  "economyFines": {
+    "open": "Fines",
+    "title": "Fines: {{name}}",
+    "loadFailed": "Could not load everything. Fines may be missing from the list.",
+    "balance": "Balance: {{amount}}",
+    "issueHeading": "Fine this player",
+    "fineLabel": "Fine",
+    "pickFine": "Pick a preset or a custom amount",
+    "custom": "Custom amount",
+    "amount": "Amount",
+    "reasonRequired": "Reason (shown to the player)",
+    "reasonOptional": "Extra detail (optional, shown to the player)",
+    "reasonHint": "The player sees this with the fine.",
+    "issue": "Fine {{name}}",
+    "issued": "{{name}} was fined {{amount}}.",
+    "issueFailed": "The fine did not go through. Try again.",
+    "history": "Past fines",
+    "noFines": "No fines yet.",
+    "rescindedBadge": "Rescinded",
+    "rescind": "Rescind",
+    "rescindConfirm": "Refund this {{amount}} fine?",
+    "rescindYes": "Refund",
+    "rescinded": "Fine rescinded and refunded.",
+    "rescindFailed": "Could not rescind the fine.",
+    "loadMore": "Show older entries",
+    "noShow": {
+      "open": "No-shows",
+      "title": "No-shows",
+      "description": "Marking a no-show fines the player the league's no-show fine. Undoing it refunds the fine. The match itself stays as it is.",
+      "note": "Note for the fine (optional)",
+      "badge": "No-show",
+      "mark": "Mark no-show",
+      "markFor": "Mark {{name}} as a no-show",
+      "undo": "Undo",
+      "undoFor": "Undo {{name}}'s no-show",
+      "marked": "{{name}} was marked as a no-show.",
+      "undone": "{{name}}'s no-show was undone.",
+      "failed": "Could not save the no-show."
     }
   },
   "pwa": {

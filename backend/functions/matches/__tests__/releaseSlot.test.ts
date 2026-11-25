@@ -232,4 +232,33 @@ describe('releaseSlot', () => {
     const r = await releaseSlot(ev({ pathParameters: { matchId: 'm1', slotId: 'unknown' } }), ctx, cb);
     expect(r!.statusCode).toBe(404);
   });
+
+  // ECO-08: who paid for a sim boost is private.
+  describe('sim boost privacy', () => {
+    const boosts = [
+      { playerId: 'p-caller', boost: 5, purchasedAt: 'x', purchaseKey: 'k1' },
+      { playerId: 'p-other', boost: 5, purchasedAt: 'y', purchaseKey: 'k2' },
+    ];
+
+    it('returns only the caller\'s own boost to a player', async () => {
+      mockPlayersFindByUserId.mockResolvedValue({ playerId: 'p-caller' });
+      mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch({ simBoosts: boosts }));
+      captureTx();
+
+      const r = await releaseSlot(ev(), ctx, cb);
+
+      expect(r!.statusCode).toBe(200);
+      expect(JSON.parse(r!.body).simBoosts).toEqual([{ playerId: 'p-caller', boost: 5, purchasedAt: 'x' }]);
+    });
+
+    it('returns every boost to staff', async () => {
+      mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch({ simBoosts: boosts }));
+      captureTx();
+
+      const r = await releaseSlot(ev({ pathParameters: { matchId: 'm1', slotId: 's2' } }, 'Moderator'), ctx, cb);
+
+      expect(r!.statusCode).toBe(200);
+      expect(JSON.parse(r!.body).simBoosts).toEqual(boosts);
+    });
+  });
 });
