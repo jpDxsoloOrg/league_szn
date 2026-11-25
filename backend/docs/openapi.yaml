@@ -805,6 +805,7 @@ components:
         notifications: { type: boolean }
         transfers: { type: boolean }
         ticker: { type: boolean, description: 'League ticker. Off removes it everywhere and GET /ticker returns no segments.' }
+        economy: { type: boolean, description: 'Contracts, wallets, fines and the shop. Off by default.' }
 
     TickerSettings:
       type: object
@@ -823,6 +824,118 @@ components:
       properties:
         features: { $ref: '#/components/schemas/SiteFeatures' }
         ticker: { $ref: '#/components/schemas/TickerSettings' }
+
+    ContractPayTerms:
+      type: object
+      required: [perMatchPay, weeklySalary, winBonus]
+      properties:
+        perMatchPay: { type: integer, minimum: 0 }
+        weeklySalary: { type: integer, minimum: 0 }
+        winBonus: { type: integer, minimum: 0 }
+
+    FinePreset:
+      type: object
+      required: [key, label, amount]
+      properties:
+        key: { type: string, description: 'Unique among the presets.' }
+        label: { type: string }
+        amount: { type: integer, minimum: 0 }
+
+    EconomyShopSettings:
+      type: object
+      properties:
+        injuryShield:
+          type: object
+          properties:
+            enabled: { type: boolean }
+            price: { type: integer, minimum: 0 }
+            chanceReduction: { type: number, minimum: 0, maximum: 1, description: 'Fraction taken off the injury chance.' }
+            matches: { type: integer, minimum: 1 }
+        rehab:
+          type: object
+          properties:
+            enabled: { type: boolean }
+            price: { type: integer, minimum: 0 }
+            weeksOff: { type: integer, minimum: 1 }
+        staminaTopUp:
+          type: object
+          properties:
+            enabled: { type: boolean }
+            price: { type: integer, minimum: 0 }
+            amount: { type: integer, minimum: 0 }
+        simInterference:
+          type: object
+          properties:
+            enabled: { type: boolean }
+            price: { type: integer, minimum: 0 }
+            ratingBoost: { type: integer, minimum: 0 }
+        gmInterference:
+          type: object
+          properties:
+            enabled: { type: boolean }
+            price: { type: integer, minimum: 0 }
+
+    EconomySettings:
+      type: object
+      description: League economy settings. Amounts are whole numbers of the league currency (max 1000000).
+      properties:
+        currencyName: { type: string, example: League Dollars }
+        currencySymbol: { type: string, example: $ }
+        contractDefaults:
+          type: object
+          description: Pay terms each contract offer starts from. GMs can override each offer.
+          properties:
+            tryout:
+              allOf:
+                - $ref: '#/components/schemas/ContractPayTerms'
+                - type: object
+                  properties:
+                    matches: { type: integer, minimum: 1 }
+            matches: { $ref: '#/components/schemas/ContractPayTerms' }
+            season: { $ref: '#/components/schemas/ContractPayTerms' }
+        freeAgentWinBonus: { type: integer, minimum: 0 }
+        offerExpiryDays: { type: integer, minimum: 1 }
+        noShowFine: { type: integer, minimum: 0 }
+        finePresets: { type: array, items: { $ref: '#/components/schemas/FinePreset' } }
+        shop: { $ref: '#/components/schemas/EconomyShopSettings' }
+        version: { type: integer, description: '0 until first saved; each save adds 1. The last 20 versions are kept.' }
+        updatedAt: { type: string, format: date-time, nullable: true }
+        updatedBy: { type: string, nullable: true }
+
+    UpdateEconomySettingsInput:
+      type: object
+      required: [settings]
+      properties:
+        settings:
+          type: object
+          description: >-
+            A full or partial EconomySettings (without version, updatedAt, updatedBy). Nested objects
+            merge into the current settings; finePresets replaces the list. The merged result is validated.
+        expectedVersion:
+          type: integer
+          minimum: 0
+          description: The version the edit was based on. A save over a newer version returns 409.
+
+    EconomyCatalog:
+      type: object
+      properties:
+        currencyName: { type: string }
+        currencySymbol: { type: string }
+        version: { type: integer }
+        items:
+          type: array
+          description: Enabled shop items only, in a fixed order.
+          items:
+            type: object
+            properties:
+              key: { type: string, enum: [injuryShield, rehab, staminaTopUp, simInterference, gmInterference] }
+              enabled: { type: boolean }
+              price: { type: integer }
+              chanceReduction: { type: number }
+              matches: { type: integer }
+              weeksOff: { type: integer }
+              amount: { type: integer }
+              ratingBoost: { type: integer }
 
     UpdateSiteConfigInput:
       type: object
@@ -1431,6 +1544,56 @@ paths:
         '400': { description: 'Invalid feature key or ticker setting', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /admin/economy-config:
+    get:
+      tags: [Site Config]
+      summary: Get the economy settings (Moderator, Admin)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Current settings, merged over the defaults
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings: { $ref: '#/components/schemas/EconomySettings' }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    put:
+      tags: [Site Config]
+      summary: Save the economy settings as a new version (Admin)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateEconomySettingsInput' }
+      responses:
+        '200':
+          description: The saved settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings: { $ref: '#/components/schemas/EconomySettings' }
+        '400': { description: 'Invalid settings: negative or fractional amount, duplicate preset key, shield reduction outside [0, 1], unknown key', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'expectedVersion is stale, or another save won the race', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /economy/catalog:
+    get:
+      tags: [Site Config]
+      summary: Shop catalog (enabled items and prices)
+      responses:
+        '200':
+          description: The catalog
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EconomyCatalog' }
+        '500': { description: 'Server error', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /players/me:
     get:

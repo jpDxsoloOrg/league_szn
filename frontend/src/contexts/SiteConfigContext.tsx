@@ -18,6 +18,7 @@ const DEFAULT_FEATURES: SiteFeatures = {
   rivalries: true,
   transfers: false,
   ticker: true,
+  economy: false,
 };
 
 const DEFAULT_TICKER_SETTINGS: TickerSettings = {

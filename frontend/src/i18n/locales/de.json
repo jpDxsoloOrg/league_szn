@@ -3452,6 +3452,10 @@
       },
       "disable": "{{name}} deaktivieren",
       "disabled": "Deaktiviert",
+      "economy": {
+        "description": "Verträge, Konten, Strafen und der Shop. Aus, bis die Liga-Wirtschaft startet.",
+        "name": "Wirtschaft"
+      },
       "enable": "{{name}} aktivieren",
       "enabled": "Aktiviert",
       "notifications": {

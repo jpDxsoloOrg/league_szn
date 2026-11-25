@@ -1,5 +1,11 @@
 import { v4 as uuidv4 } from 'uuid';
-import { NotFoundError } from '../errors';
+import { ConflictError, NotFoundError } from '../errors';
+import {
+  appendEconomyVersion,
+  mergeEconomySettings,
+  type EconomySettings,
+  type EconomySettingsInput,
+} from '../../policies/economyDefaults';
 import type { FeatureFlags, RivalryHeatTunables, TickerSettings } from '../SiteConfigRepository';
 import { DEFAULT_FEATURES, DEFAULT_HEAT_TUNABLES, mergeTickerSettings } from '../SiteConfigRepository';
 import type {
@@ -367,6 +373,30 @@ class SiteConfigImpl implements SiteConfigMethods {
   async updateTickerSettings(patch: Partial<TickerSettings>): Promise<TickerSettings> {
     this.tickerSettings = mergeTickerSettings({ ...this.tickerSettings, ...patch });
     return this.getTickerSettings();
+  }
+
+  /** Saved economy versions, newest first. */
+  economyVersions: EconomySettings[] = [];
+
+  async getEconomySettings(): Promise<EconomySettings> {
+    return mergeEconomySettings(this.economyVersions[0]);
+  }
+
+  async saveEconomySettings(
+    input: EconomySettingsInput,
+    updatedBy: string,
+    expectedVersion?: number,
+  ): Promise<EconomySettings> {
+    const currentVersion = this.economyVersions[0]?.version ?? 0;
+    if (expectedVersion !== undefined && expectedVersion !== currentVersion) {
+      throw new ConflictError(`Economy settings are at version ${currentVersion}, not ${expectedVersion}`);
+    }
+    this.economyVersions = appendEconomyVersion(this.economyVersions, input, updatedBy, new Date().toISOString());
+    return this.getEconomySettings();
+  }
+
+  async listEconomySettingsVersions(): Promise<EconomySettings[]> {
+    return this.economyVersions.map((version) => mergeEconomySettings(version));
   }
 }
 

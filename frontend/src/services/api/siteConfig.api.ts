@@ -11,6 +11,8 @@ export interface SiteFeatures {
   transfers: boolean;
   /** The league ticker. Off removes it everywhere. */
   ticker: boolean;
+  /** Contracts, wallets, fines and the shop. Off by default. */
+  economy: boolean;
 }
 
 /** Ticker segment keys, in the order the feed shows them. Mirrors `TICKER_PRIORITY` on the backend. */

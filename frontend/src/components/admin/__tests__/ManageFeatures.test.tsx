@@ -136,6 +136,22 @@ describe('ManageFeatures', () => {
     expect(screen.getByLabelText('Enable League Ticker')).toHaveTextContent('Disabled');
   });
 
+  it('lists the economy flag, off when the server leaves it off', async () => {
+    const mockRefresh = vi.fn().mockResolvedValue(undefined);
+    mockUseSiteConfig.mockReturnValue({ features: { ...ALL_FEATURES, economy: false }, refreshConfig: mockRefresh });
+    mockSiteConfigApi.updateFeatures.mockResolvedValue({ features: { ...ALL_FEATURES, economy: true } });
+
+    const user = userEvent.setup();
+    render(<ManageFeatures />);
+
+    expect(screen.getByText('Economy')).toBeInTheDocument();
+    const toggle = screen.getByLabelText('Enable Economy');
+    expect(toggle).toHaveTextContent('Disabled');
+
+    await user.click(toggle);
+    await waitFor(() => expect(mockSiteConfigApi.updateFeatures).toHaveBeenCalledWith({ economy: true }));
+  });
+
   it('saves ticker segments, speed and relegation visibility', async () => {
     const mockRefresh = vi.fn().mockResolvedValue(undefined);
     mockUseSiteConfig.mockReturnValue({ features: ALL_FEATURES, refreshConfig: mockRefresh });

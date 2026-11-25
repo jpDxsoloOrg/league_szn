@@ -5,7 +5,10 @@ import { handler as seedDataHandler } from './seedData';
 import { handler as exportDataHandler } from './exportData';
 import { handler as getHeatConfigHandler } from './getHeatConfig';
 import { handler as updateHeatConfigHandler } from './updateHeatConfig';
-import { createRouter, type RouteConfig, ADMIN_ONLY } from '../../lib/router';
+import { handler as getEconomyConfigHandler } from './getEconomyConfig';
+import { handler as updateEconomyConfigHandler } from './updateEconomyConfig';
+import { handler as getEconomyCatalogHandler } from './getEconomyCatalog';
+import { createRouter, type RouteConfig, ADMIN_ONLY, STAFF } from '../../lib/router';
 
 /**
  * Single Lambda for admin: routes by HTTP method and resource.
@@ -54,6 +57,24 @@ export const routes: ReadonlyArray<RouteConfig> = [
     method: 'PUT',
     handler: updateHeatConfigHandler,
     access: ADMIN_ONLY,
+  },
+  {
+    resource: '/admin/economy-config',
+    method: 'GET',
+    handler: getEconomyConfigHandler,
+    access: STAFF,
+  },
+  {
+    resource: '/admin/economy-config',
+    method: 'PUT',
+    handler: updateEconomyConfigHandler,
+    access: ADMIN_ONLY,
+  },
+  {
+    resource: '/economy/catalog',
+    method: 'GET',
+    handler: getEconomyCatalogHandler,
+    access: 'public',
   },
 ];
 

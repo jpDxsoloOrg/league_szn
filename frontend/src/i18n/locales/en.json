@@ -3452,6 +3452,10 @@
       },
       "disable": "Disable {{name}}",
       "disabled": "Disabled",
+      "economy": {
+        "description": "Contracts, wallets, fines and the shop. Off until the league economy launches.",
+        "name": "Economy"
+      },
       "enable": "Enable {{name}}",
       "enabled": "Enabled",
       "notifications": {

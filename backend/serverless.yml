@@ -347,6 +347,20 @@ functions:
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
+      - http:
+          path: admin/economy-config
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/economy-config
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: economy/catalog
+          method: get
+          cors: *corsConfig
 
   # Players (Phase 2 consolidated: getPlayers, createPlayer, updatePlayer, deletePlayer, getMyProfile, updateMyProfile)
   players:

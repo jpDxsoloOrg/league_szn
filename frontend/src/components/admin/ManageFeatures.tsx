@@ -46,6 +46,10 @@ const FEATURE_LABELS: Record<keyof SiteFeatures, { name: string; description: st
     name: 'League Ticker',
     description: 'The scrolling league news ticker under the header. Off removes it everywhere.',
   },
+  economy: {
+    name: 'Economy',
+    description: 'Contracts, wallets, fines and the shop. Off until the league economy launches.',
+  },
 };
 
 export default function ManageFeatures() {

@@ -25,6 +25,7 @@ const DEFAULT_FEATURES = {
   notifications: true,
   transfers: false,
   ticker: true,
+  economy: false,
 };
 
 const ALL_SEGMENTS = [
@@ -111,6 +112,7 @@ describe('getSiteConfig', () => {
       notifications: true,
       transfers: false,
       ticker: true,
+      economy: false,
     });
   });
 });
@@ -264,6 +266,7 @@ describe('updateSiteConfig', () => {
       notifications: true,
       transfers: false,
       ticker: true,
+      economy: false,
     });
   });
 
@@ -287,6 +290,7 @@ describe('updateSiteConfig', () => {
       notifications: true,
       transfers: false,
       ticker: true,
+      economy: false,
     });
   });
 

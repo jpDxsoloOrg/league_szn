@@ -1,4 +1,5 @@
 import { TICKER_SEGMENT_KEYS, type TickerSegmentKey } from '../ticker/segments';
+import type { EconomySettings, EconomySettingsInput } from '../policies/economyDefaults';
 
 export interface FeatureFlags {
   challenges: boolean;
@@ -12,6 +13,8 @@ export interface FeatureFlags {
   transfers: boolean;
   /** The league ticker under the header. Off removes it everywhere. */
   ticker: boolean;
+  /** Contracts, wallets, fines and the shop (ECO). Off until the GMs launch it. */
+  economy: boolean;
 }
 
 export const DEFAULT_FEATURES: FeatureFlags = {
@@ -24,6 +27,7 @@ export const DEFAULT_FEATURES: FeatureFlags = {
   notifications: true,
   transfers: false,
   ticker: true,
+  economy: false,
 };
 
 export const TICKER_SCROLL_SPEEDS = ['slow', 'normal', 'fast'] as const;
@@ -101,4 +105,14 @@ export interface SiteConfigRepository {
   updateHeatTunables(patch: Partial<RivalryHeatTunables>): Promise<RivalryHeatTunables>;
   getTickerSettings(): Promise<TickerSettings>;
   updateTickerSettings(patch: Partial<TickerSettings>): Promise<TickerSettings>;
+  /** The current economy settings, merged over the defaults (version 0 if never saved). */
+  getEconomySettings(): Promise<EconomySettings>;
+  /**
+   * Saves a validated settings object as the next version and keeps the last
+   * ECONOMY_SETTINGS_VERSIONS_KEPT versions. With `expectedVersion`, throws
+   * ConflictError when the stored version has moved on.
+   */
+  saveEconomySettings(input: EconomySettingsInput, updatedBy: string, expectedVersion?: number): Promise<EconomySettings>;
+  /** Saved versions, newest first (empty if never saved). */
+  listEconomySettingsVersions(): Promise<EconomySettings[]>;
 }
