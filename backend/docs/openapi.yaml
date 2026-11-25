@@ -351,6 +351,63 @@ components:
         entry: { $ref: '#/components/schemas/LedgerEntry' }
         balance: { type: integer }
         alreadyApplied: { type: boolean }
+
+    # ECO-04: contracts
+    Contract:
+      type: object
+      required: [contractId, playerId, type, status, matchesPlayed, perMatchPay, weeklySalary, winBonus, offeredBy, offeredAt, offerExpiresAt, createdAt, updatedAt]
+      properties:
+        contractId: { type: string }
+        playerId: { type: string }
+        type: { type: string, enum: [tryout, matches, season] }
+        status: { type: string, enum: [offered, active, declined, withdrawn, expired, completed, released] }
+        matchesTotal: { type: integer, description: Tryout and matches contracts only }
+        matchesPlayed: { type: integer }
+        seasonId: { type: string, description: Season contracts only }
+        perMatchPay: { type: integer }
+        weeklySalary: { type: integer }
+        winBonus: { type: integer }
+        offeredBy: { type: string, description: User id of the GM who made the offer }
+        offeredAt: { type: string, format: date-time }
+        offerExpiresAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: string, format: date-time }
+        endReason:
+          type: string
+          enum: [offerDeclined, offerWithdrawn, otherOfferAccepted, offerExpired, matchesCompleted, seasonEnded, released]
+        note: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    PublicContract:
+      type: object
+      description: A contract without money, the offering GM or notes.
+      required: [contractId, playerId, type, status, matchesPlayed]
+      properties:
+        contractId: { type: string }
+        playerId: { type: string }
+        type: { type: string, enum: [tryout, matches, season] }
+        status: { type: string, enum: [offered, active, declined, withdrawn, expired, completed, released] }
+        matchesTotal: { type: integer }
+        matchesPlayed: { type: integer }
+        seasonId: { type: string }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: string, format: date-time }
+    ContractOfferInput:
+      type: object
+      required: [playerId, type]
+      description: >-
+        Pay fields left out take the economy settings' defaults for the type.
+        A tryout's matchesTotal defaults to the tryout length; a season
+        contract's seasonId defaults to the active season.
+      properties:
+        playerId: { type: string }
+        type: { type: string, enum: [tryout, matches, season] }
+        matchesTotal: { type: integer, minimum: 1 }
+        seasonId: { type: string }
+        perMatchPay: { type: integer, minimum: 0 }
+        weeklySalary: { type: integer, minimum: 0 }
+        winBonus: { type: integer, minimum: 0 }
+        note: { type: string, maxLength: 500 }
     DisciplineActionResult:
       type: object
       required: [playerId, version, summary, accountSync, softHoldsCleared, holdings]
@@ -2989,6 +3046,197 @@ paths:
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '409': { description: 'The balance changed while saving; try again', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Contracts (ECO-04) ───────────────────────────────────────────
+
+  /contracts:
+    get:
+      tags: [Players]
+      summary: List contracts and offers with their money (Moderator, Admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [offered, active, declined, withdrawn, expired, completed, released] } }
+        - { name: playerId, in: query, schema: { type: string } }
+        - { name: type, in: query, schema: { type: string, enum: [tryout, matches, season] } }
+      responses:
+        '200':
+          description: Contracts, newest first
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Contract' } }
+        '400': { description: 'Unknown status or type', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    post:
+      tags: [Players]
+      summary: Offer a contract to a player (Moderator, Admin)
+      description: >-
+        A player may hold several open offers but only one active contract.
+        The offer expires after the economy settings' offerExpiryDays. The
+        player is notified.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContractOfferInput' }
+      responses:
+        '201':
+          description: The offer
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Contract' }
+        '400': { description: 'Invalid offer (an `errors` array lists each rule broken), or the player has no linked account', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'PLAYER_DEACTIVATED', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /contracts/{contractId}/accept:
+    post:
+      tags: [Players]
+      summary: Accept an offer (the player it was made to)
+      description: >-
+        One transaction activates the contract, sets the player's
+        activeContractId (only if none is set) and withdraws the player's
+        other open offers. GMs are notified.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: contractId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The active contract and the ids of the offers withdrawn with it
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contract: { $ref: '#/components/schemas/Contract' }
+                  withdrawnOfferIds: { type: array, items: { type: string } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not the player this offer was made to', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Contract not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Already under contract, the offer is not open or has expired, the season ended, or a concurrent change', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /contracts/{contractId}/decline:
+    post:
+      tags: [Players]
+      summary: Decline an offer (the player it was made to)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: contractId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The declined offer
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Contract' }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not the player this offer was made to', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Contract not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'The offer is not open or has expired', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /contracts/{contractId}/withdraw:
+    post:
+      tags: [Players]
+      summary: Withdraw an open offer (Moderator, Admin)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: contractId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The withdrawn offer
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Contract' }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Contract not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Not an open offer', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /contracts/{contractId}/release:
+    post:
+      tags: [Players]
+      summary: Release a player from an active contract now (Moderator, Admin)
+      description: Ends the contract, clears the player's activeContractId and notifies the player. The note replaces the contract's note.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: contractId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [note]
+              properties:
+                note: { type: string, minLength: 1, maxLength: 500 }
+      responses:
+        '200':
+          description: The released contract
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Contract' }
+        '400': { description: 'Missing or too long note', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Contract not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Not an active contract, or a concurrent change', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /players/me/contracts:
+    get:
+      tags: [Profile]
+      summary: The signed-in player's contract, open offers and history, with money
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: >-
+            An offer past its expiry that the hourly sweep has not reached yet
+            is listed in pastContracts as expired.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [playerId, balance, activeContract, offers, pastContracts]
+                properties:
+                  playerId: { type: string }
+                  balance: { type: integer }
+                  activeContract: { allOf: [{ $ref: '#/components/schemas/Contract' }], nullable: true }
+                  offers: { type: array, items: { $ref: '#/components/schemas/Contract' }, description: Soonest to expire first }
+                  pastContracts: { type: array, items: { $ref: '#/components/schemas/Contract' }, description: Newest first }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'No player profile for this user', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /players/{playerId}/contract:
+    get:
+      tags: [Players]
+      summary: A player's contract badge (public, no money)
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The active contract, or freeAgent true
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [playerId, freeAgent, contract]
+                properties:
+                  playerId: { type: string }
+                  freeAgent: { type: boolean }
+                  contract: { allOf: [{ $ref: '#/components/schemas/PublicContract' }], nullable: true }
+        '404': { description: 'Player not found or hidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /free-agents:
+    get:
+      tags: [Players]
+      summary: Visible players with no active contract (public)
+      responses:
+        '200':
+          description: Players in the same public shape as GET /players, sorted by wrestler name
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Player' } }
 
   # ── Companies ─────────────────────────────────────────────────────
 

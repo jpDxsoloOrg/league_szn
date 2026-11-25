@@ -24,6 +24,9 @@ const SELF_SERVICE_WRITES = new Set([
   'POST /challenges',
   'POST /challenges/{challengeId}/respond',
   'POST /challenges/{challengeId}/cancel',
+  // ECO-04: the handlers allow only the player the offer was made to.
+  'POST /contracts/{contractId}/accept',
+  'POST /contracts/{contractId}/decline',
   'POST /events/{eventId}/check-in',
   'DELETE /events/{eventId}/check-in',
   'POST /matches/{matchId}/slots/{slotId}/claim',

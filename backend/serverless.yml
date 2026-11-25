@@ -1033,6 +1033,54 @@ functions:
     events:
       - schedule: rate(1 hour)
 
+  # ECO-04: hourly sweep that expires contract offers past offerExpiresAt.
+  # New function, log group, Events::Rule and permission all route to
+  # Overflow through stacks-map.js.
+  expireContractOffers:
+    handler: functions/contracts/expireOffers.handler
+    timeout: 60
+    events:
+      - schedule: rate(1 hour)
+
+  # ECO-04: contract offers, the player's own contracts, public contract badge
+  # and the free agent pool. No gateway authorizer: access is declared per
+  # route in functions/contracts/handler.ts and enforced by the router.
+  contracts:
+    handler: functions/contracts/handler.handler
+    events:
+      - http:
+          path: contracts
+          method: any
+          cors: *corsConfig
+      - http:
+          path: contracts/{contractId}/accept
+          method: post
+          cors: *corsConfig
+      - http:
+          path: contracts/{contractId}/decline
+          method: post
+          cors: *corsConfig
+      - http:
+          path: contracts/{contractId}/withdraw
+          method: post
+          cors: *corsConfig
+      - http:
+          path: contracts/{contractId}/release
+          method: post
+          cors: *corsConfig
+      - http:
+          path: players/me/contracts
+          method: get
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/contract
+          method: get
+          cors: *corsConfig
+      - http:
+          path: free-agents
+          method: get
+          cors: *corsConfig
+
   # Recalculates contender rankings for every active title, one title at a time
   # in this single invocation, so it holds one of the account's 10 concurrent
   # Lambdas. A run is a few seconds of work at current volume; the timeout leaves

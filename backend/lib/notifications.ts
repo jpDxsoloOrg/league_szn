@@ -19,6 +19,12 @@ export type NotificationType =
   | 'strike_issued'
   | 'strike_removed'
   | 'account_reactivated'
+  // ECO-04: contract offers
+  | 'contract_offer'
+  | 'contract_offer_accepted'
+  | 'contract_offer_declined'
+  | 'contract_offer_expired'
+  | 'contract_released'
   | 'progression_consideration'
   | 'progression_executed'
   | 'progression_milestone'
@@ -31,7 +37,7 @@ export type RivalryNotificationType =
   | 'rivalry_status_change'
   | 'rivalry_reviewed';
 
-export type NotificationSourceType = 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'storyline_request' | 'rivalry' | 'discipline' | 'progression';
+export type NotificationSourceType = 'promo' | 'challenge' | 'contract' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'storyline_request' | 'rivalry' | 'discipline' | 'progression';
 
 export interface CreateNotificationParams {
   userId: string;
