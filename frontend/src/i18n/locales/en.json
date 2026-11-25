@@ -4053,6 +4053,85 @@
       "cage": "e.g. Steel Cage, Hell in a Cell."
     }
   },
+  "sim": {
+    "beats": {
+      "opening": {
+        "v1": "{{wrestler}} and {{opponent}} lock up at the bell.",
+        "v2": "{{wrestler}} charges straight at {{opponent}} as the bell rings.",
+        "v3": "{{wrestler}} and {{opponent}} circle each other, sizing each other up."
+      },
+      "openingTag": {
+        "v1": "{{wrestler}} starts for their team against {{opponent}}.",
+        "v2": "{{wrestler}} and {{opponent}} kick things off for their teams.",
+        "v3": "{{wrestler}} steps in first and goes right after {{opponent}}."
+      },
+      "openingMulti": {
+        "v1": "{{wrestler}} goes after {{opponent}} as chaos breaks out at the bell.",
+        "v2": "Bodies everywhere at the bell, and {{wrestler}} singles out {{opponent}}.",
+        "v3": "{{wrestler}} strikes first in the free-for-all, taking down {{opponent}}."
+      },
+      "momentumStrikes": {
+        "v1": "{{wrestler}} lights up {{opponent}} with a flurry of strikes.",
+        "v2": "{{wrestler}} rocks {{opponent}} with a stiff forearm.",
+        "v3": "{{wrestler}} backs {{opponent}} into the corner with heavy chops."
+      },
+      "momentumGrapple": {
+        "v1": "{{wrestler}} takes {{opponent}} down with a crisp suplex.",
+        "v2": "{{wrestler}} grounds {{opponent}} with a tight headlock.",
+        "v3": "{{wrestler}} works over {{opponent}}'s arm with a nasty joint lock."
+      },
+      "momentumAgility": {
+        "v1": "{{wrestler}} flies off the top rope onto {{opponent}}.",
+        "v2": "{{wrestler}} dives through the ropes and wipes out {{opponent}}.",
+        "v3": "{{wrestler}} outpaces {{opponent}} with a springboard dropkick."
+      },
+      "momentumEndurance": {
+        "v1": "{{wrestler}} shrugs off {{opponent}}'s offence and keeps coming.",
+        "v2": "{{wrestler}} grinds {{opponent}} down with a long, punishing stretch.",
+        "v3": "{{wrestler}} weathers the storm and wears {{opponent}} out."
+      },
+      "signature": {
+        "v1": "{{wrestler}} hits {{opponent}} with the {{move}}!",
+        "v2": "{{wrestler}} catches {{opponent}} with the {{move}} out of nowhere!",
+        "v3": "{{wrestler}} sets up and nails the {{move}} on {{opponent}}!"
+      },
+      "signatureGeneric": {
+        "v1": "{{wrestler}} hits {{opponent}} with a big move!",
+        "v2": "{{wrestler}} catches {{opponent}} with something big!",
+        "v3": "{{wrestler}} plants {{opponent}} with a huge move!"
+      },
+      "nearFall": {
+        "v1": "{{wrestler}} covers {{opponent}}: one, two… {{opponent}} kicks out!",
+        "v2": "{{wrestler}} thinks it's over, but {{opponent}} gets a shoulder up at two!",
+        "v3": "So close! {{opponent}} escapes {{wrestler}}'s pin at the last second."
+      },
+      "finisherKickout": {
+        "v1": "{{wrestler}} hits the {{move}}… but {{opponent}} kicks out at two!",
+        "v2": "The {{move}} from {{wrestler}}! One, two… {{opponent}} survives!",
+        "v3": "{{wrestler}} can't believe it: {{opponent}} kicks out of the {{move}}!"
+      },
+      "finisher": {
+        "v1": "{{wrestler}} hits {{opponent}} with the {{move}}!",
+        "v2": "{{wrestler}} calls for it… the {{move}} on {{opponent}}!",
+        "v3": "{{wrestler}} counters {{opponent}} straight into the {{move}}!"
+      },
+      "finisherGeneric": {
+        "v1": "{{wrestler}} hits {{opponent}} with their finisher!",
+        "v2": "{{wrestler}} calls for the finisher and drills {{opponent}}!",
+        "v3": "{{wrestler}} puts {{opponent}} away with their biggest move!"
+      },
+      "finishPin": {
+        "v1": "{{wrestler}} covers {{opponent}}: one, two, three! {{wrestler}} wins!",
+        "v2": "{{wrestler}} hooks the leg on {{opponent}} for the three count and the win!",
+        "v3": "{{opponent}} can't kick out: {{wrestler}} gets the pin!"
+      },
+      "finishSubmission": {
+        "v1": "{{wrestler}} locks {{opponent}} in a submission and {{opponent}} taps! {{wrestler}} wins!",
+        "v2": "{{opponent}} has nowhere to go and taps out to {{wrestler}}!",
+        "v3": "{{wrestler}} cranks the hold until {{opponent}} gives up!"
+      }
+    }
+  },
   "discipline": {
     "status": {
       "clear": "No active strikes",

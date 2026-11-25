@@ -4053,6 +4053,85 @@
       "cage": "z. B. Steel Cage, Hell in a Cell."
     }
   },
+  "sim": {
+    "beats": {
+      "opening": {
+        "v1": "{{wrestler}} und {{opponent}} gehen beim Gong in den Clinch.",
+        "v2": "{{wrestler}} stürmt beim Gong direkt auf {{opponent}} los.",
+        "v3": "{{wrestler}} und {{opponent}} umkreisen sich und taxieren sich."
+      },
+      "openingTag": {
+        "v1": "{{wrestler}} beginnt fürs Team gegen {{opponent}}.",
+        "v2": "{{wrestler}} und {{opponent}} eröffnen das Match für ihre Teams.",
+        "v3": "{{wrestler}} steigt als Erstes in den Ring und geht direkt auf {{opponent}} los."
+      },
+      "openingMulti": {
+        "v1": "Beim Gong bricht Chaos aus, und {{wrestler}} geht auf {{opponent}} los.",
+        "v2": "Überall fliegen Körper, und {{wrestler}} nimmt sich {{opponent}} vor.",
+        "v3": "{{wrestler}} schlägt im Durcheinander zuerst zu und bringt {{opponent}} zu Boden."
+      },
+      "momentumStrikes": {
+        "v1": "{{wrestler}} deckt {{opponent}} mit einem Schlaghagel ein.",
+        "v2": "{{wrestler}} erschüttert {{opponent}} mit einem harten Unterarm.",
+        "v3": "{{wrestler}} treibt {{opponent}} mit wuchtigen Chops in die Ecke."
+      },
+      "momentumGrapple": {
+        "v1": "{{wrestler}} bringt {{opponent}} mit einem sauberen Suplex zu Boden.",
+        "v2": "{{wrestler}} hält {{opponent}} mit einem festen Headlock am Boden.",
+        "v3": "{{wrestler}} bearbeitet den Arm von {{opponent}} mit einem fiesen Hebel."
+      },
+      "momentumAgility": {
+        "v1": "{{wrestler}} fliegt vom obersten Seil auf {{opponent}}.",
+        "v2": "{{wrestler}} hechtet durch die Seile und räumt {{opponent}} ab.",
+        "v3": "{{wrestler}} ist zu schnell für {{opponent}} und trifft einen Springboard-Dropkick."
+      },
+      "momentumEndurance": {
+        "v1": "{{wrestler}} steckt die Angriffe von {{opponent}} weg und macht einfach weiter.",
+        "v2": "{{wrestler}} zermürbt {{opponent}} mit einer langen, schmerzhaften Phase.",
+        "v3": "{{wrestler}} übersteht den Sturm und macht {{opponent}} müde."
+      },
+      "signature": {
+        "v1": "{{wrestler}} trifft {{opponent}} mit dem {{move}}!",
+        "v2": "{{wrestler}} erwischt {{opponent}} aus dem Nichts mit dem {{move}}!",
+        "v3": "{{wrestler}} setzt an und bringt den {{move}} gegen {{opponent}} durch!"
+      },
+      "signatureGeneric": {
+        "v1": "{{wrestler}} trifft {{opponent}} mit einer großen Aktion!",
+        "v2": "{{wrestler}} erwischt {{opponent}} mit etwas Großem!",
+        "v3": "{{wrestler}} pflanzt {{opponent}} mit einem gewaltigen Move in die Matte!"
+      },
+      "nearFall": {
+        "v1": "{{wrestler}} covert {{opponent}}: eins, zwei … {{opponent}} kickt aus!",
+        "v2": "{{wrestler}} glaubt schon an den Sieg, aber {{opponent}} hebt bei zwei die Schulter!",
+        "v3": "Knapp! {{opponent}} befreit sich in letzter Sekunde aus dem Pin von {{wrestler}}."
+      },
+      "finisherKickout": {
+        "v1": "{{wrestler}} trifft den {{move}} … aber {{opponent}} kickt bei zwei aus!",
+        "v2": "Der {{move}} von {{wrestler}}! Eins, zwei … {{opponent}} übersteht es!",
+        "v3": "{{wrestler}} kann es nicht fassen: {{opponent}} kickt nach dem {{move}} aus!"
+      },
+      "finisher": {
+        "v1": "{{wrestler}} trifft {{opponent}} mit dem {{move}}!",
+        "v2": "{{wrestler}} kündigt es an … der {{move}} gegen {{opponent}}!",
+        "v3": "{{wrestler}} kontert {{opponent}} direkt in den {{move}}!"
+      },
+      "finisherGeneric": {
+        "v1": "{{wrestler}} trifft {{opponent}} mit dem Finisher!",
+        "v2": "{{wrestler}} kündigt den Finisher an und haut {{opponent}} um!",
+        "v3": "{{wrestler}} erledigt {{opponent}} mit dem größten Move im Arsenal!"
+      },
+      "finishPin": {
+        "v1": "{{wrestler}} covert {{opponent}}: eins, zwei, drei! {{wrestler}} gewinnt!",
+        "v2": "{{wrestler}} hakt das Bein von {{opponent}} ein und holt sich den Sieg!",
+        "v3": "{{opponent}} kommt nicht mehr hoch: {{wrestler}} holt den Pin!"
+      },
+      "finishSubmission": {
+        "v1": "{{wrestler}} setzt einen Aufgabegriff an und {{opponent}} klopft ab! {{wrestler}} gewinnt!",
+        "v2": "{{opponent}} kann nirgendwo hin und gibt gegen {{wrestler}} auf!",
+        "v3": "{{wrestler}} zieht den Griff zu, bis {{opponent}} aufgibt!"
+      }
+    }
+  },
   "discipline": {
     "status": {
       "clear": "Keine aktiven Strikes",
