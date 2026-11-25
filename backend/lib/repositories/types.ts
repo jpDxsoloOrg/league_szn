@@ -868,9 +868,20 @@ export interface Match {
   conditionReport?: MatchConditionEntry[];
   /** The injury tunables version the report was computed under. */
   tunablesVersion?: number;
+  // INJ-06
+  /** Injured players a GM booked anyway with `allowInjured`, oldest first. */
+  injuryOverrides?: InjuryOverride[];
 
   createdAt: string;
   updatedAt?: string;
+}
+
+// INJ-06
+/** A GM booking an injured player on purpose. `by` is the GM's Cognito sub. */
+export interface InjuryOverride {
+  playerId: string;
+  by: string;
+  at: string;
 }
 
 // BLD-10
@@ -1020,6 +1031,8 @@ export interface Tournament {
   brackets?: unknown;
   standings?: unknown;
   winner?: string;
+  /** INJ-06: injured entrants a GM entered anyway with `allowInjured`. */
+  injuryOverrides?: InjuryOverride[];
   createdAt: string;
   updatedAt?: string;
 }

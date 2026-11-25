@@ -6,6 +6,7 @@ import { success, badRequest, notFound, conflict, serverError } from '../../lib/
 import { isConcurrentWriteError } from '../../lib/repositories/errors';
 import { parseBody } from '../../lib/parseBody';
 import { firstBookingRefusal, newlyAddedIds } from '../../lib/disciplineGates';
+import { checkInjuryGate, staffInjuryOverride } from '../../lib/injuries/bookingGate';
 
 interface UpdateMatchBody {
   matchFormat?: string;
@@ -23,6 +24,8 @@ interface UpdateMatchBody {
    * are dropped and the match becomes scheduled. Sent on its own.
    */
   closeSignups?: boolean;
+  /** INJ-06: book newly added injured players anyway (staff only). */
+  allowInjured?: boolean;
 }
 
 /** The fewest wrestlers a match can be closed with. */
@@ -176,6 +179,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const addedPlayers = await Promise.all(addedIds.map((id) => repos.roster.players.findById(id)));
     const bookingBlocked = firstBookingRefusal(addedPlayers);
     if (bookingBlocked) return bookingBlocked;
+    const injuryGate = await checkInjuryGate(addedPlayers, {
+      override: staffInjuryOverride(event, body.allowInjured),
+    });
+    if (injuryGate.refusal) return injuryGate.refusal;
 
     // Validate championship exists if provided
     if (body.championshipId) {
@@ -258,6 +265,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('No fields to update');
     }
 
+    if (injuryGate.overrides.length > 0) {
+      patch.injuryOverrides = [...(existingMatch.injuryOverrides ?? []), ...injuryGate.overrides];
+    }
+
     const matchDate = existingMatch.date;
 
     await repos.competition.matches.update(matchId, matchDate, patch);
@@ -337,7 +348,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Return the updated match
     const updatedMatch = await repos.competition.matches.findByIdWithDate(matchId);
-    return success(updatedMatch || { matchId, updated: true });
+    const updatedBody = updatedMatch || { matchId, updated: true };
+    return success(injuryGate.warnings.length > 0 ? { ...updatedBody, injuryWarnings: injuryGate.warnings } : updatedBody);
   } catch (err) {
     console.error('Error updating match:', err);
     return serverError('Failed to update match');

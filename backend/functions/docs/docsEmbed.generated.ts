@@ -410,6 +410,7 @@ components:
             - SIGNUP_BLOCKED
             - PLAYER_DEACTIVATED
             - PLAYER_UNAVAILABLE
+            - PLAYER_INJURED
             - ALREADY_DEACTIVATED
             - NOT_DEACTIVATED
             - STAFF_PROTECTED
@@ -419,6 +420,8 @@ components:
             - PSN_ID_UNAVAILABLE
             - PSN_ID_LOCKED
         blockedUntil: { type: string, format: date-time }
+        playerId: { type: string, description: 'PLAYER_INJURED only (INJ-06). The injured player.' }
+        returnsAt: { type: string, format: date-time, description: 'PLAYER_INJURED only (INJ-06). When the player is back.' }
 
     StrikeOutcome:
       type: string
@@ -762,9 +765,38 @@ components:
               alreadyInjured: { type: boolean, description: 'The roll came up but the player was already injured, so no second injury.' }
         tunablesVersion: { type: integer, description: 'INJ-04. Staff only. Injury tunables version the condition report used.' }
 
+        injuryOverrides:
+          type: array
+          description: INJ-06. Injured players a GM booked anyway with \`allowInjured\`, oldest first.
+          items: { $ref: '#/components/schemas/InjuryOverride' }
+        injuryWarnings:
+          type: array
+          description: >-
+            INJ-06. Only in the response of a booking that used \`allowInjured\`
+            (schedule, edit, slot assign); never stored.
+          items: { $ref: '#/components/schemas/InjuryWarning' }
         createdAt: { type: string }
         challengeId: { type: string }
         promoId: { type: string }
+
+    # INJ-06
+    InjuryOverride:
+      type: object
+      required: [playerId, by, at]
+      properties:
+        playerId: { type: string }
+        by: { type: string, description: Cognito sub of the GM. }
+        at: { type: string, format: date-time }
+
+    InjuryWarning:
+      type: object
+      required: [code, playerId, name, returnsAt, message]
+      properties:
+        code: { type: string, enum: [PLAYER_INJURED] }
+        playerId: { type: string }
+        name: { type: string }
+        returnsAt: { type: string, format: date-time }
+        message: { type: string, description: 'English, e.g. "Hurt is injured until 2026-12-06".' }
 
     SideTagTeam:
       type: object
@@ -792,6 +824,7 @@ components:
         status: { type: string, enum: [scheduled] }
         challengeId: { type: string }
         promoId: { type: string }
+        allowInjured: { type: boolean, description: 'INJ-06. Staff only: book injured players anyway. Ignored for anyone else.' }
 
     RecordResultInput:
       type: object
@@ -838,6 +871,15 @@ components:
         brackets: { $ref: '#/components/schemas/TournamentBracket' }
         standings: { type: object }
         winner: { type: string }
+        injuryOverrides:
+          type: array
+          description: INJ-06. Injured entrants a GM entered anyway.
+          items: { $ref: '#/components/schemas/InjuryOverride' }
+        allowInjured: { type: boolean, description: 'INJ-06. Create request only, staff only: enter injured players anyway.' }
+        injuryWarnings:
+          type: array
+          description: INJ-06. Create response only, when \`allowInjured\` was used.
+          items: { $ref: '#/components/schemas/InjuryWarning' }
         createdAt: { type: string }
 
     TournamentBracket:
@@ -2509,10 +2551,11 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/ScheduleMatchInput' }
       responses:
-        '201': { description: Match scheduled }
+        '201': { description: 'Match scheduled. Has \`injuryWarnings\` when \`allowInjured\` booked an injured player.' }
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'PLAYER_INJURED - a participant is injured and \`allowInjured\` was not set (INJ-06)', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
 
   /matches/{matchId}/result:
     put:
@@ -2654,6 +2697,7 @@ paths:
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'PLAYER_INJURED - an entrant is injured and \`allowInjured\` was not set (INJ-06)', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
 
   /tournaments/{tournamentId}:
     put:
@@ -3199,6 +3243,7 @@ paths:
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'PLAYER_INJURED - the caller or anyone on either side is injured. No override (INJ-06)', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
 
   /challenges/{challengeId}:
     get:
@@ -3247,6 +3292,7 @@ paths:
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'PLAYER_INJURED - accepting or countering while anyone who would wrestle is injured. Declining is never refused. No override (INJ-06)', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
 
   /challenges/{challengeId}/cancel:
     post:
@@ -4822,7 +4868,7 @@ paths:
         '200': { description: Updated match with claimed slot }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-        '409': { description: 'Conflict – slot taken or match not open', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Conflict – slot taken or match not open; or PLAYER_INJURED (Refusal) when the caller is injured (INJ-06, no override)', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     delete:
       tags: [Matches]
       summary: Release a match slot
@@ -4865,8 +4911,10 @@ paths:
                 lockedByAdmin: { type: boolean }
                 teamLabel: { type: string, nullable: true }
                 wrestlerChoice: { type: string, enum: [main, alternate] }
+                allowInjured: { type: boolean, description: 'INJ-06. Assign an injured player anyway.' }
       responses:
-        '200': { description: Updated match }
+        '200': { description: 'Updated match. Has \`injuryWarnings\` when \`allowInjured\` assigned an injured player.' }
+        '409': { description: 'PLAYER_INJURED - the assigned player is injured and \`allowInjured\` was not set (INJ-06)', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

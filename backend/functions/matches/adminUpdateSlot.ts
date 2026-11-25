@@ -11,6 +11,8 @@ import { requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { realWrestlerName } from '../../lib/needsWrestler';
 import { bookingRefusal } from '../../lib/discipline';
+import { checkInjuryGate, staffInjuryOverride, type InjuryWarning } from '../../lib/injuries/bookingGate';
+import type { InjuryOverride } from '../../lib/repositories/types';
 
 interface AdminUpdateSlotBody {
   /** undefined = no change; null = clear the slot; string = assign that player. */
@@ -27,6 +29,8 @@ interface AdminUpdateSlotBody {
    * an existing claimant without changing the player.
    */
   wrestlerChoice?: 'main' | 'alternate';
+  /** INJ-06: assign an injured player anyway. */
+  allowInjured?: boolean;
 }
 
 /**
@@ -86,6 +90,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     let resolvedClaimedAt: string | undefined = original.claimedAt;
     let resolvedChoice: 'main' | 'alternate' | undefined = original.wrestlerChoice;
     let resolvedSnapshot: string | undefined = original.wrestlerNameSnapshot;
+    let injuryOverrides: InjuryOverride[] = [];
+    let injuryWarnings: InjuryWarning[] = [];
 
     if (isClearing) {
       resolvedPlayerId = undefined;
@@ -99,6 +105,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const alreadyOnMatch = slots.some((s) => s.playerId === newPlayerId);
       const refusal = alreadyOnMatch ? null : bookingRefusal(player);
       if (refusal) return refusal;
+      const injuryGate = await checkInjuryGate(alreadyOnMatch ? [] : [player], {
+        override: staffInjuryOverride(event, body.allowInjured),
+      });
+      if (injuryGate.refusal) return injuryGate.refusal;
+      injuryOverrides = injuryGate.overrides;
+      injuryWarnings = injuryGate.warnings;
       resolvedPlayerId = newPlayerId;
       resolvedClaimedAt = now;
       resolvedChoice = body.wrestlerChoice === 'alternate' ? 'alternate' : 'main';
@@ -139,23 +151,25 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // DynamoUnitOfWork.updateMatch appends updatedAt itself; passing it again
     // here would set the same path twice and fail validation.
+    const matchPatch: Partial<Match> = {
+      slots: updatedSlots,
+      participants: updatedParticipants,
+      status: newStatus,
+    };
+    if (injuryOverrides.length > 0) {
+      matchPatch.injuryOverrides = [...(match.injuryOverrides ?? []), ...injuryOverrides];
+    }
     await runInTransaction(async (tx) => {
-      tx.updateMatch(matchId, match.date, {
-        slots: updatedSlots,
-        participants: updatedParticipants,
-        status: newStatus,
-      });
+      tx.updateMatch(matchId, match.date, matchPatch);
     });
 
     const updated: Match = {
       ...match,
-      slots: updatedSlots,
-      participants: updatedParticipants,
-      status: newStatus,
+      ...matchPatch,
       updatedAt: now,
     };
 
-    return success(updated);
+    return success(injuryWarnings.length > 0 ? { ...updated, injuryWarnings } : updated);
   } catch (err) {
     console.error('Error admin-updating slot:', err);
     return serverError('Failed to update slot');

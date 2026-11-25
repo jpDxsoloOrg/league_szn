@@ -36,14 +36,24 @@ export const error = (statusCode: number, message: string): APIGatewayProxyResul
 
 export type RefusalCode = 'SIGNUP_BLOCKED' | 'PLAYER_DEACTIVATED' | 'PLAYER_UNAVAILABLE'
   | 'ALREADY_DEACTIVATED' | 'NOT_DEACTIVATED' | 'STAFF_PROTECTED' | 'DISCIPLINE_CONFLICT' | 'STRIKE_NOT_ACTIVE'
-  | 'DISCIPLINE_ACTIVE' | 'PSN_ID_UNAVAILABLE' | 'PSN_ID_LOCKED';
+  | 'DISCIPLINE_ACTIVE' | 'PSN_ID_UNAVAILABLE' | 'PSN_ID_LOCKED'
+  // INJ-06
+  | 'PLAYER_INJURED';
+
+/** Machine-readable details a refusal can carry beside its code. */
+export interface RefusalExtra {
+  blockedUntil?: string;
+  /** INJ-06: the injured player and when they are back. */
+  playerId?: string;
+  returnsAt?: string;
+}
 
 /** A refusal the frontend can translate by `code`. `message` stays English. */
 export const refused = (
   statusCode: number,
   code: RefusalCode,
   message: string,
-  extra?: { blockedUntil?: string },
+  extra?: RefusalExtra,
 ): APIGatewayProxyResult => {
   return {
     statusCode,
@@ -52,6 +62,8 @@ export const refused = (
       message,
       code,
       ...(extra?.blockedUntil !== undefined ? { blockedUntil: extra.blockedUntil } : {}),
+      ...(extra?.playerId !== undefined ? { playerId: extra.playerId } : {}),
+      ...(extra?.returnsAt !== undefined ? { returnsAt: extra.returnsAt } : {}),
     }),
   };
 };

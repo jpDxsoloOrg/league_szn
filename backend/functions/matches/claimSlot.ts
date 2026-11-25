@@ -14,6 +14,7 @@ import { isConcurrentWriteError } from '../../lib/repositories/errors';
 import { isPlayerVisible, realWrestlerName, SET_WRESTLER_NAME_MESSAGE } from '../../lib/needsWrestler';
 import { callerRefusal } from '../../lib/discipline';
 import { playerSimBoostViewer, withVisibleSimBoosts } from '../../lib/economy/simBoostVisibility';
+import { checkInjuryGate } from '../../lib/injuries/bookingGate';
 
 interface ClaimSlotBody {
   wrestlerChoice?: 'main' | 'alternate';
@@ -69,6 +70,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
     const refusal = callerRefusal(callerPlayer);
     if (refusal) return refusal;
+    // INJ-06: no override here; only staff can book an injured player.
+    const injuryGate = await checkInjuryGate([callerPlayer], { selfPlayerId: callerPlayer.playerId });
+    if (injuryGate.refusal) return injuryGate.refusal;
     if (!isPlayerVisible(callerPlayer)) {
       return badRequest(SET_WRESTLER_NAME_MESSAGE);
     }
