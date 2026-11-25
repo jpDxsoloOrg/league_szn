@@ -7,6 +7,8 @@ interface PrivateAccountFields {
   userId?: string;
   canUploadVideos?: boolean;
   hasWrestlerRole?: boolean;
+  /** ECO-02: money is private to staff and the player. */
+  balance?: number;
 }
 
 /** Stored discipline state. Never leaves in raw form: readers get `discipline`. */
@@ -40,7 +42,7 @@ export function toPublicPlayer<TPlayer extends PrivatePlayerFields>(
   caller: AuthContext | null,
 ): PublicPlayer<TPlayer> {
   const {
-    userId, canUploadVideos, hasWrestlerRole,
+    userId, canUploadVideos, hasWrestlerRole, balance,
     strikes, deactivatedAt,
     deactivations: _deactivations, disciplineVersion: _disciplineVersion, signupGuardKey: _signupGuardKey,
     ...rest
@@ -53,6 +55,7 @@ export function toPublicPlayer<TPlayer extends PrivatePlayerFields>(
     ...(mayReadPrivate && userId ? { userId } : {}),
     ...(mayReadPrivate && canUploadVideos !== undefined ? { canUploadVideos } : {}),
     ...(mayReadPrivate && hasWrestlerRole !== undefined ? { hasWrestlerRole } : {}),
+    ...(mayReadPrivate && balance !== undefined ? { balance } : {}),
     ...(mayReadPrivate ? { discipline: computeDiscipline({ strikes, deactivatedAt }) } : {}),
   };
 }

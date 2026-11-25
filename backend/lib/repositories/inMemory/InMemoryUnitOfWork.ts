@@ -17,7 +17,19 @@ import type {
   RivalryPatch,
 } from '../rivalries';
 import { RatingAlreadyExistsError } from '../matchRatings';
-import { ConcurrencyError } from '../errors';
+import { ConcurrencyError, NotFoundError } from '../errors';
+import {
+  buildLedgerEntries,
+  DuplicatePostingError,
+  InvalidLedgerPostingError,
+  ledgerSortKey,
+  validateLedgerPosting,
+  type LedgerEntry,
+  type LedgerIdempotencyRecord,
+  type PostLedgerEntryInput,
+  type StagedLedgerEntry,
+} from '../ledger';
+import { v4 as uuidv4 } from 'uuid';
 import type { MatchRating, PlayerProgression, ProgressionConsideration, ProgressionEvent } from '../types';
 import { applyEventAppend, applyProgressionUpsert, playerProgressionKey } from './InMemoryProgressionRepository';
 
@@ -30,6 +42,10 @@ export class InMemoryUnitOfWork implements UnitOfWork {
   private preconditions: StagedOp[] = [];
   private releasedWrestlerIds = new Set<string>();
   private committed = false;
+  // Ledger (ECO-02): players written by any other method, so a posting for
+  // the same player fails as it would in DynamoDB (one operation per item).
+  private playerWrites = new Set<string>();
+  private ledgerPostings: Array<{ input: PostLedgerEntryInput; staged: StagedLedgerEntry }> = [];
 
   constructor(
     private stores: {
@@ -51,12 +67,16 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       progressionEvents: ProgressionEvent[];
       /** Optional so callers that never touch divisions need not wire it. */
       divisions?: Map<string, Record<string, unknown>>;
+      /** Ledger (ECO-02). Optional so callers that never post need not wire them. */
+      ledger?: LedgerEntry[];
+      ledgerIdempotency?: Map<string, LedgerIdempotencyRecord>;
     },
   ) {}
 
   // Each method pushes a closure that mutates the in-memory stores
 
   updatePlayer(playerId: string, patch: Record<string, unknown>, condition?: PlayerWriteCondition): void {
+    this.playerWrites.add(playerId);
     if (condition) {
       this.preconditions.push(() => {
         const player = this.stores.players.get(playerId);
@@ -87,6 +107,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
   }
 
   incrementPlayerRecord(playerId: string, delta: RecordDelta): void {
+    this.playerWrites.add(playerId);
     this.preconditions.push(() => {
       const player = this.stores.players.get(playerId);
       if (!player || player.deletedAt) throw new ConcurrencyError('Player', playerId);
@@ -103,6 +124,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
   }
 
   clearPlayerField(playerId: string, field: string): void {
+    this.playerWrites.add(playerId);
     this.staged.push(() => {
       const existing = this.stores.players.get(playerId);
       if (existing) {
@@ -113,6 +135,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
   }
 
   setPlayerTagTeamId(playerId: string, tagTeamId: string): void {
+    this.playerWrites.add(playerId);
     this.staged.push(() => {
       const existing = this.stores.players.get(playerId);
       if (existing) {
@@ -507,15 +530,86 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     });
   }
 
+  // ── Ledger (ECO-02) ──────────────────────────────────────────────
+  postLedgerEntry(input: PostLedgerEntryInput): StagedLedgerEntry {
+    validateLedgerPosting(input);
+    if (this.ledgerPostings.some((posting) => posting.input.idempotencyKey === input.idempotencyKey)) {
+      throw new InvalidLedgerPostingError(`idempotencyKey ${input.idempotencyKey} is staged twice`);
+    }
+    const entryId = uuidv4();
+    const createdAt = new Date().toISOString();
+    const staged: StagedLedgerEntry = { entryId, createdAt, sortKey: ledgerSortKey({ createdAt, entryId }) };
+    this.ledgerPostings.push({ input: { ...input }, staged });
+    return { ...staged };
+  }
+
+  /**
+   * Check every posting against pre-commit state (same failures as the
+   * DynamoDB commit) and return the write that applies them.
+   */
+  private prepareLedgerWrites(): () => void {
+    if (this.ledgerPostings.length === 0) return () => undefined;
+    const { ledger, ledgerIdempotency } = this.stores;
+    if (!ledger || !ledgerIdempotency) {
+      throw new Error('InMemoryUnitOfWork: ledger stores are not wired');
+    }
+
+    const byPlayer = new Map<string, Array<{ input: PostLedgerEntryInput; staged: StagedLedgerEntry }>>();
+    for (const posting of this.ledgerPostings) {
+      if (ledgerIdempotency.has(posting.input.idempotencyKey)) {
+        throw new DuplicatePostingError(posting.input.idempotencyKey);
+      }
+      const list = byPlayer.get(posting.input.playerId) ?? [];
+      list.push(posting);
+      byPlayer.set(posting.input.playerId, list);
+    }
+
+    const writes: Array<{ playerId: string; entries: LedgerEntry[]; balance: number }> = [];
+    for (const [playerId, postings] of byPlayer) {
+      if (this.playerWrites.has(playerId)) {
+        throw new InvalidLedgerPostingError(
+          `Player ${playerId} has a ledger posting and another player write in the same unit of work; post in a separate unit of work`,
+        );
+      }
+      const player = this.stores.players.get(playerId);
+      if (!player || player.deletedAt) throw new NotFoundError('Player', playerId);
+      const startingBalance = typeof player.balance === 'number' ? player.balance : 0;
+      const entries = buildLedgerEntries(startingBalance, postings);
+      writes.push({ playerId, entries, balance: entries[entries.length - 1].balanceAfter });
+    }
+
+    return () => {
+      for (const write of writes) {
+        for (const entry of write.entries) {
+          ledgerIdempotency.set(entry.idempotencyKey, {
+            idempotencyKey: entry.idempotencyKey,
+            playerId: entry.playerId,
+            entryId: entry.entryId,
+            sortKey: entry.sortKey,
+            createdAt: entry.createdAt,
+          });
+          ledger.push(entry);
+        }
+        const player = this.stores.players.get(write.playerId);
+        if (player) {
+          player.balance = write.balance;
+          player.updatedAt = new Date().toISOString();
+        }
+      }
+    };
+  }
+
   async commit(): Promise<void> {
     if (this.committed) throw new Error('UnitOfWork already committed');
     this.committed = true;
     for (const check of this.preconditions) {
       check();
     }
+    const applyLedgerWrites = this.prepareLedgerWrites();
     for (const op of this.staged) {
       op();
     }
+    applyLedgerWrites();
   }
 
   async rollback(): Promise<void> {

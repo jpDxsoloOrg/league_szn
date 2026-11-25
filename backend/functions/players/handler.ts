@@ -12,6 +12,7 @@ import { handler as getPlayerDisciplineHandler } from './getPlayerDiscipline';
 import { handler as issueStrikeHandler } from './issueStrike';
 import { handler as removeStrikeHandler } from './removeStrike';
 import { handler as reactivatePlayerHandler } from './reactivatePlayer';
+import { handler as adjustBalanceHandler } from '../economy/adjustBalance';
 
 
 /**
@@ -97,6 +98,13 @@ export const routes: ReadonlyArray<RouteConfig> = [
     resource: '/players/{playerId}/reactivate',
     method: 'POST',
     handler: reactivatePlayerHandler,
+    access: ADMIN_ONLY,
+  },
+  // Ledger (ECO-02)
+  {
+    resource: '/players/{playerId}/ledger/adjust',
+    method: 'POST',
+    handler: adjustBalanceHandler,
     access: ADMIN_ONLY,
   },
 ];

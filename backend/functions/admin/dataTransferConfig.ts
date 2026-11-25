@@ -30,6 +30,9 @@ export const EXPORT_DATASET_KEYS = [
   'progressionTracks',
   'playerProgression',
   'progressionEvents',
+  // Ledger (ECO-02)
+  'ledger',
+  'ledgerIdempotency',
 ] as const;
 
 export type ExportDatasetKey = (typeof EXPORT_DATASET_KEYS)[number];

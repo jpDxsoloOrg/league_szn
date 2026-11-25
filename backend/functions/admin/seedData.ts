@@ -2018,6 +2018,9 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         ...progressionEventRows.map(toProgressionEventItem),
         ...pilotReviews.map(toSeasonReviewItem),
       ],
+      // ECO-02: seeded players start with no money and no postings.
+      ledger: [],
+      ledgerIdempotency: [],
     };
 
     const createdCounts = await importAllData(seedData);

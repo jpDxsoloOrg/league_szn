@@ -80,6 +80,7 @@ const ADMIN_ONLY_ROUTES = new Set([
   'POST /players/{playerId}/strikes',
   'POST /players/{playerId}/strikes/{strikeId}/remove',
   'POST /players/{playerId}/reactivate',
+  'POST /players/{playerId}/ledger/adjust',
 ]);
 
 /** The audit's unprotected routes: these must stay closed to non-staff. */

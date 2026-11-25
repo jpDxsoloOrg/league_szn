@@ -1,5 +1,6 @@
 import type { DivisionPatch } from './LeagueOpsRepository';
 import type { FactionMessage, FactionDirectMessage } from './factionMessages';
+import type { PostLedgerEntryInput, StagedLedgerEntry } from './ledger';
 import type {
   Rivalry,
   RivalryMessage,
@@ -255,6 +256,32 @@ export interface UnitOfWork {
    * still holds the wrestler at commit time.
    */
   releaseWrestlerFromPlayer(params: { wrestlerId: string; expectedPlayerId?: string }): void;
+
+  // ── Ledger (ECO-02) ──────────────────────────────────────────────
+  /**
+   * Stage one money movement: an idempotency row (`attribute_not_exists`), the
+   * append-only ledger entry and the change to `Player.balance`, all in the
+   * same transaction. A negative balance is allowed.
+   *
+   * At commit the player's balance is read (consistent read) to fill
+   * `balanceAfter`, and the balance write is guarded on that value, so a
+   * concurrent posting fails this unit of work with
+   * `ConcurrencyError('Player', playerId)`; retrying is safe.
+   *
+   * Throws at commit, and nothing in the unit of work is written:
+   * - `DuplicatePostingError` when the key was already used ("already done");
+   * - `NotFoundError` when the player does not exist (or is soft-deleted);
+   * - `InvalidLedgerPostingError` when the same unit of work also writes the
+   *   player row another way (one DynamoDB operation per item), or the
+   *   postings alone exceed one 100-item transaction.
+   * Throws `InvalidLedgerPostingError` immediately for a zero or fractional
+   * amount, a bad key, or a key already staged in this unit of work.
+   *
+   * Several postings for one player in one unit of work are fine: they apply
+   * in staging order and share one balance write. Ledger writes are flushed in
+   * the first transaction chunk, so they never split across chunks.
+   */
+  postLedgerEntry(input: PostLedgerEntryInput): StagedLedgerEntry;
 
   /** Flush all staged operations. */
   commit(): Promise<void>;

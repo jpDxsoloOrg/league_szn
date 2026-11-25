@@ -271,6 +271,11 @@ export interface Player {
   disciplineVersion?: number;
   /** toSignupGuardKey(email), stored at any strike that blocks or deactivates. Only used while isSignupBlocked. */
   signupGuardKey?: string;
+  /**
+   * ECO-02: cached sum of the player's ledger entries; missing = 0, may be
+   * negative. Written only by `tx.postLedgerEntry`; never on `PlayerPatch`.
+   */
+  balance?: number;
   createdAt: string;
   updatedAt: string;
 }

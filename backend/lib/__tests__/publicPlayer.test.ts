@@ -65,6 +65,24 @@ describe('toPublicPlayer', () => {
     });
   });
 
+  describe('balance (ECO-02)', () => {
+    const paid = { ...player, balance: -40 };
+
+    it.each([
+      ['an anonymous caller', null],
+      ['another wrestler', caller('other-sub', 'Wrestler')],
+    ])('hides it from %s', (_label, viewer) => {
+      expect(toPublicPlayer(paid, viewer)).not.toHaveProperty('balance');
+    });
+
+    it.each([
+      ['the player', caller('owner-sub', 'Wrestler')],
+      ['a Moderator', caller('staff-sub', 'Moderator')],
+    ])('shows it to %s', (_label, viewer) => {
+      expect(toPublicPlayer(paid, viewer).balance).toBe(-40);
+    });
+  });
+
   it('reports an unlinked player as such', () => {
     const unlinked: { playerId: string; userId?: string } = { playerId: 'p2' };
     const shaped = toPublicPlayer(unlinked, caller('staff-sub', 'Admin'));

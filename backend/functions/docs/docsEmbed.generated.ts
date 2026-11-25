@@ -328,6 +328,31 @@ components:
         accountEnabled: { type: boolean, nullable: true, description: Null when unlinked or on a Cognito error. }
         holdings: { $ref: '#/components/schemas/DisciplineHoldings' }
 
+    LedgerEntry:
+      type: object
+      required: [playerId, entryId, createdAt, sortKey, kind, amount, balanceAfter, idempotencyKey]
+      properties:
+        playerId: { type: string }
+        entryId: { type: string }
+        createdAt: { type: string, format: date-time }
+        sortKey: { type: string, description: '\`createdAt#entryId\`' }
+        kind:
+          type: string
+          enum: [perMatchPay, winBonus, salary, fine, fineRescinded, purchase, refund, gmAdjust, reversal]
+        amount: { type: integer, description: Signed amount }
+        balanceAfter: { type: integer }
+        refType: { type: string }
+        refId: { type: string }
+        note: { type: string }
+        actorUserId: { type: string }
+        idempotencyKey: { type: string }
+    AdjustBalanceResult:
+      type: object
+      required: [entry, balance, alreadyApplied]
+      properties:
+        entry: { $ref: '#/components/schemas/LedgerEntry' }
+        balance: { type: integer }
+        alreadyApplied: { type: boolean }
     DisciplineActionResult:
       type: object
       required: [playerId, version, summary, accountSync, softHoldsCleared, holdings]
@@ -2915,6 +2940,57 @@ paths:
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '409': { description: 'NOT_DEACTIVATED or DISCIPLINE_CONFLICT', content: { application/json: { schema: { $ref: '#/components/schemas/Refusal' } } } }
+
+  # ── Ledger (ECO-02) ──────────────────────────────────────────────
+
+  /players/{playerId}/ledger/adjust:
+    post:
+      tags: [Players]
+      summary: Correct a player's balance with a gmAdjust ledger entry (Admin only)
+      description: >-
+        Appends one \`gmAdjust\` entry to the player's ledger and updates the
+        cached balance. The balance may go negative. Resending the same
+        \`requestId\` never posts twice: the first entry comes back with
+        \`alreadyApplied: true\`.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, note]
+              properties:
+                amount:
+                  type: integer
+                  description: Signed, non-zero. Positive pays the player, negative takes money.
+                note: { type: string, minLength: 1, maxLength: 500 }
+                requestId:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  description: Optional client-generated id that makes a retry safe.
+      responses:
+        '201':
+          description: Entry posted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdjustBalanceResult' }
+        '200':
+          description: This requestId was already posted; nothing new was written
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdjustBalanceResult' }
+        '400': { description: 'Bad amount, note or requestId', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'The balance changed while saving; try again', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   # ── Companies ─────────────────────────────────────────────────────
 

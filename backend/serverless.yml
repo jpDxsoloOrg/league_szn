@@ -58,6 +58,9 @@ provider:
     PRESENCE_TABLE: ${self:service}-presence-${self:provider.stage}
     MATCHMAKING_QUEUE_TABLE: ${self:service}-matchmaking-queue-${self:provider.stage}
     MATCH_INVITATIONS_TABLE: ${self:service}-match-invitations-${self:provider.stage}
+    # Ledger (ECO-02)
+    LEDGER_TABLE: ${self:service}-ledger-${self:provider.stage}
+    LEDGER_IDEMPOTENCY_TABLE: ${self:service}-ledger-idempotency-${self:provider.stage}
     DYNAMODB_ENDPOINT: ${env:DYNAMODB_ENDPOINT, 'http://localhost:8000'}
     DB_DRIVER: ${env:DB_DRIVER, 'dynamo'}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
@@ -156,6 +159,10 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCHMAKING_QUEUE_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCH_INVITATIONS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCH_INVITATIONS_TABLE}/index/*
+            # Ledger (ECO-02)
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.LEDGER_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.LEDGER_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.LEDGER_IDEMPOTENCY_TABLE}
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -408,6 +415,11 @@ functions:
           cors: *corsConfig
       - http:
           path: players/{playerId}/reactivate
+          method: post
+          cors: *corsConfig
+      # Ledger (ECO-02). Admin only; access is declared in functions/players/handler.ts.
+      - http:
+          path: players/{playerId}/ledger/adjust
           method: post
           cors: *corsConfig
 
@@ -2738,6 +2750,58 @@ resources:
         TimeToLiveSpecification:
           AttributeName: ttl
           Enabled: true
+
+    # ── Ledger (ECO-02) ── routed to the Overflow stack by stacks-map.js
+    # (AWS::DynamoDB::Table). Append-only money log, newest first per player.
+    LedgerTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.LEDGER_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        AttributeDefinitions:
+          - AttributeName: playerId
+            AttributeType: S
+          - AttributeName: sortKey
+            AttributeType: S
+          - AttributeName: entryId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: playerId
+            KeyType: HASH
+          - AttributeName: sortKey
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: EntryIdIndex
+            KeySchema:
+              - AttributeName: entryId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    # One row per posting key, written with attribute_not_exists in the same
+    # transaction as the entry so a retried posting never pays twice.
+    LedgerIdempotencyTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.LEDGER_IDEMPOTENCY_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        AttributeDefinitions:
+          - AttributeName: idempotencyKey
+            AttributeType: S
+        KeySchema:
+          - AttributeName: idempotencyKey
+            KeyType: HASH
+    # ── end Ledger (ECO-02) ──
 
     ImagesBucket:
       Type: AWS::S3::Bucket

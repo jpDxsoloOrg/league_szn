@@ -59,6 +59,10 @@ const TABLE_DEFINITIONS: Record<ExportDatasetKey, Omit<TableConfig, 'key'>> = {
     partitionKey: 'playerId',
     sortKey: 'createdAtEventId',
   },
+  // Ledger (ECO-02): entries plus their idempotency rows, so a clear never
+  // leaves keys behind that would block re-posting.
+  ledger: { tableName: TableNames.LEDGER, partitionKey: 'playerId', sortKey: 'sortKey' },
+  ledgerIdempotency: { tableName: TableNames.LEDGER_IDEMPOTENCY, partitionKey: 'idempotencyKey' },
 };
 
 const ALL_TABLES: TableConfig[] = Object.entries(TABLE_DEFINITIONS).map(

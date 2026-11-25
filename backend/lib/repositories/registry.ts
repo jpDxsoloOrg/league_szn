@@ -15,6 +15,7 @@ import type {
 } from './rivalries';
 import type { MatchRatingsRepository } from './matchRatings';
 import type { ProgressionRepository } from './progression';
+import type { LedgerRepository } from './ledger';
 import type { UnitOfWorkFactory } from './unitOfWork';
 
 export interface Repositories {
@@ -31,6 +32,7 @@ export interface Repositories {
   rivalryNotes: RivalryNotesRepository;
   matchRatings: MatchRatingsRepository;
   progression: ProgressionRepository;
+  ledger: LedgerRepository;
   runInTransaction: UnitOfWorkFactory;
 
   // Admin bulk operations

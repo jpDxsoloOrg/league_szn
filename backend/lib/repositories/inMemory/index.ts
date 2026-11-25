@@ -16,6 +16,7 @@ import {
 } from './InMemoryRivalriesRepository';
 import { InMemoryMatchRatingsRepository } from './InMemoryMatchRatingsRepository';
 import { InMemoryProgressionRepository } from './InMemoryProgressionRepository';
+import { InMemoryLedgerRepository } from './InMemoryLedgerRepository';
 import { InMemoryUnitOfWork } from './InMemoryUnitOfWork';
 
 export function buildInMemoryRepositories(): Repositories {
@@ -32,6 +33,7 @@ export function buildInMemoryRepositories(): Repositories {
   const rivalryNotes = new InMemoryRivalryNotesRepository();
   const matchRatings = new InMemoryMatchRatingsRepository();
   const progression = new InMemoryProgressionRepository();
+  const ledger = new InMemoryLedgerRepository();
 
   const runInTransaction: Repositories['runInTransaction'] = async <T>(fn: (tx: import('../unitOfWork').UnitOfWork) => Promise<T>): Promise<T> => {
     const uow = new InMemoryUnitOfWork({
@@ -52,6 +54,8 @@ export function buildInMemoryRepositories(): Repositories {
       playerProgression: progression.progressionStore,
       progressionEvents: progression.eventsStore,
       divisions: leagueOps.divisions.store as unknown as Map<string, Record<string, unknown>>,
+      ledger: ledger.entriesStore,
+      ledgerIdempotency: ledger.idempotencyStore,
     });
     try {
       const result = await fn(uow);
@@ -77,6 +81,7 @@ export function buildInMemoryRepositories(): Repositories {
     rivalryNotes,
     matchRatings,
     progression,
+    ledger,
     runInTransaction,
     clearAllData: async () => {
       const counts: Record<string, { deleted: number; errors: number }> = {};
@@ -149,4 +154,5 @@ export {
 } from './InMemoryRivalriesRepository';
 export { InMemoryMatchRatingsRepository } from './InMemoryMatchRatingsRepository';
 export { InMemoryProgressionRepository } from './InMemoryProgressionRepository';
+export { InMemoryLedgerRepository } from './InMemoryLedgerRepository';
 export { InMemoryUnitOfWork } from './InMemoryUnitOfWork';
