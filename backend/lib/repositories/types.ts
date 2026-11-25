@@ -1,4 +1,5 @@
 import type { CoreStat, SimCategory, StyleId } from '../policies/buildRules';
+import type { CurrentInjury } from './injuries'; // INJ-03
 
 export interface Division {
   divisionId: string;
@@ -306,6 +307,21 @@ export interface Player {
    * through `tx.setPlayerActiveContract` / `tx.clearPlayerActiveContract`.
    */
   activeContractId?: string;
+
+  // INJ-03
+  /**
+   * Stamina, 0 to the tunable maximum. Missing means full (`currentStamina`
+   * in lib/injuries). Private to staff and the player. Not on `PlayerPatch`:
+   * write it only through `tx.updatePlayerCondition`.
+   */
+  stamina?: number;
+  /**
+   * Copy of the open row in the Injuries table, or absent. The player counts
+   * as injured while `returnsAt` is in the future (`isInjured`). Not on
+   * `PlayerPatch`: write it only through `tx.updatePlayerCondition`.
+   */
+  currentInjury?: CurrentInjury;
+
   createdAt: string;
   updatedAt: string;
 }

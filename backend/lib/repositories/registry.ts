@@ -17,6 +17,7 @@ import type { MatchRatingsRepository } from './matchRatings';
 import type { ProgressionRepository } from './progression';
 import type { LedgerRepository } from './ledger';
 import type { GmInterferenceRepository } from './gmInterference'; // ECO-09
+import type { InjuriesRepository } from './injuries'; // INJ-03
 import type { ContractsRepository } from './contracts';
 import type { UnitOfWorkFactory } from './unitOfWork';
 
@@ -38,6 +39,9 @@ export interface Repositories {
 
   // ECO-09
   gmInterference: GmInterferenceRepository;
+
+  // INJ-03
+  injuries: InjuriesRepository;
 
   contracts: ContractsRepository;
   runInTransaction: UnitOfWorkFactory;

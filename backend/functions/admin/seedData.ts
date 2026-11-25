@@ -2373,6 +2373,9 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       ledgerIdempotency: ledgerIdempotency.map((row) => ({ ...row })),
       gmInterference: gmInterferenceRequests.map((request) => ({ ...request })),
       contracts: contracts.map((contract) => ({ ...contract })),
+
+      // INJ-03: everyone starts fit; an empty list clears stale injury rows.
+      injuries: [],
     };
 
     const createdCounts = await importAllData(seedData);

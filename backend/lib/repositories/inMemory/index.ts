@@ -18,6 +18,7 @@ import { InMemoryMatchRatingsRepository } from './InMemoryMatchRatingsRepository
 import { InMemoryProgressionRepository } from './InMemoryProgressionRepository';
 import { InMemoryLedgerRepository } from './InMemoryLedgerRepository';
 import { InMemoryGmInterferenceRepository } from './InMemoryGmInterferenceRepository'; // ECO-09
+import { InMemoryInjuriesRepository } from './InMemoryInjuriesRepository'; // INJ-03
 import { InMemoryContractsRepository } from './InMemoryContractsRepository';
 import { InMemoryUnitOfWork } from './InMemoryUnitOfWork';
 
@@ -39,6 +40,9 @@ export function buildInMemoryRepositories(): Repositories {
 
   // ECO-09
   const gmInterference = new InMemoryGmInterferenceRepository();
+
+  // INJ-03
+  const injuries = new InMemoryInjuriesRepository();
 
   const contracts = new InMemoryContractsRepository();
 
@@ -66,6 +70,9 @@ export function buildInMemoryRepositories(): Repositories {
 
       // ECO-09
       gmInterference: gmInterference.store,
+
+      // INJ-03
+      injuries: injuries.store,
 
       contracts: contracts.store,
     });
@@ -97,6 +104,9 @@ export function buildInMemoryRepositories(): Repositories {
 
     // ECO-09
     gmInterference,
+
+    // INJ-03
+    injuries,
 
     contracts,
     runInTransaction,
@@ -173,5 +183,6 @@ export { InMemoryMatchRatingsRepository } from './InMemoryMatchRatingsRepository
 export { InMemoryProgressionRepository } from './InMemoryProgressionRepository';
 export { InMemoryLedgerRepository } from './InMemoryLedgerRepository';
 export { InMemoryGmInterferenceRepository } from './InMemoryGmInterferenceRepository'; // ECO-09
+export { InMemoryInjuriesRepository } from './InMemoryInjuriesRepository'; // INJ-03
 export { InMemoryUnitOfWork } from './InMemoryUnitOfWork';
 export { InMemoryContractsRepository } from './InMemoryContractsRepository';

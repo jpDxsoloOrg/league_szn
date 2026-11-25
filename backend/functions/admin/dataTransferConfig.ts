@@ -37,6 +37,9 @@ export const EXPORT_DATASET_KEYS = [
   // ECO-09
   'gmInterference',
 
+  // INJ-03
+  'injuries',
+
   // ECO-03
   'contracts',
 ] as const;

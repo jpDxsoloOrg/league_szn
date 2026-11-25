@@ -67,6 +67,9 @@ const TABLE_DEFINITIONS: Record<ExportDatasetKey, Omit<TableConfig, 'key'>> = {
   // GM interference requests (ECO-09), one row per requestId.
   gmInterference: { tableName: TableNames.GM_INTERFERENCE, partitionKey: 'requestId' },
 
+  // INJ-03: injury history, one row per injury.
+  injuries: { tableName: TableNames.INJURIES, partitionKey: 'playerId', sortKey: 'startedAt' },
+
   // Contracts (ECO-03): offers and contracts, one row per contractId.
   contracts: { tableName: TableNames.CONTRACTS, partitionKey: 'contractId' },
 };

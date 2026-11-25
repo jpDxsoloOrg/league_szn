@@ -18,6 +18,7 @@ import { DynamoMatchRatingsRepository } from './DynamoMatchRatingsRepository';
 import { DynamoProgressionRepository } from './DynamoProgressionRepository';
 import { DynamoLedgerRepository } from './DynamoLedgerRepository';
 import { DynamoGmInterferenceRepository } from './DynamoGmInterferenceRepository'; // ECO-09
+import { DynamoInjuriesRepository } from './DynamoInjuriesRepository'; // INJ-03
 import { DynamoContractsRepository } from './DynamoContractsRepository';
 import { createDynamoUnitOfWorkFactory } from './DynamoUnitOfWork';
 import { dynamoClearAllData, dynamoExportAllData, dynamoImportAllData } from './adminOps';
@@ -40,6 +41,9 @@ registerDriver('dynamo', (): Repositories => ({
 
   // ECO-09
   gmInterference: new DynamoGmInterferenceRepository(),
+
+  // INJ-03
+  injuries: new DynamoInjuriesRepository(),
 
   contracts: new DynamoContractsRepository(),
   runInTransaction: createDynamoUnitOfWorkFactory(),

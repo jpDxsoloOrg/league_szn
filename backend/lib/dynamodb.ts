@@ -171,6 +171,9 @@ export const TableNames = {
   // ECO-09
   GM_INTERFERENCE: process.env.GM_INTERFERENCE_TABLE!,
 
+  // INJ-03
+  INJURIES: process.env.INJURIES_TABLE!,
+
 };
 
 type DynamoRecord = Record<string, unknown>;
