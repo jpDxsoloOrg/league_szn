@@ -13,6 +13,7 @@ import { handler as issueStrikeHandler } from './issueStrike';
 import { handler as removeStrikeHandler } from './removeStrike';
 import { handler as reactivatePlayerHandler } from './reactivatePlayer';
 import { handler as adjustBalanceHandler } from '../economy/adjustBalance';
+import { issueFineHandler, rescindFineHandler } from '../economy/fines';
 
 
 /**
@@ -107,5 +108,20 @@ export const routes: ReadonlyArray<RouteConfig> = [
     handler: adjustBalanceHandler,
     access: ADMIN_ONLY,
   },
+
+  // Fines (ECO-07)
+  {
+    resource: '/players/{playerId}/fines',
+    method: 'POST',
+    handler: issueFineHandler,
+    access: STAFF,
+  },
+  {
+    resource: '/fines/{entryId}/rescind',
+    method: 'POST',
+    handler: rescindFineHandler,
+    access: STAFF,
+  },
+
 ];
 export const handler = createRouter(routes);

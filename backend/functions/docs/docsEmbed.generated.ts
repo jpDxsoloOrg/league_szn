@@ -410,6 +410,37 @@ components:
         weeklySalary: { type: integer, minimum: 0 }
         winBonus: { type: integer, minimum: 0 }
         note: { type: string, maxLength: 500 }
+    # ECO-07
+    MatchNoShow:
+      type: object
+      required: [playerId, markedAt]
+      description: One no-show mark. Undoing it stamps \`undoneAt\`; active marks have none.
+      properties:
+        playerId: { type: string }
+        markedAt: { type: string, format: date-time }
+        undoneAt: { type: string, format: date-time }
+    NoShowResult:
+      type: object
+      required: [matchId, playerId, noShow, entry, balance, alreadyApplied]
+      properties:
+        matchId: { type: string }
+        playerId: { type: string }
+        noShow: { $ref: '#/components/schemas/MatchNoShow' }
+        entry:
+          allOf: [{ $ref: '#/components/schemas/LedgerEntry' }]
+          nullable: true
+          description: The fine (mark) or its refund (undo); null when nothing was posted.
+        balance: { type: integer }
+        alreadyApplied: { type: boolean }
+    RescindFineResult:
+      type: object
+      required: [entry, fine, balance, alreadyApplied]
+      properties:
+        entry: { $ref: '#/components/schemas/LedgerEntry' }
+        fine: { $ref: '#/components/schemas/LedgerEntry' }
+        balance: { type: integer }
+        alreadyApplied: { type: boolean }
+
     DisciplineActionResult:
       type: object
       required: [playerId, version, summary, accountSync, softHoldsCleared, holdings]
@@ -455,6 +486,10 @@ components:
         tournamentId: { type: string }
         seasonId: { type: string }
         status: { type: string, enum: [scheduled, completed] }
+        noShows:
+          type: array
+          description: No-show marks (ECO-07), oldest first; active ones have no \`undoneAt\`.
+          items: { $ref: '#/components/schemas/MatchNoShow' }
         createdAt: { type: string }
         challengeId: { type: string }
         promoId: { type: string }
@@ -3164,6 +3199,23 @@ paths:
       security: [{ BearerAuth: [] }]
       parameters:
         - { name: contractId, in: path, required: true, schema: { type: string } }
+  # ── Fines (ECO-07) ───────────────────────────────────────────────
+
+  /matches/{matchId}/no-show:
+    post:
+      tags: [Matches]
+      summary: Mark a participant as a no-show and fine them (Admin, Moderator)
+      description: >-
+        Works on scheduled matches and on completed ones up to 7 days after the
+        result. Adds a mark to \`match.noShows\`, posts a \`fine\` of the economy
+        settings' \`noShowFine\` (key \`match#{matchId}#noshow#{playerId}\`; a
+        re-mark after an undo appends \`#2\`, \`#3\`...) and notifies the player.
+        The match is not cancelled. Marking an already-marked player fines once
+        and returns 200 with \`alreadyApplied: true\`. With \`noShowFine\` 0 the
+        mark is recorded and nothing is posted. The balance may go negative.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: matchId, in: path, required: true, schema: { type: string } }
       requestBody:
         required: true
         content:
@@ -3239,6 +3291,99 @@ paths:
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/Player' } }
+              required: [playerId]
+              properties:
+                playerId: { type: string, description: Must be a participant of the match }
+                note: { type: string, maxLength: 500, description: Added to the fine's ledger note }
+      responses:
+        '201': { description: Marked, content: { application/json: { schema: { $ref: '#/components/schemas/NoShowResult' } } } }
+        '200': { description: Already marked; nothing new was written, content: { application/json: { schema: { $ref: '#/components/schemas/NoShowResult' } } } }
+        '400': { description: 'Missing playerId, bad note, or the player is not in the match', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Match or player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Match is not scheduled or just completed, or it changed while saving', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /matches/{matchId}/no-show/{playerId}:
+    delete:
+      tags: [Matches]
+      summary: Undo a no-show and refund its fine (Admin, Moderator)
+      description: >-
+        Stamps \`undoneAt\` on the player's active mark and posts a
+        \`fineRescinded\` entry for its fine, unless that fine was already
+        rescinded through \`POST /fines/{entryId}/rescind\`.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: matchId, in: path, required: true, schema: { type: string } }
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Undone, content: { application/json: { schema: { $ref: '#/components/schemas/NoShowResult' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Match not found, or the player has no active no-show on it', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'The match or balance changed while saving; try again', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /players/{playerId}/fines:
+    post:
+      tags: [Players]
+      summary: Fine a player (Admin, Moderator)
+      description: >-
+        Posts one \`fine\` entry. Send \`presetKey\` (amount and label from the
+        economy settings' \`finePresets\`; \`reason\` is optional and appended) or a
+        custom \`amount\` with a \`reason\`. The note is shown to the player, who is
+        notified, and notified again when the fine takes the balance below
+        zero. Debt is allowed. Resending the same \`requestId\` never fines twice.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                presetKey: { type: string }
+                amount: { type: integer, minimum: 1, description: Positive; the fine takes this much }
+                reason: { type: string, maxLength: 500, description: Required with a custom amount }
+                matchId: { type: string, description: Optional match the fine is about }
+                requestId: { type: string, minLength: 1, maxLength: 100 }
+      responses:
+        '201': { description: Fined, content: { application/json: { schema: { $ref: '#/components/schemas/AdjustBalanceResult' } } } }
+        '200': { description: This requestId was already posted, content: { application/json: { schema: { $ref: '#/components/schemas/AdjustBalanceResult' } } } }
+        '400': { description: 'Unknown preset, both or neither of presetKey/amount, bad amount, or a custom amount without a reason', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Player or match not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'The balance changed while saving; try again', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /fines/{entryId}/rescind:
+    post:
+      tags: [Players]
+      summary: Rescind a fine (Admin, Moderator)
+      description: >-
+        Posts a \`fineRescinded\` entry refunding the fine. A fine is refunded at
+        most once (also across the no-show undo route); a repeat returns 200
+        with \`alreadyApplied: true\`. The body is optional.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: entryId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string, maxLength: 500 }
+      responses:
+        '201': { description: Rescinded, content: { application/json: { schema: { $ref: '#/components/schemas/RescindFineResult' } } } }
+        '200': { description: Already rescinded, content: { application/json: { schema: { $ref: '#/components/schemas/RescindFineResult' } } } }
+        '400': { description: 'The entry is not a fine, or a bad note', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Fine not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'The balance changed while saving; try again', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   # ── Companies ─────────────────────────────────────────────────────
 

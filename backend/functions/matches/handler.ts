@@ -8,6 +8,7 @@ import { handler as releaseSlotHandler } from './releaseSlot';
 import { handler as adminUpdateSlotHandler } from './adminUpdateSlot';
 import { handler as setMatchOfTheNightHandler } from './setMatchOfTheNight';
 import { handler as submitRatingHandler } from './submitRating';
+import { markNoShowHandler, undoNoShowHandler } from './noShow';
 import { createRouter, type RouteConfig, STAFF } from '../../lib/router';
 
 /**
@@ -63,6 +64,21 @@ export const routes: ReadonlyArray<RouteConfig> = [
     handler: submitRatingHandler,
     access: 'self-service',
   },
+
+  // No-shows (ECO-07)
+  {
+    resource: '/matches/{matchId}/no-show',
+    method: 'POST',
+    handler: markNoShowHandler,
+    access: STAFF,
+  },
+  {
+    resource: '/matches/{matchId}/no-show/{playerId}',
+    method: 'DELETE',
+    handler: undoNoShowHandler,
+    access: STAFF,
+  },
+
   {
     resource: '/matches/{matchId}',
     method: 'PUT',

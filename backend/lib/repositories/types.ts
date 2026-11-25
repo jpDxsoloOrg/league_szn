@@ -765,8 +765,27 @@ export interface Match {
    * older matches are backfilled from `updatedAt`. Read via `matchResultTime`.
    */
   completedAt?: string;
+
+  // ECO-07
+  /**
+   * Every time a GM marked a participant as a no-show, oldest first. Undoing
+   * a mark stamps `undoneAt` instead of removing it, so the n-th mark for a
+   * player always has its own fine key. Active marks are the ones without
+   * `undoneAt` (see `activeNoShows` in lib/fines.ts). The fine amount and the
+   * GM's note live on the ledger entry, not here: match rows are public.
+   */
+  noShows?: MatchNoShow[];
+
   createdAt: string;
   updatedAt?: string;
+}
+
+// ECO-07
+/** One no-show mark on a match. Public: carries no amount, note or actor. */
+export interface MatchNoShow {
+  playerId: string;
+  markedAt: string;
+  undoneAt?: string;
 }
 
 /**

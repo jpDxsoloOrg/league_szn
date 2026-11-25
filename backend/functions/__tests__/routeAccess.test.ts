@@ -106,6 +106,11 @@ const STAFF_ROUTES = [
   'POST /matches',
   'PUT /matches/{matchId}/result',
   'PUT /matches/{matchId}',
+  // ECO-07
+  'POST /matches/{matchId}/no-show',
+  'DELETE /matches/{matchId}/no-show/{playerId}',
+  'POST /players/{playerId}/fines',
+  'POST /fines/{entryId}/rescind',
   'POST /players',
   'DELETE /players/{playerId}',
   'POST /shows',

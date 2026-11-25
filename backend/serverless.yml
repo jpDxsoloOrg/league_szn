@@ -428,6 +428,16 @@ functions:
           method: post
           cors: *corsConfig
 
+      # Fines (ECO-07). GM only; access is declared in functions/players/handler.ts.
+      - http:
+          path: players/{playerId}/fines
+          method: post
+          cors: *corsConfig
+      - http:
+          path: fines/{entryId}/rescind
+          method: post
+          cors: *corsConfig
+
   # Overalls (Wrestler Overalls: submit, get own, admin get all)
   overalls:
     handler: functions/overalls/handler.handler
@@ -526,6 +536,17 @@ functions:
           path: matches/{matchId}/ratings
           method: post
           cors: *corsConfig
+
+      # No-shows (ECO-07). GM only; access is declared in functions/matches/handler.ts.
+      - http:
+          path: matches/{matchId}/no-show
+          method: post
+          cors: *corsConfig
+      - http:
+          path: matches/{matchId}/no-show/{playerId}
+          method: delete
+          cors: *corsConfig
+
       - http:
           path: matches/{matchId}
           method: any
