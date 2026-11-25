@@ -153,6 +153,13 @@ describe('admin registry', () => {
     );
   });
 
+  // INJ-10
+  it('lists the injury settings under League Setup for Moderators, even while injuries are off', () => {
+    const leagueSetup = getVisibleAdminGroups(false, ALL_ON).find((group) => group.key === 'leagueSetup');
+    expect(leagueSetup?.entries.map((entry) => entry.tab)).toContain('injury-config');
+    expect(isAdminTab('injury-config')).toBe(true);
+  });
+
   it('no longer registers the Match Card Builder', () => {
     expect(isAdminTab('events')).toBe(false);
   });

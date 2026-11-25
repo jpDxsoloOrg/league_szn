@@ -27,6 +27,7 @@ import {
   Flame,
   Gavel,
   GitBranch,
+  HeartPulse,
   House,
   LayoutGrid,
   ListOrdered,
@@ -317,6 +318,10 @@ export const ADMIN_TABS = [
   'locations',
   // ECO-11
   'economy-config',
+
+  // INJ-10
+  'injury-config',
+
   'features',
   'danger',
 ] as const;
@@ -405,6 +410,10 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { tab: 'locations', labelKey: 'admin.panel.tabs.locations', icon: MapPin, minRole: 'Moderator' },
       // ECO-11: Moderators view, only Admins save. Not gated on the economy flag so GMs can set prices first.
       { tab: 'economy-config', labelKey: 'admin.panel.tabs.economyConfig', icon: Coins, minRole: 'Moderator' },
+
+      // INJ-10: Moderators view, only Admins save. Not gated on the injuries flag so GMs can tune before launch.
+      { tab: 'injury-config', labelKey: 'admin.panel.tabs.injuryConfig', icon: HeartPulse, minRole: 'Moderator' },
+
       { tab: 'features', labelKey: 'admin.panel.tabs.features', icon: Flag, minRole: 'Admin' },
       { tab: 'danger', labelKey: 'admin.panel.tabs.dangerZone', icon: TriangleAlert, minRole: 'Admin', danger: true },
     ],
