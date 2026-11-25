@@ -122,6 +122,14 @@ const STAFF_ROUTES = [
   'POST /fines/{entryId}/rescind',
   // ECO-14
   'GET /players/{playerId}/ledger',
+
+  // INJ-08
+  'GET /injuries',
+  'POST /players/{playerId}/injuries',
+  'POST /players/{playerId}/injuries/heal',
+  'PATCH /players/{playerId}/injuries/current',
+  'PATCH /players/{playerId}/stamina',
+
   'POST /players',
   'DELETE /players/{playerId}',
   'POST /shows',

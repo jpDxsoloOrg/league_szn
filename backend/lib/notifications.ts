@@ -39,6 +39,13 @@ export type NotificationType =
   | 'fine_issued'
   | 'fine_rescinded'
   | 'balance_negative'
+
+  // INJ-08: a GM healed, extended or put on an injury, or adjusted stamina
+  | 'injury_healed'
+  | 'injury_updated'
+  | 'injury_added'
+  | 'stamina_adjusted'
+
   | 'progression_consideration'
   | 'progression_executed'
   | 'progression_milestone'

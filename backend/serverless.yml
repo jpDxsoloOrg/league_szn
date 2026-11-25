@@ -1216,6 +1216,38 @@ functions:
           method: get
           cors: *corsConfig
 
+  # INJ-08: GM injury management (board, heal, extend/shorten, storyline
+  # injury, stamina) and the public injury history. No gateway authorizer:
+  # access is declared per route in functions/injuries/handler.ts and enforced
+  # by the router. New function, so stacks-map.js routes it to Overflow.
+  injuries:
+    handler: functions/injuries/handler.handler
+    events:
+      - http:
+          path: injuries
+          method: get
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/injuries
+          method: get
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/injuries
+          method: post
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/injuries/heal
+          method: post
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/injuries/current
+          method: patch
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/stamina
+          method: patch
+          cors: *corsConfig
+
   # Recalculates contender rankings for every active title, one title at a time
   # in this single invocation, so it holds one of the account's 10 concurrent
   # Lambdas. A run is a few seconds of work at current volume; the timeout leaves
