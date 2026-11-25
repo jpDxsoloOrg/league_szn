@@ -162,6 +162,21 @@ describe('GET /injuries', () => {
     expect(body[0].pastReturnDate).toBe(false);
   });
 
+  // INJ-11
+  it('adds the scheduled matches before the return date and the titles held', async () => {
+    await seedInjury();
+    await repos.competition.matches.create({
+      matchId: 'before-return', date: inDays(3), status: 'scheduled', matchFormat: 'singles', participants: [playerId, 'x'],
+    });
+    await repos.competition.matches.create({
+      matchId: 'after-return', date: inDays(30), status: 'scheduled', matchFormat: 'singles', participants: [playerId, 'x'],
+    });
+    await repos.competition.championships.create({ name: 'World', type: 'singles', currentChampion: playerId });
+
+    const { body } = await request<InjuryBoardEntry[]>('GET', '/injuries', { query: { active: 'true' } });
+    expect(body[0].impact).toEqual({ scheduledMatchIds: ['before-return'], titles: ['World'] });
+  });
+
   it('rejects active=false', async () => {
     expect((await request('GET', '/injuries', { query: { active: 'false' } })).statusCode).toBe(400);
   });

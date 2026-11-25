@@ -1,4 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
+import { injuryImpact, type InjuryImpact } from '../../lib/injuries/notifyStaff'; // INJ-11
 import { getRepositories } from '../../lib/repositories';
 import type { Injury } from '../../lib/repositories/injuries';
 import { badRequest, serverError, success } from '../../lib/response';
@@ -20,12 +21,15 @@ export interface InjuryBoardEntry {
   player: InjuryBoardPlayer | null;
   /** True once `returnsAt` has passed and only the weekly recovery has yet to end it. */
   pastReturnDate: boolean;
+  /** INJ-11: scheduled matches before the return date and active titles held. */
+  impact: InjuryImpact;
 }
 
 /**
  * GET /injuries?active=true (Moderator + Admin). Every injury that has not
  * ended, soonest return first, with the player and the full row (notes and
- * the change log included). `active` defaults to true; history per player is
+ * the change log included), plus the scheduled matches it affects and the
+ * titles the player holds. `active` defaults to true; history per player is
  * GET /players/{playerId}/injuries.
  */
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -37,8 +41,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const disabled = await requireInjuriesEnabled();
     if (disabled) return disabled;
 
-    const { injuries, roster: { players } } = getRepositories();
+    const { injuries, roster: { players }, competition } = getRepositories();
     const open = await injuries.listOpen();
+    // INJ-11: what each injury affects, read once for the whole board.
+    const [scheduled, championships] = open.length > 0
+      ? await Promise.all([competition.matches.listByStatus('scheduled'), competition.championships.list()])
+      : [[], []];
     const playerIds = [...new Set(open.map((injury) => injury.playerId))];
     const playerRows = await Promise.all(playerIds.map((playerId) => players.findById(playerId)));
     const playersById = new Map(
@@ -61,6 +69,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           }
           : null,
         pastReturnDate: Date.parse(injury.returnsAt) <= now,
+        impact: injuryImpact(injury.playerId, injury.returnsAt, scheduled, championships),
       };
     });
     return success(entries);

@@ -34,6 +34,12 @@ const {
   mockGetBookingSummary: vi.fn(),
 }));
 
+// INJ-11: the injuries feature is off unless a test turns it on.
+const { siteFeatures } = vi.hoisted(() => ({ siteFeatures: { injuries: false } }));
+vi.mock('../../../contexts/SiteConfigContext', () => ({
+  useSiteConfig: () => ({ features: siteFeatures, isLoading: false }),
+}));
+
 vi.mock('../../../services/api', () => ({
   challengesApi: { getAll: mockGetChallenges },
   matchesApi: { schedule: mockScheduleMatch },

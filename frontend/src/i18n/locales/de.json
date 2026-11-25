@@ -1165,6 +1165,7 @@
         "matchConfig": "Match-Konfiguration",
         "scheduleMatch": "Kampf planen",
         "matchSimulator": "Match-Simulator",
+        "injuryReport": "Verletzungsbericht",
         "standaloneMatches": "Einzelne Matches",
         "championships": "Meisterschaften",
         "tournaments": "Turniere",
@@ -3146,6 +3147,7 @@
     "typeProgression": "Call-ups",
     "typeContract": "Vertrag",
     "typeEconomy": "Geldbörse",
+    "typeInjury": "Verletzung",
     "typeGmInterference": "GM-Eingriff"
   },
   "overalls": {
@@ -4423,6 +4425,91 @@
         "v2": "{{opponent}} kann nirgendwo hin und gibt gegen {{wrestler}} auf!",
         "v3": "{{wrestler}} zieht den Griff zu, bis {{opponent}} aufgibt!"
       }
+    }
+  },
+  "injuryReport": {
+    "title": "Verletzungsbericht",
+    "subtitle": "Wer fällt aus, bis wann und was ist betroffen. Verletzungen heilen oder verlängern und Ausdauer anpassen.",
+    "loadError": "Der Verletzungsbericht konnte nicht geladen werden.",
+    "actionError": "Die Änderung konnte nicht gespeichert werden.",
+    "retry": "Erneut versuchen",
+    "activeTitle": "Aktuelle Verletzungen",
+    "noInjuries": "Gerade ist niemand verletzt.",
+    "rosterTitle": "Ausdauer im Kader",
+    "rosterHint": "Ausdauer unter {{threshold}} ist hervorgehoben.",
+    "columns": {
+      "player": "Spieler",
+      "severity": "Schwere",
+      "source": "Ursache",
+      "returns": "Zurück am",
+      "affected": "Betroffen",
+      "actions": "Aktionen",
+      "stamina": "Ausdauer",
+      "status": "Status"
+    },
+    "severity": {
+      "minor": "Leicht",
+      "moderate": "Mittel",
+      "major": "Schwer"
+    },
+    "weeks_one": "{{count}} Woche",
+    "weeks_other": "{{count}} Wochen",
+    "source": {
+      "match": "Aus einem Match",
+      "storyline": "Storyline"
+    },
+    "pastReturn": "Zurück bei der nächsten wöchentlichen Erholung",
+    "affectedMatches_one": "{{count}} geplantes Match",
+    "affectedMatches_other": "{{count}} geplante Matches",
+    "fit": "Verfügbar",
+    "staminaValue": "{{stamina}} / {{max}}",
+    "heal": "Heilen",
+    "extend": "Verlängern",
+    "adjust": "Anpassen",
+    "save": "Speichern",
+    "note": "Notiz (optional)",
+    "noteHint": "Diese Notiz sieht nur das Team.",
+    "healTitle": "Verletzung heilen",
+    "healMessage": "Die Verletzung von {{name}} jetzt beenden? Danach kannst du sofort wieder buchen.",
+    "healed": "{{name}} ist wieder einsatzbereit.",
+    "extendTitle": "Dauer der Verletzung ändern: {{name}}",
+    "extendCurrent_one": "Aktuell {{count}} Woche, zurück am {{date}}.",
+    "extendCurrent_other": "Aktuell {{count}} Wochen, zurück am {{date}}.",
+    "totalWeeks": "Gesamtdauer in Wochen",
+    "totalWeeksHint": "Ab Beginn der Verletzung, 1 bis {{max}}. Das Rückkehrdatum rückt auf den Beginn dieser Ligawoche.",
+    "extended": "{{name}} ist jetzt am {{date}} zurück.",
+    "staminaTitle": "Ausdauer anpassen: {{name}}",
+    "staminaLabel": "Ausdauer (0 bis {{max}})",
+    "staminaSet": "Die Ausdauer von {{name}} ist jetzt {{stamina}}.",
+    "booking": {
+      "injuredUntil": "Verletzt bis {{date}}",
+      "stamina": "Ausdauer {{stamina}}",
+      "allowInjured": "Verletzte zulassen (Override)",
+      "allowInjuredHint": "Damit kannst du verletzte Spieler buchen. Die Buchung wird als Override festgehalten.",
+      "refused": "{{name}} ist bis {{date}} verletzt. Setz den Haken bei „Verletzte zulassen“, um trotzdem zu buchen.",
+      "refusedNoDate": "{{name}} ist verletzt. Setz den Haken bei „Verletzte zulassen“, um trotzdem zu buchen.",
+      "thisPlayer": "Dieser Spieler",
+      "warningsTitle_one": "Gespeichert, {{count}} verletzter Spieler ist gebucht:",
+      "warningsTitle_other": "Gespeichert, {{count}} verletzte Spieler sind gebucht:",
+      "warningLine": "{{name}}, verletzt bis {{date}}",
+      "done": "Fertig"
+    },
+    "banner": {
+      "entry": "{{name}} (bis {{date}})",
+      "text_one": "Am Matchtag verletzt: {{names}}",
+      "text_other": "{{count}} Teilnehmer am Matchtag verletzt: {{names}}"
+    },
+    "condition": {
+      "title": "Zustandsbericht",
+      "player": "Spieler",
+      "stamina": "Ausdauer",
+      "staminaChange": "{{before}} → {{after}}",
+      "chance": "Verletzungsrisiko",
+      "roll": "Wurf",
+      "result": "Ergebnis",
+      "injured": "Verletzung ({{severity}}), zurück am {{date}}",
+      "alreadyInjured": "Bereits verletzt",
+      "noInjury": "Keine Verletzung"
     }
   },
   "discipline": {

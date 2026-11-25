@@ -5,6 +5,11 @@ import { pickablePlayers } from '../../utils/pickablePlayers';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import PlayerBookingPicker, { type PickerCheckInStatus } from './PlayerBookingPicker';
+// INJ-11
+import AllowInjuredToggle from '../injuries/AllowInjuredToggle';
+import InjuryWarningsNotice from '../injuries/InjuryWarningsNotice';
+import type { InjuryWarning, WithInjuryWarnings } from '../../types/injuryReport';
+import { buildBookingCondition, injuryRefusalMessage } from '../../utils/injuryBooking';
 import './SlotEditDialog.css';
 
 export interface SlotEditDialogProps {
@@ -31,8 +36,11 @@ export interface SlotEditDialogProps {
     lockedByAdmin?: boolean;
     teamLabel?: string | null;
     wrestlerChoice?: 'main' | 'alternate';
-  }) => Promise<void>;
+    allowInjured?: boolean;
+  }) => Promise<WithInjuryWarnings | void>;
   onClose: () => void;
+  /** INJ-11: the injuries feature is on, so injured players need the override. */
+  injuriesEnabled?: boolean;
 }
 
 export default function SlotEditDialog({
@@ -43,8 +51,12 @@ export default function SlotEditDialog({
   onSave,
   onClose,
   bookingInfoByPlayerId,
+  injuriesEnabled = false,
 }: SlotEditDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // INJ-11
+  const [allowInjured, setAllowInjured] = useState(false);
+  const [injuryWarnings, setInjuryWarnings] = useState<InjuryWarning[]>([]);
   const [playerId, setPlayerId] = useState<string>('');
   const [locked, setLocked] = useState(false);
   const [teamLabel, setTeamLabel] = useState<string>('');
@@ -60,6 +72,8 @@ export default function SlotEditDialog({
     setTeamLabel(slot.teamLabel ?? '');
     setWrestlerChoice(slot.wrestlerChoice ?? 'main');
     setErrorMsg(null);
+    setAllowInjured(false);
+    setInjuryWarnings([]);
   }, [slot]);
 
   if (!slot) return null;
@@ -69,18 +83,22 @@ export default function SlotEditDialog({
     ? players.find((p) => p.playerId === playerId)
     : undefined;
   const showWrestlerRadio = !!pickedPlayer?.alternateWrestler;
+  const bookingCondition = buildBookingCondition(players, injuriesEnabled, allowInjured);
+  const nameOf = (id: string): string | undefined => players.find((p) => p.playerId === id)?.name;
 
   const buildPatch = (): {
     playerId?: string | null;
     lockedByAdmin?: boolean;
     teamLabel?: string | null;
     wrestlerChoice?: 'main' | 'alternate';
+    allowInjured?: boolean;
   } => {
     const patch: {
       playerId?: string | null;
       lockedByAdmin?: boolean;
       teamLabel?: string | null;
       wrestlerChoice?: 'main' | 'alternate';
+      allowInjured?: boolean;
     } = {};
     const trimmedLabel = teamLabel.trim();
     const originalLabel = slot.teamLabel ?? '';
@@ -105,6 +123,9 @@ export default function SlotEditDialog({
         patch.wrestlerChoice = wrestlerChoice;
       }
     }
+    if (bookingCondition && allowInjured && typeof patch.playerId === 'string') {
+      patch.allowInjured = true;
+    }
     return patch;
   };
 
@@ -112,10 +133,16 @@ export default function SlotEditDialog({
     setErrorMsg(null);
     setSaving(true);
     try {
-      await onSave(buildPatch());
-      onClose();
+      const saved = await onSave(buildPatch());
+      // INJ-11: an injured player booked with the override is shown before closing.
+      const warnings = saved?.injuryWarnings ?? [];
+      if (warnings.length > 0) setInjuryWarnings(warnings);
+      else onClose();
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : t('matches.slots.saveError', 'Failed to save slot'));
+      setErrorMsg(
+        injuryRefusalMessage(err, t, nameOf, i18n.language)
+        ?? (err instanceof Error ? err.message : t('matches.slots.saveError', 'Failed to save slot')),
+      );
     } finally {
       setSaving(false);
     }
@@ -147,7 +174,9 @@ export default function SlotEditDialog({
         position: slot.position,
         defaultValue: 'Edit slot {{position}}',
       })}
-      footer={(
+      footer={injuryWarnings.length > 0 ? (
+        <Button onClick={onClose}>{t('injuryReport.booking.done')}</Button>
+      ) : (
         <>
           <Button className="slot-edit-dialog__clear" variant="ghost" onClick={handleClear} disabled={saving}>
             {t('matches.slots.editClear', { defaultValue: 'Clear slot' })}
@@ -162,6 +191,7 @@ export default function SlotEditDialog({
       )}
     >
       <div className="slot-edit-dialog__form">
+        <InjuryWarningsNotice warnings={injuryWarnings} nameOf={nameOf} />
         <div className="slot-edit-dialog__row">
           <label htmlFor="slot-edit-player">
             {t('matches.slots.editPlayerLabel', { defaultValue: 'Player' })}
@@ -175,8 +205,13 @@ export default function SlotEditDialog({
             bookedPlayerIds={bookedPlayerIds}
             bookingInfoByPlayerId={bookingInfoByPlayerId}
             disabled={saving}
+            condition={bookingCondition}
           />
         </div>
+
+        {bookingCondition && (
+          <AllowInjuredToggle checked={allowInjured} onChange={setAllowInjured} disabled={saving} />
+        )}
 
         {pickedPlayer?.discipline?.status === 'signup-blocked' && (
           <p className="slot-edit-dialog__warning" role="status">

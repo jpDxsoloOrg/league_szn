@@ -3108,7 +3108,8 @@ paths:
         Public. Each `enrichedMatches[].matchData` of a sim-settled match carries
         `resultSource: simulation` and its `simulation` (BLD-14). Staff get the
         whole sim; everyone else gets the public view without the odds and
-        audit fields.
+        audit fields. INJ-11: staff also get a completed match's
+        `conditionReport` (see Match).
       parameters:
         - name: eventId
           in: path
@@ -4289,7 +4290,7 @@ paths:
                 type: array
                 items:
                   type: object
-                  required: [injury, player, pastReturnDate]
+                  required: [injury, player, pastReturnDate, impact]
                   properties:
                     injury: { $ref: '#/components/schemas/Injury' }
                     player:
@@ -4303,6 +4304,14 @@ paths:
                         divisionId: { type: string }
                         stamina: { type: integer, description: Absent means full }
                     pastReturnDate: { type: boolean }
+                    # INJ-11
+                    impact:
+                      type: object
+                      description: INJ-11. Scheduled matches the player is booked in before the return date, and active titles held.
+                      required: [scheduledMatchIds, titles]
+                      properties:
+                        scheduledMatchIds: { type: array, items: { type: string } }
+                        titles: { type: array, items: { type: string } }
         '400': { description: 'active is not true', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Not staff, or the injuries feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

@@ -1,0 +1,38 @@
+/* Admin Injury Report (INJ-11). Shared layout comes from adminRoster.css. */
+
+.injury-report__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.injury-report__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.injury-report__titles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.injury-report__stamina {
+  font-variant-numeric: tabular-nums;
+}
+
+.injury-report__stamina--low {
+  color: var(--color-loss);
+  font-weight: 600;
+}
+
+.injury-report__row--low {
+  background-color: var(--tint-warn);
+}
+
+.injury-report__number {
+  max-width: 8rem;
+}

@@ -44,6 +44,7 @@ import {
   ShoppingBag,
   SlidersHorizontal,
   Star,
+  Stethoscope,
   Swords,
   Target,
   Thermometer,
@@ -288,6 +289,10 @@ export const ADMIN_TABS = [
   'standalone-matches',
   // BLD-14
   'match-simulator',
+
+  // INJ-11
+  'injury-report',
+
   'users',
   'players',
   'wrestlers',
@@ -356,6 +361,10 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { tab: 'standalone-matches', labelKey: 'admin.panel.tabs.standaloneMatches', icon: ClipboardList, minRole: 'Moderator' },
       // BLD-14: GM-only sim previews.
       { tab: 'match-simulator', labelKey: 'admin.panel.tabs.matchSimulator', icon: Dices, minRole: 'Moderator' },
+
+      // INJ-11: only while the injuries feature is on.
+      { tab: 'injury-report', labelKey: 'admin.panel.tabs.injuryReport', icon: Stethoscope, minRole: 'Moderator', feature: 'injuries' },
+
     ],
   },
   {

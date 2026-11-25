@@ -334,6 +334,10 @@ export interface ScheduleMatchInput {
   status: 'scheduled';
   challengeId?: string;
   promoId?: string;
+
+  // INJ-11
+  /** Staff only: book injured players anyway (the save then returns `injuryWarnings`). */
+  allowInjured?: boolean;
 }
 
 export interface Championship {
@@ -677,7 +681,10 @@ export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_s
   // INJ-04: a recorded result injured the player
   | 'injury_sustained'
   // BLD-04: a division move left the build over a smaller budget
-  | 'build_over_budget';
+  | 'build_over_budget'
+
+  // INJ-11: staff notice that an injury affects scheduled matches or titles
+  | 'injury_staff_notice';
 
 export interface AppNotification {
   notificationId: string;
@@ -685,7 +692,9 @@ export interface AppNotification {
   type: NotificationType | GmInterferenceNotificationType;
   message: string;
   sourceId: string;
-  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'rivalry' | 'storyline_request' | 'discipline' | 'progression' | 'contract' | 'economy' | 'build';
+  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'rivalry' | 'storyline_request' | 'discipline' | 'progression' | 'contract' | 'economy' | 'build'
+    // INJ-11
+    | 'injury';
   isRead: boolean;
   createdAt: string;
 }

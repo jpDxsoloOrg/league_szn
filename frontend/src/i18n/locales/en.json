@@ -1165,6 +1165,7 @@
         "matchConfig": "Match Config",
         "scheduleMatch": "Schedule Match",
         "matchSimulator": "Match Simulator",
+        "injuryReport": "Injury Report",
         "standaloneMatches": "Standalone Matches",
         "championships": "Championships",
         "tournaments": "Tournaments",
@@ -3146,6 +3147,7 @@
     "typeProgression": "Call-ups",
     "typeContract": "Contract",
     "typeEconomy": "Wallet",
+    "typeInjury": "Injury",
     "typeGmInterference": "GM interference"
   },
   "overalls": {
@@ -4423,6 +4425,91 @@
         "v2": "{{opponent}} has nowhere to go and taps out to {{wrestler}}!",
         "v3": "{{wrestler}} cranks the hold until {{opponent}} gives up!"
       }
+    }
+  },
+  "injuryReport": {
+    "title": "Injury Report",
+    "subtitle": "Who is out, until when, and what it affects. Heal or extend injuries and adjust stamina.",
+    "loadError": "Could not load the injury report.",
+    "actionError": "Could not save the change.",
+    "retry": "Try again",
+    "activeTitle": "Active injuries",
+    "noInjuries": "Nobody is injured right now.",
+    "rosterTitle": "Roster stamina",
+    "rosterHint": "Stamina below {{threshold}} is highlighted.",
+    "columns": {
+      "player": "Player",
+      "severity": "Severity",
+      "source": "Source",
+      "returns": "Returns on",
+      "affected": "Affected",
+      "actions": "Actions",
+      "stamina": "Stamina",
+      "status": "Status"
+    },
+    "severity": {
+      "minor": "Minor",
+      "moderate": "Moderate",
+      "major": "Major"
+    },
+    "weeks_one": "{{count}} week",
+    "weeks_other": "{{count}} weeks",
+    "source": {
+      "match": "From a match",
+      "storyline": "Storyline"
+    },
+    "pastReturn": "Back at the next weekly recovery",
+    "affectedMatches_one": "{{count}} scheduled match",
+    "affectedMatches_other": "{{count}} scheduled matches",
+    "fit": "Available",
+    "staminaValue": "{{stamina}} / {{max}}",
+    "heal": "Heal",
+    "extend": "Extend",
+    "adjust": "Adjust",
+    "save": "Save",
+    "note": "Note (optional)",
+    "noteHint": "Only staff see this note.",
+    "healTitle": "Heal injury",
+    "healMessage": "End {{name}}'s injury now? They can be booked again straight away.",
+    "healed": "{{name}} is cleared to return.",
+    "extendTitle": "Change injury length: {{name}}",
+    "extendCurrent_one": "Currently {{count}} week, back {{date}}.",
+    "extendCurrent_other": "Currently {{count}} weeks, back {{date}}.",
+    "totalWeeks": "Total length in weeks",
+    "totalWeeksHint": "Counted from when the injury started, 1 to {{max}}. The return date moves to the start of that league week.",
+    "extended": "{{name}} now returns {{date}}.",
+    "staminaTitle": "Adjust stamina: {{name}}",
+    "staminaLabel": "Stamina (0 to {{max}})",
+    "staminaSet": "{{name}}'s stamina is now {{stamina}}.",
+    "booking": {
+      "injuredUntil": "Injured until {{date}}",
+      "stamina": "Stamina {{stamina}}",
+      "allowInjured": "Allow injured (override)",
+      "allowInjuredHint": "Lets you book players who are injured. The booking is recorded as an override.",
+      "refused": "{{name}} is injured until {{date}}. Tick \"Allow injured\" to book them anyway.",
+      "refusedNoDate": "{{name}} is injured. Tick \"Allow injured\" to book them anyway.",
+      "thisPlayer": "This player",
+      "warningsTitle_one": "Saved with {{count}} injured player booked:",
+      "warningsTitle_other": "Saved with {{count}} injured players booked:",
+      "warningLine": "{{name}}, injured until {{date}}",
+      "done": "Done"
+    },
+    "banner": {
+      "entry": "{{name}} (until {{date}})",
+      "text_one": "Injured on the match date: {{names}}",
+      "text_other": "{{count}} participants injured on the match date: {{names}}"
+    },
+    "condition": {
+      "title": "Condition report",
+      "player": "Player",
+      "stamina": "Stamina",
+      "staminaChange": "{{before}} → {{after}}",
+      "chance": "Injury chance",
+      "roll": "Roll",
+      "result": "Result",
+      "injured": "{{severity}} injury, back {{date}}",
+      "alreadyInjured": "Already injured",
+      "noInjury": "No injury"
     }
   },
   "discipline": {

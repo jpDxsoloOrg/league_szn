@@ -61,6 +61,12 @@ function gmInterferenceRoute(notification: AppNotification): { path: string; lab
   return null;
 }
 
+// INJ-11: the staff injury notice opens the Injury Report (home while injuries are off).
+function injuryStaffRoute(notification: AppNotification, injuriesEnabled: boolean): { path: string; labelKey: string } | null {
+  if (notification.type !== 'injury_staff_notice') return null;
+  return { path: injuriesEnabled ? '/admin/injury-report' : '/', labelKey: 'notifications.typeInjury' };
+}
+
 /** ECO-13: where a contract or money notification goes, or null when it isn't one. Home while the economy is off. */
 function economyNavigationPath(notification: AppNotification, economyEnabled: boolean): string | null {
   let path: string;
@@ -246,8 +252,9 @@ export default function NotificationBell() {
       return;
     }
     navigate(gmInterferenceRoute(notification)?.path
+      ?? injuryStaffRoute(notification, features.injuries)?.path
       ?? getNavigationPath(notification, playerId, features.transfers, Boolean(features.economy)));
-  }, [navigate, playerId, features.transfers, features.economy]);
+  }, [navigate, playerId, features.transfers, features.economy, features.injuries]);
 
   const handleDeleteNotification = useCallback(async (e: React.MouseEvent, notification: AppNotification) => {
     e.stopPropagation();
@@ -318,7 +325,9 @@ export default function NotificationBell() {
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <span className="notification-item-badge-label">
-                    {t(gmInterferenceRoute(notification)?.labelKey ?? sourceTypeLabel(notification.sourceType))}
+                    {t(gmInterferenceRoute(notification)?.labelKey
+                      ?? injuryStaffRoute(notification, features.injuries)?.labelKey
+                      ?? sourceTypeLabel(notification.sourceType))}
                   </span>
                   <span className="notification-item-message">{notification.message}</span>
                   <span className="notification-item-time">

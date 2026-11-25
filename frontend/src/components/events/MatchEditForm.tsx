@@ -33,6 +33,13 @@ import Button from '../ui/Button';
 import Skeleton from '../ui/Skeleton';
 import { formatCalendarDate } from '../../utils/dateUtils';
 import { matchFormatKey } from '../../utils/matchDisplay';
+// INJ-11
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import AllowInjuredToggle from '../injuries/AllowInjuredToggle';
+import InjuryPickerTags from '../injuries/InjuryPickerTags';
+import InjuryWarningsNotice from '../injuries/InjuryWarningsNotice';
+import type { InjuryWarning } from '../../types/injuryReport';
+import { buildBookingCondition, injuryRefusalMessage, isPickBlocked } from '../../utils/injuryBooking';
 import './MatchEditForm.css';
 
 /**
@@ -58,7 +65,11 @@ export default function MatchEditForm({
   onSuccess,
   onCancel,
 }: MatchEditFormProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // INJ-11: adding an injured player needs the override while the injuries feature is on.
+  const { features } = useSiteConfig();
+  const [allowInjured, setAllowInjured] = useState(false);
+  const [injuryWarnings, setInjuryWarnings] = useState<InjuryWarning[]>([]);
   const [originalMatch, setOriginalMatch] = useState<Match | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [championships, setChampionships] = useState<Championship[]>([]);
@@ -194,6 +205,26 @@ export default function MatchEditForm({
 
   const isTagTeamMatch = formData.matchFormat.toLowerCase().includes('tag');
 
+  // INJ-11
+  const bookingCondition = buildBookingCondition(players, features.injuries, allowInjured);
+  const overrideRequested = !!bookingCondition && allowInjured;
+
+  const playerNameOf = (playerId: string): string | undefined =>
+    players.find((player) => player.playerId === playerId)?.name;
+
+  const saveErrorMessage = (err: unknown): string =>
+    injuryRefusalMessage(err, t, playerNameOf, i18n.language)
+    ?? (err instanceof Error ? err.message : t('events.forms.updateError', 'Failed to update match'));
+
+  /** Closes the form, unless the save booked injured players: those are shown first. */
+  const finishSave = (warnings: InjuryWarning[] | undefined) => {
+    if (warnings && warnings.length > 0) {
+      setInjuryWarnings(warnings);
+      return;
+    }
+    onSuccess();
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (submitting || !matchId) return;
@@ -218,7 +249,7 @@ export default function MatchEditForm({
       const allParticipants = teams.flat();
 
       try {
-        await matchesApi.update(matchId, {
+        const saved = await matchesApi.update(matchId, {
           matchFormat: formData.matchFormat,
           stipulationId: formData.stipulationId || undefined,
           participants: allParticipants,
@@ -229,10 +260,11 @@ export default function MatchEditForm({
           seasonId: formData.seasonId || undefined,
           eventId: effectiveEventId,
           designation: effectiveDesignation,
+          ...(overrideRequested ? { allowInjured: true } : {}),
         });
-        onSuccess();
+        finishSave(saved?.injuryWarnings);
       } catch (err) {
-        setError(err instanceof Error ? err.message : t('events.forms.updateError', 'Failed to update match'));
+        setError(saveErrorMessage(err));
       } finally {
         setSubmitting(false);
       }
@@ -244,7 +276,7 @@ export default function MatchEditForm({
       }
 
       try {
-        await matchesApi.update(matchId, {
+        const saved = await matchesApi.update(matchId, {
           matchFormat: formData.matchFormat,
           stipulationId: formData.stipulationId || undefined,
           participants: formData.participants,
@@ -254,10 +286,11 @@ export default function MatchEditForm({
           seasonId: formData.seasonId || undefined,
           eventId: effectiveEventId,
           designation: effectiveDesignation,
+          ...(overrideRequested ? { allowInjured: true } : {}),
         });
-        onSuccess();
+        finishSave(saved?.injuryWarnings);
       } catch (err) {
-        setError(err instanceof Error ? err.message : t('events.forms.updateError', 'Failed to update match'));
+        setError(saveErrorMessage(err));
       } finally {
         setSubmitting(false);
       }
@@ -395,6 +428,18 @@ export default function MatchEditForm({
       <option value="none">{t('events.forms.noDivision', 'No Division')}</option>
     </>
   );
+
+  // INJ-11: the match saved with injured players booked; show who before closing.
+  if (injuryWarnings.length > 0) {
+    return (
+      <div className="match-edit-form">
+        <InjuryWarningsNotice warnings={injuryWarnings} nameOf={playerNameOf} />
+        <div className="match-edit-form__actions">
+          <Button onClick={onSuccess}>{t('injuryReport.booking.done')}</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="match-edit-form">
@@ -686,18 +731,24 @@ export default function MatchEditForm({
                           const playerTeamIndex = getPlayerTeamIndex(player.playerId);
                           const isInOtherTeam =
                             playerTeamIndex !== -1 && playerTeamIndex !== teamIndex;
+                          const injuryBlocked = isPickBlocked(
+                            bookingCondition,
+                            player.playerId,
+                            bookedPlayerIds.includes(player.playerId),
+                          );
                           return (
                             <button
                               key={player.playerId}
                               type="button"
-                              className="match-edit-form__player"
-                              disabled={isInOtherTeam}
+                              className={`match-edit-form__player${injuryBlocked ? ' injury-pick--blocked' : ''}`}
+                              disabled={isInOtherTeam || injuryBlocked}
                               onClick={() => handleTeamMemberToggle(teamIndex, player.playerId)}
                             >
                               <span className="match-edit-form__player-name">{player.name}</span>
                               {!isNeedsWrestler(player.currentWrestler) && (
                                 <span className="match-edit-form__player-meta">{player.currentWrestler}</span>
                               )}
+                              <InjuryPickerTags condition={bookingCondition} playerId={player.playerId} />
                               {isInOtherTeam && (
                                 <span className="match-edit-form__player-meta">
                                   {t('scheduleMatch.tagTeam.team', 'Team')} {playerTeamIndex + 1}
@@ -735,25 +786,39 @@ export default function MatchEditForm({
               </div>
             )}
             <div className="match-edit-form__players">
-              {filteredPlayers.map((player) => (
-                <button
-                  key={player.playerId}
-                  type="button"
-                  className="match-edit-form__player"
-                  aria-pressed={formData.participants.includes(player.playerId)}
-                  onClick={() => handleParticipantToggle(player.playerId)}
-                >
-                  <span className="match-edit-form__player-name">{player.name}</span>
-                  {!isNeedsWrestler(player.currentWrestler) && (
-                    <span className="match-edit-form__player-meta">{player.currentWrestler}</span>
-                  )}
-                </button>
-              ))}
+              {filteredPlayers.map((player) => {
+                const selected = formData.participants.includes(player.playerId);
+                const injuryBlocked = isPickBlocked(
+                  bookingCondition,
+                  player.playerId,
+                  selected || bookedPlayerIds.includes(player.playerId),
+                );
+                return (
+                  <button
+                    key={player.playerId}
+                    type="button"
+                    className={`match-edit-form__player${injuryBlocked ? ' injury-pick--blocked' : ''}`}
+                    aria-pressed={selected}
+                    disabled={injuryBlocked}
+                    onClick={() => handleParticipantToggle(player.playerId)}
+                  >
+                    <span className="match-edit-form__player-name">{player.name}</span>
+                    {!isNeedsWrestler(player.currentWrestler) && (
+                      <span className="match-edit-form__player-meta">{player.currentWrestler}</span>
+                    )}
+                    <InjuryPickerTags condition={bookingCondition} playerId={player.playerId} />
+                  </button>
+                );
+              })}
             </div>
             <p className="match-edit-form__hint">
               {t('scheduleMatch.selected')}: {formData.participants.length}
             </p>
           </fieldset>
+        )}
+
+        {bookingCondition && (
+          <AllowInjuredToggle checked={allowInjured} onChange={setAllowInjured} disabled={submitting} />
         )}
 
         <div className="match-edit-form__actions">

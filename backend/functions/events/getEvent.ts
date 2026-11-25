@@ -207,6 +207,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             ...(match.simulation && {
               simulation: callerIsStaff ? match.simulation : toPublicMatchSimulation(match.simulation),
             }),
+            // INJ-11: the condition report (stamina, chance, roll) is staff only.
+            ...(callerIsStaff && match.conditionReport && { conditionReport: match.conditionReport }),
           },
         };
       })

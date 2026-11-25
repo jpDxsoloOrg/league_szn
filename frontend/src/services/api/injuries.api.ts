@@ -1,5 +1,11 @@
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 import type { InjuryConfigResponse, InjuryTunables, InjuryTunablesInput } from '../../types/injury';
+import type {
+  AdjustStaminaResult,
+  Injury,
+  InjuryBoardEntry,
+  UpdateCurrentInjuryInput,
+} from '../../types/injuryReport';
 
 export const injuriesApi = {
   /** GET /admin/injury-config (Moderator and Admin): current tunables and kept versions. */
@@ -19,6 +25,37 @@ export const injuriesApi = {
     return fetchWithAuth(`${API_BASE_URL}/admin/injury-config`, {
       method: 'PUT',
       body: JSON.stringify({ settings, expectedVersion }),
+    });
+  },
+
+  // INJ-11: the GM injury board (INJ-08 routes, Moderator and Admin).
+
+  /** GET /injuries?active=true: every injury that has not ended, soonest return first. */
+  listActive: async (signal?: AbortSignal): Promise<InjuryBoardEntry[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/injuries?active=true`, {}, signal);
+  },
+
+  /** POST /players/{id}/injuries/heal: ends the current injury now. */
+  heal: async (playerId: string, note?: string): Promise<Injury> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/${encodeURIComponent(playerId)}/injuries/heal`, {
+      method: 'POST',
+      body: JSON.stringify(note ? { note } : {}),
+    });
+  },
+
+  /** PATCH /players/{id}/injuries/current: a new total length in weeks, or an exact return date. */
+  updateCurrent: async (playerId: string, input: UpdateCurrentInjuryInput): Promise<Injury> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/${encodeURIComponent(playerId)}/injuries/current`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    });
+  },
+
+  /** PATCH /players/{id}/stamina: sets stamina to a whole number. */
+  adjustStamina: async (playerId: string, stamina: number, note?: string): Promise<AdjustStaminaResult> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/${encodeURIComponent(playerId)}/stamina`, {
+      method: 'PATCH',
+      body: JSON.stringify(note ? { stamina, note } : { stamina }),
     });
   },
 };
