@@ -26,6 +26,9 @@
     "backfill-sim-categories": "ts-node scripts/backfill-sim-categories.ts",
     "sim-calibration": "ts-node scripts/sim-calibration.ts",
     "cleanup-tag-title-player-overrides": "ts-node scripts/cleanup-tag-title-player-overrides.ts",
+    "check-stack-limits": "node scripts/check-stack-limits.js",
+    "check-api-cutover": "node scripts/check-api-cutover.js",
+    "proxy-parity-check": "node scripts/proxy-parity-check.js",
     "lint": "eslint functions/ lib/",
     "test": "vitest run",
     "test:watch": "vitest"

@@ -144,3 +144,44 @@ describe.each(['deploy-dev.yml', 'deploy-prod.yml'])('%s Cognito wiring', (workf
     expect(step('Wire Cognito')).toContain(rewiresAfterFailure);
   });
 });
+
+describe.each(['deploy-dev.yml', 'deploy-prod.yml'])('%s INFRA-207 deploy rails', (workflow) => {
+  const steps = readFileSync(join(backendRoot, '../.github/workflows', workflow), 'utf8').split('\n      - name: ');
+  const indexOf = (name: string) => steps.findIndex((text) => text.startsWith(name));
+  const deployIndex = steps.findIndex((text) => text.startsWith('Deploy backend') && text.includes('id: deploy_backend'));
+
+  it('refreshes the API stage deployment after a successful backend deploy', () => {
+    const refreshIndex = indexOf('Refresh API stage deployment');
+    expect(deployIndex).toBeGreaterThan(0);
+    expect(refreshIndex).toBeGreaterThan(deployIndex);
+
+    const refresh = steps[refreshIndex];
+    expect(refresh).toContain("if: steps.deploy_backend.outcome == 'success'");
+    expect(refresh).toContain('--logical-resource-id ApiGatewayRestApi');
+    expect(refresh).toMatch(/aws apigateway get-stage[\s\S]*echo "Previous [\s\S]*aws apigateway create-deployment/);
+  });
+
+  it('keeps deploying the frontend when the stage refresh fails, then fails the job at the end', () => {
+    const refresh = steps[indexOf('Refresh API stage deployment')];
+    expect(refresh).toContain('id: refresh_stage');
+    expect(refresh).toContain('continue-on-error: true');
+
+    const failIndex = indexOf('Fail if API stage refresh failed');
+    expect(failIndex).toBeGreaterThan(indexOf('Invalidate CloudFront cache'));
+    expect(steps[failIndex]).toContain("steps.refresh_stage.outcome == 'failure'");
+    expect(steps[failIndex]).toContain('exit 1');
+  });
+
+  it('checks stack limits after the cycle check and the cut-over gate before the deploy', () => {
+    const cycleIndex = indexOf('Check generated stacks for dependency cycles');
+    const limitsIndex = indexOf('Check generated stacks against resource limits');
+    const gateIndex = indexOf('Check API cut-over gate');
+
+    expect(cycleIndex).toBeGreaterThan(0);
+    expect(limitsIndex).toBeGreaterThan(cycleIndex);
+    expect(gateIndex).toBeGreaterThan(limitsIndex);
+    expect(deployIndex).toBeGreaterThan(gateIndex);
+    expect(steps[limitsIndex]).toContain('npm run check-stack-limits');
+    expect(steps[gateIndex]).toContain('node scripts/check-api-cutover.js --stage ');
+  });
+});

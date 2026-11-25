@@ -282,6 +282,20 @@ functions:
   preSignUp:
     handler: functions/auth/preSignUp.handler
 
+  # INFRA-207: the single HTTP entry point. Every route is served through this
+  # one ANY /{proxy+} event, routed in code by functions/api/routes.ts. In PR 1
+  # the explicit per-function events below still win over the proxy; they go
+  # away in PR 2a. See docs/plans/plan-infra-207-api-simplification.md.
+  api:
+    handler: functions/api/handler.handler
+    # The API Gateway integration cap.
+    timeout: 29
+    events:
+      - http:
+          path: /{proxy+}
+          method: any
+          cors: *corsConfig
+
   createAdminUser:
     handler: functions/auth/createAdminUser.handler
     events:

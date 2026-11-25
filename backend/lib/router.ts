@@ -37,6 +37,8 @@ export type RouteConfig = RouteBase & (
 type CompiledRoute = RouteConfig & {
     regex: RegExp;
     paramNames: string[];
+    /** Per path segment: true for a `{param}`, false for a literal. */
+    paramSegments: boolean[];
 };
 
 const noopCallback = () => {};
@@ -60,7 +62,7 @@ export function createRouter(routes: ReadonlyArray<RouteConfig>): APIGatewayProx
     routes.forEach(assertAccessDeclared);
     const compiled: ReadonlyArray<CompiledRoute> = routes.map((route) => {
         const { regex, paramNames } = compileResource(route.resource);
-        return { ...route, regex, paramNames };
+        return { ...route, regex, paramNames, paramSegments: toParamSegments(route.resource) };
     });
     const exactLookup = new Map<string, CompiledRoute>(
         compiled.map((r) => [toRouteKey(r.method, r.resource), r])
@@ -99,14 +101,17 @@ export function createRouter(routes: ReadonlyArray<RouteConfig>): APIGatewayProx
         const pathMatches = compiled.filter((r) => r.regex.test(path));
         if (pathMatches.length === 0) return notFound();
 
-        const methodMatches = pathMatches.filter((r) => r.method === method);
-        if (methodMatches.length === 0) return methodNotAllowed();
-
-        // Prefer the most specific match (fewest path parameters); ties go to
-        // declaration order.
-        const matched = methodMatches
-            .map((r, i) => ({ r, i }))
-            .sort((a, b) => a.r.paramNames.length - b.r.paramNames.length || a.i - b.i)[0].r;
+        // Resource first, then method, as API Gateway does: pick the most
+        // specific matching template regardless of method, then require the
+        // method on that template. Falling back to a less specific sibling
+        // would run, say, DELETE /players/{playerId} with playerId='me'.
+        // Matches that share the winning template's literal/param shape all
+        // match this path, so they are the same resource.
+        const winner = pathMatches.reduce((best, r) => (compareSpecificity(r, best) < 0 ? r : best));
+        const matched = pathMatches.find(
+            (r) => r.method === method && compareSpecificity(r, winner) === 0
+        );
+        if (!matched) return methodNotAllowed();
 
         const execResult = matched.regex.exec(path);
         const existingParams = event.pathParameters || {};
@@ -204,6 +209,27 @@ function compileResource(resource: string): { regex: RegExp; paramNames: string[
     const escaped = withPlaceholders.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const pattern = escaped.replace(new RegExp(PLACEHOLDER, 'g'), '([^/]+)');
     return { regex: new RegExp(`^${pattern}$`), paramNames };
+}
+
+function toParamSegments(resource: string): boolean[] {
+    return resource.split('/').filter((segment) => segment !== '')
+        .map((segment) => /^\{[^}]+\}$/.test(segment));
+}
+
+/**
+ * API Gateway's precedence for two templates that match the same path: walk
+ * the segments left to right, and at the first one where they differ, the
+ * literal wins over the `{param}`. Negative when `a` is more specific, 0 when
+ * the shapes are identical (the reduce above then keeps the earlier route).
+ * Templates have no greedy params, so matching templates have the same
+ * segment count; a shorter one is ranked first only as a defensive default.
+ */
+function compareSpecificity(a: CompiledRoute, b: CompiledRoute): number {
+    const length = Math.min(a.paramSegments.length, b.paramSegments.length);
+    for (let i = 0; i < length; i++) {
+        if (a.paramSegments[i] !== b.paramSegments[i]) return a.paramSegments[i] ? 1 : -1;
+    }
+    return a.paramSegments.length - b.paramSegments.length;
 }
 
 function normalizePath(path: string): string {
