@@ -114,7 +114,33 @@ export interface InjuryPatch {
 export interface PlayerConditionPatch {
   stamina?: number;
   currentInjury?: CurrentInjury | null;
+  // ECO-10
+  /** Use up (or count down) one shop effect in the same player write. */
+  useEffect?: PlayerEffectUse;
 }
+
+// ECO-10
+/**
+ * Using one entry of `Player.effects` (a shop item). The write fails with
+ * `ConcurrencyError('Player', playerId)` unless `effects[index]` is still the
+ * effect `effectId` (and, with `matchesLeft`, still has `matchesLeft.before`
+ * matches), so an effect is never used twice and a racing write is retried
+ * from a fresh read.
+ *
+ * Without `matchesLeft`, or with `matchesLeft.after` at 0, the effect is
+ * removed. Otherwise its `matchesLeft` becomes `after` (an injury shield
+ * counting down).
+ */
+export interface PlayerEffectUse {
+  effectId: string;
+  /** Position of the effect in `Player.effects` as read. */
+  index: number;
+  matchesLeft?: { before: number; after: number };
+}
+
+/** True when the use removes the effect rather than counting it down. */
+export const removesEffect = (use: PlayerEffectUse): boolean =>
+  use.matchesLeft === undefined || use.matchesLeft.after <= 0;
 
 /**
  * Optional guard for `tx.updatePlayerCondition`: the write fails with
@@ -187,8 +213,24 @@ export function validateInjury(injury: Injury): void {
 
 /** Throws for a condition patch no store should accept. */
 export function validatePlayerConditionPatch(patch: PlayerConditionPatch): void {
-  if (patch.stamina === undefined && patch.currentInjury === undefined) {
-    throw new InvalidInjuryWriteError('A condition write needs stamina or currentInjury');
+  if (patch.stamina === undefined && patch.currentInjury === undefined && patch.useEffect === undefined) {
+    throw new InvalidInjuryWriteError('A condition write needs stamina, currentInjury or useEffect');
+  }
+  // ECO-10
+  if (patch.useEffect !== undefined) {
+    const { effectId, index, matchesLeft } = patch.useEffect;
+    if (typeof effectId !== 'string' || effectId === '') {
+      throw new InvalidInjuryWriteError('useEffect needs an effectId');
+    }
+    if (!Number.isInteger(index) || index < 0) {
+      throw new InvalidInjuryWriteError('useEffect index must be a whole number of at least 0');
+    }
+    if (matchesLeft !== undefined && (
+      !Number.isInteger(matchesLeft.before) || !Number.isInteger(matchesLeft.after)
+      || matchesLeft.after < 0 || matchesLeft.after >= matchesLeft.before
+    )) {
+      throw new InvalidInjuryWriteError('useEffect matchesLeft must count down by whole numbers');
+    }
   }
   if (patch.stamina !== undefined && (!Number.isFinite(patch.stamina) || patch.stamina < 0)) {
     throw new InvalidInjuryWriteError('stamina must be a number of at least 0');

@@ -215,6 +215,22 @@ describe('POST /simulate with matchId', () => {
   it('returns 404 for an unknown match', async () => {
     expect((await simulateRequest({ matchId: 'missing' })).statusCode).toBe(404);
   });
+
+  // ECO-10
+  it('applies and shows a bought sim boost for the GM', async () => {
+    await createMatch();
+    const before = await simulateRequest({ matchId: MATCH_ID, seed: 5 });
+    expect(before.body.boosts).toBeUndefined();
+
+    await repos.competition.matches.update(MATCH_ID, '2026-11-30T20:00:00.000Z', {
+      simBoosts: [{ playerId: austinId, boost: 10, purchasedAt: '2026-11-24T00:00:00.000Z', purchaseKey: 'k1' }],
+    });
+    const { statusCode, body } = await simulateRequest({ matchId: MATCH_ID, seed: 5 });
+
+    expect(statusCode).toBe(200);
+    expect(body.boosts).toEqual([{ playerId: austinId, boost: 10, multiplier: 1.1 }]);
+    expect(body.probabilities[1].pct).toBeGreaterThan(before.body.probabilities[1].pct);
+  });
 });
 
 // INJ-09

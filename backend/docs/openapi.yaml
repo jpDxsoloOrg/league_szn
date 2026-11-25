@@ -223,6 +223,18 @@ components:
               injured: { type: boolean }
               multiplier: { type: number, description: '1 = no effect' }
 
+        # ECO-10
+        boosts:
+          type: array
+          description: Sim interference bought for the match and applied as a rating multiplier of 1 + boost%. Only when there are any. Staff only.
+          items:
+            type: object
+            required: [playerId, boost, multiplier]
+            properties:
+              playerId: { type: string }
+              boost: { type: number, description: Percentage added to the rating }
+              multiplier: { type: number }
+
         matchId: { type: string, description: Set when a match was simulated }
         scaledPlayerIds: { type: array, items: { type: string }, description: Players whose over-budget build was scaled down }
         formWindow:
@@ -1602,6 +1614,10 @@ components:
               properties:
                 matchId: { type: string }
         alreadyApplied: { type: boolean }
+        # ECO-10
+        used:
+          type: boolean
+          description: rehab and staminaTopUp only. True once the effect was applied (it is then gone from `effects`); false while a rehab waits for an active injury.
 
     # ECO-09
     GmInterferenceInput:
@@ -2415,6 +2431,12 @@ paths:
         are 409 with a `code`: ITEM_DISABLED, IN_DEBT, INSUFFICIENT_FUNDS,
         SHIELD_ACTIVE, NO_ACTIVE_INJURY, INJURY_TOO_SHORT, MATCH_NOT_SCHEDULED,
         NOT_IN_MATCH, BOOST_ALREADY_BOUGHT. GM interference is not sold here.
+        Rehab and staminaTopUp apply right after the purchase: rehab moves the
+        active injury's return earlier by `weeksOff` league weeks (never less
+        than one week from its start) and logs a `rehab` change; staminaTopUp
+        adds stamina up to the maximum. The injury shield cuts the injury
+        chance of the buyer's next matches, and sim interference raises the
+        buyer's rating by `boost`% in the official sim, which uses it.
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true

@@ -802,6 +802,10 @@ export interface MatchConditionEntry {
    * injury), so no second injury was created.
    */
   alreadyInjured?: boolean;
+
+  // ECO-10
+  /** An injury shield from the shop cut `chance`; one of its matches was used. */
+  shielded?: boolean;
 }
 
 export interface Match {
@@ -921,6 +925,11 @@ export interface MatchSimulation {
   specialtyHits: string[];
   /** Staff only: players whose over-budget build was scaled down. */
   scaledPlayerIds: string[];
+
+  // ECO-10
+  /** Staff only: players whose bought sim boost (`Match.simBoosts`) this sim used. */
+  simBoostedPlayerIds?: string[];
+
   /** Staff only: the matches the form score was read from. */
   formWindow: { kind: 'season'; seasonId: string } | { kind: 'recent'; matchLimit: number };
   simulatedAt: string;

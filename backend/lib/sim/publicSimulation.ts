@@ -4,9 +4,18 @@
  * Anyone can see that a match was simulated and read its story: the
  * play-by-play, the category, specialty hits, the seed and the rules version.
  * The odds are a booking tool and stay with staff (BLD-08), as do the audit
- * fields (inputs digest, scaled builds, form window, who ran it).
+ * fields (inputs digest, scaled builds, form window, who ran it). The run-in
+ * beat shows who bought sim interference, which is private (ECO-08), so it is
+ * left out of the public story (ECO-10).
  */
-import type { MatchSimulation } from '../repositories/types';
+import type { MatchSimulation, MatchSimulationBeat } from '../repositories/types';
+
+// ECO-10
+/** Play-by-play beat type that is staff only. */
+export const PRIVATE_BEAT_TYPES: readonly string[] = ['runIn'];
+
+const isPublicBeat = (beat: MatchSimulationBeat): boolean =>
+  !PRIVATE_BEAT_TYPES.includes(beat.key.split('.')[2] ?? '');
 
 export type PublicMatchSimulation = Pick<
   MatchSimulation,
@@ -19,7 +28,7 @@ export function toPublicMatchSimulation(simulation: MatchSimulation): PublicMatc
     category: simulation.category,
     rulesVersion: simulation.rulesVersion,
     winnerSideId: simulation.winnerSideId,
-    playByPlay: simulation.playByPlay,
+    playByPlay: (simulation.playByPlay ?? []).filter(isPublicBeat),
     specialtyHits: simulation.specialtyHits,
     simulatedAt: simulation.simulatedAt,
   };

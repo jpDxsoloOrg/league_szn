@@ -923,7 +923,7 @@
         "shieldMatches": "Hält (Matches)",
         "weeksOff": "Wochen weniger Verletzungspause",
         "staminaAmount": "Zusätzliche Ausdauer",
-        "ratingBoost": "Rating-Bonus",
+        "ratingBoost": "Rating-Bonus (%)",
         "items": {
           "injuryShield": {
             "name": "Verletzungsschutz",
@@ -4304,6 +4304,9 @@
       "injured": "Verletzt",
       "injuredNamed": "{{name}} verletzt",
       "conditionHint": "Wenig Ausdauer und Verletzungen senken das Rating in der Simulation. Das sehen nur GMs.",
+      "boost": "Run-in +{{boost}} %",
+      "boostNamed": "{{name}}: Run-in +{{boost}} %",
+      "boostHint": "Gekaufte Sim-Eingriffe erhöhen das Rating in der Simulation. Wer ihn gekauft hat, sehen nur GMs.",
       "playByPlay": "Match-Verlauf",
       "skip": "Alles zeigen"
     },
@@ -4394,6 +4397,11 @@
         "v1": "{{wrestler}} spürt die Verletzung, und {{opponent}} geht gezielt darauf.",
         "v2": "{{wrestler}} hält sich die verletzte Stelle, und {{opponent}} wittert die Chance.",
         "v3": "{{wrestler}} hat sichtlich Schmerzen, und {{opponent}} nimmt die Schwachstelle ins Visier."
+      },
+      "runIn": {
+        "v1": "Ein überraschender Run-in! Jemand stürmt in den Ring und schaltet {{opponent}} aus, und {{wrestler}} nutzt den Moment.",
+        "v2": "Chaos am Ring: Ein Außenstehender lenkt {{opponent}} ab, und {{wrestler}} lässt es {{opponent}} büßen.",
+        "v3": "Aus dem Nichts streckt ein Run-in {{opponent}} nieder, und {{wrestler}} ist sofort zur Stelle."
       },
       "nearFall": {
         "v1": "{{wrestler}} covert {{opponent}}: eins, zwei … {{opponent}} kickt aus!",
@@ -4664,7 +4672,7 @@
       },
       "simInterference": {
         "name": "Sim-Eingriff",
-        "effect": "Erhöht deine Wertung in einem deiner simulierten Matches um {{boost}}."
+        "effect": "Erhöht deine Wertung in einem deiner simulierten Matches um {{boost}} %."
       },
       "gmInterference": {
         "name": "GM-Eingriff",
@@ -4677,6 +4685,7 @@
       "insufficientFunds": "Dafür hast du nicht genug Geld.",
       "shieldActive": "Du hast schon einen aktiven Verletzungsschutz.",
       "noActiveInjury": "Braucht eine aktive Verletzung.",
+      "injuryTooShort": "Deine Verletzung muss noch mindestens 2 Wochen dauern.",
       "noScheduledMatch": "Braucht ein angesetztes Match, für das du noch keinen Eingriff gekauft hast.",
       "requestPending": "Du hast schon eine Anfrage, die auf den GM wartet."
     },

@@ -7,15 +7,23 @@ import type { ShopItemKey } from '../../services/api/economy.api';
 import type { PlayerEffect, ShopRefusalCode } from '../../services/api/shop.api';
 
 /**
- * Items whose effect needs injuries, stamina or the match sim (ECO-10, Sprint 8).
- * They are listed as "coming soon" and can't be bought yet. ECO-10 empties this set.
+ * Items listed as "coming soon" that can't be bought yet. Empty since ECO-10
+ * made every shop effect work; kept so a future item can launch the same way.
  */
-export const PENDING_EFFECT_ITEMS: ReadonlySet<ShopItemKey> = new Set<ShopItemKey>([
-  'injuryShield',
-  'rehab',
-  'staminaTopUp',
-  'simInterference',
-]);
+export const PENDING_EFFECT_ITEMS: ReadonlySet<ShopItemKey> = new Set<ShopItemKey>();
+
+/** Rehab needs at least this many weeks left on the injury (server: REHAB_MIN_WEEKS_LEFT). */
+export const REHAB_MIN_WEEKS_LEFT = 2;
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Whole weeks until `returnsAt`, rounded up; null when there is no injury or it is over. */
+export function injuryWeeksLeft(returnsAt: string | undefined, now: Date = new Date()): number | null {
+  if (!returnsAt) return null;
+  const msLeft = Date.parse(returnsAt) - now.getTime();
+  if (!Number.isFinite(msLeft) || msLeft <= 0) return null;
+  return Math.ceil(msLeft / WEEK_MS);
+}
 
 export type ShopBlockReason =
   | 'comingSoon'
@@ -23,6 +31,7 @@ export type ShopBlockReason =
   | 'insufficientFunds'
   | 'shieldActive'
   | 'noActiveInjury'
+  | 'injuryTooShort'
   | 'noScheduledMatch'
   | 'requestPending';
 
@@ -34,7 +43,7 @@ export interface ShopContext {
   boostableMatchCount: number;
   /** The player already waits on a GM interference request. */
   hasPendingRequest: boolean;
-  /** Weeks left on the active injury; null with no injury (always null until injuries exist). */
+  /** Weeks left on the active injury; null with no injury. */
   injuryWeeksLeft: number | null;
   pendingItems?: ReadonlySet<ShopItemKey>;
 }
@@ -53,7 +62,8 @@ export function shopBlockReason(item: ShopItemKey, context: ShopContext): ShopBl
     case 'injuryShield':
       return hasActiveShield(context.effects) ? 'shieldActive' : null;
     case 'rehab':
-      return context.injuryWeeksLeft === null || context.injuryWeeksLeft <= 0 ? 'noActiveInjury' : null;
+      if (context.injuryWeeksLeft === null || context.injuryWeeksLeft <= 0) return 'noActiveInjury';
+      return context.injuryWeeksLeft < REHAB_MIN_WEEKS_LEFT ? 'injuryTooShort' : null;
     case 'simInterference':
       return context.boostableMatchCount === 0 ? 'noScheduledMatch' : null;
     case 'gmInterference':

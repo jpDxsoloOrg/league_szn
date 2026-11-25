@@ -18,15 +18,19 @@
  * its stamina and injury state and a `condition` rating modifier from
  * `staminaSimMultiplier` (INJ-02), so the GM preview and the official sim both
  * see tired and hurt wrestlers do worse. With the feature off nothing changes.
+ *
+ * Sim boost (ECO-10): a player who bought sim interference for the match
+ * (`simBoosts`) gets a `simBoost` modifier of × (1 + boost%) on top.
  */
 import { getRepositories } from '../repositories';
-import type { Division, Match, Player } from '../repositories/types';
+import type { Division, Match, Player, SimBoost } from '../repositories/types';
 import { toPlayerBuildView } from '../builds/playerBuild';
 import {
   competitorFromBuild,
   NEUTRAL_FORM,
   type SimCompetitor,
   type SimCondition,
+  SIM_BOOST_MODIFIER_SOURCE,
   type SimModifier,
   type SimSide,
 } from '../policies/matchSim';
@@ -160,6 +164,26 @@ export function simConditionFor(
   };
 }
 
+// ─── Sim boost (ECO-10) ─────────────────────────────────────────────
+
+/**
+ * The rating multiplier for a bought sim boost: `boost` is a percentage
+ * (`shop.simInterference.ratingBoost`, a whole number), so 5 → × 1.05.
+ */
+export function simBoostMultiplier(boost: number): number {
+  return 1 + Math.max(0, Number.isFinite(boost) ? boost : 0) / 100;
+}
+
+/** Each boosted player's sim modifier. Several boosts for one player multiply (purchase allows one). */
+export function simBoostModifiers(boosts: readonly Pick<SimBoost, 'playerId' | 'boost'>[]): Map<string, SimModifier> {
+  const byPlayer = new Map<string, SimModifier>();
+  for (const { playerId, boost } of boosts) {
+    const existing = byPlayer.get(playerId)?.multiplier ?? 1;
+    byPlayer.set(playerId, { source: SIM_BOOST_MODIFIER_SOURCE, multiplier: existing * simBoostMultiplier(boost) });
+  }
+  return byPlayer;
+}
+
 // ─── Loader ─────────────────────────────────────────────────────────
 
 export interface LoadSimInputsRequest {
@@ -171,6 +195,8 @@ export interface LoadSimInputsRequest {
   seasonId?: string;
   /** Clock for injury checks (tests). Defaults to now. */
   now?: Date;
+  /** ECO-10: the match's bought sim boosts; each boosted player gets a `simBoost` modifier. */
+  simBoosts?: readonly Pick<SimBoost, 'playerId' | 'boost'>[];
 }
 
 export type FormWindow =
@@ -238,6 +264,9 @@ export async function loadSimInputs(request: LoadSimInputsRequest): Promise<Load
   const injuryTunables = features.injuries ? await repos.user.siteConfig.getInjuryTunables() : null;
   const now = request.now ?? new Date();
 
+  // ECO-10: paid sim boosts, only for players in this sim.
+  const boostModifiers = simBoostModifiers((request.simBoosts ?? []).filter((boost) => playersById.has(boost.playerId)));
+
   const scaledPlayerIds: string[] = [];
   const competitorsById = new Map<string, SimCompetitor>();
   for (const [playerId, player] of playersById) {
@@ -245,11 +274,13 @@ export async function loadSimInputs(request: LoadSimInputsRequest): Promise<Load
     const view = toPlayerBuildView(player, division);
     if (view.effective.scaled) scaledPlayerIds.push(playerId);
     const form = forms.get(playerId) ?? NEUTRAL_FORM;
+    const boostModifier = boostModifiers.get(playerId);
     if (injuryTunables) {
       const { condition, modifier } = simConditionFor(player, injuryTunables, now);
-      competitorsById.set(playerId, { ...competitorFromBuild(playerId, view.effective, form, [modifier]), condition });
+      const modifiers = boostModifier ? [modifier, boostModifier] : [modifier];
+      competitorsById.set(playerId, { ...competitorFromBuild(playerId, view.effective, form, modifiers), condition });
     } else {
-      competitorsById.set(playerId, competitorFromBuild(playerId, view.effective, form));
+      competitorsById.set(playerId, competitorFromBuild(playerId, view.effective, form, boostModifier ? [boostModifier] : undefined));
     }
   }
 

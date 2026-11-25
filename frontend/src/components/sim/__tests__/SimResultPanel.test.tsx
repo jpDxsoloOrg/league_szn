@@ -139,6 +139,29 @@ describe('SimResultPanel', () => {
     expect(screen.queryByText(/sim\.panel\.stamina/)).not.toBeInTheDocument();
   });
 
+  // ECO-10
+  it('marks a competitor with a bought sim boost', () => {
+    const sides = sidesFromOdds(
+      [
+        { sideId: 'side-1', playerIds: ['p1'], pct: 55 },
+        { sideId: 'side-2', playerIds: ['p2'], pct: 45 },
+      ],
+      nameOf,
+    );
+    render(
+      <SimResultPanel
+        sides={sides}
+        category="standard"
+        specialtyHits={[]}
+        boosts={[{ playerId: 'p1', boost: 5, multiplier: 1.05 }]}
+        playByPlay={[]}
+        seed={1}
+      />,
+    );
+    expect(within(screen.getByTestId('sim-side-side-1')).getByText('sim.panel.boostNamed Cena 5')).toBeInTheDocument();
+    expect(within(screen.getByTestId('sim-side-side-2')).queryByText(/sim\.panel\.boost/)).not.toBeInTheDocument();
+  });
+
   it('reveals the play-by-play beat by beat, rendered from the beat keys and params', () => {
     render(<SimResultPanel sides={[]} category="standard" specialtyHits={[]} playByPlay={beats} seed={3} />);
 

@@ -20,6 +20,7 @@ import {
   validateInjury,
   validateInjuryPatch,
   validatePlayerConditionPatch,
+  removesEffect, // ECO-10
   type Injury,
   type InjuryPatch,
   type PlayerConditionGuard,
@@ -1072,6 +1073,27 @@ export class DynamoUnitOfWork implements UnitOfWork {
           sets.push('#condInjury = :condInjury');
         }
       }
+      // ECO-10: use up or count down one shop effect, guarded on its position.
+      if (patch.useEffect !== undefined) {
+        const { effectId, index, matchesLeft } = patch.useEffect;
+        const effectPath = `#condEffects[${index}]`;
+        names['#condEffects'] = 'effects';
+        names['#condEffectId'] = 'effectId';
+        values[':condEffectId'] = effectId;
+        guards.push(`${effectPath}.#condEffectId = :condEffectId`);
+        if (matchesLeft !== undefined) {
+          names['#condMatchesLeft'] = 'matchesLeft';
+          values[':condMatchesLeftBefore'] = matchesLeft.before;
+          guards.push(`${effectPath}.#condMatchesLeft = :condMatchesLeftBefore`);
+        }
+        if (removesEffect(patch.useEffect)) {
+          removes.push(effectPath);
+        } else {
+          values[':condMatchesLeftAfter'] = matchesLeft!.after;
+          sets.push(`${effectPath}.#condMatchesLeft = :condMatchesLeftAfter`);
+        }
+      }
+
       if (guard?.stamina !== undefined) {
         names['#condStamina'] = 'stamina';
         if (guard.stamina === null) {

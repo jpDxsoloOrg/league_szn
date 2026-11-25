@@ -1,13 +1,14 @@
 import { randomInt } from 'node:crypto';
 import type { APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import type { Match, MatchSimulation, MatchType, Player, Stipulation } from '../../lib/repositories/types';
+import type { Match, MatchSimulation, MatchType, Player, SimBoost, Stipulation } from '../../lib/repositories/types';
 import { badRequest, conflict, notFound, serverError, success } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import { recordMatchResult, RecordMatchResultError } from '../../lib/services/recordMatchResult';
+import { refundSimBoosts } from '../../lib/economy/refundSimBoosts';
 import { parseBody } from '../../lib/parseBody';
 import { realWrestlerName } from '../../lib/needsWrestler';
-import { simulate, type SideProbability } from '../../lib/policies/matchSim';
+import { simulate, SIM_BOOST_MODIFIER_SOURCE, type SideProbability } from '../../lib/policies/matchSim';
 import type { SimCategory } from '../../lib/policies/buildRules';
 import { resolveSimCategory, type SimCategoryMatch } from '../../lib/sim/category';
 import {
@@ -72,6 +73,16 @@ export interface SimulateCondition {
   multiplier: number;
 }
 
+// ECO-10
+/** A bought sim boost the sim applied. Staff only: who paid for a boost is private. */
+export interface SimulateBoost {
+  playerId: string;
+  /** `Match.simBoosts[].boost`, a percentage. */
+  boost: number;
+  /** The rating multiplier it gave. */
+  multiplier: number;
+}
+
 export interface SimulateResponse {
   seed: number;
   category: SimCategory;
@@ -84,6 +95,8 @@ export interface SimulateResponse {
   specialtyHits: string[];
   /** INJ-09: each competitor's stamina and injury state; only while the injuries feature is on. */
   conditions?: SimulateCondition[];
+  /** ECO-10: bought sim boosts on the match; only when there are any. */
+  boosts?: SimulateBoost[];
   /** Set when the preview is for a scheduled match. */
   matchId?: string;
   /** Players whose saved build is over budget and was scaled down. */
@@ -99,6 +112,8 @@ interface SimSetup {
   category: SimCategory;
   seasonId?: string;
   matchId?: string;
+  /** ECO-10: the match's bought sim boosts. */
+  simBoosts?: SimBoost[];
 }
 
 type SetupResult = { ok: true; setup: SimSetup } | { ok: false; response: APIGatewayProxyResult };
@@ -160,6 +175,7 @@ async function setupFromMatch(matchId: string): Promise<SetupResult> {
       category: resolveSimCategory(match, stipulations, matchTypes),
       matchId,
       ...(match.seasonId ? { seasonId: match.seasonId } : {}),
+      ...(match.simBoosts?.length ? { simBoosts: match.simBoosts } : {}),
     },
   };
 }
@@ -214,6 +230,7 @@ async function runSim(setup: SimSetup, seed: number): Promise<SimRunResult> {
   const loaded = await loadSimInputs({
     sides: setup.sides,
     ...(setup.seasonId ? { seasonId: setup.seasonId } : {}),
+    ...(setup.simBoosts ? { simBoosts: setup.simBoosts } : {}),
   });
   if (!loaded.ok) return { ok: false, missingPlayerIds: loaded.missingPlayerIds };
   const { inputs } = loaded;
@@ -235,6 +252,14 @@ async function runSim(setup: SimSetup, seed: number): Promise<SimRunResult> {
     return [{ playerId: competitor.playerId, ...competitor.condition, multiplier: modifier?.multiplier ?? 1 }];
   });
 
+  // ECO-10: the boosts the loader turned into modifiers.
+  const boostByPlayer = new Map((setup.simBoosts ?? []).map((entry) => [entry.playerId, entry.boost]));
+  const boosts: SimulateBoost[] = inputs.competitors.flatMap((competitor) => {
+    const modifier = competitor.modifiers?.find((entry) => entry.source === SIM_BOOST_MODIFIER_SOURCE);
+    if (!modifier) return [];
+    return [{ playerId: competitor.playerId, boost: boostByPlayer.get(competitor.playerId) ?? 0, multiplier: modifier.multiplier }];
+  });
+
   const playerIdsBySide = new Map(inputs.sides.map((side) => [side.sideId, side.members.map((member) => member.playerId)]));
   return {
     ok: true,
@@ -250,6 +275,7 @@ async function runSim(setup: SimSetup, seed: number): Promise<SimRunResult> {
       playByPlay,
       specialtyHits: result.specialtyHits,
       ...(conditions.length > 0 ? { conditions } : {}),
+      ...(boosts.length > 0 ? { boosts } : {}),
       ...(setup.matchId ? { matchId: setup.matchId } : {}),
       scaledPlayerIds: inputs.scaledPlayerIds,
       formWindow: inputs.formWindow,
@@ -391,6 +417,7 @@ export const simulateOfficialHandler: APIGatewayProxyHandler = async (event) => 
       playByPlay: sim.playByPlay,
       specialtyHits: sim.specialtyHits,
       scaledPlayerIds: sim.scaledPlayerIds,
+      ...(sim.boosts ? { simBoostedPlayerIds: sim.boosts.map((entry) => entry.playerId) } : {}),
       formWindow: sim.formWindow,
       simulatedAt: new Date().toISOString(),
       ...(actor ? { simulatedBy: actor } : {}),
@@ -417,6 +444,18 @@ export const simulateOfficialHandler: APIGatewayProxyHandler = async (event) => 
         if (latest && latest.status !== 'scheduled') return conflict(NOT_SCHEDULED_MESSAGE);
       }
       return mapRecordError(err);
+    }
+
+    // ECO-10: the sim used the boosts it loaded. One bought after that never
+    // played a part, so it is refunded (idempotent; a failure is logged).
+    const used = new Set(simulation.simBoostedPlayerIds ?? []);
+    const missed = (recorded.simBoosts ?? []).filter((boost) => !used.has(boost.playerId));
+    if (missed.length > 0) {
+      try {
+        await refundSimBoosts({ matchId, simBoosts: missed }, 'missedBySim');
+      } catch (err) {
+        console.warn('Sim boost refund failed:', err);
+      }
     }
 
     const response: SimulateOfficialResponse = {

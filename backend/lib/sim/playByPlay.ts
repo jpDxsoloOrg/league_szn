@@ -22,6 +22,12 @@
  * "selling the injury" or "looks gassed" beat, injured wrestlers first.
  * Without a condition the story and its random stream are unchanged.
  *
+ * Run-in (ECO-10): when a competitor carries a bought sim boost, a "run-in"
+ * beat helps one boosted competitor after the momentum (and condition)
+ * beats, again in place of a momentum beat. It names who it helped, so it is
+ * staff only: `toPublicMatchSimulation` drops it. Without a boost nothing
+ * changes.
+ *
  * Randomness comes from its own stream, `createRng(deriveSeed(seed,
  * PLAY_BY_PLAY_STREAM))`, so the story never shifts the draw and the same
  * result always replays to the same story.
@@ -33,6 +39,7 @@ import {
   STAT_WEIGHTS_DEFAULT,
   createRng,
   deriveSeed,
+  hasSimBoost,
   type SimCompetitor,
   type SimResult,
   type SimSide,
@@ -74,6 +81,7 @@ export const BEAT_VARIANTS = {
   signatureGeneric: 3,
   gassed: 3, // INJ-09
   sellingInjury: 3, // INJ-09
+  runIn: 3, // ECO-10
   nearFall: 3,
   finisherKickout: 3,
   finisher: 3,
@@ -265,13 +273,18 @@ export function buildPlayByPlay(
     side.members.filter((member) => conditionBeatType(member) === 'gassed').map((member) => ({ side, member })),
   );
   const conditioned = injured.length > 0 ? injured : gassed;
+  // ECO-10: competitors with a bought sim boost.
+  const boosted = sides.flatMap((side) => side.members.filter(hasSimBoost).map((member) => ({ side, member })));
 
-  // Momentum (one fewer when a condition beat follows, so stories stay ≤ 8 beats).
+  // Momentum (one fewer per condition or run-in beat that follows, so stories
+  // stay ≤ 8 beats; only a close match with both drops below the minimum).
+  const extraBeats = (conditioned.length > 0 ? 1 : 0) + (boosted.length > 0 ? 1 : 0);
   const maxMomentum = Math.max(
-    MIN_MOMENTUM_BEATS,
-    (isClose ? MAX_MOMENTUM_BEATS_CLOSE : MAX_MOMENTUM_BEATS) - (conditioned.length > 0 ? 1 : 0),
+    extraBeats > 1 && isClose ? 1 : MIN_MOMENTUM_BEATS,
+    (isClose ? MAX_MOMENTUM_BEATS_CLOSE : MAX_MOMENTUM_BEATS) - extraBeats,
   );
-  const momentumCount = MIN_MOMENTUM_BEATS + Math.floor(rng() * (maxMomentum - MIN_MOMENTUM_BEATS + 1));
+  const minMomentum = Math.min(MIN_MOMENTUM_BEATS, maxMomentum);
+  const momentumCount = minMomentum + Math.floor(rng() * (maxMomentum - minMomentum + 1));
   for (let index = 0; index < momentumCount; index += 1) {
     const side = pickWeighted(sides, sideWeights, rng);
     const attacker = pick(side.members, rng);
@@ -283,6 +296,12 @@ export function buildPlayByPlay(
     const { side, member } = pick(conditioned, rng);
     const type = conditionBeatType(member) ?? 'gassed';
     beats.push(beat(type, pair(member, opponentOf(side))));
+  }
+
+  // Run-in (ECO-10): only ever for a boosted competitor.
+  if (boosted.length > 0) {
+    const { side, member } = pick(boosted, rng);
+    beats.push(beat('runIn', pair(member, opponentOf(side))));
   }
 
   // Signature.

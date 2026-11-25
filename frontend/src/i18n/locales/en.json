@@ -923,7 +923,7 @@
         "shieldMatches": "Lasts (matches)",
         "weeksOff": "Weeks taken off the injury",
         "staminaAmount": "Stamina added",
-        "ratingBoost": "Rating boost",
+        "ratingBoost": "Rating boost (%)",
         "items": {
           "injuryShield": {
             "name": "Injury shield",
@@ -4304,6 +4304,9 @@
       "injured": "Injured",
       "injuredNamed": "{{name}} injured",
       "conditionHint": "Low stamina and injuries lower the rating in the sim. Only GMs see this.",
+      "boost": "Run-in +{{boost}}%",
+      "boostNamed": "{{name}}: run-in +{{boost}}%",
+      "boostHint": "Bought sim interference raises the rating in the sim. Only GMs see who bought it.",
       "playByPlay": "Play-by-play",
       "skip": "Show all"
     },
@@ -4394,6 +4397,11 @@
         "v1": "{{wrestler}} is selling the injury, and {{opponent}} goes right after it.",
         "v2": "{{wrestler}} clutches the injury, and {{opponent}} smells blood.",
         "v3": "{{wrestler}} is clearly hurting, and {{opponent}} targets the bad spot."
+      },
+      "runIn": {
+        "v1": "A surprise run-in! Someone hits the ring and takes {{opponent}} out, and {{wrestler}} seizes the moment.",
+        "v2": "Chaos at ringside: an outsider distracts {{opponent}}, and {{wrestler}} makes them pay.",
+        "v3": "Out of nowhere, a run-in levels {{opponent}}, and {{wrestler}} is right there to capitalise."
       },
       "nearFall": {
         "v1": "{{wrestler}} covers {{opponent}}: one, two… {{opponent}} kicks out!",
@@ -4664,7 +4672,7 @@
       },
       "simInterference": {
         "name": "Sim interference",
-        "effect": "Adds {{boost}} to your rating in one of your simulated matches."
+        "effect": "Raises your rating by {{boost}}% in one of your simulated matches."
       },
       "gmInterference": {
         "name": "GM interference",
@@ -4677,6 +4685,7 @@
       "insufficientFunds": "You don't have enough money for this.",
       "shieldActive": "You already have an active injury shield.",
       "noActiveInjury": "Needs an active injury.",
+      "injuryTooShort": "Needs at least 2 weeks left on your injury.",
       "noScheduledMatch": "Needs a scheduled match you haven't boosted yet.",
       "requestPending": "You already have a request waiting on the GM."
     },

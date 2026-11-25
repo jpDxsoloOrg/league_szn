@@ -24,6 +24,7 @@ import {
   validateInjury,
   validateInjuryPatch,
   validatePlayerConditionPatch,
+  removesEffect, // ECO-10
   type Injury,
   type InjuryPatch,
   type PlayerConditionGuard,
@@ -707,6 +708,16 @@ export class InMemoryUnitOfWork implements UnitOfWork {
         const stored = (player.currentInjury as { injuryId?: string } | undefined)?.injuryId ?? null;
         if (stored !== guard.currentInjuryId) throw new ConcurrencyError('Player', playerId);
       }
+      // ECO-10: the effect must still sit where it was read.
+      const use = stagedPatch.useEffect;
+      if (use) {
+        const effects = Array.isArray(player.effects) ? (player.effects as PlayerEffect[]) : [];
+        const effect = effects[use.index];
+        if (!effect || effect.effectId !== use.effectId) throw new ConcurrencyError('Player', playerId);
+        if (use.matchesLeft && (effect.kind !== 'injuryShield' || effect.matchesLeft !== use.matchesLeft.before)) {
+          throw new ConcurrencyError('Player', playerId);
+        }
+      }
     });
     this.staged.push(() => {
       const existing = this.stores.players.get(playerId);
@@ -715,6 +726,17 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       if (stagedPatch.stamina !== undefined) next.stamina = stagedPatch.stamina;
       if (stagedPatch.currentInjury === null) delete next.currentInjury;
       else if (stagedPatch.currentInjury !== undefined) next.currentInjury = stagedPatch.currentInjury;
+      // ECO-10
+      const use = stagedPatch.useEffect;
+      if (use) {
+        const effects = [...((existing.effects as PlayerEffect[] | undefined) ?? [])];
+        if (removesEffect(use)) {
+          effects.splice(use.index, 1);
+        } else {
+          effects[use.index] = { ...effects[use.index], matchesLeft: use.matchesLeft!.after } as PlayerEffect;
+        }
+        next.effects = effects;
+      }
       this.stores.players.set(playerId, next);
     });
   }

@@ -63,8 +63,8 @@ import { activeInjury } from './index';
 import { createNotification } from '../notifications';
 
 /**
- * Injury chance reduction (0..1) for one participant. ECO-10 plugs the injury
- * shield in here; until then nobody has one.
+ * Injury chance reduction (0..1) for one participant. The result service
+ * passes the shop's injury shield here (ECO-10, `injuryShieldReduction`).
  */
 export type ChanceReductionFor = (player: Player) => number;
 
@@ -94,6 +94,8 @@ export interface MatchConditionPlan {
   endedInjuries: InjuryEnd[];
   /** Players to notify after commit, with the injury they got. */
   injured: Array<{ player: Player; injury: Injury }>;
+  /** ECO-10: players whose roll a chance reduction (injury shield) cut; one shield match is used after commit. */
+  shieldedPlayerIds: string[];
   timezone: string;
 }
 
@@ -141,6 +143,7 @@ export function planMatchCondition(input: PlanMatchConditionInput): MatchConditi
     newInjuries: [],
     endedInjuries: [],
     injured: [],
+    shieldedPlayerIds: [],
     timezone: tunables.timezone,
   };
 
@@ -150,12 +153,13 @@ export function planMatchCondition(input: PlanMatchConditionInput): MatchConditi
     const staminaBefore = staminaOf(player.stamina, tunables);
     const drain = matchDrain({ category, format, endurance }, tunables);
     const staminaAfter = applyDrain(staminaBefore, drain, tunables);
+    const chanceReduction = chanceReductionFor(player);
     const roll = rollInjury(
       staminaAfter,
       category,
       rollSeed(match.matchId, player.playerId, tunables.version),
       tunables,
-      { chanceReduction: chanceReductionFor(player) },
+      { chanceReduction },
     );
 
     const entry: MatchConditionEntry = {
@@ -166,6 +170,10 @@ export function planMatchCondition(input: PlanMatchConditionInput): MatchConditi
       chance: roll.chance,
       roll: roll.roll,
     };
+    if (chanceReduction > 0) {
+      entry.shielded = true;
+      plan.shieldedPlayerIds.push(player.playerId);
+    }
     const patch: PlayerConditionPatch = { stamina: staminaAfter };
     const guard: PlayerConditionGuard = {
       stamina: storedStamina(player),

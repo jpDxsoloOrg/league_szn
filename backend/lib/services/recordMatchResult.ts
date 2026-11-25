@@ -7,7 +7,8 @@
  *   1. validate the result against the match, its players and its season
  *   2. one transaction: match + all-time records + season standings, plus
  *      stamina drain and injury rolls while the `injuries` flag is on (INJ-04)
- *   3. match pay (ECO-05), then the sim boost refund for manual results (ECO-08)
+ *   3. injury shield use (ECO-10), match pay (ECO-05), then the sim boost
+ *      refund for manual results (ECO-08); a simulated result uses its boosts
  *   4. championship, tournament, event auto-complete, group stats,
  *      contender rankings, progression recompute
  *
@@ -32,6 +33,8 @@ import {
   stageMatchCondition,
 } from '../injuries/applyMatchCondition';
 import { notifyStaffOfInjuries } from '../injuries/notifyStaff'; // INJ-07
+// ECO-10
+import { consumeInjuryShields, injuryShieldReduction } from '../economy/applyEffects';
 
 /**
  * Who settled the match. Only a `manual` result refunds bought sim boosts:
@@ -205,7 +208,12 @@ export async function recordMatchResult(
   // transaction. Draws and DQs count the same. A sim result drains by the
   // category the sim used.
   const simulation = input.extraMatchFields?.simulation as { category?: unknown } | undefined;
-  const conditionPlan = await loadMatchConditionPlan(match, { now: completedAt, category: simulation?.category });
+  // ECO-10: an injury shield from the shop cuts the chance.
+  const conditionPlan = await loadMatchConditionPlan(match, {
+    now: completedAt,
+    category: simulation?.category,
+    chanceReductionFor: injuryShieldReduction,
+  });
   if (conditionPlan) Object.assign(resultFields, matchConditionFields(conditionPlan));
 
   // Extra fields first so they can never override the result itself.
@@ -258,6 +266,9 @@ export async function recordMatchResult(
       { timeZone: conditionPlan.timezone },
     );
   }
+  // ECO-10: count one match off each injury shield the rolls used. It writes
+  // the player rows, so it runs in its own unit of work; it never throws.
+  if (conditionPlan?.shieldedPlayerIds.length) await consumeInjuryShields(conditionPlan.shieldedPlayerIds);
 
   // ── Match pay (ECO-05) ─────────────────────────────────────────────
   // Its own unit of work right after the result: a ledger posting cannot

@@ -257,3 +257,30 @@ describe('GET /matches with an official sim', () => {
     expect((match?.simulation as MatchSimulation).probabilities).toHaveLength(2);
   });
 });
+
+// ECO-10
+describe('POST /matches/{matchId}/simulate with a bought sim boost', () => {
+  beforeEach(async () => {
+    await createMatch({
+      simBoosts: [{ playerId: rockId, boost: 5, purchasedAt: '2026-11-24T00:00:00.000Z', purchaseKey: 'k1' }],
+    });
+  });
+
+  it('uses the boost, records who it boosted and adds a run-in for staff only', async () => {
+    const { statusCode, body } = await officialRequest({ commit: true });
+    expect(statusCode).toBe(200);
+    expect(body.simulation.boosts).toEqual([{ playerId: rockId, boost: 5, multiplier: 1.05 }]);
+
+    const stored = await storedMatch();
+    expect(stored.simulation?.simBoostedPlayerIds).toEqual([rockId]);
+    expect(stored.simBoosts).toHaveLength(1);
+    const runIns = stored.simulation!.playByPlay.filter((beat) => beat.key.startsWith('sim.beats.runIn.'));
+    expect(runIns).toHaveLength(1);
+    expect(runIns[0].params.wrestler).toBe('The Rock');
+
+    const publicMatch = (await getMatchesRequest(NO_TOKEN)).body.find((entry) => entry.matchId === MATCH_ID);
+    const publicBeats = (publicMatch?.simulation as unknown as MatchSimulation).playByPlay;
+    expect(publicBeats.some((beat) => beat.key.startsWith('sim.beats.runIn.'))).toBe(false);
+    expect(publicMatch?.simulation).not.toHaveProperty('simBoostedPlayerIds');
+  });
+});

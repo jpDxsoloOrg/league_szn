@@ -42,6 +42,15 @@ export interface SimCondition {
   multiplier: number;
 }
 
+// ECO-10
+/** A bought sim boost the sim applied. Staff only: who paid is private. */
+export interface SimBoostApplied {
+  playerId: string;
+  /** Percentage added to the rating. */
+  boost: number;
+  multiplier: number;
+}
+
 /** POST /simulate response (GM preview, nothing is written). */
 export interface SimulatePreviewResponse {
   seed: number;
@@ -54,6 +63,8 @@ export interface SimulatePreviewResponse {
   specialtyHits: string[];
   /** INJ-09: only while the injuries feature is on. */
   conditions?: SimCondition[];
+  /** ECO-10: bought sim boosts on the match; only when there are any. */
+  boosts?: SimBoostApplied[];
   matchId?: string;
   scaledPlayerIds: string[];
   formWindow: SimFormWindow;
