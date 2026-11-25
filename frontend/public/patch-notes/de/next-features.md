@@ -12,10 +12,6 @@ Wrestling kostet Kraft. Wrestler bekommen Ausdauer, die bei einem vollen Termink
 
 ## Weiter in der Zukunft
 
-### Verträge & Geld
-
-Verträge mit Laufzeit und Gage und eine Liga-Wirtschaft dazu, damit Verpflichtungen und Vertragsverlängerungen wirklich zählen.
-
 ### Ein neuer Name: SLW
 
 Die Liga bekommt ein neues Branding. Bleib dran.

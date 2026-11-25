@@ -12,10 +12,6 @@ Wrestling takes it out of you. Wrestlers will have stamina that drops with a bus
 
 ## Further Ahead
 
-### Contracts & Money
-
-Contracts with terms and pay, and a league economy to go with them, so signings and re-signings start to matter.
-
 ### A New Name: SLW
 
 The league is getting a rebrand. Watch this space.
