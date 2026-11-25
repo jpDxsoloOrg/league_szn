@@ -32,7 +32,7 @@ A serverless web application for managing a WWE 2K league with player standings,
 | **@aws-sdk/client-s3** | 3.450.0 | Generates presigned URLs for secure image uploads |
 | **@aws-sdk/s3-request-presigner** | 3.450.0 | Creates time-limited signed URLs for S3 |
 | **@aws-sdk/client-cognito-identity-provider** | 3.982.0 | Admin operations on Cognito users |
-| **aws-jwt-verify** | 5.1.1 | Validates Cognito JWT tokens in Lambda authorizer (`functions/auth/authorizer.ts`) |
+| **aws-jwt-verify** | 5.1.1 | Validates Cognito JWT tokens inside the `api` Lambda (`lib/authenticate.ts`, called by `lib/router.ts` `dispatch()`) |
 | **uuid** | 9.0.1 | Generates unique IDs for players, matches, championships, etc. |
 | **ts-node** | 10.9.2 | Runs TypeScript scripts directly (`seed-data.ts`, `clear-data.ts`) |
 | **Serverless Framework** | 3.38.0 | Deploys all infrastructure defined in `serverless.yml` |
@@ -43,8 +43,8 @@ A serverless web application for managing a WWE 2K league with player standings,
 
 | Service | How It's Used |
 |---------|---------------|
-| **AWS Lambda** | Serverless functions for all API endpoints - organized by feature: `auth/`, `players/`, `matches/`, `championships/`, `tournaments/`, `standings/`, `seasons/`, `divisions/`, `images/`, `admin/` |
-| **API Gateway** | REST API exposing Lambda functions via HTTP; CORS configured for browser access; custom authorizer validates JWT tokens on most admin routes; the rest authenticate inside the Lambda |
+| **AWS Lambda** | One `api` function (`functions/api/handler.ts`) serves every HTTP route; handler code is organized by feature under `functions/` (`players/`, `matches/`, `championships/`, ...). The other functions are not HTTP: `contenders` and `progression` (async-invoke targets), `postConfirmation` and `preSignUp` (Cognito triggers), and the scheduled jobs `expireChallenges`, `expireContractOffers`, `weeklyJobs`, `recalculateContenders` |
+| **API Gateway** | REST API with a single root `ANY /{proxy+}` route (plus its CORS `OPTIONS`) to the `api` Lambda, which routes in code (`functions/api/routes.ts`); no gateway authorizer, every route authenticates inside the Lambda; 4 GatewayResponses add CORS to gateway-generated errors |
 | **DynamoDB** | NoSQL database with 41 tables defined in `backend/serverless.yml`, including Players, Matches (with TournamentIndex GSI), Championships, ChampionshipHistory, Tournaments, Seasons, SeasonStandings (with PlayerIndex GSI), Divisions - all use on-demand (PAY_PER_REQUEST) billing |
 | **Amazon S3** | Two purposes: (1) hosts frontend static files, (2) stores player/championship images with public read access and presigned URL uploads |
 | **CloudFront** | CDN in front of S3; custom error responses redirect 403/404 to /index.html for SPA routing; HTTPS enforced |
@@ -209,8 +209,14 @@ Steps 1-3 commit in one transaction (`runInTransaction`). Championship and tourn
 - Uses AWS Cognito User Pool for authentication
 - Email-based sign-in (`UsernameAttributes: email`)
 - JWT tokens with 24-hour validity, 30-day refresh tokens
-- Lambda authorizer (`functions/auth/authorizer.ts`) validates tokens using aws-jwt-verify
-- Admin endpoints are protected in one of two ways: 56 routes use the `adminAuthorizer` custom authorizer in API Gateway, and the others authenticate inside the Lambda (for example `functions/contenders/handler.ts` via `lib/authenticate`)
+- There is no API Gateway authorizer. Every route is authorized inside the `api` Lambda by the router: `lib/router.ts` `dispatch()` reads the route's `access` (`'public'`, GET only; `'self-service'`; or `{ roles }`), verifies the Cognito access token with `lib/authenticate.ts` (aws-jwt-verify), rejects deactivated callers with a 401, then checks roles
+- The only unauthenticated write is `POST /auth/setup`, dispatched before the router from the `PRE_ROUTER_UNAUTHENTICATED_WRITES` allowlist in `functions/api/handler.ts`; `createAdminUser` checks the setup key itself
+- Offline, `functions/api/handler.ts` drops serverless-offline's fake principal so `authenticate()` installs an Admin context
+
+### Adding an endpoint
+- Add an entry to the domain's `routes` table (`functions/<domain>/handler.ts`), with `resource`, `method`, `handler` and `access`. Tables are merged into `functions/api/routes.ts`; a new domain table is imported there. A new public route also needs a reviewed entry in `PUBLIC_ROUTES` (`functions/__tests__/routeAccess.test.ts`)
+- No `serverless.yml` change: a new endpoint adds no Lambda, API Gateway or CloudFormation resource. Only `api` may have `http` events (`lib/__tests__/serverlessConfig.test.ts` enforces it)
+- `functions/api/__tests__/routes.test.ts` checks every route is reachable and matches API Gateway's precedence (a literal segment beats a `{param}`)
 
 ### Standings and dashboard data sources (no mock data)
 - **Standings "Last 5" (form)**: The form column comes from the standings API response (`recentForm` and `currentStreak`). The backend (`functions/standings/getStandings.ts`) computes these from the last 5 completed matches per player (DynamoDB Matches with `status = 'completed'`). The frontend displays only what the API returns; there is no client-side mock or fallback data.
@@ -364,8 +370,8 @@ aws configure --profile league-szn
 ---
 
 This deploys:
-- Lambda functions for all API endpoints
-- API Gateway
+- The `api` Lambda (all HTTP routes) plus the async, Cognito-trigger and scheduled functions
+- API Gateway (one `/{proxy+}` route)
 - DynamoDB tables (Players, Matches, Championships, ChampionshipHistory, Tournaments, Seasons, SeasonStandings)
 ### Deploy to PROD
 
@@ -422,7 +428,7 @@ aws cloudformation describe-stacks --stack-name wwe-2k-league-api-devtest \
 ## Known Limitations / TODO
 
 1. ~~**Authentication**: AWS Cognito integration.~~ **DONE** - Full Cognito integration with JWT tokens
-2. ~~**Lambda Authorizer**: Admin endpoints protected.~~ **DONE** - Custom authorizer validates JWT tokens
+2. ~~**Lambda Authorizer**: Admin endpoints protected.~~ **DONE** - The `api` Lambda's router validates JWT tokens in code (INFRA-207 retired the gateway authorizer)
 3. **Tag Team Matches**: Frontend doesn't have special handling for tag teams yet.
 4. **Tournament Progression**: Single-elimination bracket progression needs manual updates.
 5. **Match Statistics**: Not yet tracking which player is best at which match type.

@@ -243,14 +243,14 @@ describe('dispatch', () => {
     expect(routeHandler).not.toHaveBeenCalled();
   });
 
-  it('gives 401 when a gateway authorizer already set principalId', async () => {
-    mockQueryAll.mockResolvedValue([{ deactivatedAt: '2026-01-01T00:00:00.000Z' }]);
+  it('does not trust a principal already on the event without a token', async () => {
     expect((await run(gatewayEvent())).statusCode).toBe(401);
     expect(routeHandler).not.toHaveBeenCalled();
+    expect(mockVerify).not.toHaveBeenCalled();
   });
 
-  it('lets a clear gateway caller through with one query', async () => {
-    expect((await run(gatewayEvent())).statusCode).toBe(200);
+  it('lets a clear caller through with one query', async () => {
+    expect((await run(withToken())).statusCode).toBe(200);
     expect(mockQueryAll).toHaveBeenCalledOnce();
   });
 
@@ -265,13 +265,13 @@ describe('dispatch', () => {
 
   it('fails open on a lookup error', async () => {
     mockQueryAll.mockRejectedValue(new Error('throttled'));
-    expect((await run(gatewayEvent())).statusCode).toBe(200);
+    expect((await run(withToken())).statusCode).toBe(200);
   });
 
   it('fails open at the timeout', async () => {
     vi.useFakeTimers();
     mockQueryAll.mockReturnValue(new Promise(() => {}));
-    const pending = run(gatewayEvent());
+    const pending = run(withToken());
     await vi.advanceTimersByTimeAsync(ACCOUNT_CHECK_TIMEOUT_MS);
     expect((await pending).statusCode).toBe(200);
   });

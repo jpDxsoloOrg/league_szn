@@ -13,9 +13,10 @@ vi.mock('../setOverride', () => ({ handler: (...args: unknown[]) => mockSetOverr
 vi.mock('../removeOverride', () => ({ handler: (...args: unknown[]) => mockRemoveOverride(...args) }));
 vi.mock('../getOverrides', () => ({ handler: (...args: unknown[]) => mockGetOverrides(...args) }));
 
-vi.mock('../../../lib/authenticate', () => ({
-  authenticate: async () => ({ ok: false }),
-}));
+vi.mock('../../../lib/authenticate', async () => {
+  const { presetCallerAuthenticate } = await import('../../../lib/__tests__/presetCallerAuth');
+  return { authenticate: presetCallerAuthenticate(async () => ({ ok: false })) };
+});
 
 import { handler } from '../handler';
 

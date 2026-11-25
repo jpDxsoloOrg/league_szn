@@ -16,9 +16,10 @@ import { allRoutes } from '../api/routes';
 import { concretePath, gatewayResource } from '../api/__tests__/gatewayRouting';
 import legacyGatewayRoutes from '../api/__tests__/legacyGatewayRoutes.json';
 
-vi.mock('../../lib/authenticate', () => ({
-  authenticate: async () => ({ ok: false }),
-}));
+vi.mock('../../lib/authenticate', async () => {
+  const { presetCallerAuthenticate } = await import('../../lib/__tests__/presetCallerAuth');
+  return { authenticate: presetCallerAuthenticate(async () => ({ ok: false })) };
+});
 
 const functionsDir = join(__dirname, '..');
 const serverlessPath = join(functionsDir, '..', 'serverless.yml');

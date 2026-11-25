@@ -18,12 +18,15 @@ export type AuthenticateResult = { ok: true } | { ok: false };
 
 /**
  * Verify the Cognito JWT from the Authorization header and populate
- * event.requestContext.authorizer with the same shape the Lambda token
- * authorizer produces (principalId, username, email, groups). Handlers can
- * then continue using getAuthContext / requireRole unchanged.
+ * event.requestContext.authorizer with the shape the retired API Gateway token
+ * authorizer produced (principalId, username, email, groups). Handlers can
+ * then continue using getAuthContext / requireRole unchanged. Since INFRA-207
+ * this is the only token check: lib/router dispatch calls it for every
+ * non-public route.
  *
  * In offline mode the JWT check is skipped and a synthetic Admin context is
- * installed, matching the behaviour of functions/auth/authorizer.ts.
+ * installed (functions/api/handler.ts drops serverless-offline's fake
+ * principal first, so this runs).
  *
  * A deactivated player's token fails here even while it is still valid, and the
  * context is left empty so optional-auth reads fall back to the public view.

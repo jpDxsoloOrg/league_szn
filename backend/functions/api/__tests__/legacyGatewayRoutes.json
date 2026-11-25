@@ -5,11 +5,6 @@
     "hasAuthorizer": false
   },
   {
-    "method": "POST",
-    "path": "/auth/login",
-    "hasAuthorizer": false
-  },
-  {
     "method": "GET",
     "path": "/admin/users",
     "hasAuthorizer": true

@@ -2,7 +2,6 @@ import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult, Co
 import { badRequest, methodNotAllowed, notFound, unauthorized } from "./response";
 import { authenticate } from "./authenticate";
 import { requireRole, type UserRole } from "./auth";
-import { isCallerDeactivated } from "./accountStatus";
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
@@ -141,17 +140,12 @@ async function dispatch(
     callback: Parameters<APIGatewayProxyHandler>[2]
 ): Promise<APIGatewayProxyResult> {
     if (route.access !== 'public') {
-        // A gateway authorizer has already verified the token and set the
-        // caller's identity. Every other route verifies it here. The authorizer
-        // response can be cached, so deactivation is checked here too, and it
-        // has to be a 401: only that reaches the frontend's sign-out path.
-        const gatewayPrincipal = event.requestContext.authorizer?.principalId as string | undefined;
-        if (!gatewayPrincipal) {
-            const authResult = await authenticate(event);
-            if (!authResult.ok) return unauthorized();
-        } else if (process.env.IS_OFFLINE !== 'true' && await isCallerDeactivated(event, gatewayPrincipal)) {
-            return unauthorized();
-        }
+        // Every non-public route verifies the token here; a principal already
+        // on the event is never trusted (there is no gateway authorizer since
+        // INFRA-207 2b). authenticate() also rejects deactivated callers, and
+        // that has to be a 401: only that reaches the frontend's sign-out path.
+        const authResult = await authenticate(event);
+        if (!authResult.ok) return unauthorized();
         if (route.access !== 'self-service') {
             const denied = requireRole(event, ...route.access.roles);
             if (denied) return denied;

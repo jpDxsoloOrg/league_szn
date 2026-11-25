@@ -3,6 +3,20 @@
 /**
  * Custom migration map for serverless-plugin-split-stacks.
  *
+ * Status after INFRA-207 (docs/plans/plan-infra-207-api-simplification.md):
+ * every HTTP route is served by the one `api` Lambda behind `ANY /{proxy+}`,
+ * so a new endpoint is a route-table entry and adds no CloudFormation or API
+ * Gateway resource. This map and the plugin are now mostly inert: they only
+ * route the occasional new table, scheduled job or function into Overflow.
+ * They stay installed on purpose. Removing them would make the plugin stop
+ * pinning deployed resources to the nested stacks they live in, so tables,
+ * functions and log groups with fixed names would move between stacks, which
+ * CloudFormation does as create-before-delete and fails on the name clash.
+ * scripts/check-stack-limits.js remains the tripwire on stack sizes.
+ *
+ * The notes below describe why the map was added (before INFRA-207) and
+ * still hold for any resource it routes.
+ *
  * Why this exists: the root CloudFormation stack hit the hard 500-resource
  * limit (502 after adding one Lambda). The plugin's default per-type map
  * only migrates a few resource types (ApiGateway::Resource -> API,

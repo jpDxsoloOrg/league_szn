@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
 
+vi.mock('../../../lib/authenticate', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../lib/authenticate')>();
+  const { presetCallerAuthenticate } = await import('../../../lib/__tests__/presetCallerAuth');
+  return { ...actual, authenticate: presetCallerAuthenticate(actual.authenticate) };
+});
+
 const mockGetDivisions = vi.fn();
 const mockCreateDivision = vi.fn();
 const mockUpdateDivision = vi.fn();

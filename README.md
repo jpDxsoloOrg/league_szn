@@ -94,7 +94,7 @@ A serverless web application for managing a WWE 2K league with standings, champi
 | **@aws-sdk/lib-dynamodb** | 3.450.0 | High-level DynamoDB Document Client for simplified operations |
 | **@aws-sdk/client-s3** | 3.450.0 | S3 client for image storage and presigned URL generation |
 | **@aws-sdk/client-cognito-identity-provider** | 3.982.0 | Cognito IDP client for admin user management |
-| **aws-jwt-verify** | 5.1.1 | JWT verification library for validating Cognito tokens in Lambda authorizer |
+| **aws-jwt-verify** | 5.1.1 | JWT verification library for validating Cognito tokens inside the `api` Lambda (`lib/authenticate.ts`) |
 | **uuid** | 9.0.1 | UUID generation for unique entity identifiers |
 | **Serverless Framework** | 3.38.0 | Infrastructure as Code framework for deploying serverless applications |
 | **serverless-offline** | 13.3.0 | Local emulation of API Gateway and Lambda for development |
@@ -103,8 +103,8 @@ A serverless web application for managing a WWE 2K league with standings, champi
 
 | Service | Purpose |
 |---------|---------|
-| **AWS Lambda** | Serverless compute for 55+ API handlers across 17 function domains |
-| **API Gateway** | REST API with CORS support and custom JWT authorizer |
+| **AWS Lambda** | One `api` function serves every HTTP route, routed in code across the feature handlers in `functions/`; separate functions for async workers, Cognito triggers and scheduled jobs |
+| **API Gateway** | REST API with CORS support and one root `ANY /{proxy+}` route to the `api` Lambda (no gateway authorizer) |
 | **DynamoDB** | NoSQL database with on-demand billing (41 tables) |
 | **Amazon S3** | Object storage for frontend static files and player/championship images with presigned URLs |
 | **CloudFront** | CDN for global content delivery with HTTPS enforcement and SPA routing support |
@@ -152,7 +152,7 @@ league_szn/
 ├── backend/                     # Serverless Node.js API
 │   ├── functions/               # Lambda function domains
 │   │   ├── admin/               # Clear-all, seed-data, site config
-│   │   ├── auth/                # Login, authorizer, post-confirmation
+│   │   ├── auth/                # Admin setup, pre-sign-up, post-confirmation
 │   │   ├── challenges/          # Challenge management
 │   │   ├── championships/       # Championship CRUD + history + vacate
 │   │   ├── contenders/          # Ranking calculations
@@ -203,7 +203,7 @@ Wrestler (lowest) --> Moderator --> Admin (highest)
 
 - **Identity Provider**: AWS Cognito User Pool with email-based login
 - **Token Lifecycle**: 24-hour access tokens, 24-hour ID tokens, 30-day refresh tokens
-- **Authorization**: 56 routes use the custom Lambda Authorizer in API Gateway; the other protected routes validate the JWT inside the Lambda
+- **Authorization**: Every route is authorized inside the `api` Lambda: the router (`lib/router.ts`) reads each route's declared `access`, validates the JWT and checks roles. There is no API Gateway authorizer
 - **Role Groups**: Cognito User Pool Groups (Admin, Moderator, Wrestler) with precedence-based hierarchy
 - **Key Restriction**: Moderators cannot perform Admin-only operations (clear all data, manage Admin/Moderator roles)
 - **Post-Confirmation Trigger**: Lambda function assigns default role group on sign-up
@@ -227,7 +227,7 @@ The OpenAPI 3.0 spec is at `backend/docs/openapi.yaml`. To validate it (syntax a
 npm run validate-api-docs
 ```
 
-When you add or change HTTP endpoints in `serverless.yml` or handler request/response shapes, update `backend/docs/openapi.yaml` so the docs stay in sync. After editing the spec or `backend/docs/swagger.html`, run `npm run embed-docs` in `backend/` and commit the updated `functions/docs/docsEmbed.generated.ts` so the deployed API serves the new content.
+To add an HTTP endpoint, add an entry to the domain's `routes` table (merged in `backend/functions/api/routes.ts`); `serverless.yml` does not change. When you add or change endpoints or handler request/response shapes, update `backend/docs/openapi.yaml` so the docs stay in sync. After editing the spec or `backend/docs/swagger.html`, run `npm run embed-docs` in `backend/` and commit the updated `functions/docs/docsEmbed.generated.ts` so the deployed API serves the new content.
 
 <details>
 <summary><strong>Public Endpoints (18)</strong></summary>

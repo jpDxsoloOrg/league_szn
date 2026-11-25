@@ -99,15 +99,6 @@ jobs:
         working-directory: backend
         run: node scripts/check-api-cutover.js --stage dev
 
-      # INFRA-207 2a to 2b only (plan section 6, PR 2a): read-only diff of the
-      # packaged templates against the live stack. Fails when a function,
-      # permission or the authorizer would be removed or moved, or a
-      # legacy-bridge.js resource drifts from live. PR 2b deletes this step
-      # with legacy-bridge.js.
-      - name: Diff packaged templates against live stack
-        working-directory: backend
-        run: node scripts/diff-live-template.js --stage dev
-
       - name: Deploy backend to production
         id: deploy_backend
         working-directory: backend

@@ -267,10 +267,6 @@ custom:
     offline: ''
 
 functions:
-  # Auth
-  adminAuthorizer:
-    handler: functions/auth/authorizer.handler
-
   postConfirmation:
     handler: functions/auth/postConfirmation.handler
 
@@ -283,15 +279,13 @@ functions:
     handler: functions/auth/preSignUp.handler
 
   # INFRA-207: the single HTTP entry point. Every route is served through this
-  # one ANY /{proxy+} event, routed in code by functions/api/routes.ts. This is
-  # the only http event in the service (checked by routeAccess.test.ts).
-  #
-  # PR 2a: the legacy HTTP functions below lost their events but stay deployed,
-  # with their API Gateway permissions and the gateway authorizer kept alive by
-  # legacy-bridge.js, so the stage's previous deployment snapshot (and the
-  # update-stage rollback) still has live targets. PR 2b deletes them. Keep
-  # the function names unchanged until then.
-  # See docs/plans/plan-infra-207-api-simplification.md sections 4 and 6.
+  # one ANY /{proxy+} event, routed in code by functions/api/routes.ts, and
+  # authenticated in-Lambda by lib/router.ts dispatch(). This is the only http
+  # event in the service (checked by serverlessConfig.test.ts and
+  # routeAccess.test.ts). Adding an endpoint is a route-table entry, not a
+  # change here. The other functions below are async-invoke targets, Cognito
+  # triggers and scheduled jobs.
+  # See docs/plans/plan-infra-207-api-simplification.md.
   api:
     handler: functions/api/handler.handler
     # The API Gateway integration cap.
@@ -302,166 +296,22 @@ functions:
           method: any
           cors: *corsConfig
 
-  createAdminUser:
-    handler: functions/auth/createAdminUser.handler
-
-  # User Management (Phase 3 consolidated: listUsers, updateUserRole, toggleUserEnabled)
-  users:
-    handler: functions/users/handler.handler
-    # Lists the whole Cognito pool (hundreds of users); the 6s default is too tight.
-    timeout: 29
-
-  # Site Configuration + Admin tools (Phase 3 consolidated: getSiteConfig, updateSiteConfig, clearAll, seedData)
-  admin:
-    handler: functions/admin/handler.handler
-    timeout: 29
-
-  # Players (Phase 2 consolidated: getPlayers, createPlayer, updatePlayer, deletePlayer, getMyProfile, updateMyProfile)
-  players:
-    handler: functions/players/handler.handler
-    timeout: 15
-
-  # Overalls (Wrestler Overalls: submit, get own, admin get all)
-  overalls:
-    handler: functions/overalls/handler.handler
-
-  # Division Transfer Requests
-  transfers:
-    handler: functions/transfers/handler.handler
-
-  storylineRequests:
-    handler: functions/storylineRequests/handler.handler
-
-  # Matches (Phase 3 consolidated: getMatches, scheduleMatch, recordResult)
-  matches:
-    handler: functions/matches/handler.handler
-    timeout: 29
-
-  # Championships (Phase 2 consolidated: getChampionships, createChampionship, getChampionshipHistory, updateChampionship, deleteChampionship, vacateChampionship)
-  championships:
-    handler: functions/championships/handler.handler
-
-  # Tournaments (Phase 3 consolidated: getTournaments, createTournament, updateTournament)
-  tournaments:
-    handler: functions/tournaments/handler.handler
-
-  # Dashboard (aggregated league overview) and the league ticker feed
-  getDashboard:
-    handler: functions/dashboard/handler.handler
-    timeout: 15
-
-  # Standings
-  getStandings:
-    handler: functions/standings/getStandings.handler
-    timeout: 15
-
-  # Activity feed (news feed / activity timeline)
-  activity:
-    handler: functions/activity/handler.handler
-    timeout: 15
-
-  # Seasons (Phase 1 consolidated: getSeasons, createSeason, updateSeason, deleteSeason)
-  seasons:
-    handler: functions/seasons/handler.handler
-
-  # Season Awards (GET, POST, DELETE for season awards)
-  seasonAwards:
-    handler: functions/seasonAwards/handler.handler
-
-  # Companies (CRUD for wrestling companies)
-  companies:
-    handler: functions/companies/handler.handler
-
-  # Shows (CRUD for wrestling shows, linked to companies)
-  shows:
-    handler: functions/shows/handler.handler
-
-  # Locations (CRUD + bulk import for venue records used by events)
-  locations:
-    handler: functions/locations/handler.handler
-
-  # Divisions (Phase 1 consolidated: getDivisions, createDivision, updateDivision, deleteDivision)
-  divisions:
-    handler: functions/divisions/handler.handler
-
-  # Wrestlers (roster CRUD + bulk import)
-  wrestlers:
-    handler: functions/wrestlers/handler.handler
-
-  # Stipulations (Phase 1 consolidated: getStipulations, createStipulation, updateStipulation, deleteStipulation)
-  stipulations:
-    handler: functions/stipulations/handler.handler
-
-  # Match Types (Phase 1 consolidated: getMatchTypes, createMatchType, updateMatchType, deleteMatchType)
-  matchTypes:
-    handler: functions/matchTypes/handler.handler
-
-  # Events (Phase 2 consolidated: getEvents, getEvent, createEvent, updateEvent, deleteEvent)
-  events:
-    handler: functions/events/handler.handler
-
-  # Contenders (Phase 3 consolidated: getContenders, calculateRankings)
+  # Contenders: async-invoke target of lib/asyncLambda.ts (recalculation after
+  # results, overrides and reviews). Its HTTP routes are served by api through
+  # the same functions/contenders/handler.ts route table. The name is fixed: the
+  # lambdaRole invoke grant above names it.
   contenders:
     handler: functions/contenders/handler.handler
     timeout: 29
 
-  # Progression (Young Boys call-ups / division movement). Routes live in
-  # functions/progression/routes/*; auth is checked in-Lambda by lib/router.
-  # Also invoked directly (async) to recompute progression after results,
-  # ratings and promos. Recompute-all batches inside one invocation: the
-  # account's Lambda concurrency (10) is shared by prod and dev.
+  # Progression (Young Boys call-ups / division movement): async-invoke target
+  # that recomputes progression after results, ratings and promos. Its HTTP
+  # routes are served by api through functions/progression/handler.ts; the name
+  # is fixed by the lambdaRole invoke grant above. Recompute-all batches inside
+  # one invocation rather than fanning out one invoke per player.
   progression:
     handler: functions/progression/handler.handler
     timeout: 29
-
-  # Images
-  generateUploadUrl:
-    handler: functions/images/generateUploadUrl.handler
-
-  # API Documentation (Swagger UI + OpenAPI spec)
-  serveSwaggerUi:
-    handler: functions/docs/serveDocs.handler
-
-  serveOpenApiSpec:
-    handler: functions/docs/serveDocs.handler
-
-  # Statistics
-  getStatistics:
-    handler: functions/statistics/getStatistics.handler
-    timeout: 29
-
-  getRivalries:
-    handler: functions/rivalries/getMatchHistoryRivalries.handler
-    timeout: 15
-
-  # Cross-source activity feed for the Hub (RIV-03). Public read; auth
-  # is optional and only widens audience filtering when present.
-  getRivalryActivity:
-    handler: functions/rivalries/getRivalryActivity.handler
-    timeout: 15
-
-  # Per-rivalry message thread (RIV-04). Both routes are authed; the
-  # router validates participant / GM membership and applies per-
-  # message audience filtering on reads + notification fan-out on
-  # writes.
-  rivalryMessages:
-    handler: functions/rivalries/messages/handler.handler
-    timeout: 15
-
-  # Per-rivalry storyline + plan notes (RIV-05). Authed; the handler
-  # enforces role-based visibility so a wrestler never sees admins-
-  # only notes from other authors and never sees unpublished plans.
-  rivalryNotes:
-    handler: functions/rivalries/notes/handler.handler
-    timeout: 15
-
-  # Persistent rivalries (RIV-02): create/list/get/update/respond/delete.
-  # Lives under /rivalry-requests so the synthetic /rivalries endpoint
-  # above stays untouched. Auth (JWT) is checked inside the router for
-  # the mutating routes; the two GETs are public.
-  rivalryRequests:
-    handler: functions/rivalries/handler.handler
-    timeout: 15
 
   # Hourly sweep that marks overdue pending challenges as expired. The schedule
   # creates an AWS::Events::Rule, which stacks-map.js routes to Overflow.
@@ -491,61 +341,21 @@ functions:
     events:
       - schedule: rate(1 hour)
 
-  # ECO-04: contract offers, the player's own contracts, public contract badge
-  # and the free agent pool. No gateway authorizer: access is declared per
-  # route in functions/contracts/handler.ts and enforced by the router.
-  contracts:
-    handler: functions/contracts/handler.handler
-
-  # INJ-08: GM injury management (board, heal, extend/shorten, storyline
-  # injury, stamina) and the public injury history. No gateway authorizer:
-  # access is declared per route in functions/injuries/handler.ts and enforced
-  # by the router. New function, so stacks-map.js routes it to Overflow.
-  injuries:
-    handler: functions/injuries/handler.handler
-
   # Recalculates contender rankings for every active title, one title at a time
-  # in this single invocation, so it holds one of the account's 10 concurrent
-  # Lambdas. A run is a few seconds of work at current volume; the timeout leaves
-  # room for slow scans. The schedule's Events::Rule and Lambda::Permission route
-  # to Overflow through stacks-map.js.
+  # in this single invocation, so it holds one concurrent Lambda. A run is a
+  # few seconds of work at current volume; the timeout leaves room for slow
+  # scans. The schedule's Events::Rule and Lambda::Permission route to Overflow
+  # through stacks-map.js.
   recalculateContenders:
     handler: functions/contenders/recalculateContendersJob.handler
     timeout: 300
     events:
       - schedule: rate(6 hours)
 
-  # Challenges (Phase 2 consolidated: getChallenges, getChallenge, create, respond, cancel, delete, bulkDelete)
-  challenges:
-    handler: functions/challenges/handler.handler
-
-  # Promos (Phase 2 consolidated: getPromos, getPromo, create, react, adminUpdate, delete, bulkDelete)
-  promos:
-    handler: functions/promos/handler.handler
-
-  # Stables (consolidated: list, get, standings, create, update, approve, reject, invite, respond, disband, remove-member, delete)
-  stables:
-    handler: functions/stables/handler.handler
-
-  # Tag Teams (consolidated: list, get, standings, create, update, respond, approve, reject, dissolve, delete)
-  tagTeams:
-    handler: functions/tagTeams/handler.handler
-
-  # Announcements (consolidated: getActive, adminList, create, update, delete)
-  videos:
-    handler: functions/videos/handler.handler
-
-  announcements:
-    handler: functions/announcements/handler.handler
-
-  # Notifications (consolidated: list, unreadCount, markRead, markAllRead)
-  notifications:
-    handler: functions/notifications/handler.handler
-
-# A list, so legacy-bridge.js can be merged in (INFRA-207 PR 2a, removed in 2b).
 resources:
-- Resources:
-    # API Gateway Response for CORS with Authorizer
+  Resources:
+    # GatewayResponses add CORS headers to errors API Gateway generates itself
+    # (no gateway authorizer since INFRA-207 2b; the api Lambda sets its own).
     GatewayResponseDefault4XX:
       Type: AWS::ApiGateway::GatewayResponse
       Properties:
@@ -2308,8 +2118,3 @@ resources:
       Value: !Ref LeagueUserPoolClient
       Export:
         Name: ${self:service}-${self:provider.stage}-CognitoUserPoolClientId
-
-# INFRA-207 PR 2a: re-declares the API Gateway permissions of the event-less
-# legacy functions and the gateway authorizer under their live logical IDs, so
-# removing the http events deletes none of them. PR 2b removes this line.
-- ${file(./legacy-bridge.js)}
