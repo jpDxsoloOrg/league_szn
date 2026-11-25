@@ -122,6 +122,8 @@ function getNavigationPath(
       return notification.type !== 'progression_executed' && notification.sourceId
         ? `/player/${notification.sourceId}`
         : '/profile';
+    // BLD-04: the build is edited from the player's own profile.
+    case 'build': return '/profile';
     default: return '/';
   }
 }

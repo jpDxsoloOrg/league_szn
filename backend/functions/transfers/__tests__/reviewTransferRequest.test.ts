@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Callback, Context } from 'aws-lambda';
 
-const { mockTransfers, mockPlayers, mockCreateNotification, mockInvokeAsync } = vi.hoisted(() => ({
+const { mockTransfers, mockPlayers, mockCreateNotification, mockInvokeAsync, mockBudgetNotice } = vi.hoisted(() => ({
   mockTransfers: { findById: vi.fn(), review: vi.fn() },
   mockPlayers: { update: vi.fn(), findById: vi.fn() },
   mockCreateNotification: vi.fn(),
   mockInvokeAsync: vi.fn(),
+  mockBudgetNotice: vi.fn(),
 }));
+
+vi.mock('../../../lib/builds/budgetNotice', () => ({ notifyBuildOverBudgetAfterMove: mockBudgetNotice }));
 
 vi.mock('../../../lib/asyncLambda', () => ({ invokeAsync: mockInvokeAsync }));
 
@@ -68,6 +71,22 @@ describe('reviewTransferRequest', () => {
 
     expect(result!.statusCode).toBe(200);
     expect(mockPlayers.update).not.toHaveBeenCalled();
+  });
+
+  it('checks the build against the new budget on approval only (BLD-04)', async () => {
+    const moved = { playerId: 'p1', userId: 'u1' };
+    mockPlayers.findById.mockResolvedValue(moved);
+
+    await reviewTransferRequest(event('approved'), ctx, cb);
+    expect(mockBudgetNotice).toHaveBeenCalledTimes(1);
+    expect(mockBudgetNotice).toHaveBeenCalledWith({ player: moved, fromDivisionId: 'd1', toDivisionId: 'd2' });
+
+    mockBudgetNotice.mockClear();
+    mockTransfers.findById.mockResolvedValue({
+      requestId: 'r1', playerId: 'p1', fromDivisionId: 'd1', toDivisionId: 'd2', status: 'pending',
+    });
+    await reviewTransferRequest(event('rejected'), ctx, cb);
+    expect(mockBudgetNotice).not.toHaveBeenCalled();
   });
 
   it('recomputes progression and contenders for the moved player on approval', async () => {

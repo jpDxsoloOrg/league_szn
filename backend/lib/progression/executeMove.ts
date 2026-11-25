@@ -35,6 +35,7 @@ import type {
 import { createNotification } from '../notifications';
 import { invokeAsync } from '../asyncLambda';
 import { divisionMovePatch } from '../divisionMove';
+import { notifyBuildOverBudgetAfterMove } from '../builds/budgetNotice';
 import { triggerProgressionRecompute } from './trigger';
 import { championIdsOf } from '../disciplineGates';
 import { isConcurrentWriteError } from '../repositories/errors';
@@ -383,6 +384,9 @@ export async function executeProgressionMove(input: ExecuteMoveInput): Promise<E
     createdBy: input.createdBy,
     eventId: executedEvent.eventId,
     recalculateContenders: input.recalculateContenders !== false,
+    fromDivisionId,
+    toDivisionId,
+    divisions: allDivisions,
     createAnnouncement: async (announcementInput) => {
       const announcement = await announcements.create(announcementInput);
       result.announcementId = announcement.announcementId;
@@ -401,6 +405,9 @@ interface FollowUpParams {
   createdBy: string;
   eventId: string;
   recalculateContenders: boolean;
+  fromDivisionId: string;
+  toDivisionId: string;
+  divisions: Division[];
   createAnnouncement: (input: { title: string; body: string; isActive: boolean; createdBy: string }) => Promise<void>;
 }
 
@@ -421,6 +428,14 @@ async function runFollowUps(params: FollowUpParams): Promise<void> {
       }),
     );
   }
+
+  // BLD-04: a smaller budget can leave the build over it. Never throws.
+  await notifyBuildOverBudgetAfterMove({
+    player,
+    fromDivisionId: params.fromDivisionId,
+    toDivisionId: params.toDivisionId,
+    divisions: params.divisions,
+  });
 
   if (params.announce) {
     await bestEffort('announcement', () =>

@@ -41,6 +41,7 @@ vi.mock('uuid', () => ({
 }));
 
 import { buildInMemoryRepositories } from '../../../lib/repositories/inMemory';
+import { dynamoDb } from '../../../lib/dynamodb';
 import { NEEDS_WRESTLER } from '../../../lib/needsWrestler';
 import {
   setRepositoriesForTesting,
@@ -549,6 +550,40 @@ describe('updatePlayer', () => {
     const untouched = JSON.parse((await clear(unplaced.playerId))!.body);
     expect(untouched.progressionEpochAt).toBeUndefined();
     expect(untouched.divisionJoinedAt).toBeUndefined();
+  });
+
+  // BLD-04
+  it('tells the player when a move to a smaller budget leaves their build over it, once', async () => {
+    const mid = await repos.leagueOps.divisions.create({ name: 'Mid', tier: 2 });
+    const low = await repos.leagueOps.divisions.create({ name: 'Low', tier: 3 });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock', divisionId: mid.divisionId });
+    // 35 + 35 + 35 + 15 = 120 points: fits tier 2 (130), over tier 3 (100) by 20.
+    await repos.roster.players.update(player.playerId, {
+      userId: 'user-john',
+      build: { style: 'allRounder', stats: { strikes: 75, grapple: 75, agility: 75, endurance: 55 }, updatedAt: 'x' },
+    });
+    const moveTo = (divisionId: string) => updatePlayer(
+      withAuth(makeEvent({ pathParameters: { playerId: player.playerId }, body: JSON.stringify({ divisionId }) }), 'Admin'),
+      ctx,
+      cb,
+    );
+    const budgetNotices = () => vi.mocked(dynamoDb.put).mock.calls
+      .map(([params]) => params.Item as Record<string, unknown>)
+      .filter((item) => item.type === 'build_over_budget');
+
+    expect((await moveTo(low.divisionId))!.statusCode).toBe(200);
+    expect(budgetNotices()).toEqual([
+      expect.objectContaining({
+        userId: 'user-john',
+        message: 'Your build is over your new budget by 20 points. Re-spend before your next match.',
+        sourceId: player.playerId,
+        sourceType: 'build',
+      }),
+    ]);
+
+    // Back up a tier: a bigger budget sends nothing.
+    expect((await moveTo(mid.divisionId))!.statusCode).toBe(200);
+    expect(budgetNotices()).toHaveLength(1);
   });
 
   describe('progression recompute on division change', () => {

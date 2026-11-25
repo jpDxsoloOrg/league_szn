@@ -665,7 +665,9 @@ export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_s
   // ECO-13: contracts and the league economy
   | 'contract_offer' | 'contract_offer_accepted' | 'contract_offer_declined' | 'contract_offer_expired' | 'contract_released' | 'contract_completed'
   | 'no_show_marked' | 'fine_issued' | 'fine_rescinded' | 'balance_negative'
-  | 'progression_consideration' | 'progression_executed' | 'progression_milestone' | 'progression_goals_reset';
+  | 'progression_consideration' | 'progression_executed' | 'progression_milestone' | 'progression_goals_reset'
+  // BLD-04: a division move left the build over a smaller budget
+  | 'build_over_budget';
 
 export interface AppNotification {
   notificationId: string;
@@ -673,7 +675,7 @@ export interface AppNotification {
   type: NotificationType | GmInterferenceNotificationType;
   message: string;
   sourceId: string;
-  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'rivalry' | 'storyline_request' | 'discipline' | 'progression' | 'contract' | 'economy';
+  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'rivalry' | 'storyline_request' | 'discipline' | 'progression' | 'contract' | 'economy' | 'build';
   isRead: boolean;
   createdAt: string;
 }

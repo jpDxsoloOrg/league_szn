@@ -8,8 +8,9 @@ import { requireRole } from '../../lib/auth';
 import { triggerProgressionRecompute } from '../../lib/progression/trigger';
 import { triggerContenderRecalculation } from '../../lib/contenderTrigger';
 import { divisionMovePatch } from '../../lib/divisions';
+import { notifyBuildOverBudgetAfterMove } from '../../lib/builds/budgetNotice';
 import { applyMovesetFields } from './movesetFields';
-import type { PlayerPatch } from '../../lib/repositories';
+import type { Player, PlayerPatch } from '../../lib/repositories';
 import {
   filterExistingWrestlerIds,
   parseSlotChange,
@@ -211,10 +212,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Division-locked titles change eligibility and the contender window
     // restarts at divisionJoinedAt, so contender rankings are refreshed too.
     const divisionChanged = 'divisionId' in patch && patch.divisionId !== player.divisionId;
-    const recomputeOnDivisionChange = async (): Promise<void> => {
+    const recomputeOnDivisionChange = async (moved: Player | null): Promise<void> => {
       if (!divisionChanged) return;
       await triggerProgressionRecompute([playerId], 'playerDivisionChanged');
       await triggerContenderRecalculation('divisionMove');
+      // BLD-04: priced on the saved row, so a moveset edit in the same save counts.
+      await notifyBuildOverBudgetAfterMove({
+        player: moved ?? player,
+        fromDivisionId: player.divisionId,
+        toDivisionId: patch.divisionId,
+      });
     };
 
     // If any FK transition happened, stage the player update + wrestler
@@ -236,12 +243,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         tx.updatePlayer(playerId, patch as Record<string, unknown>);
       });
       const refreshed = await roster.players.findById(playerId);
-      await recomputeOnDivisionChange();
+      await recomputeOnDivisionChange(refreshed);
       return success(refreshed);
     }
 
     const updated = await roster.players.update(playerId, patch);
-    await recomputeOnDivisionChange();
+    await recomputeOnDivisionChange(updated);
     return success(updated);
   } catch (err) {
     if (err instanceof NotFoundError) return notFound(err.message);
