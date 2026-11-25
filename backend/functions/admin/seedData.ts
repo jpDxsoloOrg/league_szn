@@ -12,6 +12,7 @@ import {
   type SeedImportPayload,
 } from './dataTransferConfig';
 import { HEAT_TIER_CENTRES, type HeatTier } from '../../lib/policies/rivalryHeat';
+import type { SimCategory } from '../../lib/policies/buildRules';
 import { roundToHalfStar } from '../../lib/utils/halfStar';
 import { buildDefaultCallupTrack } from '../../lib/progression/defaultTracks';
 import { buildProgressionInputs, resolveProgressionWindow } from '../../lib/progression/loadInputs';
@@ -1182,6 +1183,33 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     const matchTypeItems: Record<string, unknown>[] = defaultMatchTypes.map(name => ({
       matchTypeId: uuidv4(),
       name,
+      simCategory: 'standard',
+      createdAt: now,
+      updatedAt: now,
+    }));
+
+    // ── Stipulations (BLD-16) ───────────────────────────────────
+    // Each stipulation carries the sim category the match sim and
+    // wrestler specialties read (see lib/sim/category.ts).
+    console.log('Creating stipulations...');
+    const defaultStipulations: Array<{ name: string; simCategory: SimCategory }> = [
+      { name: 'Standard', simCategory: 'standard' },
+      { name: 'No DQ', simCategory: 'hardcore' },
+      { name: 'Street Fight', simCategory: 'hardcore' },
+      { name: 'Tables Match', simCategory: 'hardcore' },
+      { name: 'Ladder Match', simCategory: 'highRisk' },
+      { name: 'TLC', simCategory: 'highRisk' },
+      { name: 'Submission Match', simCategory: 'technical' },
+      { name: 'I Quit', simCategory: 'technical' },
+      { name: 'Iron Man', simCategory: 'endurance' },
+      { name: 'Last Man Standing', simCategory: 'endurance' },
+      { name: 'Steel Cage', simCategory: 'cage' },
+      { name: 'Hell in a Cell', simCategory: 'cage' },
+    ];
+    const stipulationItems: Record<string, unknown>[] = defaultStipulations.map(({ name, simCategory }) => ({
+      stipulationId: uuidv4(),
+      name,
+      simCategory,
       createdAt: now,
       updatedAt: now,
     }));
@@ -2233,7 +2261,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       siteConfig: siteConfigItems,
       challenges: challengeItems,
       promos: [...promoItems, ...youngBoysPromos.map((promo) => ({ ...promo }))],
-      stipulations: [],
+      stipulations: stipulationItems,
       matchTypes: matchTypeItems,
       seasonAwards: [],
       rivalries,

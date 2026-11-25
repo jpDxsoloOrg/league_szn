@@ -4,6 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { Plus, SlidersHorizontal } from 'lucide-react';
 import { matchTypesApi, stipulationsApi } from '../../services/api';
 import type { MatchType, Stipulation } from '../../types';
+import {
+  DEFAULT_SIM_CATEGORY,
+  SIM_CATEGORIES,
+  SIM_CATEGORY_LABELS,
+  isSimCategory,
+  type SimCategory,
+} from '../../constants/simCategories';
 import Button from '../ui/Button';
 import DataTable from '../ui/DataTable';
 import EmptyState from '../ui/EmptyState';
@@ -17,6 +24,7 @@ import './adminContent.css';
 interface ConfigInput {
   name: string;
   description?: string;
+  simCategory?: SimCategory;
 }
 
 interface ConfigItem extends ConfigInput {
@@ -40,6 +48,8 @@ interface ConfigLabels {
   loadFailed: string;
   saveFailed: string;
   deleteFailed: string;
+  simCategory: string;
+  simCategoryHint: string;
 }
 
 interface ConfigListProps {
@@ -51,7 +61,13 @@ interface ConfigListProps {
   remove: (id: string) => Promise<unknown>;
 }
 
-const EMPTY_FORM = { name: '', description: '' };
+interface ConfigForm {
+  name: string;
+  description: string;
+  simCategory: SimCategory;
+}
+
+const EMPTY_FORM: ConfigForm = { name: '', description: '', simCategory: DEFAULT_SIM_CATEGORY };
 
 /** One editable list. Match types and stipulations have the same shape. */
 function ConfigList({ idPrefix, labels, load, create, update, remove }: ConfigListProps) {
@@ -66,7 +82,7 @@ function ConfigList({ idPrefix, labels, load, create, update, remove }: ConfigLi
   const [editing, setEditing] = useState<ConfigItem | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [formData, setFormData] = useState<ConfigForm>(EMPTY_FORM);
 
   const refresh = useCallback(async () => {
     try {
@@ -82,6 +98,9 @@ function ConfigList({ idPrefix, labels, load, create, update, remove }: ConfigLi
     void refresh();
   }, [refresh]);
 
+  const categoryLabel = (category: SimCategory): string =>
+    t(`simCategories.${category}`, SIM_CATEGORY_LABELS[category]);
+
   const closeForm = () => {
     setShowForm(false);
     setEditing(null);
@@ -91,7 +110,11 @@ function ConfigList({ idPrefix, labels, load, create, update, remove }: ConfigLi
 
   const openEdit = (item: ConfigItem) => {
     setEditing(item);
-    setFormData({ name: item.name, description: item.description ?? '' });
+    setFormData({
+      name: item.name,
+      description: item.description ?? '',
+      simCategory: isSimCategory(item.simCategory) ? item.simCategory : DEFAULT_SIM_CATEGORY,
+    });
     setShowForm(true);
   };
 
@@ -101,7 +124,11 @@ function ConfigList({ idPrefix, labels, load, create, update, remove }: ConfigLi
     setSuccess(null);
     setFormError(null);
     setSaving(true);
-    const input = { name: formData.name, description: formData.description || undefined };
+    const input: ConfigInput = {
+      name: formData.name,
+      description: formData.description || undefined,
+      simCategory: formData.simCategory,
+    };
     try {
       if (editing) {
         await update(editing.id, input);
@@ -176,6 +203,12 @@ function ConfigList({ idPrefix, labels, load, create, update, remove }: ConfigLi
             render: (item) => item.description || '—',
           },
           {
+            key: 'simCategory',
+            header: labels.simCategory,
+            render: (item) => categoryLabel(isSimCategory(item.simCategory) ? item.simCategory : DEFAULT_SIM_CATEGORY),
+            sortValue: (item) => item.simCategory ?? DEFAULT_SIM_CATEGORY,
+          },
+          {
             key: 'actions',
             header: t('common.actions', 'Actions'),
             align: 'end',
@@ -223,6 +256,25 @@ function ConfigList({ idPrefix, labels, load, create, update, remove }: ConfigLi
             rows={3}
           />
         </div>
+        <div className="ac-field">
+          <label className="ac-field__label" htmlFor={`${idPrefix}-sim-category`}>{labels.simCategory}</label>
+          <select
+            id={`${idPrefix}-sim-category`}
+            value={formData.simCategory}
+            aria-describedby={`${idPrefix}-sim-category-hint`}
+            onChange={(event) => {
+              const next = event.target.value;
+              if (isSimCategory(next)) setFormData({ ...formData, simCategory: next });
+            }}
+          >
+            {SIM_CATEGORIES.map((category) => (
+              <option key={category} value={category}>{categoryLabel(category)}</option>
+            ))}
+          </select>
+          <span className="ac-field__hint" id={`${idPrefix}-sim-category-hint`}>
+            {t(`simCategories.examples.${formData.simCategory}`, '')} {labels.simCategoryHint}
+          </span>
+        </div>
       </AdminFormModal>
 
       {confirmDialog}
@@ -260,6 +312,8 @@ export default function ManageMatchConfig() {
     loadFailed: t('adminContent.matchConfig.matchTypesLoadFailed', 'Failed to load match types'),
     saveFailed: t('adminContent.matchConfig.matchTypeSaveFailed', 'Failed to save match type'),
     deleteFailed: t('adminContent.matchConfig.matchTypeDeleteFailed', 'Failed to delete match type'),
+    simCategory: t('adminContent.matchConfig.simCategory', 'Sim category'),
+    simCategoryHint: t('adminContent.matchConfig.simCategoryHint', "The match sim weights stats by this. A stipulation's category wins over the match type's."),
   };
 
   const stipulationLabels: ConfigLabels = {
@@ -279,6 +333,8 @@ export default function ManageMatchConfig() {
     loadFailed: t('adminContent.matchConfig.stipulationsLoadFailed', 'Failed to load stipulations'),
     saveFailed: t('adminContent.matchConfig.stipulationSaveFailed', 'Failed to save stipulation'),
     deleteFailed: t('adminContent.matchConfig.stipulationDeleteFailed', 'Failed to delete stipulation'),
+    simCategory: t('adminContent.matchConfig.simCategory', 'Sim category'),
+    simCategoryHint: t('adminContent.matchConfig.simCategoryHint', "The match sim weights stats by this. A stipulation's category wins over the match type's."),
   };
 
   const tabs: { value: string; label: string; content: ReactNode }[] = [

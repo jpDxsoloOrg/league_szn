@@ -415,6 +415,7 @@ export class InMemoryCompetitionRepository implements CompetitionRepository {
         matchTypeId: uuidv4(),
         name: input.name,
         ...(input.description !== undefined ? { description: input.description } : {}),
+        ...(input.simCategory !== undefined ? { simCategory: input.simCategory } : {}),
         createdAt: now,
         updatedAt: now,
       };
@@ -456,6 +457,7 @@ export class InMemoryCompetitionRepository implements CompetitionRepository {
         stipulationId: uuidv4(),
         name: input.name,
         ...(input.description !== undefined ? { description: input.description } : {}),
+        ...(input.simCategory !== undefined ? { simCategory: input.simCategory } : {}),
         createdAt: now,
         updatedAt: now,
       };

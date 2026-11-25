@@ -667,12 +667,19 @@ components:
         createdAt: { type: string }
         updatedAt: { type: string }
 
+    # BLD-16
+    SimCategory:
+      type: string
+      enum: [standard, highRisk, technical, endurance, hardcore, cage]
+      description: Sim category of a stipulation or match type. The match sim weights stats by it and wrestler specialties match against it. Missing means standard.
+
     Stipulation:
       type: object
       properties:
         stipulationId: { type: string }
         name: { type: string }
         description: { type: string }
+        simCategory: { $ref: '#/components/schemas/SimCategory' }
         createdAt: { type: string }
         updatedAt: { type: string }
 
@@ -682,6 +689,7 @@ components:
         matchTypeId: { type: string }
         name: { type: string }
         description: { type: string }
+        simCategory: { $ref: '#/components/schemas/SimCategory' }
         createdAt: { type: string }
         updatedAt: { type: string }
 
@@ -2439,6 +2447,7 @@ paths:
             schema: { $ref: '#/components/schemas/Stipulation' }
       responses:
         '200': { description: Updated }
+        '400': { description: 'Bad request (e.g. unknown simCategory)', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
@@ -2493,6 +2502,7 @@ paths:
             schema: { $ref: '#/components/schemas/MatchType' }
       responses:
         '200': { description: Updated }
+        '400': { description: 'Bad request (e.g. unknown simCategory)', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

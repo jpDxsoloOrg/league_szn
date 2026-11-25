@@ -3917,6 +3917,8 @@
       "noMatchTypesText": "Create your first match type.",
       "noStipulations": "No stipulations yet",
       "noStipulationsText": "Create your first stipulation.",
+      "simCategory": "Sim category",
+      "simCategoryHint": "The match sim weights stats by this. A stipulation's category wins over the match type's.",
       "stipulationCreated": "Stipulation created successfully!",
       "stipulationDeleteFailed": "Failed to delete stipulation",
       "stipulationDeleted": "Stipulation deleted successfully!",
@@ -4034,6 +4036,22 @@
     "sixPack": "6-Pack Challenge",
     "battleRoyal": "Battle Royal",
     "royalRumble": "Royal Rumble"
+  },
+  "simCategories": {
+    "standard": "Standard",
+    "highRisk": "High risk",
+    "technical": "Technical",
+    "endurance": "Endurance",
+    "hardcore": "Hardcore",
+    "cage": "Cage",
+    "examples": {
+      "standard": "Normal rules.",
+      "highRisk": "e.g. Ladder, TLC, Scaffold.",
+      "technical": "e.g. Submission, I Quit, 2 out of 3 Falls.",
+      "endurance": "e.g. Iron Man, Last Man Standing.",
+      "hardcore": "e.g. Street Fight, Extreme Rules, Tables, Falls Count Anywhere.",
+      "cage": "e.g. Steel Cage, Hell in a Cell."
+    }
   },
   "discipline": {
     "status": {

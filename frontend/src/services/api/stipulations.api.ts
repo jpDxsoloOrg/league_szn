@@ -1,14 +1,15 @@
 import type { Stipulation } from '../../types';
+import type { SimCategory } from '../../constants/simCategories';
 import { createCrudApi } from './crudFactory';
 
-const baseStipulationsApi = createCrudApi<Stipulation, { name: string; description?: string }>('stipulations');
+const baseStipulationsApi = createCrudApi<Stipulation, { name: string; description?: string; simCategory?: SimCategory }>('stipulations');
 
 export const stipulationsApi = {
   getAll: async (signal?: AbortSignal): Promise<Stipulation[]> => {
     return baseStipulationsApi.getAll(signal);
   },
 
-  create: async (stipulation: { name: string; description?: string }): Promise<Stipulation> => {
+  create: async (stipulation: { name: string; description?: string; simCategory?: SimCategory }): Promise<Stipulation> => {
     return baseStipulationsApi.create(stipulation);
   },
 

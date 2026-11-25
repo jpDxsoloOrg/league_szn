@@ -1,3 +1,5 @@
+import type { SimCategory } from '../constants/simCategories';
+
 export interface Player {
   playerId: string;
   /** Sent only to staff and to the player themselves. */
@@ -532,6 +534,8 @@ export interface Stipulation {
   stipulationId: string;
   name: string;
   description?: string;
+  /** BLD-16: sim category; missing = `standard`. */
+  simCategory?: SimCategory;
   createdAt: string;
   updatedAt: string;
 }
@@ -540,6 +544,8 @@ export interface MatchType {
   matchTypeId: string;
   name: string;
   description?: string;
+  /** BLD-16: sim category; missing = `standard`. */
+  simCategory?: SimCategory;
   createdAt: string;
   updatedAt: string;
 }

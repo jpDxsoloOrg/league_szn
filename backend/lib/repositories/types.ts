@@ -25,6 +25,8 @@ export interface Stipulation {
   stipulationId: string;
   name: string;
   description?: string;
+  /** BLD-16: sim category for the match sim and specialties. Missing = `standard`. */
+  simCategory?: SimCategory;
   createdAt: string;
   updatedAt: string;
 }
@@ -33,6 +35,8 @@ export interface MatchType {
   matchTypeId: string;
   name: string;
   description?: string;
+  /** BLD-16: sim category for the match sim and specialties. Missing = `standard`. */
+  simCategory?: SimCategory;
   createdAt: string;
   updatedAt: string;
 }
