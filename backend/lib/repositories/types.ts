@@ -276,6 +276,12 @@ export interface Player {
    * negative. Written only by `tx.postLedgerEntry`; never on `PlayerPatch`.
    */
   balance?: number;
+  /**
+   * ECO-03: the player's one active contract, denormalized so free-agent
+   * checks need no Contracts query. Not on `PlayerPatch`: write it only
+   * through `tx.setPlayerActiveContract` / `tx.clearPlayerActiveContract`.
+   */
+  activeContractId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -959,4 +965,74 @@ export interface SeasonMovementReview {
   /** Set when an applied promote / relegate moved the player. */
   toDivisionId?: string;
   createdAt: string;
+}
+
+// ─── Contracts (ECO-03) ──────────────────────────────────────────────
+
+/**
+ * - `tryout`: a few matches (per-match pay only allowed).
+ * - `matches`: a fixed number of matches.
+ * - `season`: runs until its season ends.
+ */
+export type ContractType = 'tryout' | 'matches' | 'season';
+
+/**
+ * Lifecycle (see `canTransition` in `lib/policies/contracts.ts`):
+ * offered -> active | declined | withdrawn | expired;
+ * active -> completed | released. Every other status is terminal.
+ */
+export type ContractStatus =
+  | 'offered'
+  | 'active'
+  | 'declined'
+  | 'withdrawn'
+  | 'expired'
+  | 'completed'
+  | 'released';
+
+/** Why a contract or offer left the offered/active states. */
+export type ContractEndReason =
+  | 'offerDeclined'
+  | 'offerWithdrawn'
+  /** Withdrawn automatically because the player accepted another offer. */
+  | 'otherOfferAccepted'
+  | 'offerExpired'
+  | 'matchesCompleted'
+  | 'seasonEnded'
+  | 'released';
+
+export interface Contract {
+  contractId: string;
+  playerId: string;
+  type: ContractType;
+  status: ContractStatus;
+  /** Required for `tryout` and `matches`; absent for `season`. */
+  matchesTotal?: number;
+  matchesPlayed: number;
+  /** Required for `season` contracts. */
+  seasonId?: string;
+  perMatchPay: number;
+  weeklySalary: number;
+  winBonus: number;
+  /** userId (Cognito sub) of the GM who made the offer. */
+  offeredBy: string;
+  offeredAt: string;
+  offerExpiresAt: string;
+  startedAt?: string;
+  endedAt?: string;
+  endReason?: ContractEndReason;
+  note?: string;
+  /** Same as `offeredAt`; the PlayerIndex sort key. */
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Fields a contract write may change after creation. `null` removes the attribute. */
+export interface ContractPatch {
+  status?: ContractStatus;
+  matchesPlayed?: number;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  endReason?: ContractEndReason | null;
+  note?: string | null;
 }

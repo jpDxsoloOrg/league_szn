@@ -10,6 +10,9 @@ import type {
 } from './rivalries';
 import type {
   ChallengeStatus,
+  Contract,
+  ContractPatch,
+  ContractStatus,
   PlayerProgression,
   ProgressionConsideration,
   ProgressionEvent,
@@ -282,6 +285,31 @@ export interface UnitOfWork {
    * the first transaction chunk, so they never split across chunks.
    */
   postLedgerEntry(input: PostLedgerEntryInput): StagedLedgerEntry;
+  // ── Contracts (ECO-03) ──────────────────────────────────────────
+  /**
+   * Stage creating a contract row (build it with `buildContract`). Fails the
+   * whole unit of work with `ConcurrencyError` if the id already exists.
+   */
+  createContract(contract: Contract): void;
+
+  /**
+   * Stage a contract update. The row must exist and its stored status must
+   * still equal `expectedStatus`, or the whole unit of work fails with
+   * `ConcurrencyError`. `null` in the patch removes the attribute.
+   */
+  updateContract(contractId: string, patch: ContractPatch, expectedStatus: ContractStatus): void;
+
+  /**
+   * Stage setting `player.activeContractId`. Fails with `ConcurrencyError`
+   * unless the player exists and has no active contract at commit time.
+   */
+  setPlayerActiveContract(playerId: string, contractId: string): void;
+
+  /**
+   * Stage removing `player.activeContractId`. Fails with `ConcurrencyError`
+   * unless it still equals `expectedContractId` at commit time.
+   */
+  clearPlayerActiveContract(playerId: string, expectedContractId: string): void;
 
   /** Flush all staged operations. */
   commit(): Promise<void>;

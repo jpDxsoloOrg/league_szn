@@ -8,6 +8,8 @@ import type {
 } from '../unitOfWork';
 import type { DivisionPatch } from '../LeagueOpsRepository';
 import type { ChallengeStatus, TagTeam } from '../types';
+import type { Contract, ContractPatch, ContractStatus } from '../types';
+import { applyContractPatch } from './InMemoryContractsRepository';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
 import type {
   Rivalry,
@@ -70,6 +72,8 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       /** Ledger (ECO-02). Optional so callers that never post need not wire them. */
       ledger?: LedgerEntry[];
       ledgerIdempotency?: Map<string, LedgerIdempotencyRecord>;
+      /** ECO-03. Optional so callers that never touch contracts need not wire it. */
+      contracts?: Map<string, Contract>;
     },
   ) {}
 
@@ -597,6 +601,69 @@ export class InMemoryUnitOfWork implements UnitOfWork {
         }
       }
     };
+  }
+
+  // ── Contracts (ECO-03) ───────────────────────────────────────────
+  private contractsStore(): Map<string, Contract> {
+    if (!this.stores.contracts) throw new Error('InMemoryUnitOfWork: contracts store not wired');
+    return this.stores.contracts;
+  }
+
+  createContract(contract: Contract): void {
+    this.preconditions.push(() => {
+      if (this.contractsStore().has(contract.contractId)) {
+        throw new ConcurrencyError('Contract', contract.contractId);
+      }
+    });
+    this.staged.push(() => {
+      this.contractsStore().set(contract.contractId, { ...contract });
+    });
+  }
+
+  updateContract(contractId: string, patch: ContractPatch, expectedStatus: ContractStatus): void {
+    this.preconditions.push(() => {
+      if (this.contractsStore().get(contractId)?.status !== expectedStatus) {
+        throw new ConcurrencyError('Contract', contractId);
+      }
+    });
+    this.staged.push(() => {
+      const existing = this.contractsStore().get(contractId);
+      if (!existing) return;
+      this.contractsStore().set(contractId, applyContractPatch(existing, patch, new Date().toISOString()));
+    });
+  }
+
+  setPlayerActiveContract(playerId: string, contractId: string): void {
+    this.preconditions.push(() => {
+      const player = this.stores.players.get(playerId);
+      if (!player || player.activeContractId !== undefined) {
+        throw new ConcurrencyError('Player', playerId);
+      }
+    });
+    this.staged.push(() => {
+      const existing = this.stores.players.get(playerId);
+      if (!existing) return;
+      this.stores.players.set(playerId, {
+        ...existing,
+        activeContractId: contractId,
+        updatedAt: new Date().toISOString(),
+      });
+    });
+  }
+
+  clearPlayerActiveContract(playerId: string, expectedContractId: string): void {
+    this.preconditions.push(() => {
+      if (this.stores.players.get(playerId)?.activeContractId !== expectedContractId) {
+        throw new ConcurrencyError('Player', playerId);
+      }
+    });
+    this.staged.push(() => {
+      const existing = this.stores.players.get(playerId);
+      if (!existing) return;
+      const next: Record<string, unknown> = { ...existing, updatedAt: new Date().toISOString() };
+      delete next.activeContractId;
+      this.stores.players.set(playerId, next);
+    });
   }
 
   async commit(): Promise<void> {

@@ -10,6 +10,8 @@ import type {
 } from '../unitOfWork';
 import type { DivisionPatch } from '../LeagueOpsRepository';
 import type { ChallengeStatus, PlayerProgression, ProgressionConsideration, ProgressionEvent, TagTeam } from '../types';
+import type { Contract, ContractPatch, ContractStatus } from '../types';
+import { buildContractUpdate } from './contractRows';
 import {
   buildClearConsiderationUpdate,
   buildSetConsiderationUpdate,
@@ -938,6 +940,65 @@ export class DynamoUnitOfWork implements UnitOfWork {
       );
     }
     return { items, meta };
+  }
+
+  // ── Contracts (ECO-03) ───────────────────────────────────────────
+  createContract(contract: Contract): void {
+    this.staged.push({
+      Put: {
+        TableName: TableNames.CONTRACTS,
+        Item: { ...contract },
+        ConditionExpression: 'attribute_not_exists(contractId)',
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'Contract', id: contract.contractId });
+  }
+
+  updateContract(contractId: string, patch: ContractPatch, expectedStatus: ContractStatus): void {
+    const parts = buildContractUpdate(patch, new Date().toISOString(), expectedStatus);
+    this.staged.push({
+      Update: {
+        TableName: TableNames.CONTRACTS,
+        Key: { contractId },
+        ...parts,
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'Contract', id: contractId });
+  }
+
+  setPlayerActiveContract(playerId: string, contractId: string): void {
+    this.staged.push({
+      Update: {
+        TableName: TableNames.PLAYERS,
+        Key: { playerId },
+        UpdateExpression: 'SET #activeContractId = :contractId, #updatedAt = :updatedAt',
+        ConditionExpression: 'attribute_exists(#playerId) AND attribute_not_exists(#activeContractId)',
+        ExpressionAttributeNames: {
+          '#activeContractId': 'activeContractId',
+          '#updatedAt': 'updatedAt',
+          '#playerId': 'playerId',
+        },
+        ExpressionAttributeValues: { ':contractId': contractId, ':updatedAt': new Date().toISOString() },
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'Player', id: playerId });
+  }
+
+  clearPlayerActiveContract(playerId: string, expectedContractId: string): void {
+    this.staged.push({
+      Update: {
+        TableName: TableNames.PLAYERS,
+        Key: { playerId },
+        UpdateExpression: 'REMOVE #activeContractId SET #updatedAt = :updatedAt',
+        ConditionExpression: '#activeContractId = :expectedContractId',
+        ExpressionAttributeNames: { '#activeContractId': 'activeContractId', '#updatedAt': 'updatedAt' },
+        ExpressionAttributeValues: {
+          ':expectedContractId': expectedContractId,
+          ':updatedAt': new Date().toISOString(),
+        },
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'Player', id: playerId });
   }
 
   // ── Commit / Rollback ────────────────────────────────────────────

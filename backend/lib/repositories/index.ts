@@ -187,3 +187,9 @@ export {
   LEDGER_ENTRY_KINDS,
   ledgerSortKey,
 } from './ledger';
+export type {
+  ContractsRepository,
+  ContractCreateInput,
+  ContractListFilter,
+} from './contracts';
+export { buildContract } from './contracts';

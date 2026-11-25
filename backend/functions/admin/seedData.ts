@@ -2021,6 +2021,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       // ECO-02: seeded players start with no money and no postings.
       ledger: [],
       ledgerIdempotency: [],
+      // ECO-03: seeded contracts arrive with ECO-15; an empty list clears stale rows.
+      contracts: [],
     };
 
     const createdCounts = await importAllData(seedData);

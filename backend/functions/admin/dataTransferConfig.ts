@@ -33,6 +33,8 @@ export const EXPORT_DATASET_KEYS = [
   // Ledger (ECO-02)
   'ledger',
   'ledgerIdempotency',
+  // ECO-03
+  'contracts',
 ] as const;
 
 export type ExportDatasetKey = (typeof EXPORT_DATASET_KEYS)[number];
