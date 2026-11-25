@@ -13,6 +13,7 @@ import { handler as issueStrikeHandler } from './issueStrike';
 import { handler as removeStrikeHandler } from './removeStrike';
 import { handler as reactivatePlayerHandler } from './reactivatePlayer';
 import { handler as adjustBalanceHandler } from '../economy/adjustBalance';
+import { handler as getMyLedgerHandler } from './getMyLedger';
 import { issueFineHandler, rescindFineHandler } from '../economy/fines';
 
 
@@ -107,6 +108,14 @@ export const routes: ReadonlyArray<RouteConfig> = [
     method: 'POST',
     handler: adjustBalanceHandler,
     access: ADMIN_ONLY,
+  },
+
+  // Own wallet history (ECO-13)
+  {
+    resource: '/players/me/ledger',
+    method: 'GET',
+    handler: getMyLedgerHandler,
+    access: 'self-service',
   },
 
   // Fines (ECO-07)

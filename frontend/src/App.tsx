@@ -61,6 +61,7 @@ const ContenderRankings = lazy(() => import('./components/contenders/ContenderRa
 const MyContenderStatus = lazy(() => import('./components/contenders/MyContenderStatus'));
 // ECO-12
 const FreeAgents = lazy(() => import('./components/economy/FreeAgents'));
+const MyContract = lazy(() => import('./components/economy/MyContract'));
 const EventsCalendar = lazy(() => import('./components/events/EventsCalendar'));
 const EventDetail = lazy(() => import('./components/events/EventDetail'));
 const EventResults = lazy(() => import('./components/events/EventResults'));
@@ -352,6 +353,14 @@ function AppLayout() {
             {/* ECO-12: free agent pool - feature-gated */}
             <Route path="/free-agents" element={
               <FeatureRoute feature="economy"><FreeAgents /></FeatureRoute>
+            } />
+            {/* ECO-13: the player's own contract, offers inbox and wallet. */}
+            <Route path="/my-contract" element={
+              <FeatureRoute feature="economy">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <MyContract />
+                </ProtectedRoute>
+              </FeatureRoute>
             } />
 
             {/* Catch-all 404 */}

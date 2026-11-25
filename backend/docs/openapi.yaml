@@ -344,6 +344,24 @@ components:
         note: { type: string }
         actorUserId: { type: string }
         idempotencyKey: { type: string }
+    # ECO-13
+    OwnLedgerEntry:
+      type: object
+      required: [playerId, entryId, createdAt, sortKey, kind, amount, balanceAfter]
+      properties:
+        playerId: { type: string }
+        entryId: { type: string }
+        createdAt: { type: string, format: date-time }
+        sortKey: { type: string }
+        kind:
+          type: string
+          enum: [perMatchPay, winBonus, salary, fine, fineRescinded, purchase, refund, gmAdjust, reversal]
+        amount: { type: integer, description: Signed amount }
+        balanceAfter: { type: integer }
+        refType: { type: string }
+        refId: { type: string }
+        note: { type: string, description: The fine reason or GM note }
+
     AdjustBalanceResult:
       type: object
       required: [entry, balance, alreadyApplied]
@@ -3330,6 +3348,34 @@ paths:
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '409': { description: 'The balance changed while saving; try again', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ECO-13: the signed-in player's own wallet history
+  /players/me/ledger:
+    get:
+      tags: [Profile]
+      summary: The signed-in player's ledger entries, newest first, with their balance
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: cursor, in: query, schema: { type: string }, description: nextCursor from the previous page }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+      responses:
+        '200':
+          description: >-
+            One page of the player's own entries. The GM's user id and the
+            internal idempotency key are left out.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [playerId, balance, items]
+                properties:
+                  playerId: { type: string }
+                  balance: { type: integer }
+                  items: { type: array, items: { $ref: '#/components/schemas/OwnLedgerEntry' } }
+                  nextCursor: { type: string, description: Absent on the last page }
+        '400': { description: 'Bad cursor or limit', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'No player profile for this user', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   # ── Contracts (ECO-04) ───────────────────────────────────────────
 

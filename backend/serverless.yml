@@ -466,6 +466,12 @@ functions:
           method: post
           cors: *corsConfig
 
+      # Own wallet history (ECO-13). Self-service; access is declared in functions/players/handler.ts.
+      - http:
+          path: players/me/ledger
+          method: get
+          cors: *corsConfig
+
       # Fines (ECO-07). GM only; access is declared in functions/players/handler.ts.
       - http:
           path: players/{playerId}/fines

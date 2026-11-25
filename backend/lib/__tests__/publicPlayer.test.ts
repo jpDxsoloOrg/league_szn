@@ -100,6 +100,25 @@ describe('toPublicPlayer', () => {
     });
   });
 
+  // ECO-13
+  describe('active contract id', () => {
+    const signed = { ...player, activeContractId: 'c1' };
+
+    it.each([
+      ['an anonymous caller', null],
+      ['another wrestler', caller('other-sub', 'Wrestler')],
+    ])('hides it from %s', (_label, viewer) => {
+      expect(toPublicPlayer(signed, viewer)).not.toHaveProperty('activeContractId');
+    });
+
+    it.each([
+      ['the player', caller('owner-sub', 'Wrestler')],
+      ['a Moderator', caller('staff-sub', 'Moderator')],
+    ])('shows it to %s', (_label, viewer) => {
+      expect(toPublicPlayer(signed, viewer).activeContractId).toBe('c1');
+    });
+  });
+
   it('reports an unlinked player as such', () => {
     const unlinked: { playerId: string; userId?: string } = { playerId: 'p2' };
     const shaped = toPublicPlayer(unlinked, caller('staff-sub', 'Admin'));

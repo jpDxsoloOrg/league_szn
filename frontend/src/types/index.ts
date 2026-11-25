@@ -633,7 +633,11 @@ export interface Video {
   updatedAt: string;
 }
 
-export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'tag_team_formed' | 'transfer_reviewed' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change' | 'strike_issued' | 'strike_removed' | 'account_reactivated' | 'progression_consideration' | 'progression_executed' | 'progression_milestone' | 'progression_goals_reset';
+export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'tag_team_formed' | 'transfer_reviewed' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change' | 'strike_issued' | 'strike_removed' | 'account_reactivated'
+  // ECO-13: contracts and the league economy
+  | 'contract_offer' | 'contract_offer_accepted' | 'contract_offer_declined' | 'contract_offer_expired' | 'contract_released' | 'contract_completed'
+  | 'no_show_marked' | 'fine_issued' | 'fine_rescinded' | 'balance_negative'
+  | 'progression_consideration' | 'progression_executed' | 'progression_milestone' | 'progression_goals_reset';
 
 export interface AppNotification {
   notificationId: string;
@@ -641,7 +645,7 @@ export interface AppNotification {
   type: NotificationType;
   message: string;
   sourceId: string;
-  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'rivalry' | 'storyline_request' | 'discipline' | 'progression';
+  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'rivalry' | 'storyline_request' | 'discipline' | 'progression' | 'contract' | 'economy';
   isRead: boolean;
   createdAt: string;
 }

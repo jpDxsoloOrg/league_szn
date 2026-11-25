@@ -283,6 +283,7 @@
     "tagTeams": "Tag Teams",
     "myFaction": "My Faction",
     "myTagTeam": "My Tag Team",
+    "myContract": "My Contract",
     "highlights": "Highlights",
     "profile": "My Profile",
     "myVideos": "My Videos",
@@ -2859,6 +2860,75 @@
       }
     }
   },
+  "myContract": {
+    "title": "My Contract",
+    "subtitle": "Your contract, your offers and your money.",
+    "loadFailed": "Could not load your contract.",
+    "tabsLabel": "Contract and wallet",
+    "tabs": {
+      "contract": "Contract",
+      "wallet": "Wallet"
+    },
+    "progress": "{{played}} of {{total}} matches played",
+    "current": {
+      "title": "Current contract",
+      "freeAgent": "You're a free agent.",
+      "freeAgentHint": "You still earn the free-agent win bonus. Offers from the GMs show up below."
+    },
+    "terms": {
+      "perMatchPay": "Pay per match",
+      "weeklySalary": "Weekly salary",
+      "winBonus": "Win bonus"
+    },
+    "offers": {
+      "title": "Offers",
+      "empty": "No open offers right now.",
+      "matches_one": "{{count}} match",
+      "matches_other": "{{count}} matches",
+      "daysLeft_one": "{{count}} day left",
+      "daysLeft_other": "{{count}} days left",
+      "hoursLeft_one": "{{count}} hour left",
+      "hoursLeft_other": "{{count}} hours left",
+      "expired": "Expired",
+      "underContract": "You already have a contract. You can accept once it ends.",
+      "accept": "Accept",
+      "decline": "Decline",
+      "accepted": "Contract signed. Welcome aboard!",
+      "declined": "Offer declined.",
+      "answerFailed": "Could not answer the offer."
+    },
+    "past": {
+      "title": "Past contracts",
+      "empty": "Nothing here yet."
+    }
+  },
+  "wallet": {
+    "balance": "Balance",
+    "debtNote": "You're in debt. The shop stays locked until your balance is back above zero.",
+    "card": {
+      "title": "Your wallet",
+      "link": "Wallet history",
+      "thisWeek": "Earned this week",
+      "nextPayday": "Next payday"
+    },
+    "ledger": {
+      "empty": "No money has moved yet. Pay, bonuses and fines will show up here.",
+      "loadFailed": "Could not load your wallet history.",
+      "loadMore": "Show older entries",
+      "balanceAfter": "Balance {{amount}}"
+    },
+    "kinds": {
+      "perMatchPay": "Match pay",
+      "winBonus": "Win bonus",
+      "salary": "Weekly salary",
+      "fine": "Fine",
+      "fineRescinded": "Fine cancelled",
+      "purchase": "Shop purchase",
+      "refund": "Refund",
+      "gmAdjust": "Balance correction",
+      "reversal": "Match pay reversed"
+    }
+  },
   "notifications": {
     "title": "Notifications",
     "bell": "Notifications",
@@ -2880,7 +2950,9 @@
     "typeRivalry": "Rivalry",
     "typeStoryline": "Storyline",
     "typeDiscipline": "Strikes",
-    "typeProgression": "Call-ups"
+    "typeProgression": "Call-ups",
+    "typeContract": "Contract",
+    "typeEconomy": "Wallet"
   },
   "overalls": {
     "admin": {

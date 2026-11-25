@@ -11,6 +11,8 @@ interface PrivateAccountFields {
   balance?: number;
   /** ECO-08: bought shop effects, private like the balance. */
   effects?: PlayerEffect[];
+  /** ECO-13: which contract is active stays with staff and the player; the public badge comes from GET /players/{id}/contract. */
+  activeContractId?: string;
 }
 
 /** Stored discipline state. Never leaves in raw form: readers get `discipline`. */
@@ -44,7 +46,7 @@ export function toPublicPlayer<TPlayer extends PrivatePlayerFields>(
   caller: AuthContext | null,
 ): PublicPlayer<TPlayer> {
   const {
-    userId, canUploadVideos, hasWrestlerRole, balance, effects,
+    userId, canUploadVideos, hasWrestlerRole, balance, effects, activeContractId,
     strikes, deactivatedAt,
     deactivations: _deactivations, disciplineVersion: _disciplineVersion, signupGuardKey: _signupGuardKey,
     ...rest
@@ -59,6 +61,7 @@ export function toPublicPlayer<TPlayer extends PrivatePlayerFields>(
     ...(mayReadPrivate && hasWrestlerRole !== undefined ? { hasWrestlerRole } : {}),
     ...(mayReadPrivate && balance !== undefined ? { balance } : {}),
     ...(mayReadPrivate && effects !== undefined ? { effects } : {}),
+    ...(mayReadPrivate && activeContractId !== undefined ? { activeContractId } : {}),
     ...(mayReadPrivate ? { discipline: computeDiscipline({ strikes, deactivatedAt }) } : {}),
   };
 }

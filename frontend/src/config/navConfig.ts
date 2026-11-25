@@ -53,6 +53,7 @@ import {
   Users,
   UsersRound,
   Video,
+  Wallet,
 } from 'lucide-react';
 import type { SiteFeatures } from '../services/api';
 
@@ -174,6 +175,8 @@ export const NAV_SECTIONS: NavSection[] = [
       { path: '/challenges', labelKey: 'nav.tabs.callOuts', icon: Megaphone, feature: 'challenges', wrestlerOnly: true },
       { path: '/my-faction', labelKey: 'nav.myFaction', icon: Flag, feature: 'stables', wrestlerOnly: true },
       { path: '/my-tag-team', labelKey: 'nav.myTagTeam', icon: Link2, feature: 'stables', wrestlerOnly: true },
+      // ECO-13
+      { path: '/my-contract', labelKey: 'nav.myContract', icon: Wallet, feature: 'economy', wrestlerOnly: true },
       { path: '/my-videos', labelKey: 'nav.myVideos', icon: Video, wrestlerOnly: true },
       { path: '/guide', labelKey: 'nav.help', icon: CircleHelp },
       { path: '/guide/wiki/league-rules', labelKey: 'nav.leagueRules', icon: BookOpen },

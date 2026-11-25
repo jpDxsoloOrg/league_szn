@@ -8,6 +8,7 @@ import Skeleton from './ui/Skeleton';
 import ChampionCarousel from './ChampionCarousel';
 import DashboardRivalries from './rivalries/DashboardRivalries';
 import DashboardCallUp from './progression/DashboardCallUp';
+import DashboardWallet from './economy/DashboardWallet';
 import HomeHero from './home/HomeHero';
 import LatestResults from './home/LatestResults';
 import SeasonSummary from './home/SeasonSummary';
@@ -77,6 +78,8 @@ export default function Dashboard() {
       {/* Gates itself to logged-in wrestlers. */}
       <DashboardRivalries />
       <DashboardCallUp />
+      {/* ECO-13: gates itself to wrestlers while the economy is on. */}
+      <DashboardWallet />
       <SeasonSummary season={data.seasonInfo} stats={data.quickStats} />
     </div>
   );

@@ -6,6 +6,7 @@ import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { notificationsApi } from '../services/api/notifications.api';
 import { waitForPageRequests } from '../utils/deferShellRequest';
 import type { AppNotification } from '../types';
+import { MY_CONTRACT_PATH, MY_WALLET_PATH } from './economy/wallet';
 import './NotificationBell.css';
 import { usePollWhileVisible } from '../hooks/usePollWhileVisible';
 
@@ -43,11 +44,50 @@ function sourceTypeLabel(sourceType: AppNotification['sourceType']): string {
     case 'transfer': return 'notifications.typeTransfer';
     case 'discipline': return 'notifications.typeDiscipline';
     case 'progression': return 'notifications.typeProgression';
+    case 'contract': return 'notifications.typeContract';
+    case 'economy': return 'notifications.typeEconomy';
     default: return 'notifications.typeAnnouncement';
   }
 }
 
-function getNavigationPath(notification: AppNotification, playerId: string | null, transfersEnabled: boolean): string {
+/** ECO-13: where a contract or money notification goes, or null when it isn't one. Home while the economy is off. */
+function economyNavigationPath(notification: AppNotification, economyEnabled: boolean): string | null {
+  let path: string;
+  switch (notification.type) {
+    case 'contract_offer':
+    case 'contract_offer_expired':
+    case 'contract_released':
+    case 'contract_completed':
+      path = MY_CONTRACT_PATH;
+      break;
+    // Sent to GMs when a player answers an offer.
+    case 'contract_offer_accepted':
+    case 'contract_offer_declined':
+      path = '/admin/contracts';
+      break;
+    // Fines can carry a match as their source; they still belong on the wallet.
+    case 'no_show_marked':
+    case 'fine_issued':
+    case 'fine_rescinded':
+    case 'balance_negative':
+      path = MY_WALLET_PATH;
+      break;
+    default:
+      if (notification.sourceType === 'contract') path = MY_CONTRACT_PATH;
+      else if (notification.sourceType === 'economy') path = MY_WALLET_PATH;
+      else return null;
+  }
+  return economyEnabled ? path : '/';
+}
+
+function getNavigationPath(
+  notification: AppNotification,
+  playerId: string | null,
+  transfersEnabled: boolean,
+  economyEnabled: boolean,
+): string {
+  const economyPath = economyNavigationPath(notification, economyEnabled);
+  if (economyPath) return economyPath;
   switch (notification.sourceType) {
     case 'promo':
       return notification.sourceId ? `/promos/${notification.sourceId}` : '/promos';
@@ -187,8 +227,8 @@ export default function NotificationBell() {
     }
 
     setIsOpen(false);
-    navigate(getNavigationPath(notification, playerId, features.transfers));
-  }, [navigate, playerId, features.transfers]);
+    navigate(getNavigationPath(notification, playerId, features.transfers, Boolean(features.economy)));
+  }, [navigate, playerId, features.transfers, features.economy]);
 
   const handleDeleteNotification = useCallback(async (e: React.MouseEvent, notification: AppNotification) => {
     e.stopPropagation();

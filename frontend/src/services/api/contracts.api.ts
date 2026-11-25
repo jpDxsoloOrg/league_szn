@@ -122,6 +122,64 @@ export interface BalanceAdjustmentResult {
   alreadyApplied: boolean;
 }
 
+// ECO-13: the signed-in player's own contracts and wallet.
+
+/** GET /players/me/contracts. */
+export interface MyContractsResponse {
+  playerId: string;
+  /** Cached ledger balance; may be negative. */
+  balance: number;
+  activeContract: Contract | null;
+  /** Open offers, soonest to expire first. */
+  offers: Contract[];
+  /** Everything else, newest first. */
+  pastContracts: Contract[];
+}
+
+export interface AcceptOfferResult {
+  contract: Contract;
+  /** The player's other open offers, withdrawn by the accept. */
+  withdrawnOfferIds: string[];
+}
+
+export const LEDGER_ENTRY_KINDS = [
+  'perMatchPay',
+  'winBonus',
+  'salary',
+  'fine',
+  'fineRescinded',
+  'purchase',
+  'refund',
+  'gmAdjust',
+  'reversal',
+] as const;
+export type LedgerEntryKind = typeof LEDGER_ENTRY_KINDS[number];
+
+/** A ledger entry as its player sees it (mirrors `OwnLedgerEntry` in backend/functions/players/getMyLedger.ts). */
+export interface OwnLedgerEntry {
+  playerId: string;
+  entryId: string;
+  createdAt: string;
+  sortKey: string;
+  kind: LedgerEntryKind;
+  /** Signed: positive pays the player. */
+  amount: number;
+  balanceAfter: number;
+  refType?: string;
+  refId?: string;
+  /** The fine reason or GM note. */
+  note?: string;
+}
+
+/** GET /players/me/ledger. */
+export interface MyLedgerPage {
+  playerId: string;
+  balance: number;
+  /** Newest first. */
+  items: OwnLedgerEntry[];
+  nextCursor?: string;
+}
+
 function queryString(filter: ContractListFilter): string {
   const params = new URLSearchParams();
   if (filter.status) params.set('status', filter.status);
@@ -168,6 +226,39 @@ export const contractsApi = {
   /** GET /free-agents (public): visible players with no active contract. */
   getFreeAgents: async (signal?: AbortSignal): Promise<RosterPlayer[]> => {
     return fetchWithAuth(`${API_BASE_URL}/free-agents`, {}, signal);
+  },
+
+  // ECO-13: the player's own side.
+
+  /** GET /players/me/contracts: own contract, open offers and history, with money. */
+  getMine: async (signal?: AbortSignal): Promise<MyContractsResponse> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/me/contracts`, {}, signal);
+  },
+
+  /** POST /contracts/{id}/accept (the offered player only). */
+  accept: async (contractId: string): Promise<AcceptOfferResult> => {
+    return fetchWithAuth(`${API_BASE_URL}/contracts/${encodeURIComponent(contractId)}/accept`, {
+      method: 'POST',
+    });
+  },
+
+  /** POST /contracts/{id}/decline (the offered player only). */
+  decline: async (contractId: string): Promise<Contract> => {
+    return fetchWithAuth(`${API_BASE_URL}/contracts/${encodeURIComponent(contractId)}/decline`, {
+      method: 'POST',
+    });
+  },
+
+  /** GET /players/me/ledger: own wallet history, newest first. */
+  getMyLedger: async (
+    options: { cursor?: string; limit?: number } = {},
+    signal?: AbortSignal,
+  ): Promise<MyLedgerPage> => {
+    const params = new URLSearchParams();
+    if (options.cursor) params.set('cursor', options.cursor);
+    if (options.limit) params.set('limit', String(options.limit));
+    const query = params.toString();
+    return fetchWithAuth(`${API_BASE_URL}/players/me/ledger${query ? `?${query}` : ''}`, {}, signal);
   },
 
   /** POST /players/{id}/ledger/adjust (Admin): a manual balance correction. */

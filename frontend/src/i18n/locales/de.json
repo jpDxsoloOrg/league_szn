@@ -283,6 +283,7 @@
     "tagTeams": "Tag Teams",
     "myFaction": "Meine Faktion",
     "myTagTeam": "Mein Tag Team",
+    "myContract": "Mein Vertrag",
     "highlights": "Highlights",
     "profile": "Mein Profil",
     "myVideos": "Meine Videos",
@@ -2859,6 +2860,75 @@
       }
     }
   },
+  "myContract": {
+    "title": "Mein Vertrag",
+    "subtitle": "Dein Vertrag, deine Angebote und dein Geld.",
+    "loadFailed": "Dein Vertrag konnte nicht geladen werden.",
+    "tabsLabel": "Vertrag und Geldbörse",
+    "tabs": {
+      "contract": "Vertrag",
+      "wallet": "Geldbörse"
+    },
+    "progress": "{{played}} von {{total}} Matches bestritten",
+    "current": {
+      "title": "Aktueller Vertrag",
+      "freeAgent": "Du bist Free Agent.",
+      "freeAgentHint": "Du bekommst weiterhin den Siegbonus für Free Agents. Angebote der GMs erscheinen unten."
+    },
+    "terms": {
+      "perMatchPay": "Gage pro Match",
+      "weeklySalary": "Wochengehalt",
+      "winBonus": "Siegbonus"
+    },
+    "offers": {
+      "title": "Angebote",
+      "empty": "Gerade keine offenen Angebote.",
+      "matches_one": "{{count}} Match",
+      "matches_other": "{{count}} Matches",
+      "daysLeft_one": "Noch {{count}} Tag",
+      "daysLeft_other": "Noch {{count}} Tage",
+      "hoursLeft_one": "Noch {{count}} Stunde",
+      "hoursLeft_other": "Noch {{count}} Stunden",
+      "expired": "Abgelaufen",
+      "underContract": "Du hast schon einen Vertrag. Annehmen kannst du, sobald er endet.",
+      "accept": "Annehmen",
+      "decline": "Ablehnen",
+      "accepted": "Vertrag unterschrieben. Willkommen an Bord!",
+      "declined": "Angebot abgelehnt.",
+      "answerFailed": "Das Angebot konnte nicht beantwortet werden."
+    },
+    "past": {
+      "title": "Frühere Verträge",
+      "empty": "Hier ist noch nichts."
+    }
+  },
+  "wallet": {
+    "balance": "Kontostand",
+    "debtNote": "Du bist im Minus. Der Shop bleibt gesperrt, bis dein Kontostand wieder über null liegt.",
+    "card": {
+      "title": "Deine Geldbörse",
+      "link": "Kontoverlauf",
+      "thisWeek": "Diese Woche verdient",
+      "nextPayday": "Nächster Zahltag"
+    },
+    "ledger": {
+      "empty": "Bisher ist kein Geld geflossen. Gagen, Boni und Strafen erscheinen hier.",
+      "loadFailed": "Dein Kontoverlauf konnte nicht geladen werden.",
+      "loadMore": "Ältere Einträge anzeigen",
+      "balanceAfter": "Kontostand {{amount}}"
+    },
+    "kinds": {
+      "perMatchPay": "Match-Gage",
+      "winBonus": "Siegbonus",
+      "salary": "Wochengehalt",
+      "fine": "Strafe",
+      "fineRescinded": "Strafe aufgehoben",
+      "purchase": "Shop-Kauf",
+      "refund": "Erstattung",
+      "gmAdjust": "Korrektur",
+      "reversal": "Match-Gage storniert"
+    }
+  },
   "notifications": {
     "title": "Benachrichtigungen",
     "bell": "Benachrichtigungen",
@@ -2880,7 +2950,9 @@
     "typeRivalry": "Rivalität",
     "typeStoryline": "Storyline",
     "typeDiscipline": "Strikes",
-    "typeProgression": "Call-ups"
+    "typeProgression": "Call-ups",
+    "typeContract": "Vertrag",
+    "typeEconomy": "Geldbörse"
   },
   "overalls": {
     "admin": {
