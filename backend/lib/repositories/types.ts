@@ -1,5 +1,5 @@
 import type { CoreStat, SimCategory, StyleId } from '../policies/buildRules';
-import type { CurrentInjury } from './injuries'; // INJ-03
+import type { CurrentInjury, InjurySeverity } from './injuries'; // INJ-03, INJ-04
 
 export interface Division {
   divisionId: string;
@@ -778,6 +778,32 @@ export interface MatchPaySettlement {
   players: Record<string, MatchPaySettlementPlayer>;
 }
 
+// INJ-04
+/**
+ * What one result did to one participant's condition (`lib/injuries/applyMatchCondition.ts`).
+ * Staff only: stamina is private, so public match reads drop the report.
+ */
+export interface MatchConditionEntry {
+  playerId: string;
+  staminaBefore: number;
+  staminaAfter: number;
+  drain: number;
+  /** Injury chance used, after band, category risk, cap and any reduction. */
+  chance: number;
+  /** The seeded draw in [0, 1); an injury when roll < chance. */
+  roll: number;
+  /** The injury this result caused, if any. */
+  injuryId?: string;
+  severity?: InjurySeverity;
+  weeks?: number;
+  returnsAt?: string;
+  /**
+   * The roll came up but the player was already injured (e.g. a GM storyline
+   * injury), so no second injury was created.
+   */
+  alreadyInjured?: boolean;
+}
+
 export interface Match {
   matchId: string;
   date: string;
@@ -836,6 +862,12 @@ export interface Match {
   resultSource?: StoredResultSource;
   /** The official sim that settled the match, when `resultSource` is `simulation`. */
   simulation?: MatchSimulation;
+
+  // INJ-04
+  /** Drain and injury roll per participant, written with the result. Staff only. */
+  conditionReport?: MatchConditionEntry[];
+  /** The injury tunables version the report was computed under. */
+  tunablesVersion?: number;
 
   createdAt: string;
   updatedAt?: string;

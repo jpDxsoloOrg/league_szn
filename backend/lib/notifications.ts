@@ -39,6 +39,8 @@ export type NotificationType =
   | 'progression_executed'
   | 'progression_milestone'
   | 'progression_goals_reset'
+  // INJ-04: a recorded result injured the player
+  | 'injury_sustained'
   // BLD-04: a division move left the build over a smaller budget
   | 'build_over_budget';
 

@@ -738,6 +738,30 @@ components:
           items: { $ref: '#/components/schemas/MatchNoShow' }
         resultSource: { type: string, enum: [manual, simulation], description: 'BLD-10. How the result was settled; unset means manual.' }
         simulation: { $ref: '#/components/schemas/MatchSimulation' }
+        # INJ-04
+        conditionReport:
+          type: array
+          description: >-
+            INJ-04. Staff only (public reads drop it): what the result did to each
+            participant's stamina, and the seeded injury roll. Written with the
+            result while the \`injuries\` flag is on.
+          items:
+            type: object
+            required: [playerId, staminaBefore, staminaAfter, drain, chance, roll]
+            properties:
+              playerId: { type: string }
+              staminaBefore: { type: number }
+              staminaAfter: { type: number }
+              drain: { type: number }
+              chance: { type: number }
+              roll: { type: number }
+              injuryId: { type: string }
+              severity: { type: string, enum: [minor, moderate, major] }
+              weeks: { type: integer }
+              returnsAt: { type: string }
+              alreadyInjured: { type: boolean, description: 'The roll came up but the player was already injured, so no second injury.' }
+        tunablesVersion: { type: integer, description: 'INJ-04. Staff only. Injury tunables version the condition report used.' }
+
         createdAt: { type: string }
         challengeId: { type: string }
         promoId: { type: string }

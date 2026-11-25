@@ -8,6 +8,7 @@ import {
   anyMatchHasSimBoosts, resolveSimBoostViewer, withVisibleSimBoosts, type SimBoostViewer,
 } from '../../lib/economy/simBoostVisibility';
 import { withPublicSimulation } from '../../lib/sim/publicSimulation';
+import { withoutConditionReport } from '../../lib/injuries/applyMatchCondition'; // INJ-04
 import { collectSlotPlayerIds, hydrateMatchSlots } from './hydrateSlots';
 import { anyMatchHasTeams, loadTagTeamIndex, sideTagTeamsField } from '../../lib/tagTeams/sideBilling';
 
@@ -202,7 +203,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const id = m.matchId as string | undefined;
       const rating = id ? userRatingsByMatchId.get(id) : undefined;
       return {
-        ...withVisibleSimBoosts(isStaff ? m : withPublicSimulation(m), simBoostViewer),
+        ...withVisibleSimBoosts(isStaff ? m : withoutConditionReport(withPublicSimulation(m)), simBoostViewer),
         userHasRated: rating !== undefined,
         userRating: rating ?? null,
       };

@@ -8,6 +8,7 @@ import { invokeAsync } from '../../lib/asyncLambda';
 import { revertGroupStats } from './revertGroupStats';
 import { reverseMatchPay } from '../../lib/economy/matchPay';
 import { refundSimBoosts } from '../../lib/economy/refundSimBoosts';
+import { loadMatchConditionRevert, stageMatchConditionRevert } from '../../lib/injuries/applyMatchCondition'; // INJ-04
 
 interface BracketMatch {
   participant1?: string;
@@ -184,6 +185,8 @@ async function rollbackCompletedMatch(
   const existingWinners = winners.filter((playerId) => existingPlayerIds.has(playerId));
   const existingLosers = losers.filter((playerId) => existingPlayerIds.has(playerId));
   const seasonId = match.seasonId && (await seasons.findById(match.seasonId)) ? match.seasonId : undefined;
+  // INJ-04: give back the drain and end injuries from this match (GM-edited ones stay).
+  const conditionRevert = await loadMatchConditionRevert(match, new Date().toISOString());
 
   // Use UoW to atomically decrement all player/season stats
   await runInTransaction(async (tx) => {
@@ -211,6 +214,9 @@ async function rollbackCompletedMatch(
         }
       }
     }
+
+    // Stamina refund and reverted injuries (INJ-04)
+    if (conditionRevert) stageMatchConditionRevert(tx, conditionRevert);
   });
 
   // 4. Revert stable and tag team group stats (non-critical)
