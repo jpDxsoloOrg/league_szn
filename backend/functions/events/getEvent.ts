@@ -4,7 +4,8 @@ import { getRepositories } from '../../lib/repositories';
 import type { MatchSlot, Player } from '../../lib/repositories/types';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { authenticate } from '../../lib/authenticate';
-import { getAuthContext } from '../../lib/auth';
+import { getAuthContext, hasRole } from '../../lib/auth';
+import { toPublicMatchSimulation } from '../../lib/sim/publicSimulation';
 import { bookablePsnId } from '../../lib/disciplineGates';
 import { hydrateMatchSlots } from '../matches/hydrateSlots';
 import type { TagTeamIndex } from '../../lib/tagTeams/resolveTagTeams';
@@ -41,12 +42,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // detail page from rendering. Failures here downgrade to the anonymous
     // view rather than serverError-ing the whole response.
     let callerUserId: string | null = null;
+    // BLD-14: only staff see a simulated match's odds and audit fields.
+    let callerIsStaff = false;
     try {
       if (event.headers?.Authorization || event.headers?.authorization) {
         await authenticate(event).catch(() => undefined);
       }
       if (event.requestContext) {
-        callerUserId = getAuthContext(event).sub || null;
+        const authContext = getAuthContext(event);
+        callerUserId = authContext.sub || null;
+        callerIsStaff = hasRole(authContext, 'Moderator');
       }
     } catch (authErr) {
       console.warn('getEvent: optional auth failed, continuing as anonymous', authErr);
@@ -185,6 +190,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             // ECO-14: the GM's no-show control on the card needs the marks and the result time.
             ...(match.noShows && { noShows: match.noShows }),
             ...(match.completedAt && { completedAt: match.completedAt }),
+            // BLD-14: a sim-settled match shows its badge and story to everyone; odds stay with staff.
+            ...(match.resultSource && { resultSource: match.resultSource }),
+            ...(match.simulation && {
+              simulation: callerIsStaff ? match.simulation : toPublicMatchSimulation(match.simulation),
+            }),
           },
         };
       })

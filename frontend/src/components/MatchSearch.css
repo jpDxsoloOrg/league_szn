@@ -198,6 +198,19 @@
   gap: 1rem;
 }
 
+/* BLD-14: story of a sim-settled match. */
+.match-detail__sim {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.match-detail__sim > .sim-result {
+  align-self: stretch;
+}
+
 .match-detail__facts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

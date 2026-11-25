@@ -1026,6 +1026,7 @@
         "stipulations": "Stipulations",
         "matchConfig": "Match Config",
         "scheduleMatch": "Schedule Match",
+        "matchSimulator": "Match Simulator",
         "standaloneMatches": "Standalone Matches",
         "championships": "Championships",
         "tournaments": "Tournaments",
@@ -4141,6 +4142,53 @@
     }
   },
   "sim": {
+    "badge": "Simulated",
+    "badgeHint": "The GM settled this match with the match sim.",
+    "storyTitle": "How the match went",
+    "panel": {
+      "category": "Category: {{category}}",
+      "sidesLabel": "Sides",
+      "winner": "Winner",
+      "pct": "{{pct}}%",
+      "oddsFor": "{{side}}: {{pct}}% to win",
+      "specialtyHint": "Fighting in their specialty, which gives them an edge.",
+      "inSpecialty": "in specialty",
+      "inSpecialtyNamed": "{{name}} in specialty",
+      "playByPlay": "Play-by-play",
+      "skip": "Show all"
+    },
+    "actions": {
+      "simulate": "Simulate",
+      "preview": "Preview",
+      "previewAgain": "Preview again",
+      "previewNote": "Preview only. Nothing is recorded, and another run can end differently.",
+      "previewError": "The sim could not run. Try again.",
+      "simulateRecord": "Simulate & record",
+      "confirmTitle": "Simulate and record this match?",
+      "confirmMessage": "The sim decides the winner and the result counts like any other: records, standings and titles update. This cannot be undone here.",
+      "loadingOdds": "Working out the odds…",
+      "confirmRecord": "Simulate & record",
+      "recordError": "The match could not be simulated. Try again.",
+      "resultTitle": "Result recorded",
+      "done": "Done"
+    },
+    "simulator": {
+      "title": "Match Simulator",
+      "description": "Pick the sides and a stipulation to see the odds and a sample match. Previews are only visible to GMs and are never recorded.",
+      "side": "Side {{number}}",
+      "memberLabel": "Side {{side}}, wrestler {{member}}",
+      "pickWrestler": "Pick a wrestler",
+      "removeMember": "Remove wrestler {{member}} from side {{side}}",
+      "addPartner": "Add partner",
+      "removeSide": "Remove side",
+      "addSide": "Add side",
+      "stipulation": "Stipulation",
+      "noStipulation": "No stipulation",
+      "matchType": "Match type",
+      "anyMatchType": "Any match type",
+      "hint": "Each wrestler can only be on one side. The stipulation or match type sets the sim category.",
+      "reset": "Reset"
+    },
     "beats": {
       "opening": {
         "v1": "{{wrestler}} and {{opponent}} lock up at the bell.",

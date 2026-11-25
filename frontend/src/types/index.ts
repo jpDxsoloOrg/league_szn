@@ -1,4 +1,5 @@
 import type { SimCategory } from '../constants/simCategories';
+import type { MatchResultSource, StoredMatchSimulation } from './sim';
 
 export interface Player {
   playerId: string;
@@ -291,6 +292,11 @@ export interface Match {
   noShows?: MatchNoShow[];
   /** Sim interference bought by participants (ECO-08), one per player. */
   simBoosts?: MatchSimBoost[];
+  // BLD-14
+  /** `simulation` when a GM settled the match with the sim (BLD-10). */
+  resultSource?: MatchResultSource;
+  /** The official sim; odds only for staff. */
+  simulation?: StoredMatchSimulation;
 }
 
 // ECO-14
@@ -785,3 +791,5 @@ export * from './location';
 export * from './factionMessage';
 export * from './rivalry';
 export * from './progression';
+// BLD-14
+export * from './sim';

@@ -1026,6 +1026,7 @@
         "stipulations": "Stipulationen",
         "matchConfig": "Match-Konfiguration",
         "scheduleMatch": "Kampf planen",
+        "matchSimulator": "Match-Simulator",
         "standaloneMatches": "Einzelne Matches",
         "championships": "Meisterschaften",
         "tournaments": "Turniere",
@@ -4141,6 +4142,53 @@
     }
   },
   "sim": {
+    "badge": "Simuliert",
+    "badgeHint": "Der GM hat dieses Match mit der Match-Simulation entschieden.",
+    "storyTitle": "So lief das Match",
+    "panel": {
+      "category": "Kategorie: {{category}}",
+      "sidesLabel": "Seiten",
+      "winner": "Sieger",
+      "pct": "{{pct}} %",
+      "oddsFor": "{{side}}: {{pct}} % Siegchance",
+      "specialtyHint": "Kämpft in seiner Spezialität und hat dadurch einen Vorteil.",
+      "inSpecialty": "in Spezialität",
+      "inSpecialtyNamed": "{{name}} in Spezialität",
+      "playByPlay": "Match-Verlauf",
+      "skip": "Alles zeigen"
+    },
+    "actions": {
+      "simulate": "Simulieren",
+      "preview": "Vorschau",
+      "previewAgain": "Neue Vorschau",
+      "previewNote": "Nur eine Vorschau. Es wird nichts gespeichert, und ein neuer Lauf kann anders ausgehen.",
+      "previewError": "Die Simulation konnte nicht laufen. Versuch es noch mal.",
+      "simulateRecord": "Simulieren & eintragen",
+      "confirmTitle": "Dieses Match simulieren und eintragen?",
+      "confirmMessage": "Die Simulation bestimmt den Sieger, und das Ergebnis zählt wie jedes andere: Bilanzen, Tabellen und Titel werden aktualisiert. Das lässt sich hier nicht rückgängig machen.",
+      "loadingOdds": "Chancen werden berechnet…",
+      "confirmRecord": "Simulieren & eintragen",
+      "recordError": "Das Match konnte nicht simuliert werden. Versuch es noch mal.",
+      "resultTitle": "Ergebnis eingetragen",
+      "done": "Fertig"
+    },
+    "simulator": {
+      "title": "Match-Simulator",
+      "description": "Wähl die Seiten und eine Stipulation, um die Chancen und ein Beispiel-Match zu sehen. Vorschauen sehen nur GMs, und sie werden nie gespeichert.",
+      "side": "Seite {{number}}",
+      "memberLabel": "Seite {{side}}, Wrestler {{member}}",
+      "pickWrestler": "Wrestler wählen",
+      "removeMember": "Wrestler {{member}} von Seite {{side}} entfernen",
+      "addPartner": "Partner hinzufügen",
+      "removeSide": "Seite entfernen",
+      "addSide": "Seite hinzufügen",
+      "stipulation": "Stipulation",
+      "noStipulation": "Keine Stipulation",
+      "matchType": "Match-Typ",
+      "anyMatchType": "Beliebiger Match-Typ",
+      "hint": "Jeder Wrestler kann nur auf einer Seite stehen. Stipulation oder Match-Typ legen die Sim-Kategorie fest.",
+      "reset": "Zurücksetzen"
+    },
     "beats": {
       "opening": {
         "v1": "{{wrestler}} und {{opponent}} gehen beim Gong in den Clinch.",

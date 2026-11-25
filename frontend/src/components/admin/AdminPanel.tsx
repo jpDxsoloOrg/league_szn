@@ -29,6 +29,8 @@ const DEFAULT_TAB: AdminTab = 'players';
 const TAB_COMPONENTS: Record<AdminTab, LazyExoticComponent<ComponentType>> = {
   schedule: lazy(() => import('./ScheduleMatch')),
   'standalone-matches': lazy(() => import('./StandaloneMatches')),
+  // BLD-14
+  'match-simulator': lazy(() => import('./MatchSimulator')),
   users: lazy(() => import('./ManageUsers')),
   players: lazy(() => import('./ManagePlayers')),
   wrestlers: lazy(() => import('./ManageWrestlers')),

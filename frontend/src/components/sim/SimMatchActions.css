@@ -1,0 +1,42 @@
+/* BLD-14: GM sim controls on a scheduled match. */
+.sim-match-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.sim-match-actions__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sim-match-actions__preview,
+.sim-match-actions__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.sim-match-actions__preview {
+  padding: 0.75rem;
+  border: 1px dashed var(--color-hairline);
+  border-radius: var(--radius-card);
+}
+
+.sim-match-actions__note {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.sim-match-actions__confirm p {
+  margin: 0;
+}
+
+.sim-match-actions__error {
+  margin: 0;
+  color: var(--color-loss);
+}

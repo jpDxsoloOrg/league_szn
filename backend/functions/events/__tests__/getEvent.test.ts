@@ -424,4 +424,77 @@ describe('getEvent', () => {
       }
     });
   });
+  // BLD-14: a simulated match carries its badge and story; odds stay with staff.
+  describe('BLD-14 simulated matches', () => {
+    const storedSimulation = {
+      seed: 42,
+      category: 'standard' as const,
+      rulesVersion: 1,
+      inputsDigest: 'digest-1',
+      winnerSideId: 'side-1',
+      probabilities: [
+        { sideId: 'side-1', playerIds: ['p1'], pct: 61.5 },
+        { sideId: 'side-2', playerIds: ['p2'], pct: 38.5 },
+      ],
+      playByPlay: [{ key: 'sim.beats.opening.0', params: { a: 'One', b: 'Two' } }],
+      specialtyHits: ['p1'],
+      scaledPlayerIds: [],
+      formWindow: { kind: 'recent' as const, matchLimit: 10 },
+      simulatedAt: '2024-01-01T00:00:00.000Z',
+      simulatedBy: 'gm-sub',
+    };
+
+    async function setupSimulatedEvent(): Promise<string> {
+      await repos.competition.matches.create({
+        matchId: 'sim-1',
+        date: '2024-01-01',
+        matchFormat: 'singles',
+        participants: [],
+        winners: ['p1'],
+        losers: ['p2'],
+        isChampionship: false,
+        status: 'completed',
+        resultSource: 'simulation',
+        simulation: storedSimulation,
+        createdAt: new Date().toISOString(),
+      });
+      const eventItem = await repos.leagueOps.events.create({
+        name: 'Raw', eventType: 'weekly', date: '2024-01-01',
+      });
+      await repos.leagueOps.events.update(eventItem.eventId, {
+        matchCards: [{ position: 1, matchId: 'sim-1', designation: 'midcard' as const }],
+      });
+      return eventItem.eventId;
+    }
+
+    function eventAs(eventId: string, groups: string): APIGatewayProxyEvent {
+      return makeEvent({
+        pathParameters: { eventId },
+        requestContext: {
+          authorizer: { principalId: 'caller', username: 'caller', email: '', groups },
+        } as unknown as APIGatewayProxyEvent['requestContext'],
+      });
+    }
+
+    it('gives guests and wrestlers the result source and story without odds', async () => {
+      const eventId = await setupSimulatedEvent();
+      for (const request of [makeEvent({ pathParameters: { eventId } }), eventAs(eventId, 'Wrestler')]) {
+        const result = await getEvent(request, ctx, cb);
+        const matchData = JSON.parse(result!.body).enrichedMatches[0].matchData;
+        expect(matchData.resultSource).toBe('simulation');
+        expect(matchData.simulation.playByPlay).toEqual(storedSimulation.playByPlay);
+        expect(matchData.simulation.winnerSideId).toBe('side-1');
+        expect(matchData.simulation).not.toHaveProperty('probabilities');
+        expect(matchData.simulation).not.toHaveProperty('inputsDigest');
+        expect(matchData.simulation).not.toHaveProperty('simulatedBy');
+      }
+    });
+
+    it('gives staff the stored odds', async () => {
+      const eventId = await setupSimulatedEvent();
+      const result = await getEvent(eventAs(eventId, 'Moderator'), ctx, cb);
+      const matchData = JSON.parse(result!.body).enrichedMatches[0].matchData;
+      expect(matchData.simulation.probabilities).toEqual(storedSimulation.probabilities);
+    });
+  });
 });

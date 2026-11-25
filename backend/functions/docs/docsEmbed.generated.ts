@@ -2784,6 +2784,11 @@ paths:
     get:
       tags: [Events]
       summary: Get event with matches
+      description: >
+        Public. Each \`enrichedMatches[].matchData\` of a sim-settled match carries
+        \`resultSource: simulation\` and its \`simulation\` (BLD-14). Staff get the
+        whole sim; everyone else gets the public view without the odds and
+        audit fields.
       parameters:
         - name: eventId
           in: path

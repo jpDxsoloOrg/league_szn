@@ -19,6 +19,7 @@ import {
   ClipboardList,
   Coins,
   Crown,
+  Dices,
   FileText,
   FileSignature,
   Film,
@@ -284,6 +285,8 @@ export function getSectionLandingPath(section: NavSection, context: NavContext):
 export const ADMIN_TABS = [
   'schedule',
   'standalone-matches',
+  // BLD-14
+  'match-simulator',
   'users',
   'players',
   'wrestlers',
@@ -346,6 +349,8 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     entries: [
       { tab: 'schedule', labelKey: 'admin.panel.tabs.scheduleMatch', icon: CalendarPlus, minRole: 'Moderator' },
       { tab: 'standalone-matches', labelKey: 'admin.panel.tabs.standaloneMatches', icon: ClipboardList, minRole: 'Moderator' },
+      // BLD-14: GM-only sim previews.
+      { tab: 'match-simulator', labelKey: 'admin.panel.tabs.matchSimulator', icon: Dices, minRole: 'Moderator' },
     ],
   },
   {

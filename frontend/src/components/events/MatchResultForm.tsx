@@ -8,6 +8,7 @@ import { formatMatchType, sideLabel } from '../../utils/matchDisplay';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import NoShowButton from '../economy/NoShowButton';
+import SimMatchActions from '../sim/SimMatchActions';
 import './MatchResultForm.css';
 
 /** The API's wording for a result it refuses, so it can show translated. */
@@ -51,6 +52,13 @@ export default function MatchResultForm({
   const getPlayerNameShort = (playerId: string): string => {
     const player = players.find(p => p.playerId === playerId);
     return player ? player.name : t('common.unknown');
+  };
+
+  // BLD-14: the sim names wrestlers as billed.
+  const getBilledName = (playerId: string): string => {
+    const player = players.find(p => p.playerId === playerId);
+    if (!player) return t('common.unknown');
+    return player.currentWrestler || player.name;
   };
 
   /**
@@ -216,6 +224,11 @@ export default function MatchResultForm({
           ))}
         </div>
       )}
+
+      {/* BLD-14: GM preview and "Simulate & record". Renders nothing for non-staff. */}
+      <div className="match-result-form__sim">
+        <SimMatchActions match={match} nameOf={getBilledName} onRecorded={onSuccess} />
+      </div>
 
       <div className="match-result-form__actions">
         <Button variant="secondary" onClick={onCancel} disabled={submitting}>
