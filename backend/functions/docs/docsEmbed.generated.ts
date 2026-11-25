@@ -4478,6 +4478,61 @@ paths:
         '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '409': { description: 'A concurrent change', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  # INJ-12
+  /players/{playerId}/condition:
+    get:
+      tags: [Players]
+      summary: The player's stamina meter (the player themselves, Moderator, Admin)
+      description: >-
+        Stamina, the injury-chance band it falls in (0 is the band for the
+        highest stamina), the next weekly recovery (Sunday 00:00 in the league
+        time zone), the open injury (public fields) and the drain of the next
+        scheduled match the player is booked in. Other viewers get 403; the
+        public injury badge reads currentInjury from the player instead.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The player's condition
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [playerId, stamina, maxStamina, band, bandCount, weeklyRecovery, nextRecoveryAt, currentInjury, nextMatch]
+                properties:
+                  playerId: { type: string }
+                  stamina: { type: integer }
+                  maxStamina: { type: integer }
+                  band: { type: integer, minimum: 0 }
+                  bandCount: { type: integer, minimum: 1 }
+                  weeklyRecovery:
+                    oneOf:
+                      - { type: integer }
+                      - { type: string, enum: [full] }
+                  nextRecoveryAt: { type: string, format: date-time }
+                  currentInjury:
+                    type: object
+                    nullable: true
+                    properties:
+                      injuryId: { type: string }
+                      startedAt: { type: string, format: date-time }
+                      returnsAt: { type: string, format: date-time }
+                      severity: { type: string, enum: [minor, moderate, major] }
+                      weeks: { type: integer }
+                      matchId: { type: string }
+                  nextMatch:
+                    type: object
+                    nullable: true
+                    properties:
+                      matchId: { type: string }
+                      date: { type: string }
+                      drain: { type: integer }
+                      staminaAfter: { type: integer }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not the player or staff, or the injuries feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   # ── Fines (ECO-07) ───────────────────────────────────────────────
 
   /matches/{matchId}/no-show:

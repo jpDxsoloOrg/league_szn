@@ -1,11 +1,18 @@
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
-import type { InjuryConfigResponse, InjuryTunables, InjuryTunablesInput } from '../../types/injury';
+// INJ-11 board types live in types/injuryReport; INJ-12 player types in types/injury.
 import type {
   AdjustStaminaResult,
   Injury,
   InjuryBoardEntry,
   UpdateCurrentInjuryInput,
 } from '../../types/injuryReport';
+import type {
+  InjuryConfigResponse,
+  InjuryTunables,
+  InjuryTunablesInput,
+  PlayerCondition,
+  PublicInjury,
+} from '../../types/injury';
 
 export const injuriesApi = {
   /** GET /admin/injury-config (Moderator and Admin): current tunables and kept versions. */
@@ -57,5 +64,17 @@ export const injuriesApi = {
       method: 'PATCH',
       body: JSON.stringify(note ? { stamina, note } : { stamina }),
     });
+  },
+
+  // INJ-12: the player-facing side.
+
+  /** GET /players/{playerId}/condition (the player themselves and staff): the stamina meter. */
+  getPlayerCondition: async (playerId: string, signal?: AbortSignal): Promise<PlayerCondition> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/${encodeURIComponent(playerId)}/condition`, {}, signal);
+  },
+
+  /** GET /players/{playerId}/injuries (public): injury history, newest first. Empty while the feature is off. */
+  getPlayerHistory: async (playerId: string, signal?: AbortSignal): Promise<PublicInjury[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/${encodeURIComponent(playerId)}/injuries`, {}, signal);
   },
 };

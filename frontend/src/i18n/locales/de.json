@@ -3147,7 +3147,7 @@
     "typeProgression": "Call-ups",
     "typeContract": "Vertrag",
     "typeEconomy": "Geldbörse",
-    "typeInjury": "Verletzung",
+    "typeInjury": "Verfassung",
     "typeGmInterference": "GM-Eingriff"
   },
   "overalls": {
@@ -4763,6 +4763,37 @@
       "marked": "{{name}} wurde als No-Show markiert.",
       "undone": "Der No-Show von {{name}} wurde rückgängig gemacht.",
       "failed": "Der No-Show konnte nicht gespeichert werden."
+    }
+  },
+  "injuries": {
+    "badge": {
+      "returns": "Verletzt, zurück am {{date}}"
+    },
+    "severity": {
+      "minor": "Leicht",
+      "moderate": "Mittel",
+      "major": "Schwer"
+    },
+    "stamina": {
+      "title": "Ausdauer",
+      "cardTitle": "Deine Ausdauer",
+      "cardLink": "Dein Profil",
+      "label": "Ausdauer",
+      "value": "{{stamina}} / {{max}}",
+      "meterLabel": "Ausdauer {{stamina}} von {{max}}",
+      "full": "Die Ausdauer ist voll.",
+      "recoversFull": "Erholung am Sonntag: wieder voll am {{time}}.",
+      "recoversBy": "Erholung am Sonntag: +{{amount}} am {{time}}.",
+      "nextMatch": "Das nächste Match ({{date}}) kostet {{drain}} Ausdauer, danach bleiben {{after}}.",
+      "outUntil": "Pausiert bis {{date}}."
+    },
+    "history": {
+      "title": "Verletzungen",
+      "summary_one": "{{severity}}, {{count}} Woche Pause",
+      "summary_other": "{{severity}}, {{count}} Wochen Pause",
+      "range": "{{start}} bis {{end}}",
+      "ongoing": "Seit {{start}}, zurück am {{end}}",
+      "fromMatch": "Aus dem Match am {{date}}"
     }
   },
   "pwa": {

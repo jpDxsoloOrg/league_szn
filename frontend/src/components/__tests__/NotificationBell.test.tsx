@@ -118,6 +118,22 @@ describe('NotificationBell source types', () => {
     await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(/^\/$/));
   });
 
+  // INJ-12
+  it.each([
+    ['injury_sustained', 'match'],
+    ['injury_recovered', 'injury'],
+    ['injury_healed', 'injury'],
+    ['injury_updated', 'injury'],
+    ['injury_added', 'injury'],
+    ['stamina_adjusted', 'injury'],
+  ] as const)('labels a %s notification as condition and opens the profile', async (type, sourceType) => {
+    await openWith(notification({ type, sourceType }), '/events');
+
+    expect(screen.getByText('notifications.typeInjury')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Something happened'));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent('/profile'));
+  });
+
   it('sends a transfer notification home while transfers are off', async () => {
     await openWith(notification({ sourceType: 'transfer' }), '/events');
 

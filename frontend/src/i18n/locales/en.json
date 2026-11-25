@@ -3147,7 +3147,7 @@
     "typeProgression": "Call-ups",
     "typeContract": "Contract",
     "typeEconomy": "Wallet",
-    "typeInjury": "Injury",
+    "typeInjury": "Condition",
     "typeGmInterference": "GM interference"
   },
   "overalls": {
@@ -4763,6 +4763,37 @@
       "marked": "{{name}} was marked as a no-show.",
       "undone": "{{name}}'s no-show was undone.",
       "failed": "Could not save the no-show."
+    }
+  },
+  "injuries": {
+    "badge": {
+      "returns": "Injured, returns {{date}}"
+    },
+    "severity": {
+      "minor": "Minor",
+      "moderate": "Moderate",
+      "major": "Major"
+    },
+    "stamina": {
+      "title": "Stamina",
+      "cardTitle": "Your stamina",
+      "cardLink": "Your profile",
+      "label": "Stamina",
+      "value": "{{stamina}} / {{max}}",
+      "meterLabel": "Stamina {{stamina}} of {{max}}",
+      "full": "Stamina is full.",
+      "recoversFull": "Recovers on Sunday: back to full on {{time}}.",
+      "recoversBy": "Recovers on Sunday: +{{amount}} on {{time}}.",
+      "nextMatch": "Next match ({{date}}) uses {{drain}} stamina, leaving {{after}}.",
+      "outUntil": "Out until {{date}}."
+    },
+    "history": {
+      "title": "Injury history",
+      "summary_one": "{{severity}}, {{count}} week out",
+      "summary_other": "{{severity}}, {{count}} weeks out",
+      "range": "{{start}} to {{end}}",
+      "ongoing": "Since {{start}}, returns {{end}}",
+      "fromMatch": "From the match on {{date}}"
     }
   },
   "pwa": {

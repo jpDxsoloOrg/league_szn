@@ -1,8 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import type { SideTagTeam } from '../../types';
+import type { PublicCurrentInjury } from '../../types/injury';
 import { groupMatchSides, sideTagTeamFor } from '../../utils/matchDisplay';
 import MatchSideLabel from '../matches/MatchSideLabel';
 import Badge from '../ui/Badge';
+import InjuryBadge from '../injuries/InjuryBadge';
 
 export interface MatchSideParticipant {
   playerId: string;
@@ -21,10 +23,12 @@ interface MatchSidesProps {
   /** Set once the result stands. A draw names no winner or loser. */
   winners?: string[];
   losers?: string[];
+  /** INJ-12: injured participants, badged with their return date. Leave out on results. */
+  injuries?: ReadonlyMap<string, PublicCurrentInjury>;
 }
 
 /** Two sides face off around one "vs"; bigger fields are a compact list of names. */
-export default function MatchSides({ participants, teams, sideTagTeams, matchFormat, winners, losers }: MatchSidesProps) {
+export default function MatchSides({ participants, teams, sideTagTeams, matchFormat, winners, losers, injuries }: MatchSidesProps) {
   const { t } = useTranslation();
   const sides = groupMatchSides(participants, (participant) => participant.playerId, teams, matchFormat);
   if (sides.length === 0) return null;
@@ -45,6 +49,7 @@ export default function MatchSides({ participants, teams, sideTagTeams, matchFor
           {participant.playerName}
           {participant.psnId && ` · ${participant.psnId}`}
         </span>
+        <InjuryBadge injury={injuries?.get(participant.playerId)} />
       </span>
     );
   };

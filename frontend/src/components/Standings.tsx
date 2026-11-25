@@ -26,6 +26,7 @@ import type { PodiumEntry } from './ui/Podium';
 import Select from './ui/Select';
 import ShowMore from './ui/ShowMore';
 import Skeleton from './ui/Skeleton';
+import InjuryBadge from './injuries/InjuryBadge';
 import './rankPodium.css';
 import './Standings.css';
 
@@ -386,6 +387,7 @@ export default function Standings() {
               <Link to={`/player/${player.playerId}`} className="standings-player__name">{player.name}</Link>
             </PlayerHoverCard>
             <ConsiderationBadge playerId={player.playerId} />
+            <InjuryBadge injury={player.currentInjury} />
             <span className="standings-player__wrestler">{player.currentWrestler}</span>
           </div>
         </div>
@@ -493,6 +495,7 @@ export default function Standings() {
                       <Avatar src={player.imageUrl} name={player.name} />
                       <span className="standings-row__names">
                         <span className="standings-row__name">{player.name}<ConsiderationBadge playerId={player.playerId} /></span>
+                        <InjuryBadge injury={player.currentInjury} />
                         <span className="standings-row__wrestler">
                           {player.mainOverall !== undefined && `${t('standings.table.overall')} ${player.mainOverall} · `}
                           {player.currentWrestler}

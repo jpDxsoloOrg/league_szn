@@ -69,6 +69,9 @@ vi.mock('../../../contexts/AuthContext', () => ({
 
 // ECO-14: the no-show control is covered in economy/__tests__/fines.test.tsx.
 vi.mock('../../economy/NoShowButton', () => ({ default: () => null }));
+// INJ-12: injury badges are covered in injuries/__tests__/injuries.test.tsx.
+vi.mock('../../injuries/useInjuriesByPlayer', () => ({ useInjuriesByPlayer: () => new Map() }));
+vi.mock('../../injuries/InjuryBadge', () => ({ default: () => null }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     i18n: { language: 'en' },

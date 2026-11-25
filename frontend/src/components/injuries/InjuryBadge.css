@@ -1,0 +1,7 @@
+/* Public injury badge (INJ-12). Sized to its text inside column layouts, wrapping on phones. */
+.injury-badge {
+  width: fit-content;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

@@ -4,6 +4,7 @@ import { handler as createStorylineInjuryHandler } from './createStorylineInjury
 import { handler as healInjuryHandler } from './healInjury';
 import { handler as updateCurrentInjuryHandler } from './updateCurrentInjury';
 import { handler as adjustStaminaHandler } from './adjustStamina';
+import { handler as getPlayerConditionHandler } from './getPlayerCondition'; // INJ-12
 import { createRouter, type RouteConfig, STAFF } from '../../lib/router';
 
 /**
@@ -20,6 +21,8 @@ export const routes: ReadonlyArray<RouteConfig> = [
   { resource: '/players/{playerId}/injuries/heal', method: 'POST', handler: healInjuryHandler, access: STAFF },
   { resource: '/players/{playerId}/injuries/current', method: 'PATCH', handler: updateCurrentInjuryHandler, access: STAFF },
   { resource: '/players/{playerId}/stamina', method: 'PATCH', handler: adjustStaminaHandler, access: STAFF },
+  // INJ-12: the stamina meter. Any verified caller; the handler allows only the player and staff.
+  { resource: '/players/{playerId}/condition', method: 'GET', handler: getPlayerConditionHandler, access: 'self-service' },
 ];
 
 export const handler = createRouter(routes);

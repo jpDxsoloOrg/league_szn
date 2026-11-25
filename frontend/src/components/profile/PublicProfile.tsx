@@ -33,6 +33,8 @@ import DivisionProgress from '../progression/DivisionProgress';
 import DivisionWatchBanners from '../progression/DivisionWatchBanners';
 import { profileViewer } from '../progression/divisionProgressVisibility';
 import ContractBadge from '../economy/ContractBadge';
+import InjuryHistory from '../injuries/InjuryHistory';
+import StaminaSection from '../injuries/StaminaSection';
 import BuildCard from './BuildCard';
 import MovesetSection from './MovesetSection';
 import ProfileHero from './ProfileHero';
@@ -255,6 +257,11 @@ export default function PublicProfile() {
         points={standing?.points}
         rank={rankLabel(standing, divisionName, t)}
       />
+      {/* INJ-12: stamina for the player themselves and staff only; the history is public. */}
+      <StaminaSection
+        playerId={player.playerId}
+        canView={isAdminOrModerator || (Boolean(currentPlayerId) && currentPlayerId === player.playerId)}
+      />
       <CallUpProgress playerId={player.playerId} showGoals={isAdminOrModerator} />
       <DivisionProgress playerId={player.playerId} viewer={viewer} />
       <DivisionHistory playerId={player.playerId} />
@@ -264,6 +271,7 @@ export default function PublicProfile() {
         <div className="profile-columns__side">
           <ProfileRivalries playerId={player.playerId} rivalries={rivalries} names={names} />
           <SeasonRecords seasons={player.seasonRecords ?? []} />
+          <InjuryHistory playerId={player.playerId} matches={matches} />
         </div>
       </div>
 

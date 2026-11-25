@@ -13,6 +13,7 @@ import EmptyState from '../ui/EmptyState';
 import PageHeader from '../ui/PageHeader';
 import { useToast } from '../ui/toastContext';
 import OfferContractModal, { type OfferCandidate } from './OfferContractModal';
+import InjuryBadge from '../injuries/InjuryBadge';
 import './FreeAgents.css';
 
 function displayName(player: RosterPlayer): string {
@@ -67,6 +68,7 @@ export default function FreeAgents() {
             <span className="free-agents__names">
               <span className="free-agents__name">{displayName(player)}</span>
               {player.currentWrestler?.trim() && <span className="free-agents__sub">{player.name}</span>}
+              <InjuryBadge injury={player.currentInjury} />
             </span>
           </Link>
         ),

@@ -1,0 +1,30 @@
+/* Public injury history on a profile (INJ-12). */
+.injury-history {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.injury-history__item {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.injury-history__item + .injury-history__item {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.injury-history__summary {
+  font-weight: 700;
+}
+
+.injury-history__dates,
+.injury-history__match {
+  color: var(--color-text-secondary);
+  font-size: var(--text-dense);
+  overflow-wrap: anywhere;
+}

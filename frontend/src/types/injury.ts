@@ -76,3 +76,45 @@ export interface InjuryConfigResponse {
   settings: InjuryTunables;
   history: InjuryTunablesHistoryEntry[];
 }
+
+// ─── INJ-12: what players see ──────────────────────────────────────
+
+/** A player's injury as anyone may see it (no source, GM note or change log). */
+export interface PublicInjury {
+  injuryId: string;
+  startedAt: string;
+  /** The Sunday the player is out until (league time). */
+  returnsAt: string;
+  severity: InjurySeverityKey;
+  weeks: number;
+  /** The match it came from, when it came from one. */
+  matchId?: string;
+  /** Set once the injury is over. */
+  endedAt?: string;
+}
+
+/** The open injury on a player row. */
+export type PublicCurrentInjury = Omit<PublicInjury, 'endedAt'>;
+
+/** The player's next booked match and what it will take from them. */
+export interface NextMatchDrain {
+  matchId: string;
+  date: string;
+  drain: number;
+  staminaAfter: number;
+}
+
+/** GET /players/{playerId}/condition (the player themselves and staff). */
+export interface PlayerCondition {
+  playerId: string;
+  stamina: number;
+  maxStamina: number;
+  /** Injury-chance band: 0 for the highest stamina, `bandCount - 1` for the lowest. */
+  band: number;
+  bandCount: number;
+  weeklyRecovery: number | 'full';
+  /** Next Sunday 00:00 in the league time zone. */
+  nextRecoveryAt: string;
+  currentInjury: PublicCurrentInjury | null;
+  nextMatch: NextMatchDrain | null;
+}

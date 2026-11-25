@@ -77,6 +77,11 @@ vi.mock('../economy/DashboardWallet', () => ({
   default: () => null,
 }));
 
+// INJ-12: covered in injuries/__tests__/injuries.test.tsx.
+vi.mock('../injuries/DashboardStamina', () => ({
+  default: () => null,
+}));
+
 import Dashboard from '../Dashboard';
 
 const emptyDashboard = {

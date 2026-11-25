@@ -1247,6 +1247,11 @@ functions:
           path: players/{playerId}/stamina
           method: patch
           cors: *corsConfig
+      # INJ-12: the player's own stamina meter (owner + staff, checked in the handler)
+      - http:
+          path: players/{playerId}/condition
+          method: get
+          cors: *corsConfig
 
   # Recalculates contender rankings for every active title, one title at a time
   # in this single invocation, so it holds one of the account's 10 concurrent

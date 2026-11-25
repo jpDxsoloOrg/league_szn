@@ -56,6 +56,8 @@ import InjuredParticipantsBanner from '../injuries/InjuredParticipantsBanner';
 import type { MatchInjuryFields } from '../../types/injuryReport';
 import { findMoveTarget, isPreShowCard, swapCards } from './cardOrder';
 import type { CardMoveDirection } from './cardOrder';
+import { useInjuriesByPlayer } from '../injuries/useInjuriesByPlayer';
+import type { PublicCurrentInjury } from '../../types/injury';
 import '../posterHero.css';
 import './EventDetail.css';
 
@@ -666,6 +668,12 @@ export default function EventDetail() {
     [checkInRoster],
   );
 
+  // INJ-12: injury badges on matches still to be wrestled.
+  const hasOpenMatches = (eventData?.enrichedMatches ?? []).some(
+    (entry) => entry.matchData && entry.matchData.status !== 'completed',
+  );
+  const injuriesByPlayer = useInjuriesByPlayer(hasOpenMatches);
+
   // Refetches keep the current page on screen so open forms and slots survive.
   if (loading && eventData?.eventId !== eventId) {
     return (
@@ -818,6 +826,7 @@ export default function EventDetail() {
           ? () => void handleRemoveCard(enrichedMatches.indexOf(match))
           : undefined}
         onMatchUpdated={refreshAfterMutation}
+        injuries={injuriesByPlayer}
       >
         {slots && slots.length > 0 && match.matchData && (
           <MatchSlots
@@ -1204,6 +1213,8 @@ interface MatchEntryProps {
   onMatchUpdated?: () => void;
   /** Slot list, shown inside the match row so it does not read as a second card. */
   children?: ReactNode;
+  /** INJ-12: injured players by id, badged until the match is completed. */
+  injuries?: ReadonlyMap<string, PublicCurrentInjury>;
 }
 
 function MatchEntry({
@@ -1223,6 +1234,7 @@ function MatchEntry({
   onRemoveCard,
   onMatchUpdated,
   children,
+  injuries,
 }: MatchEntryProps) {
   const { t } = useTranslation();
   const { designation, matchData } = match;
@@ -1283,6 +1295,7 @@ function MatchEntry({
         matchFormat={matchData.matchFormat}
         winners={isCompleted && !isDraw ? matchData.winners : undefined}
         losers={isCompleted ? matchData.losers : undefined}
+        injuries={isCompleted ? undefined : injuries}
       />
 
       {match.notes && <p className="event-match__notes">{match.notes}</p>}
