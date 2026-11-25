@@ -5,6 +5,10 @@
   margin-bottom: 1rem;
 }
 
+.build-card__edit {
+  margin-left: auto;
+}
+
 .build-card__body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

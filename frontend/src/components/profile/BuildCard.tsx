@@ -12,6 +12,8 @@ export interface BuildCardProps {
   isOwnProfile?: boolean;
   /** Optional button for the setup prompt, e.g. one that opens the build editor. */
   setupAction?: ReactNode;
+  /** BLD-12: optional button beside the badges of a saved build, e.g. "Edit build". */
+  editAction?: ReactNode;
 }
 
 /** Moves with the levels the sim uses (scaled down when over budget). */
@@ -26,7 +28,7 @@ function withEffectiveLevels(moves: LeveledBuildMove[], levels: number[]): Level
  * profile, where it asks them to set one up. Renders nothing while loading or
  * if the build can't be read.
  */
-export default function BuildCard({ playerId, isOwnProfile = false, setupAction }: BuildCardProps) {
+export default function BuildCard({ playerId, isOwnProfile = false, setupAction, editAction }: BuildCardProps) {
   const { t } = useTranslation();
   const [view, setView] = useState<PlayerBuildView | null>(null);
 
@@ -78,6 +80,7 @@ export default function BuildCard({ playerId, isOwnProfile = false, setupAction 
         <div className="build-card__badges">
           <StyleBadge style={view.build.style} />
           {view.build.specialty && <SpecialtyChip category={view.build.specialty} />}
+          {editAction && <span className="build-card__edit">{editAction}</span>}
         </div>
         <div className="build-card__body">
           <div className="build-card__stats">

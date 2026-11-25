@@ -1,0 +1,28 @@
+/* BLD-12: dashboard build reminder. */
+
+.build-nudge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.build-nudge__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.build-nudge__item {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.build-nudge__item--over {
+  color: var(--color-loss);
+}
