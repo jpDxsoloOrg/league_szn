@@ -34,10 +34,10 @@ Die Simulation gewichtet die Werte je nach Art des Matches anders. Jede Stipulat
 
 | Kategorie | Beispiele | Wichtigste Werte |
 |-----------|-----------|------------------|
-| **Standard** | Normale Regeln | Schläge und Griffe, knapp vor Beweglichkeit und Ausdauer |
+| **Standard** | Normale Regeln | Schläge und Griffe, knapp vor Beweglichkeit und Zähigkeit |
 | **Hohes Risiko** | Ladder, TLC, Scaffold | Beweglichkeit |
 | **Technisch** | Submission, I Quit, 2 out of 3 Falls | Griffe |
-| **Ausdauer** | Iron Man, Last Man Standing | Ausdauer |
+| **Ausdauer** | Iron Man, Last Man Standing | Zähigkeit |
 | **Hardcore** | Street Fight, Extreme Rules, Tables, Falls Count Anywhere | Schläge |
 | **Käfig** | Steel Cage, Hell in a Cell | Schläge und Griffe |
 
@@ -51,6 +51,8 @@ Jeder Wrestler bekommt eine Wertung aus:
 2. **Moves**: die Stufe des besten Finishers und die durchschnittliche Stufe der Signature-Moves.
 3. **Form**: wie es in der laufenden Saison lief, aus den Ligapunkten pro Match und der Stärke der Gegner. Siege gegen starke Gegner zählen mehr. Gibt es keine aktive Saison, liest die Simulation die letzten 10 Matches. Wer noch kein Match hatte, gilt als Durchschnitt.
 4. **Spezialität**: 6 % mehr, wenn die Kategorie des Matches seine Spezialität ist (3 % für einen Allrounder).
+5. **Zustand**: Sind Ausdauer und Verletzungen eingeschaltet, wird ein müder Wrestler niedriger bewertet und ein verletzter, mit der Ausnahme gebuchter Wrestler noch niedriger. Die Vorschau zeigt die Ausdauer jedes Wrestlers. Siehe [Admin: Verletzungen](admin-injuries).
+6. **Sim-Eingriff**: Hat ein Spieler ihn im Shop für dieses Match gekauft, bekommt er einen Rating-Bonus. Die Vorschau zeigt das nur GMs.
 
 Die Wertung einer Seite ist der Durchschnitt ihrer Wrestler. Ein Tag-Team mit einem starken und einem schwachen Mitglied landet also dazwischen. Dann gibt das **Stil-Duell** 5 % dazu oder zieht 5 % ab, für jeden Gegner, den der Stil schlägt oder gegen den er verliert (siehe den Kreis unter [Wrestler-Builds](wrestler-builds)). Aus den Wertungen werden Siegchancen, die zusammen 100 % ergeben, und jede Seite behält mindestens 5 %. Deshalb sind Überraschungen immer möglich.
 

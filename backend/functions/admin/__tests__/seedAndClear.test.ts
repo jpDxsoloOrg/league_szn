@@ -49,6 +49,9 @@ import { STYLE_IDS, budgetForDivision, isSpecialtyAllowed, type SimCategory } fr
 import { validateBuild } from '../../../lib/policies/wrestlerBuild';
 import { toPlayerBuildView } from '../../../lib/builds/playerBuild';
 import { competitorFromBuild, simulate, type SimSide } from '../../../lib/policies/matchSim';
+import type { Injury } from '../../../lib/repositories/injuries';
+import { injuredParticipantsFor } from '../../../lib/injuries/scheduledMatchFlags';
+import { leagueWeekOf } from '../../../lib/leagueWeek';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
@@ -815,5 +818,109 @@ describe('clearAll', () => {
     const againSim = (again.matches as unknown as Match[]).find((row) => row.resultSource === 'simulation');
     expect(againSim?.simulation?.seed).toBe(simulation.seed);
     expect(againSim?.simulation?.playByPlay.map((beat) => beat.key)).toEqual(simulation.playByPlay.map((beat) => beat.key));
+  });
+});
+
+describe('seedData stamina and injuries (INJ-13)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('seeds varied stamina, a match and a storyline injury, history with a GM change, and a shield', async () => {
+    mockImportAllData.mockResolvedValue({});
+
+    const result = await seedData(makeEvent(), ctx, cb);
+    expect(result!.statusCode).toBe(200);
+
+    const importData = mockImportAllData.mock.calls[0][0] as Record<string, Record<string, unknown>[]>;
+    const players = importData.players as unknown as Player[];
+    const matches = importData.matches as unknown as Match[];
+    const injuries = importData.injuries as unknown as Injury[];
+    const playerOf = (wrestler: string): Player => {
+      const found = players.find((player) => player.currentWrestler === wrestler);
+      if (!found) throw new Error(`No seeded player for ${wrestler}`);
+      return found;
+    };
+    const nowMs = Date.now();
+
+    // The flag is on and the default tunables are stored as version 1.
+    const features = importData.siteConfig.find((row) => row.configKey === 'features')?.features as Record<string, boolean>;
+    expect(features.injuries).toBe(true);
+    const tunablesRow = importData.siteConfig.find((row) => row.configKey === 'injuryTunables');
+    expect(tunablesRow).toMatchObject({ currentVersion: 1 });
+    const [tunables] = tunablesRow?.versions as Array<{ version: number; timezone: string; maxStamina: number }>;
+    expect(tunables.version).toBe(1);
+
+    // Varied stamina: one exhausted, one low, the rest higher or untouched (full).
+    expect(playerOf('The Undertaker').stamina).toBeLessThan(10);
+    expect(playerOf('John Cena').stamina).toBeGreaterThanOrEqual(20);
+    expect(playerOf('John Cena').stamina).toBeLessThan(40);
+    expect(players.filter((player) => player.stamina === undefined).length).toBeGreaterThan(3);
+    for (const player of players) {
+      if (player.stamina !== undefined) {
+        expect(player.stamina).toBeGreaterThanOrEqual(0);
+        expect(player.stamina).toBeLessThanOrEqual(tunables.maxStamina);
+      }
+    }
+
+    // Two open injuries, both copied onto the player, returning on a future Sunday boundary.
+    const open = injuries.filter((row) => !row.endedAt);
+    expect(open.map((row) => row.source).sort()).toEqual(['match', 'storyline']);
+    for (const row of open) {
+      const player = players.find((candidate) => candidate.playerId === row.playerId) as Player;
+      expect(player.currentInjury).toMatchObject({
+        injuryId: row.injuryId, startedAt: row.startedAt, returnsAt: row.returnsAt, severity: row.severity, source: row.source,
+      });
+      expect(Date.parse(row.returnsAt)).toBeGreaterThan(nowMs);
+      expect(leagueWeekOf(new Date(row.returnsAt), tunables.timezone).weekStart.toISOString()).toBe(row.returnsAt);
+    }
+
+    // The match injury: CM Punk, with the staff condition report on his latest bout.
+    const matchInjury = open.find((row) => row.source === 'match') as Injury;
+    expect(matchInjury.playerId).toBe(playerOf('CM Punk').playerId);
+    const injuredIn = matches.find((match) => match.matchId === matchInjury.matchId) as Match;
+    expect(injuredIn.status).toBe('completed');
+    expect(injuredIn.tunablesVersion).toBe(1);
+    expect(injuredIn.conditionReport).toHaveLength(injuredIn.participants.length);
+    const punkEntry = injuredIn.conditionReport?.find((entry) => entry.playerId === matchInjury.playerId);
+    expect(punkEntry).toMatchObject({ injuryId: matchInjury.injuryId, returnsAt: matchInjury.returnsAt, weeks: matchInjury.weeks });
+    expect(punkEntry!.roll).toBeLessThan(punkEntry!.chance);
+    expect(punkEntry!.staminaBefore - punkEntry!.drain).toBe(punkEntry!.staminaAfter);
+    for (const entry of injuredIn.conditionReport ?? []) {
+      if (!entry.injuryId) expect(entry.roll).toBeGreaterThanOrEqual(entry.chance);
+    }
+
+    // He is still booked in a scheduled match during the injury, so GMs see the warning.
+    const lookup = new Map(players.map((player) => [player.playerId, player]));
+    const flagged = matches.filter((match) =>
+      injuredParticipantsFor(match, lookup).some((entry) => entry.playerId === matchInjury.playerId));
+    expect(flagged.length).toBeGreaterThanOrEqual(1);
+
+    // The storyline injury carries a GM note and an extension in its change log.
+    const storyline = open.find((row) => row.source === 'storyline') as Injury;
+    expect(storyline.playerId).toBe(playerOf('Roman Reigns').playerId);
+    expect(storyline.note).toBeTruthy();
+    expect(storyline.changes).toEqual([expect.objectContaining({
+      kind: 'extended', returnsAtAfter: storyline.returnsAt, weeksBefore: 2, weeksAfter: storyline.weeks,
+    })]);
+
+    // History: an injury Edge has recovered from.
+    expect(injuries.filter((row) => row.endedAt)).toEqual([
+      expect.objectContaining({ playerId: playerOf('Edge').playerId, endedReason: 'recovered' }),
+    ]);
+    expect(playerOf('Edge').currentInjury).toBeUndefined();
+
+    // A fit player holds a purchased injury shield.
+    const stoneCold = playerOf('Stone Cold Steve Austin');
+    expect(stoneCold.currentInjury).toBeUndefined();
+    expect(stoneCold.effects).toEqual([expect.objectContaining({ kind: 'injuryShield' })]);
+
+    // Stable: a second seed stores the same condition.
+    await seedData(makeEvent(), ctx, cb);
+    const again = mockImportAllData.mock.calls[1][0] as Record<string, Record<string, unknown>[]>;
+    const conditionOf = (rows: Record<string, unknown>[]) => (rows as unknown as Player[])
+      .map((player) => [player.currentWrestler, player.stamina, player.currentInjury?.severity, player.currentInjury?.weeks]);
+    expect(conditionOf(again.players)).toEqual(conditionOf(importData.players));
+    const shapeOf = (rows: Record<string, unknown>[]) => (rows as unknown as Injury[])
+      .map((row) => [row.source, row.severity, row.weeks, row.endedReason ?? null]);
+    expect(shapeOf(again.injuries)).toEqual(shapeOf(importData.injuries));
   });
 });
