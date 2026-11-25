@@ -9,7 +9,7 @@ import { badRequest, conflict, created, notFound, serverError } from '../../lib/
 import {
   callerId,
   formatLeagueDate,
-  injuryReturnDate,
+  injuryReturnsAt,
   INJURY_MAX_WEEKS,
   isValidWeeks,
   notifyPlayer,
@@ -49,7 +49,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const disabled = await requireInjuriesEnabled();
     if (disabled) return disabled;
 
-    const { injuries, roster: { players }, runInTransaction } = getRepositories();
+    const { injuries, roster: { players }, runInTransaction, user: { siteConfig } } = getRepositories();
+    const { timezone } = await siteConfig.getInjuryTunables();
     const player = await players.findById(playerId);
     if (!player || player.deletedAt) return notFound('Player not found');
 
@@ -64,7 +65,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       source: 'storyline',
       severity,
       weeks,
-      returnsAt: injuryReturnDate(now, weeks),
+      returnsAt: injuryReturnsAt(now, weeks, timezone),
       createdBy: callerId(event),
       changes: [],
       ...(note && { note }),
@@ -90,7 +91,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     await notifyPlayer(
       player,
       'injury_added',
-      `You have been listed as injured. Expected return: ${formatLeagueDate(injury.returnsAt)}.`,
+      `You have been listed as injured. Expected return: ${formatLeagueDate(injury.returnsAt, timezone)}.`,
     );
 
     return created(await injuries.get(playerId, injury.startedAt));

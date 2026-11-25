@@ -11,7 +11,6 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getAuthContext, hasRole } from '../auth';
 import { getRepositories } from '../repositories';
-import type { FeatureFlags } from '../repositories/SiteConfigRepository';
 import type { InjuryOverride, Player } from '../repositories/types';
 import { refused, type RefusalExtra } from '../response';
 import { activeInjury } from './index';
@@ -38,13 +37,25 @@ export type InjuryGateOutcome =
 
 const PASS: InjuryGateOutcome = { refusal: null, warnings: [], overrides: [] };
 
-/**
- * The `injuries` feature flag (INJ-01, default off). Read loosely so this
- * works whether or not the flag is in `FeatureFlags` yet.
- */
+/** The `injuries` feature flag (INJ-01, default off). */
 async function injuriesFeatureOn(): Promise<boolean> {
-  const features: FeatureFlags & { injuries?: boolean } = await getRepositories().user.siteConfig.getFeatures();
-  return features.injuries === true;
+  return (await getRepositories().user.siteConfig.getFeatures()).injuries === true;
+}
+
+/** An override as the public sees it: who was booked and when, not which GM did it. */
+export type PublicInjuryOverride = Omit<InjuryOverride, 'by'>;
+
+/**
+ * A match or tournament row with the GM's Cognito sub (`injuryOverrides[].by`)
+ * taken out, for anyone who is not staff. Rows without overrides come back
+ * unchanged.
+ */
+export function withoutInjuryOverrideActors<Row extends object>(row: Row): Row {
+  const overrides = (row as { injuryOverrides?: unknown }).injuryOverrides;
+  if (!Array.isArray(overrides)) return row;
+  const publicOverrides: PublicInjuryOverride[] = (overrides as InjuryOverride[])
+    .map(({ playerId, at }) => ({ playerId, at }));
+  return { ...row, injuryOverrides: publicOverrides } as Row;
 }
 
 /** `returnsAt` as a calendar date for messages. The API also returns the full value. */

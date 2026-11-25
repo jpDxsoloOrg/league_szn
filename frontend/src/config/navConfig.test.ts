@@ -21,7 +21,7 @@ import {
   type NavSection,
 } from './navConfig';
 
-const ALL_ON = { challenges: true, promos: true, contenders: true, statistics: true, stables: true, notifications: true, rivalries: true, transfers: true, economy: true };
+const ALL_ON = { challenges: true, promos: true, contenders: true, statistics: true, stables: true, notifications: true, rivalries: true, transfers: true, ticker: true, economy: true, injuries: true };
 
 function context(overrides: Partial<NavContext> = {}): NavContext {
   return { features: ALL_ON, isAuthenticated: true, isWrestler: true, isAdminOrModerator: false, isSuperAdmin: false, ...overrides };

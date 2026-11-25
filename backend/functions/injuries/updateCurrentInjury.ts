@@ -8,7 +8,7 @@ import { badRequest, conflict, notFound, serverError, success } from '../../lib/
 import {
   callerId,
   formatLeagueDate,
-  injuryReturnDate,
+  injuryReturnsAt,
   INJURY_MAX_WEEKS,
   isValidWeeks,
   notifyPlayer,
@@ -57,7 +57,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const disabled = await requireInjuriesEnabled();
     if (disabled) return disabled;
 
-    const { injuries, roster: { players }, runInTransaction } = getRepositories();
+    const { injuries, roster: { players }, runInTransaction, user: { siteConfig } } = getRepositories();
+    const { timezone } = await siteConfig.getInjuryTunables();
     const player = await players.findById(playerId);
     if (!player) return notFound('Player not found');
 
@@ -69,7 +70,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     let weeks: number;
     if (typeof body.weeks === 'number') {
       weeks = body.weeks;
-      returnsAt = injuryReturnDate(current.startedAt, weeks);
+      returnsAt = injuryReturnsAt(current.startedAt, weeks, timezone);
     } else {
       returnsAt = new Date(body.returnsAt as string).toISOString();
       weeks = weeksBetween(current.startedAt, returnsAt);
@@ -111,7 +112,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     await notifyPlayer(
       player,
       'injury_updated',
-      `Your injury return date has been updated to ${formatLeagueDate(returnsAt)}.`,
+      `Your injury return date has been updated to ${formatLeagueDate(returnsAt, timezone)}.`,
     );
     // INJ-07: an extension also notifies staff; call its notifier here once it lands.
 

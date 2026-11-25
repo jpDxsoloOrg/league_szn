@@ -841,10 +841,14 @@ components:
     # INJ-06
     InjuryOverride:
       type: object
-      required: [playerId, by, at]
+      required: [playerId, at]
       properties:
         playerId: { type: string }
-        by: { type: string, description: Cognito sub of the GM. }
+        by:
+          type: string
+          description: >-
+            Cognito sub of the GM. Staff only: left out of GET /matches,
+            GET /tournaments and slot claim/release responses for everyone else.
         at: { type: string, format: date-time }
 
     InjuryWarning:

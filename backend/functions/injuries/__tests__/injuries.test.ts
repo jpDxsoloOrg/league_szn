@@ -25,7 +25,9 @@ import { bearer, call, makeEvent } from '../../__tests__/visibilityTestHelpers';
 import { handler as injuriesRouter } from '../handler';
 import type { InjuryBoardEntry } from '../listInjuries';
 import type { AdjustStaminaResult } from '../adjustStamina';
-import { injuryReturnDate, INJURIES_OFF_MESSAGE } from '../shared';
+import { returnDate } from '../../../lib/policies/fatigue';
+import { DEFAULT_INJURY_TUNABLES, toInjuryTunablesInput } from '../../../lib/policies/fatigueDefaults';
+import { INJURIES_OFF_MESSAGE } from '../shared';
 
 type Auth = Pick<APIGatewayProxyEvent, 'headers'>;
 type Body<T> = T & { message?: string };
@@ -39,8 +41,10 @@ const BAD_TOKEN: Auth = { headers: { Authorization: 'Bearer invalid' } };
 const DAY_MS = 24 * 60 * 60 * 1000;
 const inDays = (days: number): string => new Date(Date.now() + days * DAY_MS).toISOString();
 
-/** `FeatureFlags.injuries` arrives with INJ-01; until then the flag is set loosely. */
-const injuriesFlag = (on: boolean): Partial<FeatureFlags> => ({ injuries: on } as unknown as Partial<FeatureFlags>);
+const injuriesFlag = (on: boolean): Partial<FeatureFlags> => ({ injuries: on });
+/** INJ-02's return date in the default league time zone, as stored. */
+const expectedReturnsAt = (startedAt: string, weeks: number): string =>
+  returnDate(startedAt, weeks, DEFAULT_INJURY_TUNABLES.timezone).toISOString();
 
 let repos: Repositories;
 let playerId: string;
@@ -263,7 +267,7 @@ describe('PATCH /players/{playerId}/injuries/current', () => {
 
     expect(statusCode).toBe(200);
     expect(body.weeks).toBe(4);
-    expect(body.returnsAt).toBe(injuryReturnDate(injury.startedAt, 4));
+    expect(body.returnsAt).toBe(expectedReturnsAt(injury.startedAt, 4));
     expect(body.endedAt).toBeUndefined();
     expect(body.changes).toEqual([
       expect.objectContaining({
@@ -332,9 +336,23 @@ describe('POST /players/{playerId}/injuries', () => {
       createdBy: 'admin-sub',
       changes: [],
     });
-    expect(body.returnsAt).toBe(injuryReturnDate(body.startedAt, 3));
+    expect(body.returnsAt).toBe(expectedReturnsAt(body.startedAt, 3));
     expect((await storedPlayer()).currentInjury).toEqual(toCurrentInjury(body));
     expect(createNotification).toHaveBeenCalledWith(expect.objectContaining({ type: 'injury_added', userId: 'player-sub' }));
+  });
+
+  it('ends on the week boundary of the league time zone tunable', async () => {
+    const timezone = 'Asia/Tokyo';
+    await repos.user.siteConfig.saveInjuryTunables(
+      { ...toInjuryTunablesInput(DEFAULT_INJURY_TUNABLES), timezone },
+      'admin',
+    );
+    const { statusCode, body } = await request<Injury>('POST', '/players/{playerId}/injuries', {
+      body: { weeks: 2, severity: 'minor' },
+    });
+    expect(statusCode).toBe(201);
+    expect(body.returnsAt).toBe(returnDate(body.startedAt, 2, timezone).toISOString());
+    expect(body.returnsAt).not.toBe(expectedReturnsAt(body.startedAt, 2));
   });
 
   it('answers 409 when the player is already injured', async () => {
@@ -385,6 +403,17 @@ describe('PATCH /players/{playerId}/stamina', () => {
     for (const stamina of [-1, 101, 12.5, '50']) {
       expect((await request('PATCH', '/players/{playerId}/stamina', { body: { stamina } })).statusCode).toBe(400);
     }
+  });
+
+  it('caps stamina at the maxStamina tunable', async () => {
+    await repos.user.siteConfig.saveInjuryTunables(
+      { ...toInjuryTunablesInput(DEFAULT_INJURY_TUNABLES), maxStamina: 120 },
+      'admin',
+    );
+    expect((await request('PATCH', '/players/{playerId}/stamina', { body: { stamina: 120 } })).statusCode).toBe(200);
+    const tooHigh = await request('PATCH', '/players/{playerId}/stamina', { body: { stamina: 121 } });
+    expect(tooHigh.statusCode).toBe(400);
+    expect(tooHigh.body.message).toContain('0 to 120');
   });
 
   it('skips the notification for a player with no linked account', async () => {

@@ -7,6 +7,7 @@ import {
   matchesUntilEmpty,
   matchesUntilExhausted,
   previewMatch,
+  severityWeights,
   MAX_INJURY_CHANCE,
 } from '../fatiguePreview';
 import { FATIGUE_PREVIEW_CASES, injuryTunablesFixture } from '../../test/injuryTunablesFixture';
@@ -14,11 +15,12 @@ import { FATIGUE_PREVIEW_CASES, injuryTunablesFixture } from '../../test/injuryT
 describe('fatigue preview maths', () => {
   const tunables = injuryTunablesFixture();
 
-  it.each(FATIGUE_PREVIEW_CASES)('$name', ({ category, format, endurance, stamina, drain, staminaAfter, chance }) => {
+  it.each(FATIGUE_PREVIEW_CASES)('$name', ({ category, format, endurance, stamina, drain, staminaAfter, chance, averageWeeks }) => {
     const preview = previewMatch({ category, format, endurance, stamina }, tunables);
     expect(preview.drain).toBe(drain);
     expect(preview.staminaAfter).toBe(staminaAfter);
     expect(preview.chance).toBeCloseTo(chance, 10);
+    expect(preview.averageWeeks).toBeCloseTo(averageWeeks, 10);
   });
 
   it('never drains below 0, even with a big Endurance reduction', () => {
@@ -35,6 +37,13 @@ describe('fatigue preview maths', () => {
     // (60 × 1 + 30 × 2.5 + 10 × 5) / 100
     expect(averageInjuryWeeks(tunables.severities)).toBeCloseTo(1.85, 10);
     expect(averageInjuryWeeks([])).toBe(0);
+  });
+
+  it('leans the weeks out towards the worse severities below the low-stamina shift', () => {
+    // At 0 stamina the weights become 60 / 60 / 30 (as the backend's severityWeights).
+    expect(severityWeights(0, tunables)).toEqual([60, 60, 30]);
+    expect(severityWeights(20, tunables)).toEqual([60, 30, 10]);
+    expect(averageInjuryWeeks(tunables.severities, severityWeights(0, tunables))).toBeCloseTo(2.4, 10);
   });
 
   it('flags a stamina below the low-stamina shift', () => {

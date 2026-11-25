@@ -9,6 +9,7 @@ import {
 } from '../../lib/economy/simBoostVisibility';
 import { withPublicSimulation } from '../../lib/sim/publicSimulation';
 import { withoutConditionReport } from '../../lib/injuries/applyMatchCondition'; // INJ-04
+import { withoutInjuryOverrideActors } from '../../lib/injuries/bookingGate'; // INJ-06
 import { collectSlotPlayerIds, hydrateMatchSlots } from './hydrateSlots';
 import { anyMatchHasTeams, loadTagTeamIndex, sideTagTeamsField } from '../../lib/tagTeams/sideBilling';
 
@@ -159,6 +160,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // returning *some* data even when rating enrichment is broken.
     let caller: AuthContext | null = null;
     // BLD-10: only staff see a simulated match's odds and audit fields.
+    // INJ-04/06: and the condition report and which GM overrode an injury.
     let isStaff = false;
     try {
       if (event.headers?.Authorization || event.headers?.authorization) {
@@ -203,7 +205,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const id = m.matchId as string | undefined;
       const rating = id ? userRatingsByMatchId.get(id) : undefined;
       return {
-        ...withVisibleSimBoosts(isStaff ? m : withoutConditionReport(withPublicSimulation(m)), simBoostViewer),
+        ...withVisibleSimBoosts(isStaff ? m : withoutInjuryOverrideActors(withoutConditionReport(withPublicSimulation(m))), simBoostViewer),
         userHasRated: rating !== undefined,
         userRating: rating ?? null,
       };

@@ -18,7 +18,6 @@ import {
   type Repositories,
 } from '../../lib/repositories';
 import type { Match } from '../../lib/repositories/types';
-import type { FeatureFlags } from '../../lib/repositories/SiteConfigRepository';
 import { handler as scheduleMatch } from '../matches/scheduleMatch';
 import { handler as updateMatch } from '../matches/updateMatch';
 import { handler as adminUpdateSlot } from '../matches/adminUpdateSlot';
@@ -95,7 +94,7 @@ beforeEach(async () => {
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   repos = buildInMemoryRepositories();
   setRepositoriesForTesting(repos);
-  await repos.user.siteConfig.updateFeatures({ injuries: true } as Partial<FeatureFlags>);
+  await repos.user.siteConfig.updateFeatures({ injuries: true });
   healthyId = await addPlayer('Healthy', 'user-healthy');
   injuredId = await addPlayer('Hurt', 'user-hurt');
   otherId = await addPlayer('Other', 'user-other');
@@ -175,7 +174,7 @@ describe('POST /matches (scheduleMatch)', () => {
   });
 
   it('does not gate while the injuries feature is off', async () => {
-    await repos.user.siteConfig.updateFeatures({ injuries: false } as Partial<FeatureFlags>);
+    await repos.user.siteConfig.updateFeatures({ injuries: false });
     const result = await book(STAFF, { participants: [healthyId, injuredId] });
     expect(result.statusCode).toBe(201);
     expect(json(result)).not.toHaveProperty('injuryWarnings');

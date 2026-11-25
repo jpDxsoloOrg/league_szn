@@ -5,7 +5,6 @@ import { ConcurrencyError } from '../../lib/repositories/errors';
 import { badRequest, conflict, notFound, serverError, success } from '../../lib/response';
 import {
   callerId,
-  GM_MAX_STAMINA,
   notifyPlayer,
   parseNote,
   requireInjuriesEnabled,
@@ -26,7 +25,7 @@ export interface AdjustStaminaResult {
 
 /**
  * PATCH /players/{playerId}/stamina (Moderator + Admin). Sets the player's
- * stamina to a whole number from 0 to GM_MAX_STAMINA. Guarded on the value
+ * stamina to a whole number from 0 to the `maxStamina` tunable. Guarded on the value
  * read, so a result landing at the same time returns 409 instead of being
  * overwritten.
  *
@@ -40,17 +39,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const { data: body, error: parseError } = parseBody<AdjustStaminaBody>(event);
     if (parseError) return parseError;
-    const { stamina } = body;
-    if (typeof stamina !== 'number' || !Number.isInteger(stamina) || stamina < 0 || stamina > GM_MAX_STAMINA) {
-      return badRequest(`stamina must be a whole number from 0 to ${GM_MAX_STAMINA}`);
-    }
     const { note, error: noteError } = parseNote(body.note);
     if (noteError) return badRequest(noteError);
 
     const disabled = await requireInjuriesEnabled();
     if (disabled) return disabled;
 
-    const { roster: { players }, runInTransaction } = getRepositories();
+    const { roster: { players }, runInTransaction, user: { siteConfig } } = getRepositories();
+    const { maxStamina } = await siteConfig.getInjuryTunables();
+    const { stamina } = body;
+    if (typeof stamina !== 'number' || !Number.isInteger(stamina) || stamina < 0 || stamina > maxStamina) {
+      return badRequest(`stamina must be a whole number from 0 to ${maxStamina}`);
+    }
+
     const player = await players.findById(playerId);
     if (!player) return notFound('Player not found');
 

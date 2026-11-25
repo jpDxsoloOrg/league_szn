@@ -660,3 +660,35 @@ describe('getMatches side billing (TTB-01)', () => {
     expect(singles).not.toHaveProperty('sideTagTeams');
   });
 });
+
+describe('getMatches injury overrides (INJ-06)', () => {
+  const override = { playerId: 'p1', by: 'gm-sub', at: '2099-01-01T00:00:00.000Z' };
+
+  beforeEach(async () => {
+    await repos.competition.matches.create({
+      matchId: 'booked', date: '2099-01-02T00:00:00.000Z', status: 'scheduled',
+      participants: ['p1', 'p2'], injuryOverrides: [override], createdAt: new Date().toISOString(),
+    });
+  });
+
+  function callerEvent(groups: string): APIGatewayProxyEvent {
+    return makeEvent({
+      requestContext: {
+        authorizer: { principalId: 'caller', username: 'caller', email: '', groups },
+      } as unknown as APIGatewayProxyEvent['requestContext'],
+    });
+  }
+
+  it.each([
+    ['a guest', makeEvent()],
+    ['a wrestler', callerEvent('Wrestler')],
+  ])('hides which GM overrode the injury from %s', async (_label, event) => {
+    const body = JSON.parse((await getMatches(event, ctx, cb))!.body);
+    expect(body[0].injuryOverrides).toEqual([{ playerId: 'p1', at: override.at }]);
+  });
+
+  it('shows staff the GM who overrode it', async () => {
+    const body = JSON.parse((await getMatches(callerEvent('Moderator'), ctx, cb))!.body);
+    expect(body[0].injuryOverrides).toEqual([override]);
+  });
+});

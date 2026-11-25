@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
+import { withoutInjuryOverrideActors } from '../../lib/injuries/bookingGate';
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
@@ -12,7 +13,8 @@ export const handler: APIGatewayProxyHandler = async () => {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-    return success(sorted);
+    // INJ-06: a public route, so never say which GM booked an injured player.
+    return success(sorted.map(withoutInjuryOverrideActors));
   } catch (err) {
     console.error('Error fetching tournaments:', err);
     return serverError('Failed to fetch tournaments');
