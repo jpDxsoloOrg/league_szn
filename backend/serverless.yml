@@ -1101,6 +1101,17 @@ functions:
     events:
       - schedule: rate(1 hour)
 
+  # ECO-06: shared weekly jobs (weekly payroll; INJ-05 recovery joins it).
+  # Hourly rather than a cron: the league week starts Sunday 00:00 league time,
+  # and EventBridge cron is UTC without DST. Each job keeps a once-per-week
+  # marker in SiteConfig. Function, log group, Events::Rule and permission
+  # route to Overflow through stacks-map.js.
+  weeklyJobs:
+    handler: functions/weeklyJobs/weeklyJobs.handler
+    timeout: 300
+    events:
+      - schedule: rate(1 hour)
+
   # ECO-04: contract offers, the player's own contracts, public contract badge
   # and the free agent pool. No gateway authorizer: access is declared per
   # route in functions/contracts/handler.ts and enforced by the router.

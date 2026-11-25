@@ -492,6 +492,7 @@ class FantasyDelegate implements FantasyMethods {
 // ─── Site config sub-object ────────────────────────────────────────
 
 const ECONOMY_CONFIG_KEY = 'economySettings';
+const weeklyJobConfigKey = (job: string): string => `weeklyJob#${job}`; // ECO-06
 
 class SiteConfigDelegate implements SiteConfigMethods {
   async getFeatures(): Promise<FeatureFlags> {
@@ -575,6 +576,31 @@ class SiteConfigDelegate implements SiteConfigMethods {
     });
 
     return updated;
+  }
+
+  // ECO-06: weekly job markers, one row per job (`weeklyJob#<job>`).
+  async getWeeklyJobWeek(job: string): Promise<string | null> {
+    const result = await dynamoDb.get({
+      TableName: TableNames.SITE_CONFIG,
+      Key: { configKey: weeklyJobConfigKey(job) },
+    });
+    const weekKey = result.Item?.weekKey;
+    return typeof weekKey === 'string' ? weekKey : null;
+  }
+
+  async markWeeklyJobWeek(job: string, weekKey: string): Promise<boolean> {
+    try {
+      await dynamoDb.put({
+        TableName: TableNames.SITE_CONFIG,
+        Item: { configKey: weeklyJobConfigKey(job), weekKey, updatedAt: new Date().toISOString() },
+        ConditionExpression: 'attribute_not_exists(configKey) OR weekKey <> :weekKey',
+        ExpressionAttributeValues: { ':weekKey': weekKey },
+      });
+      return true;
+    } catch (err) {
+      if (err instanceof Error && err.name === 'ConditionalCheckFailedException') return false;
+      throw err;
+    }
   }
 
   /** The stored economy versions, newest first. One row holds them all. */

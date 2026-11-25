@@ -3,6 +3,7 @@ import { getRepositories, NotFoundError } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError, conflict } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { invokeAsync } from '../../lib/asyncLambda';
+import { endSeasonContracts } from '../../lib/economy/payroll';
 
 const SEASON_STATUSES: ReadonlyArray<string> = ['active', 'completed'];
 
@@ -54,6 +55,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         await invokeAsync('progression', { action: 'seasonSnapshot', seasonId });
       } catch (err) {
         console.warn('Failed to request the season movement snapshot:', err);
+      }
+
+      // ECO-06: season contracts end with the season and their players become
+      // free agents. Best-effort here; the weekly payroll ends any it misses.
+      try {
+        const ended = await endSeasonContracts(seasonId);
+        if (ended.failed > 0) console.warn(`Failed to end ${ended.failed} season contract(s) for ${seasonId}`);
+      } catch (err) {
+        console.warn('Failed to end the season contracts:', err);
       }
     }
 

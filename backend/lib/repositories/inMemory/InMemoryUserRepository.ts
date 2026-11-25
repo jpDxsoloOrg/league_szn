@@ -375,6 +375,19 @@ class SiteConfigImpl implements SiteConfigMethods {
     return this.getTickerSettings();
   }
 
+  // ECO-06: weekly job markers.
+  weeklyJobWeeks = new Map<string, string>();
+
+  async getWeeklyJobWeek(job: string): Promise<string | null> {
+    return this.weeklyJobWeeks.get(job) ?? null;
+  }
+
+  async markWeeklyJobWeek(job: string, weekKey: string): Promise<boolean> {
+    if (this.weeklyJobWeeks.get(job) === weekKey) return false;
+    this.weeklyJobWeeks.set(job, weekKey);
+    return true;
+  }
+
   /** Saved economy versions, newest first. */
   economyVersions: EconomySettings[] = [];
 
