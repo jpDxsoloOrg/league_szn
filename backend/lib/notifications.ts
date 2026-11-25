@@ -30,6 +30,10 @@ export type NotificationType =
   | 'contract_released'
   // ECO-05: a tryout / match contract ran its course
   | 'contract_completed'
+
+  // INJ-05: the weekly recovery ended an injury
+  | 'injury_recovered'
+
   // ECO-07
   | 'no_show_marked'
   | 'fine_issued'
@@ -51,7 +55,9 @@ export type RivalryNotificationType =
   | 'rivalry_status_change'
   | 'rivalry_reviewed';
 
-export type NotificationSourceType = 'promo' | 'challenge' | 'contract' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'storyline_request' | 'rivalry' | 'discipline' | 'progression' | 'economy' | 'build';
+export type NotificationSourceType = 'promo' | 'challenge' | 'contract' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'storyline_request' | 'rivalry' | 'discipline' | 'progression' | 'economy' | 'build'
+  // INJ-05
+  | 'injury';
 
 export interface CreateNotificationParams {
   userId: string;

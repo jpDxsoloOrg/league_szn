@@ -2223,6 +2223,34 @@ paths:
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '409': { description: 'expectedVersion is stale, or another save won the race', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  # INJ-05
+  /admin/injury-recovery:
+    post:
+      tags: [Site Config]
+      summary: Run this league week's stamina recovery now (Admin)
+      description: >-
+        Same once-per-week claim as the hourly weekly job: recovers every player's
+        stamina and ends injuries whose returnsAt has passed, unless this week has
+        already been run (status alreadyRun) or the injuries feature is off
+        (status injuriesOff, and the week is recorded as skipped).
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: What the run did
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [recovered, alreadyRun, injuriesOff, incomplete] }
+                  weekKey: { type: string, description: 'Local date of the Sunday the league week starts on (YYYY-MM-DD)' }
+                  staminaRecovered: { type: integer, description: 'Players whose stamina went up' }
+                  injuriesEnded: { type: array, items: { type: string }, description: 'Injury ids ended by this run' }
+                  failed: { type: integer }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '500': { description: 'Server error', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   /economy/catalog:
     get:
       tags: [Site Config]

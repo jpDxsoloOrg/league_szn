@@ -1,5 +1,6 @@
 import { DEFAULT_LEAGUE_TIME_ZONE, leagueWeekOf, type LeagueWeek } from '../../lib/leagueWeek';
 import { runPayroll } from '../../lib/economy/payroll';
+import { RECOVERY_JOB, runRecovery } from '../../lib/injuries/recovery'; // INJ-05
 import { getRepositories } from '../../lib/repositories';
 
 /**
@@ -10,7 +11,8 @@ import { getRepositories } from '../../lib/repositories';
  * the next tick. A missed Sunday (the function was down) runs on the first tick
  * back and logs a warning; never more than once per week.
  *
- * INJ-05's stamina recovery joins this list instead of adding its own schedule.
+ * INJ-05's stamina recovery is not idempotent, so it claims its week before
+ * doing any work and is never retried within the week.
  */
 interface WeeklyJob {
   name: string;
@@ -19,6 +21,10 @@ interface WeeklyJob {
 
 const WEEKLY_JOBS: WeeklyJob[] = [
   { name: 'payroll', run: runPayroll },
+
+  // INJ-05: Sunday stamina recovery and injury returns.
+  { name: RECOVERY_JOB, run: runRecovery },
+
 ];
 
 export interface WeeklyJobsResult {

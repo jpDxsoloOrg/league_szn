@@ -400,6 +400,14 @@ functions:
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
+
+      # INJ-05: run this week's recovery now (Admin)
+      - http:
+          path: admin/injury-recovery
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
       # ECO-08
       - http:
           path: shop/purchase

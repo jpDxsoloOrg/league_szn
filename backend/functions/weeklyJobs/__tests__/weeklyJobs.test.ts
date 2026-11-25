@@ -1,10 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const { mockRunPayroll, mockGetInjuryTunables } = vi.hoisted(() => ({
+const { mockRunPayroll, mockRunRecovery, mockGetInjuryTunables } = vi.hoisted(() => ({
   mockRunPayroll: vi.fn(),
+  mockRunRecovery: vi.fn(),
   mockGetInjuryTunables: vi.fn(),
 }));
 vi.mock('../../../lib/economy/payroll', () => ({ runPayroll: mockRunPayroll }));
+// INJ-05
+vi.mock('../../../lib/injuries/recovery', () => ({ RECOVERY_JOB: 'recovery', runRecovery: mockRunRecovery }));
 // INJ-01: the league time zone comes from the injury tunables.
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({ user: { siteConfig: { getInjuryTunables: mockGetInjuryTunables } } }),
@@ -16,6 +19,7 @@ describe('weeklyJobs handler (ECO-06)', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockRunPayroll.mockReset();
+    mockRunRecovery.mockReset().mockResolvedValue({ status: 'alreadyRun' });
     mockGetInjuryTunables.mockReset();
     mockGetInjuryTunables.mockResolvedValue({ timezone: 'America/New_York' });
     vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -32,8 +36,21 @@ describe('weeklyJobs handler (ECO-06)', () => {
 
     const result = await handler();
 
-    expect(result).toEqual({ weekKey: '2026-11-22', jobs: { payroll: 'paid' } });
+    expect(result).toEqual({ weekKey: '2026-11-22', jobs: { payroll: 'paid', recovery: 'alreadyRun' } });
     expect(mockRunPayroll).toHaveBeenCalledWith(expect.any(Date), expect.objectContaining({ weekKey: '2026-11-22' }));
+  });
+
+  // INJ-05
+  it('runs the stamina recovery for the same league week, even when payroll fails', async () => {
+    vi.setSystemTime(new Date('2026-11-22T05:05:00.000Z'));
+    mockRunPayroll.mockRejectedValue(new Error('boom'));
+    mockRunRecovery.mockResolvedValue({ status: 'recovered' });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const result = await handler();
+
+    expect(result.jobs).toEqual({ payroll: 'error', recovery: 'recovered' });
+    expect(mockRunRecovery).toHaveBeenCalledWith(expect.any(Date), expect.objectContaining({ weekKey: '2026-11-22', isSunday: true }));
   });
 
   it('warns when a missed Sunday runs late', async () => {
@@ -86,7 +103,7 @@ describe('weeklyJobs handler (ECO-06)', () => {
 
     const result = await handler();
 
-    expect(result).toEqual({ weekKey: '2026-11-22', jobs: { payroll: 'paid' } });
+    expect(result).toEqual({ weekKey: '2026-11-22', jobs: { payroll: 'paid', recovery: 'alreadyRun' } });
     expect(error).toHaveBeenCalledWith(expect.stringContaining('America/New_York'), expect.any(Error));
   });
 });
