@@ -132,6 +132,12 @@
   font-size: 0.875rem;
 }
 
+/* BLD-11: the build budget a division's tier gives. */
+.ar-field__hint--strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
 .ar-check input {
   width: 1.125rem;
   height: 1.125rem;

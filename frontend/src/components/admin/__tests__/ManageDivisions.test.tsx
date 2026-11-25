@@ -3,17 +3,26 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 
 // --- Hoisted mocks ---
-const { mockDivisionsApi } = vi.hoisted(() => ({
+const { mockDivisionsApi, mockBuildsApi, mockPlayersApi } = vi.hoisted(() => ({
   mockDivisionsApi: {
     getAll: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
   },
+  mockBuildsApi: {
+    getRules: vi.fn(),
+    getPlayerBuild: vi.fn(),
+  },
+  mockPlayersApi: {
+    getAll: vi.fn(),
+  },
 }));
 
 vi.mock('../../../services/api', () => ({
   divisionsApi: mockDivisionsApi,
+  buildsApi: mockBuildsApi,
+  playersApi: mockPlayersApi,
 }));
 
 vi.mock('react-i18next', async () => (await import('./i18nMock')).i18nMock);
@@ -30,6 +39,8 @@ describe('ManageDivisions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDivisionsApi.getAll.mockResolvedValue(mockDivisions);
+    // Budget UI is covered in its own block below; keep it out of these tests.
+    mockBuildsApi.getRules.mockRejectedValue(new Error('offline'));
   });
 
   it('renders division list after loading', async () => {
@@ -284,5 +295,113 @@ describe('ManageDivisions', () => {
 
     expect(await screen.findByText('Zone sizes must be whole numbers from 0 to 20.')).toBeInTheDocument();
     expect(mockDivisionsApi.update).not.toHaveBeenCalled();
+  });
+});
+
+// BLD-11: build budget per tier
+describe('ManageDivisions build budgets', () => {
+  const tieredDivisions: Division[] = [
+    { divisionId: 'div-top', name: 'Main Event', tier: 1, createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+    { divisionId: 'div-mid', name: 'Midcard', tier: 2, createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+    { divisionId: 'div-dev', name: 'Young Boys', tier: 1, isDevelopmental: true, createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+    { divisionId: 'div-none', name: 'Untiered', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+  ];
+
+  const rules = {
+    budgets: { tiers: { '1': 160, '2': 130 }, defaultTier: 100, developmental: 80, noDivision: 80 },
+  };
+
+  function buildWithCost(cost: number) {
+    return { budget: { cost, budget: 160, remaining: 160 - cost, overBudget: cost > 160 } };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDivisionsApi.getAll.mockResolvedValue(tieredDivisions);
+    mockBuildsApi.getRules.mockResolvedValue(rules);
+    mockPlayersApi.getAll.mockResolvedValue([
+      { playerId: 'p1', name: 'Ace', divisionId: 'div-top' },
+      { playerId: 'p2', name: 'Bolt', divisionId: 'div-top' },
+      { playerId: 'p3', name: 'Cruz', divisionId: 'div-top' },
+      { playerId: 'p4', name: 'Dee', divisionId: 'div-mid' },
+    ]);
+    const costs: Record<string, number> = { p1: 150, p2: 120, p3: 140, p4: 125 };
+    mockBuildsApi.getPlayerBuild.mockImplementation(async (playerId: string) => buildWithCost(costs[playerId]));
+  });
+
+  function rowFor(name: string): HTMLElement {
+    return screen.getByText(name).closest('tr') as HTMLElement;
+  }
+
+  it('shows each division\'s budget in the list, with the developmental budget for developmental divisions', async () => {
+    render(<ManageDivisions />);
+
+    expect(await screen.findByRole('columnheader', { name: /Build budget/ })).toBeInTheDocument();
+    expect(within(rowFor('Main Event')).getByText('160')).toBeInTheDocument();
+    expect(within(rowFor('Midcard')).getByText('130')).toBeInTheDocument();
+    expect(within(rowFor('Young Boys')).getByText('80')).toBeInTheDocument();
+    expect(within(rowFor('Untiered')).getByText('100')).toBeInTheDocument();
+  });
+
+  it('hides the budget column when the rules can\'t be loaded', async () => {
+    mockBuildsApi.getRules.mockRejectedValue(new Error('offline'));
+    render(<ManageDivisions />);
+
+    await waitFor(() => { expect(screen.getByText('Main Event')).toBeInTheDocument(); });
+    expect(screen.queryByRole('columnheader', { name: /Build budget/ })).not.toBeInTheDocument();
+  });
+
+  it('shows the budget for the tier being entered, and the developmental budget when ticked', async () => {
+    const user = userEvent.setup();
+    render(<ManageDivisions />);
+    await screen.findByRole('columnheader', { name: /Build budget/ });
+
+    await user.click(screen.getByRole('button', { name: 'Create Division' }));
+    // No tier yet: the default budget.
+    expect(screen.getByText('Build budget: 100 points')).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Tier (Optional)'), '2');
+    expect(screen.getByText('Build budget: 130 points')).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('Developmental division'));
+    expect(screen.getByText('Build budget: 80 points')).toBeInTheDocument();
+  });
+
+  it('warns how many current members a tier change puts over budget', async () => {
+    const user = userEvent.setup();
+    render(<ManageDivisions />);
+    await screen.findByRole('columnheader', { name: /Build budget/ });
+
+    await user.click(within(rowFor('Main Event')).getByRole('button', { name: 'Edit' }));
+    expect(screen.getByText('Build budget: 160 points')).toBeInTheDocument();
+    await waitFor(() => { expect(mockBuildsApi.getPlayerBuild).toHaveBeenCalledTimes(3); });
+    expect(mockBuildsApi.getPlayerBuild).not.toHaveBeenCalledWith('p4');
+    // Unchanged tier: no warning.
+    expect(screen.queryByText(/over budget/)).not.toBeInTheDocument();
+
+    const tierInput = screen.getByLabelText('Tier (Optional)');
+    await user.clear(tierInput);
+    await user.type(tierInput, '2');
+    // 150 and 140 are over 130; 120 is not.
+    expect(await screen.findByText('2 wrestlers will be over budget')).toBeInTheDocument();
+
+    await user.clear(tierInput);
+    await user.type(tierInput, '1');
+    expect(screen.queryByText(/over budget/)).not.toBeInTheDocument();
+  });
+
+  it('leaves out members whose build can\'t be read', async () => {
+    mockBuildsApi.getPlayerBuild.mockImplementation(async (playerId: string) => {
+      if (playerId === 'p1') throw new Error('Not found');
+      return buildWithCost(150);
+    });
+    const user = userEvent.setup();
+    render(<ManageDivisions />);
+    await screen.findByRole('columnheader', { name: /Build budget/ });
+
+    await user.click(within(rowFor('Main Event')).getByRole('button', { name: 'Edit' }));
+    await user.click(screen.getByLabelText('Developmental division'));
+
+    expect(await screen.findByText('2 wrestlers will be over budget')).toBeInTheDocument();
   });
 });

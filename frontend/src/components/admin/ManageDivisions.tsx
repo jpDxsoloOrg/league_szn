@@ -1,7 +1,8 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
-import { divisionsApi } from '../../services/api';
+import { buildsApi, divisionsApi, playersApi } from '../../services/api';
+import type { BuildRules } from '../../services/api';
 import type { Division } from '../../types';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
@@ -18,6 +19,7 @@ import {
   divisionTierSortValue,
   getDivisionTier,
 } from '../../utils/divisionTiers';
+import { budgetForDivision } from '../../utils/buildBudgets';
 import AdminNotice from './AdminNotice';
 import ConfirmModal from './ConfirmModal';
 import './adminRoster.css';
@@ -54,6 +56,23 @@ function parseZoneSizeInput(value: string): { size: number | null; valid: boolea
   return { size: valid ? size : null, valid };
 }
 
+/** Build costs of a division's current members, for the over-budget warning (BLD-11). */
+interface MemberBuildCosts {
+  divisionId: string;
+  costs: number[];
+}
+
+/**
+ * Build cost of every visible member of a division, from the build API. A
+ * member whose build can't be read is left out rather than failing the form.
+ */
+async function loadMemberBuildCosts(divisionId: string): Promise<number[]> {
+  const players = await playersApi.getAll();
+  const members = players.filter((player) => player.divisionId === divisionId);
+  const results = await Promise.allSettled(members.map((member) => buildsApi.getPlayerBuild(member.playerId)));
+  return results.flatMap((result) => (result.status === 'fulfilled' ? [result.value.budget.cost] : []));
+}
+
 export default function ManageDivisions() {
   const { t } = useTranslation();
   const [divisions, setDivisions] = useState<Division[]>([]);
@@ -67,11 +86,34 @@ export default function ManageDivisions() {
   const [deleting, setDeleting] = useState(false);
 
   const [formData, setFormData] = useState(EMPTY_FORM);
+  // BLD-11: build budgets come from the rules endpoint; without them the budget UI stays hidden.
+  const [buildRules, setBuildRules] = useState<BuildRules | null>(null);
+  const [memberCosts, setMemberCosts] = useState<MemberBuildCosts | null>(null);
+  const editingDivisionIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     loadDivisions();
+    loadBuildRules();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   }, []);
+
+  const loadBuildRules = async () => {
+    try {
+      setBuildRules(await buildsApi.getRules());
+    } catch (_err) {
+      setBuildRules(null);
+    }
+  };
+
+  const loadMemberCosts = async (divisionId: string) => {
+    try {
+      const costs = await loadMemberBuildCosts(divisionId);
+      // Ignore a late answer for a division whose form is no longer open.
+      if (editingDivisionIdRef.current === divisionId) setMemberCosts({ divisionId, costs });
+    } catch (_err) {
+      if (editingDivisionIdRef.current === divisionId) setMemberCosts(null);
+    }
+  };
 
   const loadDivisions = async () => {
     try {
@@ -90,6 +132,8 @@ export default function ManageDivisions() {
     setFormError(null);
     setShowForm(false);
     setEditingDivision(null);
+    editingDivisionIdRef.current = null;
+    setMemberCosts(null);
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -162,6 +206,9 @@ export default function ManageDivisions() {
       relegationZoneSize: division.relegationZoneSize?.toString() ?? '',
     });
     setShowForm(true);
+    editingDivisionIdRef.current = division.divisionId;
+    setMemberCosts(null);
+    if (buildRules) void loadMemberCosts(division.divisionId);
   };
 
   const handleDelete = async () => {
@@ -181,6 +228,19 @@ export default function ManageDivisions() {
       setPendingDelete(null);
     }
   };
+
+  // BLD-11: the budget the form's current tier and developmental flag would give.
+  const formTier = parseTierInput(formData.tier);
+  const formBudget = buildRules && formTier.valid
+    ? budgetForDivision(buildRules.budgets, { tier: formTier.tier ?? undefined, isDevelopmental: formData.isDevelopmental })
+    : null;
+  const savedBudget = buildRules && editingDivision ? budgetForDivision(buildRules.budgets, editingDivision) : null;
+  const overBudgetCount = formBudget !== null
+    && savedBudget !== null
+    && formBudget !== savedBudget
+    && memberCosts?.divisionId === editingDivision?.divisionId
+    ? (memberCosts?.costs ?? []).filter((cost) => cost > formBudget).length
+    : 0;
 
   const columns: DataTableColumn<Division>[] = [
     {
@@ -215,6 +275,14 @@ export default function ManageDivisions() {
       render: (division) => (division.isDevelopmental ? '—' : getDivisionTier(division) ?? '—'),
       sortValue: (division) => divisionTierSortValue(division),
     },
+    ...(buildRules
+      ? [{
+          key: 'budget',
+          header: t('adminRoster.divisions.budgetColumn', 'Build budget'),
+          render: (division: Division) => budgetForDivision(buildRules.budgets, division),
+          sortValue: (division: Division) => budgetForDivision(buildRules.budgets, division),
+        }]
+      : []),
     {
       key: 'description',
       header: t('adminRoster.divisions.descriptionColumn', 'Description'),
@@ -326,7 +394,7 @@ export default function ManageDivisions() {
               step={1}
               value={formData.tier}
               onChange={(e) => setFormData({ ...formData, tier: e.target.value })}
-              aria-describedby="division-tier-hint"
+              aria-describedby={formBudget !== null ? 'division-tier-hint division-budget-hint' : 'division-tier-hint'}
             />
             <p className="ar-field__hint" id="division-tier-hint">
               {t(
@@ -334,6 +402,19 @@ export default function ManageDivisions() {
                 '1 is the top. Divisions on the same tier are siblings. Leave empty for no tier. Developmental divisions always rank below every tier.',
               )}
             </p>
+            {formBudget !== null && (
+              <p className="ar-field__hint ar-field__hint--strong" id="division-budget-hint">
+                {t('adminRoster.divisions.budgetHint', { defaultValue: 'Build budget: {{budget}} points', budget: formBudget })}
+              </p>
+            )}
+            {overBudgetCount > 0 && (
+              <AdminNotice tone="warning">
+                {t('adminRoster.divisions.overBudgetWarning', {
+                  defaultValue: '{{count}} wrestlers will be over budget',
+                  count: overBudgetCount,
+                })}
+              </AdminNotice>
+            )}
           </div>
           <div className="ar-field-row">
             <div className="ar-field">

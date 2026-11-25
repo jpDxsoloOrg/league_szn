@@ -3,6 +3,11 @@ export { API_BASE_URL, AUTH_EXPIRED_EVENT, SIGNUP_BLOCKED_EVENT, ApiError, getAu
 
 // API modules
 export { playersApi, disciplineApi } from './players.api';
+
+// BLD-11
+export { buildsApi } from './builds.api';
+export type { BuildRules, BuildBudgetRules, PlayerBuildView } from './builds.api';
+
 export { matchesApi } from './matches.api';
 export { championshipsApi } from './championships.api';
 export { tournamentsApi } from './tournaments.api';
