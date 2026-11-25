@@ -8,13 +8,15 @@ export interface MoveListProps {
   moves: WrestlerMove[] | undefined;
   /** Shown when the list is empty. Omit to render nothing for empty lists. */
   emptyText?: string;
+  /** BLD-13: show each move's level ("Lv 3"); unset reads as 1. */
+  showLevels?: boolean;
 }
 
 /**
  * Read-only signatures/finishers list. The commentary name is the headline;
  * the in-game name sits beneath in muted text when the two differ.
  */
-export default function MoveList({ title, moves, emptyText }: MoveListProps) {
+export default function MoveList({ title, moves, emptyText, showLevels = false }: MoveListProps) {
   const { t } = useTranslation();
   const list = (moves ?? []).filter((m) => (m.gameName ?? '').trim().length > 0);
 
@@ -32,7 +34,12 @@ export default function MoveList({ title, moves, emptyText }: MoveListProps) {
             const showGame = name !== move.gameName;
             return (
               <li key={`${move.gameName}-${index}`} className="move-list-item">
-                <span className="move-list-name">{name}</span>
+                <span className="move-list-name">
+                  {name}
+                  {showLevels && (
+                    <span className="move-list-level">{t('builds.moveLevel', { level: move.level ?? 1 })}</span>
+                  )}
+                </span>
                 {showGame && (
                   <span className="move-list-game">
                     {t('profile.moves.inGame', { name: move.gameName })}

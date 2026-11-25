@@ -93,6 +93,15 @@ export interface PlayerBuildView {
   rulesVersion: number;
 }
 
+// BLD-13
+/** Body of `PUT /players/me/build` and `PUT /players/{playerId}/build`. */
+export interface UpdateBuildInput {
+  style: BuildStyleId;
+  specialty?: BuildSimCategory;
+  stats: Record<BuildCoreStat, number>;
+  moveLevels?: { signatures: number[]; finishers: number[] };
+}
+
 export const buildsApi = {
   /** Public: every build rule, including the budget per tier. */
   getRules: async (signal?: AbortSignal): Promise<BuildRules> => {
@@ -102,5 +111,22 @@ export const buildsApi = {
   /** Public: a player's build with its cost and budget. 404 for hidden players. */
   getPlayerBuild: async (playerId: string, signal?: AbortSignal): Promise<PlayerBuildView> => {
     return fetchWithAuth(`${API_BASE_URL}/players/${encodeURIComponent(playerId)}/build`, {}, signal);
+  },
+
+  // BLD-13
+  /** The signed-in Wrestler's own build. A 400 lists every validation error. */
+  updateMyBuild: async (input: UpdateBuildInput): Promise<PlayerBuildView> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/me/build`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
+  },
+
+  /** Staff (Moderator/Admin): any player's build. */
+  updatePlayerBuild: async (playerId: string, input: UpdateBuildInput): Promise<PlayerBuildView> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/${encodeURIComponent(playerId)}/build`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
   },
 };

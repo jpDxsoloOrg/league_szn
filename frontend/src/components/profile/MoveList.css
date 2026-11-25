@@ -36,6 +36,16 @@
   overflow-wrap: anywhere;
 }
 
+.move-list-level {
+  margin-inline-start: 0.5rem;
+  color: var(--color-cyan);
+  font-family: var(--font-label);
+  font-size: 0.8125rem;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .move-list-game {
   color: var(--color-text-muted);
   font-size: 0.9375rem;

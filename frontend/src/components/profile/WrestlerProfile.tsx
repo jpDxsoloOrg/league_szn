@@ -20,6 +20,7 @@ import EmptyState from '../ui/EmptyState';
 import Skeleton from '../ui/Skeleton';
 import Tabs from '../ui/Tabs';
 import type { Division, Player, WrestlerOverall } from '../../types';
+import BuildCard from './BuildCard';
 import MovesetSection from './MovesetSection';
 import ProfileEditForm from './ProfileEditForm';
 import ProfileHero from './ProfileHero';
@@ -202,6 +203,7 @@ export default function WrestlerProfile() {
             <DivisionProgress playerId={player.playerId} viewer="owner" />
             <DivisionHistory playerId={player.playerId} />
             <MovesetSection player={player} showEmpty />
+            {player.playerId && <BuildCard playerId={player.playerId} isOwnProfile />}
             {overall && (
               <section className="profile-section" aria-labelledby="profile-overalls-title">
                 <h2 className="profile-section__title" id="profile-overalls-title">{t('overalls.profile.title')}</h2>

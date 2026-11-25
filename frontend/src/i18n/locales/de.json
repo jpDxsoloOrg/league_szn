@@ -4041,6 +4041,34 @@
     "battleRoyal": "Battle Royal",
     "royalRumble": "Royal Rumble"
   },
+  "builds": {
+    "styles": {
+      "powerhouse": "Powerhouse",
+      "technician": "Techniker",
+      "highFlyer": "High-Flyer",
+      "brawler": "Brawler",
+      "striker": "Striker",
+      "allRounder": "Allrounder"
+    },
+    "stats": {
+      "strikes": "Schläge",
+      "grapple": "Griffe",
+      "agility": "Beweglichkeit",
+      "endurance": "Ausdauer"
+    },
+    "specialist": "Spezialist: {{category}}",
+    "styleBonus": "+{{bonus}} Stil",
+    "statValueWithBonus": "{{value}}, davon +{{bonus}} durch den Stil",
+    "moveLevel": "Stufe {{level}}",
+    "card": {
+      "title": "Build",
+      "stats": "Werte",
+      "signatureLevels": "Signature-Moves",
+      "finisherLevels": "Finisher",
+      "setupTitle": "Richte deinen Build ein",
+      "setupBody": "Wähle einen Stil und verteile deine Build-Punkte. Bis dahin nutzt du den Standard-Build, und er erscheint nicht auf deinem öffentlichen Profil."
+    }
+  },
   "simCategories": {
     "standard": "Standard",
     "highRisk": "Hohes Risiko",

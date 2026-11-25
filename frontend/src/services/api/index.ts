@@ -7,6 +7,16 @@ export { playersApi, disciplineApi } from './players.api';
 // BLD-11
 export { buildsApi } from './builds.api';
 export type { BuildRules, BuildBudgetRules, PlayerBuildView } from './builds.api';
+// BLD-13
+export type {
+  BuildCoreStat,
+  BuildStyleId,
+  BuildSimCategory,
+  EffectiveWrestlerBuild,
+  LeveledBuildMove,
+  UpdateBuildInput,
+  WrestlerBuild,
+} from './builds.api';
 
 export { matchesApi } from './matches.api';
 export { championshipsApi } from './championships.api';

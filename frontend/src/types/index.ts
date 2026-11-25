@@ -177,6 +177,8 @@ export interface DisciplineActionResult {
 export interface WrestlerMove {
   gameName: string;
   customName: string;
+  /** BLD-03: move level 1-5; unset reads as 1. Set through the build, not the moveset editor. */
+  level?: number;
 }
 
 /** Max signatures / max finishers per player (each list). Mirrors backend/lib/movesets.ts. */

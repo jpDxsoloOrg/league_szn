@@ -48,6 +48,10 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+vi.mock('../BuildCard', () => ({
+  default: () => null,
+}));
+
 vi.mock('../../statistics/EmbeddedPlayerStats', () => ({
   default: () => null,
 }));

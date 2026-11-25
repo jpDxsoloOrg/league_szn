@@ -33,6 +33,7 @@ import DivisionProgress from '../progression/DivisionProgress';
 import DivisionWatchBanners from '../progression/DivisionWatchBanners';
 import { profileViewer } from '../progression/divisionProgressVisibility';
 import ContractBadge from '../economy/ContractBadge';
+import BuildCard from './BuildCard';
 import MovesetSection from './MovesetSection';
 import ProfileHero from './ProfileHero';
 import ProfileRivalries from './ProfileRivalries';
@@ -267,6 +268,7 @@ export default function PublicProfile() {
       </div>
 
       {hasMoveset && <MovesetSection player={player} />}
+      <BuildCard playerId={player.playerId} isOwnProfile={currentPlayerId === player.playerId} />
     </div>
   );
 }
