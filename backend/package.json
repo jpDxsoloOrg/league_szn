@@ -24,6 +24,7 @@
     "backfill-tag-reigns": "ts-node scripts/backfill-tag-reigns.ts",
     "backfill-division-joined-at": "ts-node scripts/backfill-division-joined-at.ts",
     "backfill-sim-categories": "ts-node scripts/backfill-sim-categories.ts",
+    "sim-calibration": "ts-node scripts/sim-calibration.ts",
     "cleanup-tag-title-player-overrides": "ts-node scripts/cleanup-tag-title-player-overrides.ts",
     "lint": "eslint functions/ lib/",
     "test": "vitest run",

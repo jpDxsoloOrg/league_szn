@@ -448,6 +448,7 @@
       "standings": "Tabelle",
       "seasons": "Saisons",
       "divisions": "Divisionen",
+      "wrestlerBuilds": "Wrestler-Builds",
       "championships": "Meisterschaften",
       "events": "Events & PPV",
       "tournaments": "Turniere",
@@ -464,6 +465,7 @@
       "adminGuide": "Admin",
       "adminQuickstart": "Admin: Schnellstart",
       "adminMatchConfig": "Admin: Match-Konfiguration",
+      "adminMatchSimulator": "Admin: Match-Simulator",
       "adminSeasonAwards": "Admin: Saison-Auszeichnungen",
       "adminUserManagement": "Admin: Benutzerverwaltung",
       "adminDivisions": "Admin: Divisionen",
@@ -495,6 +497,7 @@
     "navLabels": {
       "adminQuickstart": "Schnellstart",
       "adminMatchConfig": "Match-Konfiguration",
+      "adminMatchSimulator": "Match-Simulator",
       "adminSeasonAwards": "Saison-Auszeichnungen",
       "adminUserManagement": "Benutzerverwaltung",
       "adminDivisions": "Divisionen",

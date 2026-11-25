@@ -25,6 +25,7 @@ Use the links below to open each part of the admin guide.
 - [Events](admin-events) — Create events and build and reorder the card on the event page
 - [Schedule Match](admin-schedule-match) — Create matches, types, stipulations, championship/tournament
 - [Record Results](admin-record-results) — Enter winners or a draw; what updates automatically
+- [Match Simulator](admin-match-simulator) — Preview a match or settle a scheduled one with the match sim; odds are for GMs only
 - [Tournaments](admin-tournaments) — Single elimination and round robin
 
 ## Content & contenders

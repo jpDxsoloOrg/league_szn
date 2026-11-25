@@ -13,6 +13,10 @@ import {
 } from './dataTransferConfig';
 import { HEAT_TIER_CENTRES, type HeatTier } from '../../lib/policies/rivalryHeat';
 import type { SimCategory } from '../../lib/policies/buildRules';
+import { OVER_BUDGET_SEED_WRESTLER, seedBuildPatch } from './seedBuilds';
+import { toPlayerBuildView } from '../../lib/builds/playerBuild';
+import { competitorFromBuild, simulate, type SimSide } from '../../lib/policies/matchSim';
+import { buildPlayByPlay, type PlayByPlayMoveset } from '../../lib/sim/playByPlay';
 import { roundToHalfStar } from '../../lib/utils/halfStar';
 import { buildDefaultCallupTrack } from '../../lib/progression/defaultTracks';
 import { buildProgressionInputs, resolveProgressionWindow } from '../../lib/progression/loadInputs';
@@ -36,6 +40,7 @@ import type { Rivalry, RivalryHeat, RivalryStatus } from '../../lib/repositories
 import type {
   Contract,
   Match,
+  MatchSimulation,
   Player,
   PlayerProgression,
   ProgressionEvent,
@@ -266,6 +271,9 @@ const playerNames = [
 
 const stipulations = ['Standard', 'No DQ', 'Steel Cage', 'Ladder Match', 'Hell in a Cell', 'Tables Match'];
 
+/** BLD-15: seed of the seeded simulated match (fixed, so every seed stores the same result). */
+const SEEDED_SIM_SEED = 2026;
+
 function daysAgo(days: number): Date {
   const d = new Date();
   d.setDate(d.getDate() - days);
@@ -459,6 +467,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       divisionId: divisions[index % divisions.length].divisionId,
       ...divisionMovePatch(now),
       ...(seededMovesets[index] ?? {}),
+      // BLD-15: builds and move levels (functions/admin/seedBuilds.ts).
+      ...seedBuildPatch({ currentWrestler: wrestlers[index], ...(seededMovesets[index] ?? {}) }, now),
       createdAt: now,
       updatedAt: now,
     }));
@@ -1714,6 +1724,70 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       }
     }
 
+    // ── A simulated result (BLD-15) ─────────────────────────────
+    // One match settled by the official sim, so the "Simulated" badge and the
+    // play-by-play show straight after a seed: Shawn Michaels (high-flyer,
+    // ladder specialist) against Bret Hart (technician) in a Ladder Match.
+    // Neutral form and a fixed seed, so every seed stores the same result.
+    console.log('Creating a simulated match...');
+    const simulatedMatches: Match[] = [];
+    {
+      const simPlayers = [players[4], players[5]];
+      const ladderStipulation = defaultStipulations.find((row) => row.name === 'Ladder Match');
+      const stipulationId = stipulationItems.find((row) => row.name === ladderStipulation?.name)?.stipulationId;
+      const category: SimCategory = ladderStipulation?.simCategory ?? 'standard';
+      const sides: SimSide[] = simPlayers.map((player, index) => {
+        const division = divisions.find((candidate) => candidate.divisionId === player.divisionId);
+        const { effective } = toPlayerBuildView(player, division);
+        return { sideId: `side-${index + 1}`, members: [competitorFromBuild(player.playerId, effective)] };
+      });
+      const result = simulate(sides, { category, seed: SEEDED_SIM_SEED });
+      const names: Record<string, string> = {};
+      const moves: Record<string, PlayByPlayMoveset> = {};
+      for (const player of simPlayers) {
+        names[player.playerId] = player.currentWrestler;
+        moves[player.playerId] = { signatures: player.signatures, finishers: player.finishers };
+      }
+      const playerIdsBySide = new Map(sides.map((side) => [side.sideId, side.members.map((member) => member.playerId)]));
+      const winners = playerIdsBySide.get(result.winnerSideId) ?? [];
+      const losers = simPlayers.map((player) => player.playerId).filter((playerId) => !winners.includes(playerId));
+      const date = daysAgo(3).toISOString();
+      const simulation: MatchSimulation = {
+        seed: result.seed,
+        category: result.category,
+        rulesVersion: result.rulesVersion,
+        inputsDigest: result.inputsDigest,
+        winnerSideId: result.winnerSideId,
+        probabilities: result.probabilities.map((entry) => ({
+          sideId: entry.sideId,
+          playerIds: playerIdsBySide.get(entry.sideId) ?? [],
+          pct: Math.round(entry.probability * 1000) / 10,
+        })),
+        playByPlay: buildPlayByPlay(result, sides, names, moves),
+        specialtyHits: result.specialtyHits,
+        scaledPlayerIds: [],
+        formWindow: { kind: 'season', seasonId: season.seasonId },
+        simulatedAt: date,
+        simulatedBy: 'seed-script',
+      };
+      simulatedMatches.push({
+        matchId: uuidv4(),
+        date,
+        matchFormat: 'singles',
+        ...(typeof stipulationId === 'string' ? { stipulationId } : {}),
+        participants: simPlayers.map((player) => player.playerId),
+        winners,
+        losers,
+        isChampionship: false,
+        seasonId: season.seasonId,
+        status: 'completed',
+        ratingsCount: 0,
+        createdAt: date,
+        resultSource: 'simulation',
+        simulation,
+      });
+    }
+
     // ── Division ladder: promotion / relegation (DMV-10) ─────────
     // Makes the promotion & relegation epic demonstrable straight after a
     // seed. The tiered divisions get their default tracks, and the
@@ -1873,7 +1947,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       tieredPlayers.map((player) => player.playerId),
       {
         players: tieredPlayers,
-        matches: [...matches, ...tagMatches, ...youngBoysMatches, ...ladderMatches].filter(isCompletedMatch),
+        matches: [...matches, ...tagMatches, ...youngBoysMatches, ...ladderMatches, ...simulatedMatches].filter(isCompletedMatch),
         promos: [],
         challenges: [],
         // No seeded title belongs to NXT, the only division with a promotion
@@ -1956,6 +2030,24 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
           announced: true,
         },
       );
+    }
+
+    // BLD-15: Roman Reigns moved from SmackDown to NXT before the Pilot
+    // Season. His build was bought on SmackDown's budget, so it is over
+    // NXT's and the sim scales it down until he re-spends (seedBuilds.ts).
+    const smackDownRelegationTrack = ladderTrack('relegation', smackDownDivision.divisionId);
+    if (smackDownRelegationTrack && roman.currentWrestler === OVER_BUDGET_SEED_WRESTLER) {
+      progressionEventRows.push({
+        eventId: uuidv4(),
+        playerId: roman.playerId,
+        trackId: smackDownRelegationTrack.trackId,
+        kind: 'relegation',
+        type: 'executed',
+        fromDivisionId: smackDownDivision.divisionId,
+        toDivisionId: nxtDivision.divisionId,
+        actorUserId: 'seed-script',
+        createdAt: daysAgo(125).toISOString(),
+      });
     }
 
     // Pilot Season standings and review. Edge was still in NXT then and his
@@ -2251,6 +2343,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         ...tagMatches,
         ...youngBoysMatches.map((match) => ({ ...match })),
         ...ladderMatches.map((match) => ({ ...match })),
+        ...simulatedMatches.map((match) => ({ ...match })),
       ],
       tagTeams,
       tournaments,

@@ -240,6 +240,11 @@ export default function NotificationBell() {
     }
 
     setIsOpen(false);
+    // BLD-15: an over-budget build opens the build editor straight away.
+    if (notification.type === 'build_over_budget') {
+      navigate('/profile', { state: { editBuild: true } });
+      return;
+    }
     navigate(gmInterferenceRoute(notification)?.path
       ?? getNavigationPath(notification, playerId, features.transfers, Boolean(features.economy)));
   }, [navigate, playerId, features.transfers, features.economy]);
