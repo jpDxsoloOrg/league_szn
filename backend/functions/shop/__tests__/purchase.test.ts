@@ -255,7 +255,8 @@ describe('POST /shop/purchase', () => {
       // The winner is a free agent, so match pay (ECO-05) adds the free-agent win bonus.
       expect(await balanceOf(rivalId)).toBe(1000 + DEFAULT_ECONOMY_SETTINGS.freeAgentWinBonus);
       const { items } = await repos.ledger.listForPlayer(playerId);
-      expect(items[0]).toMatchObject({ kind: 'refund', amount: shop.simInterference.price, refType: 'match', refId: matchId });
+      // Purchase and refund can share a millisecond, so their order in the list isn't fixed.
+      expect(items.find((item) => item.kind === 'refund')).toMatchObject({ kind: 'refund', amount: shop.simInterference.price, refType: 'match', refId: matchId });
     });
 
     it('refunds the boost when the scheduled match is deleted', async () => {
