@@ -138,7 +138,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return refused(409, 'PSN_ID_UNAVAILABLE', 'That PSN ID cannot be used');
     }
 
-    const movesetError = applyMovesetFields(body, patch);
+    const movesetError = applyMovesetFields(body, patch, player);
     if (movesetError) return movesetError;
     if (body.bio !== undefined || body.signatures !== undefined || body.finishers !== undefined) {
       hasChanges = true;

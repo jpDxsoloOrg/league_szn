@@ -16,6 +16,7 @@ import type {
   WrestlerPromotion,
   WrestlerImportResult,
   WrestlerMove,
+  WrestlerBuild,
 } from './types';
 
 // ─── Player input types ─────────────────────────────────────────────
@@ -66,6 +67,9 @@ export interface PlayerPatch {
   bio?: string;
   signatures?: WrestlerMove[];
   finishers?: WrestlerMove[];
+
+  // BLD-03: the whole build is replaced on save.
+  build?: WrestlerBuild;
 }
 
 /** The only way to write discipline state. See `players.updateDiscipline`. */

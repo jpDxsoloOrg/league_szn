@@ -77,7 +77,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    const movesetError = applyMovesetFields(body, patch);
+    const movesetError = applyMovesetFields(body, patch, player);
     if (movesetError) return movesetError;
     if (body.bio !== undefined || body.signatures !== undefined || body.finishers !== undefined) {
       hasChanges = true;

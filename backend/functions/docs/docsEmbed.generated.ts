@@ -92,6 +92,151 @@ components:
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
 
+    # BLD-03: wrestler builds
+    CoreStats:
+      type: object
+      required: [strikes, grapple, agility, endurance]
+      properties:
+        strikes: { type: integer }
+        grapple: { type: integer }
+        agility: { type: integer }
+        endurance: { type: integer }
+    WrestlerBuild:
+      type: object
+      required: [style, stats, updatedAt]
+      properties:
+        style: { type: string, enum: [powerhouse, technician, highFlyer, brawler, striker, allRounder] }
+        specialty:
+          type: string
+          enum: [highRisk, technical, endurance, hardcore, cage]
+          description: Must be one the style allows. Absent when none is picked.
+        stats: { $ref: '#/components/schemas/CoreStats' }
+        updatedAt: { type: string, description: Empty for the default build }
+    LeveledMove:
+      type: object
+      required: [gameName, customName, level]
+      properties:
+        gameName: { type: string }
+        customName: { type: string }
+        level: { type: integer, minimum: 1, maximum: 5 }
+    BuildBudgetStatus:
+      type: object
+      required: [cost, budget, remaining, overBudget]
+      properties:
+        cost: { type: integer }
+        budget: { type: integer, description: From the player's current division tier }
+        remaining: { type: integer, description: Negative when over budget }
+        overBudget: { type: boolean }
+    EffectiveBuild:
+      type: object
+      required: [style, stats, spentStats, signatureLevels, finisherLevels, scaled, status]
+      properties:
+        style: { type: string }
+        specialty: { type: string }
+        stats: { allOf: [{ $ref: '#/components/schemas/CoreStats' }], description: 'Scaled to the budget, plus the style bonus, capped at 100' }
+        spentStats: { allOf: [{ $ref: '#/components/schemas/CoreStats' }], description: After scaling, before the style bonus }
+        signatureLevels: { type: array, items: { type: integer } }
+        finisherLevels: { type: array, items: { type: integer } }
+        scaled: { type: boolean, description: True when the saved build was over budget and was scaled down }
+        status: { $ref: '#/components/schemas/BuildBudgetStatus' }
+    PlayerBuild:
+      type: object
+      required: [playerId, build, isDefault, moves, budget, effective, rulesVersion]
+      properties:
+        playerId: { type: string }
+        build: { $ref: '#/components/schemas/WrestlerBuild' }
+        isDefault: { type: boolean, description: True when the player never saved a build }
+        moves:
+          type: object
+          properties:
+            signatures: { type: array, items: { $ref: '#/components/schemas/LeveledMove' } }
+            finishers: { type: array, items: { $ref: '#/components/schemas/LeveledMove' } }
+        budget: { $ref: '#/components/schemas/BuildBudgetStatus' }
+        effective: { $ref: '#/components/schemas/EffectiveBuild' }
+        rulesVersion: { type: integer }
+    SavePlayerBuildInput:
+      type: object
+      required: [style, stats]
+      properties:
+        style: { type: string, enum: [powerhouse, technician, highFlyer, brawler, striker, allRounder] }
+        specialty:
+          type: string
+          nullable: true
+          enum: [highRisk, technical, endurance, hardcore, cage]
+          description: Null or missing clears it.
+        stats: { $ref: '#/components/schemas/CoreStats' }
+        moveLevels:
+          type: object
+          description: One level per stored move, in order. A list that is left out keeps the current levels.
+          properties:
+            signatures: { type: array, items: { type: integer, minimum: 1, maximum: 5 } }
+            finishers: { type: array, items: { type: integer, minimum: 1, maximum: 5 } }
+    BuildValidationError:
+      type: object
+      required: [code, field, message]
+      properties:
+        code:
+          type: string
+          enum: [INVALID_STYLE, INVALID_SPECIALTY, SPECIALTY_NOT_ALLOWED, INVALID_STATS, MISSING_STAT, UNKNOWN_STAT, INVALID_STAT, INVALID_MOVE_LEVEL, OVER_BUDGET]
+        field: { type: string, example: stats.grapple }
+        message: { type: string }
+        details: { type: object, additionalProperties: true, description: 'e.g. { cost, budget } or { style, allowed }' }
+    BuildRules:
+      type: object
+      description: Every build rule, from lib/policies/buildRules.ts.
+      properties:
+        rulesVersion: { type: integer }
+        stats:
+          type: object
+          properties:
+            coreStats: { type: array, items: { type: string } }
+            base: { type: integer }
+            cap: { type: integer }
+            costBands:
+              type: array
+              items:
+                type: object
+                properties: { from: { type: integer }, to: { type: integer }, costPerPoint: { type: integer } }
+        moves:
+          type: object
+          properties:
+            minLevel: { type: integer }
+            maxLevel: { type: integer }
+            signatureLevelCost: { type: integer }
+            finisherLevelCost: { type: integer }
+        budgets:
+          type: object
+          properties:
+            tiers: { type: object, additionalProperties: { type: integer }, description: Budget by tier number }
+            defaultTier: { type: integer }
+            developmental: { type: integer }
+            noDivision: { type: integer }
+        styles:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              statBonuses: { type: object, additionalProperties: { type: integer } }
+              beats: { type: string, nullable: true }
+              beatenBy: { type: string, nullable: true }
+              specialties: { type: array, items: { type: string } }
+              specialtyBonus: { type: number }
+        styleBeats: { type: object, additionalProperties: { type: string } }
+        styleEdge: { type: number }
+        simCategories:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              label: { type: string }
+              examples: { type: array, items: { type: string } }
+        specialtyCategories: { type: array, items: { type: string } }
+        styleSpecialties: { type: object, additionalProperties: { type: array, items: { type: string } } }
+        specialtyBonus: { type: number }
+        allRounderSpecialtyBonus: { type: number }
+
     FormResult:
       type: string
       enum: [W, L, D]
@@ -3189,6 +3334,99 @@ paths:
       responses:
         '200': { description: Player stats with overall and per-match-type breakdown }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Wrestler builds (BLD-03) ─────────────────────────────────────
+
+  /builds/rules:
+    get:
+      tags: [Players]
+      summary: Every build rule (stats, cost bands, move levels, tier budgets, styles, matchups, specialties)
+      responses:
+        '200':
+          description: The rules from lib/policies/buildRules.ts
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BuildRules' }
+
+  /players/{playerId}/build:
+    get:
+      tags: [Players]
+      summary: A player's build, move levels, budget status and effective build (public)
+      description: >-
+        Returns the default build (all stats 40, allRounder, no specialty) when
+        the player never saved one. The budget comes from the player's current
+        division, so \`overBudget\` is always current. Hidden players read as 404.
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The build
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlayerBuild' }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    put:
+      tags: [Players]
+      summary: Save any player's build (Admin or Moderator)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SavePlayerBuildInput' }
+      responses:
+        '200':
+          description: The saved build
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlayerBuild' }
+        '400':
+          description: Every validation error at once
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  errors: { type: array, items: { $ref: '#/components/schemas/BuildValidationError' } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /players/me/build:
+    put:
+      tags: [Profile]
+      summary: Save the signed-in player's build (Wrestler role)
+      description: >-
+        Checked against the budget of the player's current division. A
+        specialty the style does not allow is rejected; clear it first when
+        changing style.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SavePlayerBuildInput' }
+      responses:
+        '200':
+          description: The saved build
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlayerBuild' }
+        '400':
+          description: Every validation error at once
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  errors: { type: array, items: { $ref: '#/components/schemas/BuildValidationError' } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not a Wrestler', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'No player profile for this user', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   # ── Player Discipline ─────────────────────────────────────────────
 

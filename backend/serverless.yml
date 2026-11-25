@@ -460,6 +460,21 @@ functions:
           path: players/{playerId}/reactivate
           method: post
           cors: *corsConfig
+
+      # BLD-03: wrestler builds. Access is declared in functions/players/handler.ts.
+      - http:
+          path: builds/rules
+          method: get
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/build
+          method: any
+          cors: *corsConfig
+      - http:
+          path: players/me/build
+          method: put
+          cors: *corsConfig
+
       # Ledger (ECO-02). Admin only; access is declared in functions/players/handler.ts.
       - http:
           path: players/{playerId}/ledger/adjust

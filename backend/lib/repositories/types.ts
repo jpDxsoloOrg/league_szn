@@ -265,6 +265,14 @@ export interface Player {
   signatures?: WrestlerMove[];
   /** Up to MAX_MOVES finishers; see lib/movesets.ts for the limits. */
   finishers?: WrestlerMove[];
+
+  // BLD-03
+  /**
+   * The player's saved build. Absent until the first save; readers fall back
+   * to `defaultBuild()`. Move levels live on `signatures` / `finishers`.
+   */
+  build?: WrestlerBuild;
+
   /**
    * Discipline fields. These are not on `PlayerPatch`: write them only through
    * `players.updateDiscipline`, and read them only through `lib/discipline.ts`.

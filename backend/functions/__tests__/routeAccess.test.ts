@@ -38,6 +38,7 @@ const SELF_SERVICE_WRITES = new Set([
   'DELETE /notifications/{notificationId}',
   'PUT /players/me/overall',
   'PUT /players/me',
+  'PUT /players/me/build', // BLD-03: the handler requires the Wrestler role and saves only the caller's player.
   'POST /promos',
   'POST /promos/{promoId}/react',
   'POST /shop/purchase', // ECO-08
