@@ -4297,6 +4297,11 @@
       "specialtyHint": "Fighting in their specialty, which gives them an edge.",
       "inSpecialty": "in specialty",
       "inSpecialtyNamed": "{{name}} in specialty",
+      "stamina": "Stamina {{stamina}}/{{max}}",
+      "staminaNamed": "{{name}}: stamina {{stamina}}/{{max}}",
+      "injured": "Injured",
+      "injuredNamed": "{{name}} injured",
+      "conditionHint": "Low stamina and injuries lower the rating in the sim. Only GMs see this.",
       "playByPlay": "Play-by-play",
       "skip": "Show all"
     },
@@ -4377,6 +4382,16 @@
         "v1": "{{wrestler}} hits {{opponent}} with a big move!",
         "v2": "{{wrestler}} catches {{opponent}} with something big!",
         "v3": "{{wrestler}} plants {{opponent}} with a huge move!"
+      },
+      "gassed": {
+        "v1": "{{wrestler}} looks gassed and {{opponent}} takes advantage.",
+        "v2": "{{wrestler}} is sucking wind, and {{opponent}} keeps up the pace.",
+        "v3": "{{wrestler}} is running on empty as {{opponent}} piles on."
+      },
+      "sellingInjury": {
+        "v1": "{{wrestler}} is selling the injury, and {{opponent}} goes right after it.",
+        "v2": "{{wrestler}} clutches the injury, and {{opponent}} smells blood.",
+        "v3": "{{wrestler}} is clearly hurting, and {{opponent}} targets the bad spot."
       },
       "nearFall": {
         "v1": "{{wrestler}} covers {{opponent}}: one, two… {{opponent}} kicks out!",

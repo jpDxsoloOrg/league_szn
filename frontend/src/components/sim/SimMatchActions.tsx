@@ -126,6 +126,7 @@ export default function SimMatchActions({ match, nameOf, onRecorded }: SimMatchA
             category={preview.category}
             winnerSideId={preview.winnerSideId}
             specialtyHits={preview.specialtyHits}
+            conditions={preview.conditions}
             playByPlay={preview.playByPlay}
             seed={preview.seed}
           />
@@ -145,6 +146,7 @@ export default function SimMatchActions({ match, nameOf, onRecorded }: SimMatchA
             category={official.simulation.category}
             winnerSideId={official.simulation.winnerSideId}
             specialtyHits={official.simulation.specialtyHits}
+            conditions={official.simulation.conditions}
             playByPlay={official.simulation.playByPlay}
             seed={official.simulation.seed}
           />
@@ -153,7 +155,7 @@ export default function SimMatchActions({ match, nameOf, onRecorded }: SimMatchA
             <p>{t('sim.actions.confirmMessage')}</p>
             {loadingOdds && <p className="sim-match-actions__note">{t('sim.actions.loadingOdds')}</p>}
             {confirmOdds && (
-              <SimOddsList sides={sidesFor(confirmOdds)} specialtyHits={confirmOdds.specialtyHits} />
+              <SimOddsList sides={sidesFor(confirmOdds)} specialtyHits={confirmOdds.specialtyHits} conditions={confirmOdds.conditions} />
             )}
           </div>
         )}

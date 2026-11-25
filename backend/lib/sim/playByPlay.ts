@@ -7,8 +7,8 @@
  * `sim.beats.*` in EN and DE.
  *
  * Story shape:
- *   opening → 2–4 momentum beats → signature → (kick-out, close matches only)
- *   → the winner's finisher → finish (pin, or a submission for technicians and
+ *   opening → 2–4 momentum beats → (condition beat) → signature → (kick-out,
+ *   close matches only) → the winner's finisher → finish (pin, or a submission for technicians and
  *   grapple-first builds).
  *
  * Momentum beats favour the side with the better odds and use the attacker's
@@ -16,6 +16,11 @@
  * A match is "close" when the two best win chances are within
  * CLOSE_MATCH_MARGIN; only then does the story include a near-fall or a
  * finisher kick-out.
+ *
+ * Condition (INJ-09): when any competitor is injured or low on stamina (only
+ * set while the injuries feature is on), one momentum beat makes way for a
+ * "selling the injury" or "looks gassed" beat, injured wrestlers first.
+ * Without a condition the story and its random stream are unchanged.
  *
  * Randomness comes from its own stream, `createRng(deriveSeed(seed,
  * PLAY_BY_PLAY_STREAM))`, so the story never shifts the draw and the same
@@ -48,6 +53,8 @@ export const MAX_MOMENTUM_BEATS_CLOSE = 3;
  * uniform so the underdog still gets some offence.
  */
 export const MOMENTUM_ODDS_SHARE = 0.6;
+/** INJ-09: below this share of max stamina a competitor "looks gassed". */
+export const GASSED_STAMINA_SHARE = 0.4;
 /** A winner whose top effective stat is grapple at or above this finishes by submission. */
 export const SUBMISSION_GRAPPLE_MIN = 75;
 
@@ -65,6 +72,8 @@ export const BEAT_VARIANTS = {
   momentumEndurance: 3,
   signature: 3,
   signatureGeneric: 3,
+  gassed: 3, // INJ-09
+  sellingInjury: 3, // INJ-09
   nearFall: 3,
   finisherKickout: 3,
   finisher: 3,
@@ -179,6 +188,18 @@ export function finishesBySubmission(competitor: SimCompetitor): boolean {
   return CORE_STATS.every((stat) => (competitor.effectiveStats[stat] ?? 0) <= grapple);
 }
 
+/**
+ * The condition beat for a competitor (INJ-09): `sellingInjury` while
+ * injured, `gassed` below GASSED_STAMINA_SHARE of max stamina, else null.
+ */
+export function conditionBeatType(competitor: Pick<SimCompetitor, 'condition'>): 'sellingInjury' | 'gassed' | null {
+  const condition = competitor.condition;
+  if (!condition) return null;
+  if (condition.injured) return 'sellingInjury';
+  const share = condition.maxStamina > 0 ? condition.stamina / condition.maxStamina : 1;
+  return share < GASSED_STAMINA_SHARE ? 'gassed' : null;
+}
+
 /** True when the two best win chances are within CLOSE_MATCH_MARGIN. */
 export function isCloseMatch(result: Pick<SimResult, 'probabilities'>): boolean {
   const chances = result.probabilities.map((entry) => entry.probability).sort((a, b) => b - a);
@@ -236,13 +257,32 @@ export function buildPlayByPlay(
     sides.length > 2 ? 'openingMulti' : sides.some((side) => side.members.length > 1) ? 'openingTag' : 'opening';
   beats.push(beat(openingType, pair(opener, opponentOf(openerSide))));
 
-  // Momentum.
-  const maxMomentum = isClose ? MAX_MOMENTUM_BEATS_CLOSE : MAX_MOMENTUM_BEATS;
+  // INJ-09: injured competitors first, then gassed ones.
+  const injured = sides.flatMap((side) =>
+    side.members.filter((member) => conditionBeatType(member) === 'sellingInjury').map((member) => ({ side, member })),
+  );
+  const gassed = sides.flatMap((side) =>
+    side.members.filter((member) => conditionBeatType(member) === 'gassed').map((member) => ({ side, member })),
+  );
+  const conditioned = injured.length > 0 ? injured : gassed;
+
+  // Momentum (one fewer when a condition beat follows, so stories stay ≤ 8 beats).
+  const maxMomentum = Math.max(
+    MIN_MOMENTUM_BEATS,
+    (isClose ? MAX_MOMENTUM_BEATS_CLOSE : MAX_MOMENTUM_BEATS) - (conditioned.length > 0 ? 1 : 0),
+  );
   const momentumCount = MIN_MOMENTUM_BEATS + Math.floor(rng() * (maxMomentum - MIN_MOMENTUM_BEATS + 1));
   for (let index = 0; index < momentumCount; index += 1) {
     const side = pickWeighted(sides, sideWeights, rng);
     const attacker = pick(side.members, rng);
     beats.push(beat(MOMENTUM_BEAT_BY_STAT[topWeightedStat(attacker, result)], pair(attacker, opponentOf(side))));
+  }
+
+  // Condition (INJ-09).
+  if (conditioned.length > 0) {
+    const { side, member } = pick(conditioned, rng);
+    const type = conditionBeatType(member) ?? 'gassed';
+    beats.push(beat(type, pair(member, opponentOf(side))));
   }
 
   // Signature.

@@ -13,11 +13,26 @@
  * The window is the season (the given one, else the active one); with no
  * season it is each sim player's last FORM_RECENT_MATCH_LIMIT completed
  * matches. Completed matches are read with one `listCompleted()` call.
+ *
+ * Condition (INJ-09): when the `injuries` feature is on, each competitor gets
+ * its stamina and injury state and a `condition` rating modifier from
+ * `staminaSimMultiplier` (INJ-02), so the GM preview and the official sim both
+ * see tired and hurt wrestlers do worse. With the feature off nothing changes.
  */
 import { getRepositories } from '../repositories';
 import type { Division, Match, Player } from '../repositories/types';
 import { toPlayerBuildView } from '../builds/playerBuild';
-import { competitorFromBuild, NEUTRAL_FORM, type SimCompetitor, type SimSide } from '../policies/matchSim';
+import {
+  competitorFromBuild,
+  NEUTRAL_FORM,
+  type SimCompetitor,
+  type SimCondition,
+  type SimModifier,
+  type SimSide,
+} from '../policies/matchSim';
+import { staminaSimMultiplier } from '../policies/fatigue';
+import type { InjuryTunables } from '../policies/fatigueDefaults';
+import { currentStamina, isInjured } from '../injuries';
 import {
   computeLeagueTable,
   type LeagueMatchInput,
@@ -34,6 +49,9 @@ export const FORM_RECENT_MATCH_LIMIT = 10;
 export const FORM_POINTS_SHARE = 0.6;
 /** Share of form from strength of schedule. */
 export const FORM_SOS_SHARE = 0.4;
+
+/** `SimModifier.source` of the stamina/injury multiplier (INJ-09). */
+export const CONDITION_MODIFIER_SOURCE = 'condition';
 
 const FORM_MIN = 0;
 const FORM_MAX = 100;
@@ -121,6 +139,27 @@ export function simSidesFromMatch(match: Pick<Match, 'teams' | 'participants'>):
   return (match.participants ?? []).map((playerId) => [playerId]);
 }
 
+// ─── Condition (INJ-09) ─────────────────────────────────────────────
+
+/**
+ * The player's stamina and injury state at `now`, and the rating modifier
+ * for it: `staminaSimMultiplier` (linear from `simStaminaFloor` at 0 stamina
+ * to 1 at max, × `simInjuredPenalty` while injured). An injury past its
+ * `returnsAt` no longer counts.
+ */
+export function simConditionFor(
+  player: Pick<Player, 'stamina' | 'currentInjury'>,
+  tunables: InjuryTunables,
+  now: Date,
+): { condition: SimCondition; modifier: SimModifier } {
+  const stamina = currentStamina(player, tunables.maxStamina);
+  const injured = isInjured(player, now);
+  return {
+    condition: { stamina, maxStamina: tunables.maxStamina, injured },
+    modifier: { source: CONDITION_MODIFIER_SOURCE, multiplier: staminaSimMultiplier(stamina, injured, tunables) },
+  };
+}
+
 // ─── Loader ─────────────────────────────────────────────────────────
 
 export interface LoadSimInputsRequest {
@@ -130,6 +169,8 @@ export interface LoadSimInputsRequest {
   sideIds?: readonly string[];
   /** Season for the form window. Defaults to the active season. */
   seasonId?: string;
+  /** Clock for injury checks (tests). Defaults to now. */
+  now?: Date;
 }
 
 export type FormWindow =
@@ -159,11 +200,12 @@ export async function loadSimInputs(request: LoadSimInputsRequest): Promise<Load
   const repos = getRepositories();
   const uniqueIds = [...new Set(request.sides.flat())];
 
-  const [players, divisions, completed, activeSeason] = await Promise.all([
+  const [players, divisions, completed, activeSeason, features] = await Promise.all([
     Promise.all(uniqueIds.map((playerId) => repos.roster.players.findById(playerId))),
     repos.leagueOps.divisions.list(),
     repos.competition.matches.listCompleted(),
     request.seasonId ? Promise.resolve(null) : repos.season.seasons.findActive(),
+    repos.user.siteConfig.getFeatures(),
   ]);
 
   const playersById = new Map<string, Player>();
@@ -192,13 +234,23 @@ export async function loadSimInputs(request: LoadSimInputsRequest): Promise<Load
     forms = strengthOfVictoriesForm(completed.map(toLeagueMatch), uniqueIds, countsFor);
   }
 
+  // INJ-09: stamina and injuries only count while the feature is on.
+  const injuryTunables = features.injuries ? await repos.user.siteConfig.getInjuryTunables() : null;
+  const now = request.now ?? new Date();
+
   const scaledPlayerIds: string[] = [];
   const competitorsById = new Map<string, SimCompetitor>();
   for (const [playerId, player] of playersById) {
     const division = player.divisionId ? divisionsById.get(player.divisionId) : undefined;
     const view = toPlayerBuildView(player, division);
     if (view.effective.scaled) scaledPlayerIds.push(playerId);
-    competitorsById.set(playerId, competitorFromBuild(playerId, view.effective, forms.get(playerId) ?? NEUTRAL_FORM));
+    const form = forms.get(playerId) ?? NEUTRAL_FORM;
+    if (injuryTunables) {
+      const { condition, modifier } = simConditionFor(player, injuryTunables, now);
+      competitorsById.set(playerId, { ...competitorFromBuild(playerId, view.effective, form, [modifier]), condition });
+    } else {
+      competitorsById.set(playerId, competitorFromBuild(playerId, view.effective, form));
+    }
   }
 
   // Every id is in competitorsById: missing players returned above.

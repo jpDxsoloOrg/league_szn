@@ -209,6 +209,20 @@ components:
         winnerSideId: { type: string }
         playByPlay: { type: array, items: { $ref: '#/components/schemas/SimBeat' } }
         specialtyHits: { type: array, items: { type: string }, description: Players fighting in their specialty }
+        # INJ-09
+        conditions:
+          type: array
+          description: Each competitor's stamina and injury state and the rating multiplier it gave. Only while the injuries feature is on. Staff only.
+          items:
+            type: object
+            required: [playerId, stamina, maxStamina, injured, multiplier]
+            properties:
+              playerId: { type: string }
+              stamina: { type: number }
+              maxStamina: { type: number }
+              injured: { type: boolean }
+              multiplier: { type: number, description: '1 = no effect' }
+
         matchId: { type: string, description: Set when a match was simulated }
         scaledPlayerIds: { type: array, items: { type: string }, description: Players whose over-budget build was scaled down }
         formWindow:

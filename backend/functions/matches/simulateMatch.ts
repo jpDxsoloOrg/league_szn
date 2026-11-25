@@ -10,7 +10,12 @@ import { realWrestlerName } from '../../lib/needsWrestler';
 import { simulate, type SideProbability } from '../../lib/policies/matchSim';
 import type { SimCategory } from '../../lib/policies/buildRules';
 import { resolveSimCategory, type SimCategoryMatch } from '../../lib/sim/category';
-import { loadSimInputs, simSidesFromMatch, type FormWindow } from '../../lib/sim/loadSimInputs';
+import {
+  CONDITION_MODIFIER_SOURCE,
+  loadSimInputs,
+  simSidesFromMatch,
+  type FormWindow,
+} from '../../lib/sim/loadSimInputs';
 import {
   buildPlayByPlay,
   type PlayByPlayMoveset,
@@ -54,6 +59,19 @@ export interface SimulateProbability {
   pct: number;
 }
 
+/**
+ * A competitor's stamina and injury state in a sim (INJ-09). Staff only, like
+ * the odds: stamina is private to the player and staff.
+ */
+export interface SimulateCondition {
+  playerId: string;
+  stamina: number;
+  maxStamina: number;
+  injured: boolean;
+  /** The rating multiplier it gave (1 = no effect). */
+  multiplier: number;
+}
+
 export interface SimulateResponse {
   seed: number;
   category: SimCategory;
@@ -64,6 +82,8 @@ export interface SimulateResponse {
   playByPlay: SimBeat[];
   /** Players fighting in their specialty. */
   specialtyHits: string[];
+  /** INJ-09: each competitor's stamina and injury state; only while the injuries feature is on. */
+  conditions?: SimulateCondition[];
   /** Set when the preview is for a scheduled match. */
   matchId?: string;
   /** Players whose saved build is over budget and was scaled down. */
@@ -208,6 +228,13 @@ async function runSim(setup: SimSetup, seed: number): Promise<SimRunResult> {
   }
   const playByPlay = buildPlayByPlay(result, inputs.sides, names, moves);
 
+  // INJ-09: the loader only sets a condition while the injuries feature is on.
+  const conditions: SimulateCondition[] = inputs.competitors.flatMap((competitor) => {
+    if (!competitor.condition) return [];
+    const modifier = competitor.modifiers?.find((entry) => entry.source === CONDITION_MODIFIER_SOURCE);
+    return [{ playerId: competitor.playerId, ...competitor.condition, multiplier: modifier?.multiplier ?? 1 }];
+  });
+
   const playerIdsBySide = new Map(inputs.sides.map((side) => [side.sideId, side.members.map((member) => member.playerId)]));
   return {
     ok: true,
@@ -222,6 +249,7 @@ async function runSim(setup: SimSetup, seed: number): Promise<SimRunResult> {
       winnerSideId: result.winnerSideId,
       playByPlay,
       specialtyHits: result.specialtyHits,
+      ...(conditions.length > 0 ? { conditions } : {}),
       ...(setup.matchId ? { matchId: setup.matchId } : {}),
       scaledPlayerIds: inputs.scaledPlayerIds,
       formWindow: inputs.formWindow,

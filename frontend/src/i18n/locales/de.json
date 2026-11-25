@@ -4198,7 +4198,7 @@
       "strikes": "Schläge",
       "grapple": "Griffe",
       "agility": "Beweglichkeit",
-      "endurance": "Ausdauer"
+      "endurance": "Zähigkeit"
     },
     "specialist": "Spezialist: {{category}}",
     "styleBonus": "+{{bonus}} Stil",
@@ -4297,6 +4297,11 @@
       "specialtyHint": "Kämpft in seiner Spezialität und hat dadurch einen Vorteil.",
       "inSpecialty": "in Spezialität",
       "inSpecialtyNamed": "{{name}} in Spezialität",
+      "stamina": "Ausdauer {{stamina}}/{{max}}",
+      "staminaNamed": "{{name}}: Ausdauer {{stamina}}/{{max}}",
+      "injured": "Verletzt",
+      "injuredNamed": "{{name}} verletzt",
+      "conditionHint": "Wenig Ausdauer und Verletzungen senken das Rating in der Simulation. Das sehen nur GMs.",
       "playByPlay": "Match-Verlauf",
       "skip": "Alles zeigen"
     },
@@ -4377,6 +4382,16 @@
         "v1": "{{wrestler}} trifft {{opponent}} mit einer großen Aktion!",
         "v2": "{{wrestler}} erwischt {{opponent}} mit etwas Großem!",
         "v3": "{{wrestler}} pflanzt {{opponent}} mit einem gewaltigen Move in die Matte!"
+      },
+      "gassed": {
+        "v1": "{{wrestler}} ist sichtlich platt, und {{opponent}} nutzt das aus.",
+        "v2": "{{wrestler}} ringt nach Luft, während {{opponent}} das Tempo hochhält.",
+        "v3": "{{wrestler}} läuft auf Reserve, und {{opponent}} legt nach."
+      },
+      "sellingInjury": {
+        "v1": "{{wrestler}} spürt die Verletzung, und {{opponent}} geht gezielt darauf.",
+        "v2": "{{wrestler}} hält sich die verletzte Stelle, und {{opponent}} wittert die Chance.",
+        "v3": "{{wrestler}} hat sichtlich Schmerzen, und {{opponent}} nimmt die Schwachstelle ins Visier."
       },
       "nearFall": {
         "v1": "{{wrestler}} covert {{opponent}}: eins, zwei … {{opponent}} kickt aus!",
