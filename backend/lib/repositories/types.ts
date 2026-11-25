@@ -704,6 +704,28 @@ export interface MatchSlot {
   wrestlerNameSnapshot?: string;
 }
 
+// ECO-05
+/**
+ * What match pay did for one participant (`lib/economy/matchPay.ts`). Holds no
+ * amounts (match rows are public; the money lives on the ledger), only what a
+ * revert needs: which contract the match counted against.
+ */
+export interface MatchPaySettlementPlayer {
+  /** The active contract this match counted against; absent for a free agent. */
+  contractId?: string;
+  /** True when this match was the contract's last one and completed it. */
+  completedContract?: boolean;
+  /** Set once a revert reversed this player's pay and contract count. */
+  reversedAt?: string;
+}
+
+// ECO-05
+/** Match pay bookkeeping on a completed match. A player listed here was settled. */
+export interface MatchPaySettlement {
+  settledAt: string;
+  players: Record<string, MatchPaySettlementPlayer>;
+}
+
 export interface Match {
   matchId: string;
   date: string;
@@ -736,6 +758,8 @@ export interface Match {
   /** Number of user ratings submitted for this match. */
   ratingsCount?: number;
   matchOfTheNight?: boolean;
+  /** ECO-05: per-player match pay record; written after the result commits. */
+  paySettlement?: MatchPaySettlement;
   /**
    * ISO time the result was recorded (PRL-02). Set once by recordResult;
    * older matches are backfilled from `updatedAt`. Read via `matchResultTime`.

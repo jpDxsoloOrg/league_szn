@@ -9,6 +9,7 @@ import { parseBody } from '../../lib/parseBody';
 import { RESULT_NEEDS_CHAMPION_MESSAGE, championIsOnASide } from '../../lib/challengeTitle';
 import { updateGroupStats } from './updateGroupStats';
 import { resolveChampionTagTeamId } from '../../lib/tagTeams/championTagTeam';
+import { settleMatchPay } from '../../lib/economy/matchPay';
 
 interface RecordResultBody {
   winners: string[];
@@ -153,6 +154,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         return conflict('Match result could not be recorded due to a concurrent update. Please try again.');
       }
       throw transactError;
+    }
+
+    // ── Match pay (ECO-05) ─────────────────────────────────────────────
+    // Its own unit of work right after the result: a ledger posting cannot
+    // share a transaction with the player-record writes above. Idempotent,
+    // so a failure here never fails the result. See lib/economy/matchPay.ts.
+    try {
+      await settleMatchPay(matchId);
+    } catch (err) {
+      console.error(`Match pay failed for ${matchId}:`, err);
     }
 
     // ── Championship handling (separate from core transaction) ─────────

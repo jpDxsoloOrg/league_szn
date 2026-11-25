@@ -25,6 +25,8 @@ export type NotificationType =
   | 'contract_offer_declined'
   | 'contract_offer_expired'
   | 'contract_released'
+  // ECO-05: a tryout / match contract ran its course
+  | 'contract_completed'
   | 'progression_consideration'
   | 'progression_executed'
   | 'progression_milestone'

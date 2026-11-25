@@ -54,6 +54,16 @@ describe('buildContractUpdate', () => {
     expect(parts.ExpressionAttributeValues[':expectedStatus']).toBe('offered');
   });
 
+  // ECO-05
+  it('also guards matchesPlayed when given', () => {
+    const parts = buildContractUpdate({ matchesPlayed: 3 }, 'now', 'active', 2);
+    expect(parts.ConditionExpression).toBe(
+      'attribute_exists(#contractId) AND #expectedStatus = :expectedStatus AND #expectedMatchesPlayed = :expectedMatchesPlayed',
+    );
+    expect(parts.ExpressionAttributeNames['#expectedMatchesPlayed']).toBe('matchesPlayed');
+    expect(parts.ExpressionAttributeValues[':expectedMatchesPlayed']).toBe(2);
+  });
+
   it('only guards existence without an expected status', () => {
     expect(buildContractUpdate({ matchesPlayed: 2 }, 'now').ConditionExpression).toBe('attribute_exists(#contractId)');
   });

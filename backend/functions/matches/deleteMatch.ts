@@ -6,6 +6,7 @@ import { success, badRequest, conflict, notFound, serverError } from '../../lib/
 import { requireRole } from '../../lib/auth';
 import { invokeAsync } from '../../lib/asyncLambda';
 import { revertGroupStats } from './revertGroupStats';
+import { reverseMatchPay } from '../../lib/economy/matchPay';
 
 interface BracketMatch {
   participant1?: string;
@@ -50,6 +51,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       if (blockedReason) {
         return conflict(blockedReason);
       }
+
+      // ECO-05: reverse the match pay and contract count first, while the
+      // match row (and its paySettlement) still exists. Idempotent.
+      await reverseMatchPay(matchId);
 
       await rollbackCompletedMatch(match, runInTransaction);
 

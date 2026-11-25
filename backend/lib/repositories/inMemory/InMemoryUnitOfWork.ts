@@ -620,9 +620,18 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     });
   }
 
-  updateContract(contractId: string, patch: ContractPatch, expectedStatus: ContractStatus): void {
+  updateContract(
+    contractId: string,
+    patch: ContractPatch,
+    expectedStatus: ContractStatus,
+    expectedMatchesPlayed?: number,
+  ): void {
     this.preconditions.push(() => {
-      if (this.contractsStore().get(contractId)?.status !== expectedStatus) {
+      const stored = this.contractsStore().get(contractId);
+      if (stored?.status !== expectedStatus) {
+        throw new ConcurrencyError('Contract', contractId);
+      }
+      if (expectedMatchesPlayed !== undefined && stored.matchesPlayed !== expectedMatchesPlayed) {
         throw new ConcurrencyError('Contract', contractId);
       }
     });

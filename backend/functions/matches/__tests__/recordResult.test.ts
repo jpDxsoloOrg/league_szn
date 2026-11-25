@@ -98,6 +98,8 @@ vi.mock('../../../lib/repositories', () => ({
 vi.mock('../../../lib/asyncLambda', () => ({
   invokeAsync: vi.fn().mockResolvedValue(undefined),
 }));
+// ECO-05: match pay has its own tests (lib/economy/__tests__/matchPay.test.ts).
+vi.mock('../../../lib/economy/matchPay', () => ({ settleMatchPay: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../updateGroupStats', () => ({
   updateGroupStats: vi.fn().mockResolvedValue(undefined),
 }));

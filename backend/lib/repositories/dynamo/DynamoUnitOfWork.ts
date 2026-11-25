@@ -954,8 +954,13 @@ export class DynamoUnitOfWork implements UnitOfWork {
     this.tagLastStaged({ kind: 'guarded', entityName: 'Contract', id: contract.contractId });
   }
 
-  updateContract(contractId: string, patch: ContractPatch, expectedStatus: ContractStatus): void {
-    const parts = buildContractUpdate(patch, new Date().toISOString(), expectedStatus);
+  updateContract(
+    contractId: string,
+    patch: ContractPatch,
+    expectedStatus: ContractStatus,
+    expectedMatchesPlayed?: number,
+  ): void {
+    const parts = buildContractUpdate(patch, new Date().toISOString(), expectedStatus, expectedMatchesPlayed);
     this.staged.push({
       Update: {
         TableName: TableNames.CONTRACTS,

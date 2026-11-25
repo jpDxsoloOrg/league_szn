@@ -296,8 +296,15 @@ export interface UnitOfWork {
    * Stage a contract update. The row must exist and its stored status must
    * still equal `expectedStatus`, or the whole unit of work fails with
    * `ConcurrencyError`. `null` in the patch removes the attribute.
+   * With `expectedMatchesPlayed` (ECO-05), the stored `matchesPlayed` must
+   * also still equal it, so two results never count over each other.
    */
-  updateContract(contractId: string, patch: ContractPatch, expectedStatus: ContractStatus): void;
+  updateContract(
+    contractId: string,
+    patch: ContractPatch,
+    expectedStatus: ContractStatus,
+    expectedMatchesPlayed?: number,
+  ): void;
 
   /**
    * Stage setting `player.activeContractId`. Fails with `ConcurrencyError`

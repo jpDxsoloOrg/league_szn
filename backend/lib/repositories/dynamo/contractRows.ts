@@ -10,12 +10,14 @@ export interface ContractUpdateParts {
 /**
  * Shared by `DynamoContractsRepository.update` and `DynamoUnitOfWork.updateContract`
  * so both paths write identical rows. `null` in the patch REMOVEs the attribute.
- * The condition always requires the row to exist, plus the expected status when given.
+ * The condition always requires the row to exist, plus the expected status and
+ * `matchesPlayed` (ECO-05) when given.
  */
 export function buildContractUpdate(
   patch: ContractPatch,
   nowIso: string,
   expectedStatus?: ContractStatus,
+  expectedMatchesPlayed?: number,
 ): ContractUpdateParts {
   const sets: string[] = ['#updatedAt = :updatedAt'];
   const removes: string[] = [];
@@ -43,6 +45,11 @@ export function buildContractUpdate(
     names['#expectedStatus'] = 'status';
     values[':expectedStatus'] = expectedStatus;
     conditions.push('#expectedStatus = :expectedStatus');
+  }
+  if (expectedMatchesPlayed !== undefined) {
+    names['#expectedMatchesPlayed'] = 'matchesPlayed';
+    values[':expectedMatchesPlayed'] = expectedMatchesPlayed;
+    conditions.push('#expectedMatchesPlayed = :expectedMatchesPlayed');
   }
   return {
     UpdateExpression: updateExpression,
