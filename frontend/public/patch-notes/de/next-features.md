@@ -2,13 +2,9 @@ Daran bauen wir als Nächstes. Pläne können sich unterwegs noch ändern, aber 
 
 ## Als Nächstes
 
-### Wrestler-Builds & Match-Simulation
+### Kondition & Verletzungen
 
-Dein Wrestler bekommt einen Build: Attribute und Stärken, die bestimmen, wie er im Ring abliefert, und eine Match-Simulation, die damit Matches ausspielt.
-
-### Ausdauer & Verletzungen
-
-Wrestling kostet Kraft. Wrestler bekommen Ausdauer, die bei einem vollen Terminkalender sinkt und sich mit Pausen erholt, und Verletzungen, die jemanden eine Weile von der Card fernhalten können.
+Wrestling kostet Kraft. Wrestler bekommen eine Kondition, die bei einem vollen Terminkalender sinkt und sich mit Pausen erholt, und Verletzungen, die jemanden eine Weile von der Card fernhalten können. Ein hoher Ausdauer-Wert in deinem Build hilft dir, länger durchzuhalten.
 
 ## Weiter in der Zukunft
 
