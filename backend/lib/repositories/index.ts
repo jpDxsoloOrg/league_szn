@@ -187,6 +187,23 @@ export {
   LEDGER_ENTRY_KINDS,
   ledgerSortKey,
 } from './ledger';
+
+// ECO-09
+export type {
+  GmInterferenceListFilter,
+  GmInterferenceOutcome,
+  GmInterferenceRepository,
+  GmInterferenceRequest,
+  GmInterferenceResolution,
+  GmInterferenceStatus,
+  PlayerGmInterferenceView,
+} from './gmInterference';
+export {
+  GM_INTERFERENCE_OUTCOMES,
+  GM_INTERFERENCE_STATUSES,
+  toPlayerGmInterferenceView,
+} from './gmInterference';
+
 export type {
   ContractsRepository,
   ContractCreateInput,

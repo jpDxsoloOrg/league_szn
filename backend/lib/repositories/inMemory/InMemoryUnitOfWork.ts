@@ -10,6 +10,12 @@ import type { DivisionPatch } from '../LeagueOpsRepository';
 import type { ChallengeStatus, TagTeam } from '../types';
 import type { Contract, ContractPatch, ContractStatus } from '../types';
 import { applyContractPatch } from './InMemoryContractsRepository';
+// ECO-09
+import {
+  applyGmInterferenceResolution,
+  type GmInterferenceRequest,
+  type GmInterferenceResolution,
+} from '../gmInterference';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
 import type {
   Rivalry,
@@ -73,6 +79,10 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       /** Ledger (ECO-02). Optional so callers that never post need not wire them. */
       ledger?: LedgerEntry[];
       ledgerIdempotency?: Map<string, LedgerIdempotencyRecord>;
+
+      /** ECO-09. Optional so callers that never touch GM interference need not wire it. */
+      gmInterference?: Map<string, GmInterferenceRequest>;
+
       /** ECO-03. Optional so callers that never touch contracts need not wire it. */
       contracts?: Map<string, Contract>;
     },
@@ -612,6 +622,36 @@ export class InMemoryUnitOfWork implements UnitOfWork {
         }
       }
     };
+  }
+
+  // ── GM interference (ECO-09) ─────────────────────────────────────
+  private gmInterferenceStore(): Map<string, GmInterferenceRequest> {
+    if (!this.stores.gmInterference) throw new Error('InMemoryUnitOfWork: gmInterference store not wired');
+    return this.stores.gmInterference;
+  }
+
+  createGmInterferenceRequest(request: GmInterferenceRequest): void {
+    this.preconditions.push(() => {
+      if (this.gmInterferenceStore().has(request.requestId)) {
+        throw new ConcurrencyError('GmInterference', request.requestId);
+      }
+    });
+    this.staged.push(() => {
+      this.gmInterferenceStore().set(request.requestId, { ...request });
+    });
+  }
+
+  resolveGmInterferenceRequest(requestId: string, resolution: GmInterferenceResolution): void {
+    this.preconditions.push(() => {
+      if (this.gmInterferenceStore().get(requestId)?.status !== 'pending') {
+        throw new ConcurrencyError('GmInterference', requestId);
+      }
+    });
+    this.staged.push(() => {
+      const existing = this.gmInterferenceStore().get(requestId);
+      if (!existing) return;
+      this.gmInterferenceStore().set(requestId, applyGmInterferenceResolution(existing, resolution));
+    });
   }
 
   // ── Contracts (ECO-03) ───────────────────────────────────────────

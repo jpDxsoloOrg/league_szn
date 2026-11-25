@@ -17,6 +17,7 @@ import {
 import { InMemoryMatchRatingsRepository } from './InMemoryMatchRatingsRepository';
 import { InMemoryProgressionRepository } from './InMemoryProgressionRepository';
 import { InMemoryLedgerRepository } from './InMemoryLedgerRepository';
+import { InMemoryGmInterferenceRepository } from './InMemoryGmInterferenceRepository'; // ECO-09
 import { InMemoryContractsRepository } from './InMemoryContractsRepository';
 import { InMemoryUnitOfWork } from './InMemoryUnitOfWork';
 
@@ -35,6 +36,10 @@ export function buildInMemoryRepositories(): Repositories {
   const matchRatings = new InMemoryMatchRatingsRepository();
   const progression = new InMemoryProgressionRepository();
   const ledger = new InMemoryLedgerRepository();
+
+  // ECO-09
+  const gmInterference = new InMemoryGmInterferenceRepository();
+
   const contracts = new InMemoryContractsRepository();
 
   const runInTransaction: Repositories['runInTransaction'] = async <T>(fn: (tx: import('../unitOfWork').UnitOfWork) => Promise<T>): Promise<T> => {
@@ -58,6 +63,10 @@ export function buildInMemoryRepositories(): Repositories {
       divisions: leagueOps.divisions.store as unknown as Map<string, Record<string, unknown>>,
       ledger: ledger.entriesStore,
       ledgerIdempotency: ledger.idempotencyStore,
+
+      // ECO-09
+      gmInterference: gmInterference.store,
+
       contracts: contracts.store,
     });
     try {
@@ -85,6 +94,10 @@ export function buildInMemoryRepositories(): Repositories {
     matchRatings,
     progression,
     ledger,
+
+    // ECO-09
+    gmInterference,
+
     contracts,
     runInTransaction,
     clearAllData: async () => {
@@ -159,5 +172,6 @@ export {
 export { InMemoryMatchRatingsRepository } from './InMemoryMatchRatingsRepository';
 export { InMemoryProgressionRepository } from './InMemoryProgressionRepository';
 export { InMemoryLedgerRepository } from './InMemoryLedgerRepository';
+export { InMemoryGmInterferenceRepository } from './InMemoryGmInterferenceRepository'; // ECO-09
 export { InMemoryUnitOfWork } from './InMemoryUnitOfWork';
 export { InMemoryContractsRepository } from './InMemoryContractsRepository';

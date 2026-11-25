@@ -9,6 +9,13 @@ import { handler as getEconomyConfigHandler } from './getEconomyConfig';
 import { handler as updateEconomyConfigHandler } from './updateEconomyConfig';
 import { handler as getEconomyCatalogHandler } from './getEconomyCatalog';
 import { handler as shopPurchaseHandler } from '../shop/purchase'; // ECO-08
+// ECO-09
+import {
+  listGmInterference,
+  listMyGmInterference,
+  requestGmInterference,
+  resolveGmInterference,
+} from '../shop/gmInterference';
 import { createRouter, type RouteConfig, ADMIN_ONLY, STAFF } from '../../lib/router';
 
 /**
@@ -84,6 +91,33 @@ export const routes: ReadonlyArray<RouteConfig> = [
     method: 'POST',
     handler: shopPurchaseHandler,
     access: 'self-service',
+  },
+
+  // ECO-09: players request (handlers check the Wrestler role and use the
+  // caller's own player); GMs see the queue and resolve.
+  {
+    resource: '/shop/gm-interference',
+    method: 'POST',
+    handler: requestGmInterference,
+    access: 'self-service',
+  },
+  {
+    resource: '/shop/gm-interference',
+    method: 'GET',
+    handler: listMyGmInterference,
+    access: 'self-service',
+  },
+  {
+    resource: '/gm-interference',
+    method: 'GET',
+    handler: listGmInterference,
+    access: STAFF,
+  },
+  {
+    resource: '/gm-interference/{requestId}/resolve',
+    method: 'POST',
+    handler: resolveGmInterference,
+    access: STAFF,
   },
 ];
 

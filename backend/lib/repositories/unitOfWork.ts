@@ -1,6 +1,7 @@
 import type { DivisionPatch } from './LeagueOpsRepository';
 import type { FactionMessage, FactionDirectMessage } from './factionMessages';
 import type { PostLedgerEntryInput, StagedLedgerEntry } from './ledger';
+import type { GmInterferenceRequest, GmInterferenceResolution } from './gmInterference'; // ECO-09
 import type {
   Rivalry,
   RivalryMessage,
@@ -288,6 +289,20 @@ export interface UnitOfWork {
    * that same balance write, so a purchase and its effect commit together.
    */
   postLedgerEntry(input: PostLedgerEntryInput): StagedLedgerEntry;
+
+  // ── GM interference (ECO-09) ─────────────────────────────────────
+  /**
+   * Stage creating a request row. Fails the whole unit of work with
+   * `ConcurrencyError('GmInterference', requestId)` if the id already exists.
+   */
+  createGmInterferenceRequest(request: GmInterferenceRequest): void;
+
+  /**
+   * Stage resolving a request. The row must exist and still be `pending`, or
+   * the whole unit of work fails with `ConcurrencyError('GmInterference', requestId)`.
+   */
+  resolveGmInterferenceRequest(requestId: string, resolution: GmInterferenceResolution): void;
+
   // ── Contracts (ECO-03) ──────────────────────────────────────────
   /**
    * Stage creating a contract row (build it with `buildContract`). Fails the

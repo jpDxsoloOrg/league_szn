@@ -167,6 +167,10 @@ export const TableNames = {
   // Ledger (ECO-02)
   LEDGER: process.env.LEDGER_TABLE!,
   LEDGER_IDEMPOTENCY: process.env.LEDGER_IDEMPOTENCY_TABLE!,
+
+  // ECO-09
+  GM_INTERFERENCE: process.env.GM_INTERFERENCE_TABLE!,
+
 };
 
 type DynamoRecord = Record<string, unknown>;

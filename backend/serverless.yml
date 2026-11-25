@@ -63,6 +63,10 @@ provider:
     # Ledger (ECO-02)
     LEDGER_TABLE: ${self:service}-ledger-${self:provider.stage}
     LEDGER_IDEMPOTENCY_TABLE: ${self:service}-ledger-idempotency-${self:provider.stage}
+
+    # ECO-09
+    GM_INTERFERENCE_TABLE: ${self:service}-gm-interference-${self:provider.stage}
+
     DYNAMODB_ENDPOINT: ${env:DYNAMODB_ENDPOINT, 'http://localhost:8000'}
     DB_DRIVER: ${env:DB_DRIVER, 'dynamo'}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
@@ -168,6 +172,11 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.LEDGER_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.LEDGER_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.LEDGER_IDEMPOTENCY_TABLE}
+
+            # ECO-09
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GM_INTERFERENCE_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GM_INTERFERENCE_TABLE}/index/*
+
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -379,6 +388,29 @@ functions:
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
+
+      # ECO-09: GM interference. Access is declared in functions/admin/handler.ts.
+      - http:
+          path: shop/gm-interference
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: shop/gm-interference
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: gm-interference
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: gm-interference/{requestId}/resolve
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
 
   # Players (Phase 2 consolidated: getPlayers, createPlayer, updatePlayer, deletePlayer, getMyProfile, updateMyProfile)
   players:
@@ -2915,6 +2947,40 @@ resources:
           - AttributeName: idempotencyKey
             KeyType: HASH
     # ── end Ledger (ECO-02) ──
+
+    # ── GM interference (ECO-09) ── routed to the Overflow stack by
+    # stacks-map.js (AWS::DynamoDB::Table). Paid requests to the GM;
+    # PlayerIndex lists one player's requests newest first.
+    GmInterferenceTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.GM_INTERFERENCE_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        AttributeDefinitions:
+          - AttributeName: requestId
+            AttributeType: S
+          - AttributeName: playerId
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: requestId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: PlayerIndex
+            KeySchema:
+              - AttributeName: playerId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+    # ── end GM interference (ECO-09) ──
 
     ImagesBucket:
       Type: AWS::S3::Bucket

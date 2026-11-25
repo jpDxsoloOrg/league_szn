@@ -12,6 +12,9 @@ export type NotificationType =
   | 'transfer_reviewed'
   | 'storyline_request'
   | 'storyline_request_reviewed'
+  // ECO-09
+  | 'gm_interference_requested'
+  | 'gm_interference_resolved'
   | 'rivalry_reviewed'
   | 'rivalry_message'
   | 'rivalry_request'

@@ -2021,6 +2021,10 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       // ECO-02: seeded players start with no money and no postings.
       ledger: [],
       ledgerIdempotency: [],
+
+      // ECO-09: no seeded interference requests; an empty list clears stale rows.
+      gmInterference: [],
+
       // ECO-03: seeded contracts arrive with ECO-15; an empty list clears stale rows.
       contracts: [],
     };

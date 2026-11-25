@@ -12,6 +12,7 @@ import type { DivisionPatch } from '../LeagueOpsRepository';
 import type { ChallengeStatus, PlayerProgression, ProgressionConsideration, ProgressionEvent, TagTeam } from '../types';
 import type { Contract, ContractPatch, ContractStatus } from '../types';
 import { buildContractUpdate } from './contractRows';
+import type { GmInterferenceRequest, GmInterferenceResolution } from '../gmInterference'; // ECO-09
 import {
   buildClearConsiderationUpdate,
   buildSetConsiderationUpdate,
@@ -953,6 +954,53 @@ export class DynamoUnitOfWork implements UnitOfWork {
       );
     }
     return { items, meta };
+  }
+
+  // ── GM interference (ECO-09) ─────────────────────────────────────
+  createGmInterferenceRequest(request: GmInterferenceRequest): void {
+    this.staged.push({
+      Put: {
+        TableName: TableNames.GM_INTERFERENCE,
+        Item: { ...request },
+        ConditionExpression: 'attribute_not_exists(requestId)',
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'GmInterference', id: request.requestId });
+  }
+
+  resolveGmInterferenceRequest(requestId: string, resolution: GmInterferenceResolution): void {
+    const names: Record<string, string> = {
+      '#requestId': 'requestId',
+      '#status': 'status',
+      '#resolvedAt': 'resolvedAt',
+      '#resolvedBy': 'resolvedBy',
+      '#updatedAt': 'updatedAt',
+    };
+    const values: Record<string, unknown> = {
+      ':status': resolution.status,
+      ':pending': 'pending',
+      ':resolvedAt': resolution.resolvedAt,
+      ':resolvedBy': resolution.resolvedBy,
+    };
+    const sets = ['#status = :status', '#resolvedAt = :resolvedAt', '#resolvedBy = :resolvedBy', '#updatedAt = :resolvedAt'];
+    for (const field of ['publicNote', 'privateNote', 'refundEntryId'] as const) {
+      const value = resolution[field];
+      if (value === undefined) continue;
+      names[`#${field}`] = field;
+      values[`:${field}`] = value;
+      sets.push(`#${field} = :${field}`);
+    }
+    this.staged.push({
+      Update: {
+        TableName: TableNames.GM_INTERFERENCE,
+        Key: { requestId },
+        UpdateExpression: `SET ${sets.join(', ')}`,
+        ConditionExpression: 'attribute_exists(#requestId) AND #status = :pending',
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: values,
+      },
+    });
+    this.tagLastStaged({ kind: 'guarded', entityName: 'GmInterference', id: requestId });
   }
 
   // ── Contracts (ECO-03) ───────────────────────────────────────────

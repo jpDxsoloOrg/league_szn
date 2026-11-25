@@ -63,6 +63,10 @@ const TABLE_DEFINITIONS: Record<ExportDatasetKey, Omit<TableConfig, 'key'>> = {
   // leaves keys behind that would block re-posting.
   ledger: { tableName: TableNames.LEDGER, partitionKey: 'playerId', sortKey: 'sortKey' },
   ledgerIdempotency: { tableName: TableNames.LEDGER_IDEMPOTENCY, partitionKey: 'idempotencyKey' },
+
+  // GM interference requests (ECO-09), one row per requestId.
+  gmInterference: { tableName: TableNames.GM_INTERFERENCE, partitionKey: 'requestId' },
+
   // Contracts (ECO-03): offers and contracts, one row per contractId.
   contracts: { tableName: TableNames.CONTRACTS, partitionKey: 'contractId' },
 };

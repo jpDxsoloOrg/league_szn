@@ -41,6 +41,7 @@ const SELF_SERVICE_WRITES = new Set([
   'POST /promos',
   'POST /promos/{promoId}/react',
   'POST /shop/purchase', // ECO-08
+  'POST /shop/gm-interference', // ECO-09
   'PUT /rivalry-requests/{rivalryId}',
   'POST /rivalries/{rivalryId}/messages',
   'POST /rivalries/{rivalryId}/notes',
@@ -122,6 +123,9 @@ const STAFF_ROUTES = [
   'POST /wrestlers',
   'PUT /wrestlers/{wrestlerId}',
   'DELETE /wrestlers/{wrestlerId}',
+  // ECO-09
+  'GET /gm-interference',
+  'POST /gm-interference/{requestId}/resolve',
   'POST /admin/contenders/recalculate',
   'GET /admin/contenders/overrides',
   'POST /admin/contenders/overrides',

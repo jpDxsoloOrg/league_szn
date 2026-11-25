@@ -1102,6 +1102,70 @@ components:
                 matchId: { type: string }
         alreadyApplied: { type: boolean }
 
+    # ECO-09
+    GmInterferenceInput:
+      type: object
+      required: [request]
+      properties:
+        request: { type: string, minLength: 1, maxLength: 500, description: 'What the player asks the GM for (trimmed)' }
+        matchId: { type: string, description: 'Optional scheduled match the request is about' }
+    PlayerGmInterference:
+      type: object
+      description: The player's view of their own request. No private note, no GM id.
+      required: [requestId, request, status, price, createdAt]
+      properties:
+        requestId: { type: string }
+        request: { type: string }
+        matchId: { type: string }
+        status: { type: string, enum: [pending, delivered, partial, taken, refunded] }
+        price: { type: integer }
+        createdAt: { type: string, format: date-time }
+        resolvedAt: { type: string, format: date-time }
+        publicNote: { type: string }
+        outcomeMessage: { type: string, description: 'Outcome line once resolved, e.g. "The GM took your money. Better luck next time."' }
+    GmInterferenceRequest:
+      type: object
+      description: Staff view of a request.
+      required: [requestId, playerId, request, status, price, sequence, chargeEntryId, chargeKey, createdAt, updatedAt]
+      properties:
+        requestId: { type: string }
+        playerId: { type: string }
+        playerName: { type: string }
+        request: { type: string }
+        matchId: { type: string }
+        status: { type: string, enum: [pending, delivered, partial, taken, refunded] }
+        price: { type: integer }
+        sequence: { type: integer, description: "1-based count of the player's requests" }
+        chargeEntryId: { type: string }
+        chargeKey: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        resolvedAt: { type: string, format: date-time }
+        resolvedBy: { type: string, description: 'Cognito sub of the GM' }
+        publicNote: { type: string }
+        privateNote: { type: string }
+        refundEntryId: { type: string }
+    GmInterferenceRequestResult:
+      type: object
+      required: [request, entry, balance]
+      properties:
+        request: { $ref: '#/components/schemas/PlayerGmInterference' }
+        entry: { $ref: '#/components/schemas/LedgerEntry' }
+        balance: { type: integer }
+    ResolveGmInterferenceInput:
+      type: object
+      required: [outcome]
+      properties:
+        outcome: { type: string, enum: [delivered, partial, taken, refunded], description: 'Only refunded gives the money back' }
+        publicNote: { type: string, maxLength: 1000, description: 'Shown to the player' }
+        privateNote: { type: string, maxLength: 1000, description: 'Staff only' }
+    ResolveGmInterferenceResult:
+      type: object
+      required: [request]
+      properties:
+        request: { $ref: '#/components/schemas/GmInterferenceRequest' }
+        refund: { $ref: '#/components/schemas/LedgerEntry' }
+
     UpdateSiteConfigInput:
       type: object
       description: At least one of features or ticker. Both are partial patches.
@@ -1796,6 +1860,106 @@ paths:
         '403': { description: 'Not a Wrestler, or the economy feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'No player profile for the caller, or the match does not exist', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '409': { description: 'Refused (see `code`), or the balance or match changed while buying', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ECO-09
+  /shop/gm-interference:
+    post:
+      tags: [Site Config]
+      summary: Pay for GM interference
+      description: >-
+        Wrestler (the caller's own player). Needs the economy feature. Charges
+        `shop.gmInterference.price` up front as a `purchase` ledger entry and
+        creates a pending request in the same transaction, then notifies every
+        GM. The GM may deliver all, some or nothing and keeps the money unless
+        they refund it. One pending request per player. Refusals are 409 with a
+        `code`: ITEM_DISABLED, IN_DEBT, INSUFFICIENT_FUNDS, REQUEST_PENDING,
+        MATCH_NOT_SCHEDULED.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GmInterferenceInput' }
+      responses:
+        '201':
+          description: Paid; the request is pending
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GmInterferenceRequestResult' }
+        '400': { description: 'Missing or too long request, bad matchId', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not a Wrestler, or the economy feature is off', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'No player profile for the caller, or the match does not exist', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'Refused (see `code`), or the balance changed while paying', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    get:
+      tags: [Site Config]
+      summary: My GM interference requests
+      description: Wrestler (the caller's own player). Newest first, with the outcome and public note only.
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: The caller's requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requests: { type: array, items: { $ref: '#/components/schemas/PlayerGmInterference' } }
+        '403': { description: 'Not a Wrestler', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'No player profile for the caller', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /gm-interference:
+    get:
+      tags: [Site Config]
+      summary: GM interference queue
+      description: Admin and Moderator. Every request, or one status, newest first, with player names and private notes.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, delivered, partial, taken, refunded] }
+      responses:
+        '200':
+          description: Requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requests: { type: array, items: { $ref: '#/components/schemas/GmInterferenceRequest' } }
+        '400': { description: 'Unknown status', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not staff', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /gm-interference/{requestId}/resolve:
+    post:
+      tags: [Site Config]
+      summary: Resolve a GM interference request
+      description: >-
+        Admin and Moderator. `refunded` posts a `refund` of the price in the
+        same transaction; delivered, partial and taken keep the money. A
+        request resolves once. A GM cannot resolve their own request
+        (409 OWN_REQUEST). The player is notified with the outcome and the
+        public note; the private note stays with staff.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResolveGmInterferenceInput' }
+      responses:
+        '200':
+          description: Resolved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResolveGmInterferenceResult' }
+        '400': { description: 'Bad outcome or note too long', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Not staff', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Request (or its player) not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: 'ALREADY_RESOLVED, OWN_REQUEST, or the balance changed while refunding', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /players/me:
     get:
