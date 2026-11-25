@@ -10,6 +10,7 @@ import {
 import { withPublicSimulation } from '../../lib/sim/publicSimulation';
 import { withoutConditionReport } from '../../lib/injuries/applyMatchCondition'; // INJ-04
 import { withoutInjuryOverrideActors } from '../../lib/injuries/bookingGate'; // INJ-06
+import { injuredParticipantsField, loadInjuryLookup } from '../../lib/injuries/scheduledMatchFlags'; // INJ-07
 import { collectSlotPlayerIds, hydrateMatchSlots } from './hydrateSlots';
 import { anyMatchHasTeams, loadTagTeamIndex, sideTagTeamsField } from '../../lib/tagTeams/sideBilling';
 
@@ -146,6 +147,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       if (!slots || slots.length === 0) return billed;
       return { ...billed, slots: hydrateMatchSlots(slots, playerLookup) };
     });
+
+    // INJ-07: flag scheduled matches whose participants are injured on the
+    // match date. Return dates only, which the public injury view shows anyway.
+    const injuryLookup = await loadInjuryLookup(sortedMatches, playerLookup);
+    for (const hydrated of hydratedMatches) {
+      Object.assign(hydrated, injuredParticipantsField(hydrated, injuryLookup));
+    }
 
     // RIV-24: surface the calling user's rating per match so the FE rating
     // widget can render in the right state without N+1 follow-up calls.

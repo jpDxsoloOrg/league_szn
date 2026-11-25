@@ -8,6 +8,12 @@ import { authenticate } from '../../lib/authenticate';
 import { getAuthContext } from '../../lib/auth';
 import { matchWinners } from '../../lib/matchResult';
 import { anyMatchHasTeams, loadTagTeamIndex, resolveSideTagTeams, type SideTagTeam } from '../../lib/tagTeams/sideBilling';
+import {
+  eventCardMatches,
+  eventInjuredParticipantsField,
+  loadInjuryLookup,
+  type EventInjuredParticipant,
+} from '../../lib/injuries/scheduledMatchFlags'; // INJ-07
 
 const RECENT_RESULTS_LIMIT = 5;
 
@@ -30,6 +36,8 @@ interface DashboardEvent {
   eventType: string;
   venue?: string;
   matchCount?: number;
+  /** INJ-07: injured participants on the card's scheduled matches. Only set when someone is. */
+  injuredParticipants?: EventInjuredParticipant[];
 }
 
 interface DashboardMatch {
@@ -248,6 +256,20 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         venue: e.venue,
         matchCount: e.matchCards?.length,
       }));
+
+    // INJ-07: flag injured participants on the open events' scheduled
+    // matches. Every player row is already loaded, so this adds at most the
+    // injuries flag read.
+    const openEventSources = [...upcomingEventsList, ...inProgressEventsList];
+    const dashboardMatchesById = new Map(matchList.map((m) => [m.matchId, m]));
+    const injuryLookup = await loadInjuryLookup(eventCardMatches(openEventSources, dashboardMatchesById), resultPlayerMap);
+    if (injuryLookup) {
+      const sourceEventsById = new Map(openEventSources.map((e) => [e.eventId, e]));
+      for (const dashboardEvent of [...upcomingEvents, ...inProgressEvents]) {
+        const source = sourceEventsById.get(dashboardEvent.eventId);
+        if (source) Object.assign(dashboardEvent, eventInjuredParticipantsField(source, dashboardMatchesById, injuryLookup));
+      }
+    }
 
     // Recent results: the latest completed matches by match date, however old.
     // Older rows have no updatedAt, so it only breaks ties within a date.

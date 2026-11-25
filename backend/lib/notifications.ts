@@ -52,6 +52,10 @@ export type NotificationType =
   | 'progression_goals_reset'
   // INJ-04: a recorded result injured the player
   | 'injury_sustained'
+
+  // INJ-07: tells GMs a player is out and what that affects
+  | 'injury_staff_notice'
+
   // BLD-04: a division move left the build over a smaller budget
   | 'build_over_budget';
 

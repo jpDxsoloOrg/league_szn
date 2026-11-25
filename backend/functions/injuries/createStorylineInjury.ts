@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
 import { activeInjury } from '../../lib/injuries';
+import { notifyStaffOfInjuries } from '../../lib/injuries/notifyStaff'; // INJ-07
 import { parseBody } from '../../lib/parseBody';
 import { getRepositories } from '../../lib/repositories';
 import { ConcurrencyError } from '../../lib/repositories/errors';
@@ -93,6 +94,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       'injury_added',
       `You have been listed as injured. Expected return: ${formatLeagueDate(injury.returnsAt, timezone)}.`,
     );
+    // INJ-07: tell staff what the injury affects.
+    await notifyStaffOfInjuries([{ player, returnsAt: injury.returnsAt }]);
 
     return created(await injuries.get(playerId, injury.startedAt));
   } catch (err) {

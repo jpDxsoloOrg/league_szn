@@ -17,6 +17,7 @@ vi.mock('../../economy/refundSimBoosts', () => ({ refundSimBoosts: vi.fn().mockR
 vi.mock('../../../functions/matches/updateGroupStats', () => ({ updateGroupStats: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../../../functions/matches/revertGroupStats', () => ({ revertGroupStats: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../../notifications', () => ({ createNotification: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../../staffUsers', () => ({ listStaffUserIds: vi.fn().mockResolvedValue(['gm-sub']) })); // INJ-07
 
 import { buildInMemoryRepositories, type InMemoryCompetitionRepository, type InMemoryRosterRepository } from '../../repositories/inMemory';
 import { resetRepositoriesForTesting, setRepositoriesForTesting, type Repositories } from '../../repositories';
@@ -128,6 +129,26 @@ describe('recording a result drains and rolls (INJ-04)', () => {
       sourceId: 'm1',
       sourceType: 'match',
     }));
+  });
+
+  // INJ-07
+  it('tells staff about a new injury and the bookings it affects', async () => {
+    await useTunables(ALWAYS);
+    seedMatch({ matchId: 'm1' });
+    seedMatch({ matchId: 'next', date: '2026-11-26T01:00:00.000Z', participants: ['p2', 'p3'] });
+
+    await recordMatchResult({ matchId: 'm1', winners: ['p1'], losers: ['p2'] }, { source: 'manual' });
+
+    const notices = vi.mocked(createNotification).mock.calls
+      .map(([params]) => params)
+      .filter((params) => params.type === 'injury_staff_notice');
+    // Both players are hurt by the forced roll; m1 itself is now completed.
+    expect(notices.map((notice) => notice.sourceId).sort()).toEqual(['p1', 'p2']);
+    expect(notices.every((notice) => notice.userId === 'gm-sub')).toBe(true);
+    expect(notices.find((notice) => notice.sourceId === 'p2')?.message)
+      .toMatch(/^p2 is injured until .+\. Affected: 1 scheduled match$/);
+    expect(notices.find((notice) => notice.sourceId === 'p1')?.message)
+      .toMatch(/Affected: 0 scheduled matches$/);
   });
 
   it('gives an already-injured player no second injury, but still drains them', async () => {

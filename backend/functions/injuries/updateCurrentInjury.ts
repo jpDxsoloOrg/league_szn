@@ -1,5 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { activeInjury } from '../../lib/injuries';
+import { notifyStaffOfInjuries } from '../../lib/injuries/notifyStaff'; // INJ-07
 import { parseBody } from '../../lib/parseBody';
 import { getRepositories } from '../../lib/repositories';
 import { ConcurrencyError } from '../../lib/repositories/errors';
@@ -114,7 +115,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       'injury_updated',
       `Your injury return date has been updated to ${formatLeagueDate(returnsAt, timezone)}.`,
     );
-    // INJ-07: an extension also notifies staff; call its notifier here once it lands.
+    // INJ-07: an extension also tells staff what it now affects.
+    if (extended) await notifyStaffOfInjuries([{ player, returnsAt }]);
 
     return success(await injuries.get(playerId, current.startedAt));
   } catch (err) {

@@ -824,6 +824,15 @@ components:
               alreadyInjured: { type: boolean, description: 'The roll came up but the player was already injured, so no second injury.' }
         tunablesVersion: { type: integer, description: 'INJ-04. Staff only. Injury tunables version the condition report used.' }
 
+        # INJ-07
+        injuredParticipants:
+          type: array
+          description: >-
+            INJ-07. Scheduled matches only, computed on read while the \`injuries\`
+            flag is on: participants whose injury still keeps them out on the
+            match date. Absent when nobody is. Nothing is cancelled automatically.
+          items: { $ref: '#/components/schemas/InjuredParticipant' }
+
         injuryOverrides:
           type: array
           description: INJ-06. Injured players a GM booked anyway with \`allowInjured\`, oldest first.
@@ -860,6 +869,23 @@ components:
         name: { type: string }
         returnsAt: { type: string, format: date-time }
         message: { type: string, description: 'English, e.g. "Hurt is injured until 2026-12-06".' }
+
+    # INJ-07
+    InjuredParticipant:
+      type: object
+      required: [playerId, returnsAt]
+      description: Public. Only the return date; never severity, GM notes or stamina.
+      properties:
+        playerId: { type: string }
+        returnsAt: { type: string, format: date-time }
+
+    EventInjuredParticipant:
+      allOf:
+        - { $ref: '#/components/schemas/InjuredParticipant' }
+        - type: object
+          required: [matchId]
+          properties:
+            matchId: { type: string, description: The scheduled card match the player is booked in. }
 
     SideTagTeam:
       type: object
@@ -1065,6 +1091,14 @@ components:
         status: { type: string, enum: [upcoming, in-progress, completed, cancelled] }
         seasonId: { type: string }
         matchCards: { type: array, items: { $ref: '#/components/schemas/MatchCardEntry' } }
+        # INJ-07
+        injuredParticipants:
+          type: array
+          description: >-
+            INJ-07. GET /events and the dashboard's upcoming and in-progress
+            events only: injured participants across the card's scheduled
+            matches, one entry per match. Absent when nobody is.
+          items: { $ref: '#/components/schemas/EventInjuredParticipant' }
         attendance: { type: integer }
         rating: { type: number }
         createdAt: { type: string }
@@ -3512,7 +3546,7 @@ paths:
       tags: [Dashboard]
       summary: Get dashboard overview
       responses:
-        '200': { description: Dashboard data with current champions, upcoming events, recent results, season info, quick stats }
+        '200': { description: 'Dashboard data with current champions, upcoming events (with \`injuredParticipants\`, INJ-07), recent results, season info, quick stats' }
 
   /ticker:
     get:

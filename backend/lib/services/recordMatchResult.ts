@@ -31,6 +31,7 @@ import {
   notifyInjuredPlayers,
   stageMatchCondition,
 } from '../injuries/applyMatchCondition';
+import { notifyStaffOfInjuries } from '../injuries/notifyStaff'; // INJ-07
 
 /**
  * Who settled the match. Only a `manual` result refunds bought sim boosts:
@@ -249,6 +250,14 @@ export async function recordMatchResult(
 
   // INJ-04: tell each newly injured player. Never fails the result.
   if (conditionPlan) await notifyInjuredPlayers(conditionPlan, match);
+
+  // INJ-07: tell staff who is out and which bookings and titles that affects.
+  if (conditionPlan && conditionPlan.injured.length > 0) {
+    await notifyStaffOfInjuries(
+      conditionPlan.injured.map(({ player, injury }) => ({ player, returnsAt: injury.returnsAt })),
+      { timeZone: conditionPlan.timezone },
+    );
+  }
 
   // ── Match pay (ECO-05) ─────────────────────────────────────────────
   // Its own unit of work right after the result: a ledger posting cannot
