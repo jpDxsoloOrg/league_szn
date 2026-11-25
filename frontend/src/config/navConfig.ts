@@ -24,6 +24,7 @@ import {
   Film,
   Flag,
   Flame,
+  Gavel,
   GitBranch,
   House,
   LayoutGrid,
@@ -38,6 +39,7 @@ import {
   Rocket,
   ScrollText,
   Shield,
+  ShoppingBag,
   SlidersHorizontal,
   Star,
   Swords,
@@ -178,6 +180,8 @@ export const NAV_SECTIONS: NavSection[] = [
       // ECO-13
       { path: '/my-contract', labelKey: 'nav.myContract', icon: Wallet, feature: 'economy', wrestlerOnly: true },
       { path: '/my-videos', labelKey: 'nav.myVideos', icon: Video, wrestlerOnly: true },
+      // ECO-14
+      { path: '/shop', labelKey: 'nav.shop', icon: ShoppingBag, feature: 'economy', wrestlerOnly: true },
       { path: '/guide', labelKey: 'nav.help', icon: CircleHelp },
       { path: '/guide/wiki/league-rules', labelKey: 'nav.leagueRules', icon: BookOpen },
     ],
@@ -301,6 +305,8 @@ export const ADMIN_TABS = [
   'rivalries',
   'heat-config',
   'storyline-requests',
+  // ECO-14
+  'gm-interference',
   'announcements',
   'videos',
   'companies',
@@ -379,6 +385,8 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { tab: 'rivalries', labelKey: 'admin.panel.tabs.rivalries', icon: Flame, minRole: 'Moderator' },
       { tab: 'heat-config', labelKey: 'admin.panel.tabs.heatConfig', icon: Thermometer, minRole: 'Admin' },
       { tab: 'storyline-requests', labelKey: 'admin.panel.tabs.storylineRequests', icon: FileText, minRole: 'Moderator' },
+      // ECO-14
+      { tab: 'gm-interference', labelKey: 'admin.panel.tabs.gmInterference', icon: Gavel, minRole: 'Moderator', feature: 'economy' },
       { tab: 'announcements', labelKey: 'admin.panel.tabs.announcements', icon: Megaphone, minRole: 'Moderator' },
       { tab: 'videos', labelKey: 'admin.panel.tabs.videos', icon: Video, minRole: 'Moderator' },
     ],

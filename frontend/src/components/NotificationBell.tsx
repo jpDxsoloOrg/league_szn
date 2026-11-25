@@ -50,6 +50,17 @@ function sourceTypeLabel(sourceType: AppNotification['sourceType']): string {
   }
 }
 
+// ECO-14: GM interference notifications route by type, ahead of the source-type switches.
+function gmInterferenceRoute(notification: AppNotification): { path: string; labelKey: string } | null {
+  if (notification.type === 'gm_interference_requested') {
+    return { path: '/admin/gm-interference', labelKey: 'notifications.typeGmInterference' };
+  }
+  if (notification.type === 'gm_interference_resolved') {
+    return { path: '/shop', labelKey: 'notifications.typeGmInterference' };
+  }
+  return null;
+}
+
 /** ECO-13: where a contract or money notification goes, or null when it isn't one. Home while the economy is off. */
 function economyNavigationPath(notification: AppNotification, economyEnabled: boolean): string | null {
   let path: string;
@@ -227,7 +238,8 @@ export default function NotificationBell() {
     }
 
     setIsOpen(false);
-    navigate(getNavigationPath(notification, playerId, features.transfers, Boolean(features.economy)));
+    navigate(gmInterferenceRoute(notification)?.path
+      ?? getNavigationPath(notification, playerId, features.transfers, Boolean(features.economy)));
   }, [navigate, playerId, features.transfers, features.economy]);
 
   const handleDeleteNotification = useCallback(async (e: React.MouseEvent, notification: AppNotification) => {
@@ -299,7 +311,7 @@ export default function NotificationBell() {
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <span className="notification-item-badge-label">
-                    {t(sourceTypeLabel(notification.sourceType))}
+                    {t(gmInterferenceRoute(notification)?.labelKey ?? sourceTypeLabel(notification.sourceType))}
                   </span>
                   <span className="notification-item-message">{notification.message}</span>
                   <span className="notification-item-time">

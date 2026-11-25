@@ -1,0 +1,72 @@
+/* GM interference queue (ECO-14). Shared list and form styles come from adminRoster.css. */
+
+.gm-queue__row {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.gm-queue__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gm-queue__text,
+.gm-queue__note,
+.gm-queue__quote {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.gm-queue__note {
+  color: var(--color-text-secondary);
+  font-size: var(--text-dense);
+}
+
+.gm-queue__note--private {
+  font-style: italic;
+}
+
+.gm-queue__quote {
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.gm-queue__form {
+  display: grid;
+  gap: 1rem;
+}
+
+.gm-queue__outcomes {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.gm-queue__outcome {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.gm-queue__outcome label {
+  cursor: pointer;
+}
+
+.gm-queue__outcome:has(input:checked) {
+  border-color: var(--color-selected);
+}
+
+.gm-queue__outcome input {
+  margin-top: 0.25rem;
+}

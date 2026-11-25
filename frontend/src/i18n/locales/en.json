@@ -287,6 +287,7 @@
     "highlights": "Highlights",
     "profile": "My Profile",
     "myVideos": "My Videos",
+    "shop": "Shop",
     "groups": {
       "core": "League",
       "league": "League",
@@ -953,6 +954,54 @@
         "incomplete": "Fill in the season contract terms and the numbers above to see a total."
       }
     },
+    "gmInterference": {
+      "title": "GM Interference",
+      "subtitle": "Players pay up front and ask the GM for something. Deliver all, some or nothing. The money stays with the league unless you refund it.",
+      "filterLabel": "Show",
+      "filters": {
+        "pending": "Pending",
+        "all": "All requests",
+        "delivered": "Delivered",
+        "partial": "Partly delivered",
+        "taken": "Money taken",
+        "refunded": "Refunded"
+      },
+      "loadFailed": "Could not load the requests.",
+      "emptyPending": "No requests are waiting on a GM.",
+      "empty": "No requests here.",
+      "linkedMatch": "About: {{match}}",
+      "matchUnavailable": "a match that is no longer scheduled",
+      "matchLine": "{{date}}: {{players}}",
+      "publicNoteShown": "Note to the player: {{note}}",
+      "privateNoteShown": "Staff note: {{note}}",
+      "resolve": "Resolve",
+      "resolveTitle": "Resolve {{name}}'s request",
+      "resolved": "Request resolved. The player has been told.",
+      "resolveFailed": "Could not resolve the request.",
+      "outcome": "Outcome",
+      "outcomes": {
+        "delivered": {
+          "label": "Delivered",
+          "hint": "You did what they asked. The league keeps {{price}}."
+        },
+        "partial": {
+          "label": "Partly delivered",
+          "hint": "You did some of it. The league keeps {{price}}."
+        },
+        "taken": {
+          "label": "Take the money",
+          "hint": "You do nothing and keep {{price}}. The player reads \"The GM took your money. Better luck next time.\""
+        },
+        "refunded": {
+          "label": "Refund",
+          "hint": "You turn it down and {{price}} goes back to the player."
+        }
+      },
+      "publicNote": "Note to the player (optional)",
+      "publicNoteHint": "The player sees this with the outcome.",
+      "privateNote": "Staff note (optional)",
+      "privateNoteHint": "Only GMs see this. It never reaches the player."
+    },
     "hub": {
       "back": "Admin Panel",
       "superAdminOnly": "Super-admin only",
@@ -996,6 +1045,7 @@
         "videos": "Manage Videos",
         "transfers": "Division Transfers",
         "storylineRequests": "Storyline Requests",
+        "gmInterference": "GM Interference",
         "rivalries": "Rivalries",
         "heatConfig": "Heat Tunables",
         "economyConfig": "Economy Settings",
@@ -2952,7 +3002,8 @@
     "typeDiscipline": "Strikes",
     "typeProgression": "Call-ups",
     "typeContract": "Contract",
-    "typeEconomy": "Wallet"
+    "typeEconomy": "Wallet",
+    "typeGmInterference": "GM interference"
   },
   "overalls": {
     "admin": {
@@ -4093,6 +4144,145 @@
         "remove": "Strike removed.",
         "reactivate": "Player reactivated."
       }
+    }
+  },
+  "economyShop": {
+    "title": "Shop",
+    "subtitle": "Spend your earnings on an edge. Prices are set by the GMs.",
+    "balance": "Balance: {{amount}}",
+    "staleData": "Some shop details could not be refreshed. What you see may be out of date.",
+    "debtLocked": "You are in debt, so the shop is locked until your balance is back to zero.",
+    "empty": "Nothing is for sale right now.",
+    "itemsLabel": "Shop items",
+    "loadFailed": "Could not load the shop.",
+    "comingSoon": "Coming soon",
+    "buy": "Buy",
+    "buyItem": "Buy {{item}}",
+    "bought": "Bought {{item}}. Your balance is now {{balance}}.",
+    "buyFailed": "The purchase did not go through. Try again.",
+    "matchOption": "{{date}} vs {{opponents}}",
+    "confirmTitle": "Buy {{item}}?",
+    "confirmBuy": "Pay {{price}}",
+    "pickMatch": "Match",
+    "simRefundHint": "If the GM records this match by hand instead of simulating it, you get your money back.",
+    "price": "Price",
+    "balanceAfter": "Balance after",
+    "items": {
+      "injuryShield": {
+        "name": "Injury shield",
+        "effect_one": "Cuts your injury chance by {{percent}}% for your next match.",
+        "effect_other": "Cuts your injury chance by {{percent}}% for your next {{count}} matches."
+      },
+      "rehab": {
+        "name": "Rehab",
+        "effect_one": "Takes {{count}} week off an active injury.",
+        "effect_other": "Takes {{count}} weeks off an active injury."
+      },
+      "staminaTopUp": {
+        "name": "Stamina top-up",
+        "effect": "Adds {{amount}} stamina back, up to your maximum."
+      },
+      "simInterference": {
+        "name": "Sim interference",
+        "effect": "Adds {{boost}} to your rating in one of your simulated matches."
+      },
+      "gmInterference": {
+        "name": "GM interference",
+        "effect": "Pay the GM and ask for anything: a title shot, a run-in, a rival's bad night."
+      }
+    },
+    "blocked": {
+      "comingSoon": "Takes effect once injuries and the match sim launch.",
+      "inDebt": "In debt: the shop is locked until your balance is back to zero.",
+      "insufficientFunds": "You don't have enough money for this.",
+      "shieldActive": "You already have an active injury shield.",
+      "noActiveInjury": "Needs an active injury.",
+      "noScheduledMatch": "Needs a scheduled match you haven't boosted yet.",
+      "requestPending": "You already have a request waiting on the GM."
+    },
+    "refusals": {
+      "ITEM_DISABLED": "This item is not for sale right now.",
+      "IN_DEBT": "You are in debt, so the shop is locked until your balance is back to zero.",
+      "INSUFFICIENT_FUNDS": "You don't have enough money for this.",
+      "SHIELD_ACTIVE": "You already have an active injury shield.",
+      "NO_ACTIVE_INJURY": "Rehab needs an active injury.",
+      "INJURY_TOO_SHORT": "Rehab needs at least 2 weeks left on the injury.",
+      "MATCH_NOT_SCHEDULED": "That match is no longer scheduled.",
+      "NOT_IN_MATCH": "You can only buy interference for a match you are in.",
+      "BOOST_ALREADY_BOUGHT": "You already bought interference for this match.",
+      "REQUEST_PENDING": "You already have a request waiting on the GM.",
+      "ALREADY_RESOLVED": "Another GM already resolved this request.",
+      "OWN_REQUEST": "This is your own request. Another GM has to resolve it."
+    },
+    "gm": {
+      "warning": "The GM may keep your money and do nothing.",
+      "open": "Make a request",
+      "formTitle": "Ask the GM",
+      "requestLabel": "What do you want?",
+      "requestHint": "{{length}} of {{max}} characters",
+      "matchLabel": "About a match (optional)",
+      "noMatch": "No match",
+      "understand": "I understand the GM can keep my money and do nothing.",
+      "pay": "Pay {{price}} and send",
+      "sent": "Request sent. Your balance is now {{balance}}.",
+      "sendFailed": "The request did not go through. Try again.",
+      "myRequests": "My requests",
+      "noRequests": "You haven't asked the GM for anything yet.",
+      "linkedMatch": "About: {{match}}",
+      "gmNote": "GM's note: {{note}}",
+      "status": {
+        "pending": "Waiting on the GM",
+        "delivered": "Delivered",
+        "partial": "Partly delivered",
+        "taken": "Money taken",
+        "refunded": "Refunded"
+      },
+      "outcome": {
+        "delivered": "The GM granted your request.",
+        "partial": "The GM granted part of your request.",
+        "taken": "The GM took your money. Better luck next time.",
+        "refunded": "The GM turned your request down and refunded your money."
+      }
+    }
+  },
+  "economyFines": {
+    "open": "Fines",
+    "title": "Fines: {{name}}",
+    "loadFailed": "Could not load everything. Fines may be missing from the list.",
+    "balance": "Balance: {{amount}}",
+    "issueHeading": "Fine this player",
+    "fineLabel": "Fine",
+    "pickFine": "Pick a preset or a custom amount",
+    "custom": "Custom amount",
+    "amount": "Amount",
+    "reasonRequired": "Reason (shown to the player)",
+    "reasonOptional": "Extra detail (optional, shown to the player)",
+    "reasonHint": "The player sees this with the fine.",
+    "issue": "Fine {{name}}",
+    "issued": "{{name}} was fined {{amount}}.",
+    "issueFailed": "The fine did not go through. Try again.",
+    "history": "Past fines",
+    "noFines": "No fines yet.",
+    "rescindedBadge": "Rescinded",
+    "rescind": "Rescind",
+    "rescindConfirm": "Refund this {{amount}} fine?",
+    "rescindYes": "Refund",
+    "rescinded": "Fine rescinded and refunded.",
+    "rescindFailed": "Could not rescind the fine.",
+    "loadMore": "Show older entries",
+    "noShow": {
+      "open": "No-shows",
+      "title": "No-shows",
+      "description": "Marking a no-show fines the player the league's no-show fine. Undoing it refunds the fine. The match itself stays as it is.",
+      "note": "Note for the fine (optional)",
+      "badge": "No-show",
+      "mark": "Mark no-show",
+      "markFor": "Mark {{name}} as a no-show",
+      "undo": "Undo",
+      "undoFor": "Undo {{name}}'s no-show",
+      "marked": "{{name}} was marked as a no-show.",
+      "undone": "{{name}}'s no-show was undone.",
+      "failed": "Could not save the no-show."
     }
   },
   "pwa": {

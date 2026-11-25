@@ -83,6 +83,18 @@ describe('NotificationBell source types', () => {
     await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(path));
   });
 
+  // ECO-14
+  it.each([
+    ['gm_interference_requested', '/admin/gm-interference'],
+    ['gm_interference_resolved', '/shop'],
+  ] as const)('labels and links a %s notification by its type', async (type, path) => {
+    await openWith(notification({ type }));
+
+    expect(screen.getByText('notifications.typeGmInterference')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Something happened'));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(path));
+  });
+
   it('sends a transfer notification home while transfers are off', async () => {
     await openWith(notification({ sourceType: 'transfer' }), '/events');
 

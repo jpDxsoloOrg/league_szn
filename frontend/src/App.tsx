@@ -80,6 +80,8 @@ const MyFaction = lazy(() => import('./components/factions/MyFaction'));
 const TagTeamsList = lazy(() => import('./components/tagTeams/TagTeamsList'));
 const TagTeamDetail = lazy(() => import('./components/tagTeams/TagTeamDetail'));
 const MyTagTeam = lazy(() => import('./components/tagTeams/MyTagTeam'));
+// ECO-14
+const Shop = lazy(() => import('./components/economy/Shop'));
 const RivalryHub = lazy(() => import('./components/rivalries/RivalryHub'));
 const RivalryDetail = lazy(() => import('./components/rivalries/RivalryDetail'));
 const RequestRivalry = lazy(() => import('./components/rivalries/RequestRivalry'));
@@ -338,6 +340,15 @@ function AppLayout() {
               <FeatureRoute feature="stables">
                 <ProtectedRoute requiredRole="Wrestler">
                   <MyTagTeam />
+                </ProtectedRoute>
+              </FeatureRoute>
+            } />
+
+            {/* ECO-14: player shop - feature-gated */}
+            <Route path="/shop" element={
+              <FeatureRoute feature="economy">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <Shop />
                 </ProtectedRoute>
               </FeatureRoute>
             } />

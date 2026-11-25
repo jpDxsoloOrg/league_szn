@@ -9,6 +9,7 @@ import type { LeagueEvent } from '../../types/event';
 import type { TagTeam } from '../../types/tagTeam';
 import MatchResultForm from '../events/MatchResultForm';
 import MatchEditForm from '../events/MatchEditForm';
+import NoShowButton from '../economy/NoShowButton';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
@@ -221,6 +222,14 @@ export default function StandaloneMatches() {
                     <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPendingDelete(match)}>
                       {t('events.detail.deleteMatch', 'Delete')}
                     </Button>
+                    <NoShowButton
+                      matchId={match.matchId}
+                      status={match.status}
+                      date={match.date}
+                      completedAt={match.completedAt}
+                      noShows={match.noShows}
+                      participants={match.participants.map((playerId) => ({ playerId, name: getPlayerName(playerId) }))}
+                    />
                   </div>
                 </div>
                 {recordingMatchId === match.matchId && (
@@ -231,6 +240,7 @@ export default function StandaloneMatches() {
                       tagTeams={tagTeams}
                       onSuccess={handleRefresh}
                       onCancel={() => setRecordingMatchId(null)}
+                      showNoShow={false}
                     />
                   </div>
                 )}

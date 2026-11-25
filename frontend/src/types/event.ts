@@ -1,4 +1,4 @@
-import type { MatchStatus, HydratedMatchSlot, SideTagTeam, WrestlerMove } from './index';
+import type { MatchStatus, HydratedMatchSlot, MatchNoShow, SideTagTeam, WrestlerMove } from './index';
 
 export type EventType = 'ppv' | 'weekly' | 'special' | 'house';
 
@@ -64,6 +64,9 @@ export interface EnrichedMatchData {
   /** This user's rating for the match, if any (RIV-24+). */
   userRating?: number | null;
   matchOfTheNight?: boolean;
+  // ECO-14
+  completedAt?: string;
+  noShows?: MatchNoShow[];
 }
 
 export interface EventWithMatches extends LeagueEvent {

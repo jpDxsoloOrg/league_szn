@@ -445,6 +445,7 @@ components:
         playerId: { type: string }
         noShow: { $ref: '#/components/schemas/MatchNoShow' }
         entry:
+          type: object
           allOf: [{ $ref: '#/components/schemas/LedgerEntry' }]
           nullable: true
           description: The fine (mark) or its refund (undo); null when nothing was posted.
@@ -3351,6 +3352,38 @@ paths:
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '409': { description: 'The balance changed while saving; try again', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  # ECO-14
+  /players/{playerId}/ledger:
+    get:
+      tags: [Players]
+      summary: One page of a player's ledger, newest first (Moderator, Admin)
+      description: >-
+        The GM fines view reads fines and their \`fineRescinded\` refunds from
+        here. A \`fineRescinded\` entry points at its fine with
+        \`refType: ledgerEntry\` and \`refId\` set to the fine's \`entryId\`.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: playerId, in: path, required: true, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - { name: cursor, in: query, schema: { type: string }, description: 'nextCursor from the previous page' }
+      responses:
+        '200':
+          description: One page of entries
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [playerId, balance, items]
+                properties:
+                  playerId: { type: string }
+                  balance: { type: integer }
+                  items: { type: array, items: { $ref: '#/components/schemas/LedgerEntry' } }
+                  nextCursor: { type: string, description: Absent on the last page }
+        '400': { description: 'Bad limit or cursor', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Player not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   # ECO-13: the signed-in player's own wallet history
   /players/me/ledger:
     get:
@@ -3494,23 +3527,6 @@ paths:
       security: [{ BearerAuth: [] }]
       parameters:
         - { name: contractId, in: path, required: true, schema: { type: string } }
-  # ── Fines (ECO-07) ───────────────────────────────────────────────
-
-  /matches/{matchId}/no-show:
-    post:
-      tags: [Matches]
-      summary: Mark a participant as a no-show and fine them (Admin, Moderator)
-      description: >-
-        Works on scheduled matches and on completed ones up to 7 days after the
-        result. Adds a mark to \`match.noShows\`, posts a \`fine\` of the economy
-        settings' \`noShowFine\` (key \`match#{matchId}#noshow#{playerId}\`; a
-        re-mark after an undo appends \`#2\`, \`#3\`...) and notifies the player.
-        The match is not cancelled. Marking an already-marked player fines once
-        and returns 200 with \`alreadyApplied: true\`. With \`noShowFine\` 0 the
-        mark is recorded and nothing is posted. The balance may go negative.
-      security: [{ BearerAuth: [] }]
-      parameters:
-        - { name: matchId, in: path, required: true, schema: { type: string } }
       requestBody:
         required: true
         content:
@@ -3550,7 +3566,7 @@ paths:
                 properties:
                   playerId: { type: string }
                   balance: { type: integer }
-                  activeContract: { allOf: [{ $ref: '#/components/schemas/Contract' }], nullable: true }
+                  activeContract: { type: object, allOf: [{ $ref: '#/components/schemas/Contract' }], nullable: true }
                   offers: { type: array, items: { $ref: '#/components/schemas/Contract' }, description: Soonest to expire first }
                   pastContracts: { type: array, items: { $ref: '#/components/schemas/Contract' }, description: Newest first }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
@@ -3573,7 +3589,7 @@ paths:
                 properties:
                   playerId: { type: string }
                   freeAgent: { type: boolean }
-                  contract: { allOf: [{ $ref: '#/components/schemas/PublicContract' }], nullable: true }
+                  contract: { type: object, allOf: [{ $ref: '#/components/schemas/PublicContract' }], nullable: true }
         '404': { description: 'Player not found or hidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /free-agents:
@@ -3586,6 +3602,30 @@ paths:
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/Player' } }
+
+  # ── Fines (ECO-07) ───────────────────────────────────────────────
+
+  /matches/{matchId}/no-show:
+    post:
+      tags: [Matches]
+      summary: Mark a participant as a no-show and fine them (Admin, Moderator)
+      description: >-
+        Works on scheduled matches and on completed ones up to 7 days after the
+        result. Adds a mark to \`match.noShows\`, posts a \`fine\` of the economy
+        settings' \`noShowFine\` (key \`match#{matchId}#noshow#{playerId}\`; a
+        re-mark after an undo appends \`#2\`, \`#3\`...) and notifies the player.
+        The match is not cancelled. Marking an already-marked player fines once
+        and returns 200 with \`alreadyApplied: true\`. With \`noShowFine\` 0 the
+        mark is recorded and nothing is posted. The balance may go negative.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: matchId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
               required: [playerId]
               properties:
                 playerId: { type: string, description: Must be a participant of the match }

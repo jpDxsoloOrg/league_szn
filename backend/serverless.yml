@@ -472,6 +472,12 @@ functions:
           method: get
           cors: *corsConfig
 
+      # ECO-14: GM ledger read for the fines view. Access is declared in functions/players/handler.ts.
+      - http:
+          path: players/{playerId}/ledger
+          method: get
+          cors: *corsConfig
+
       # Fines (ECO-07). GM only; access is declared in functions/players/handler.ts.
       - http:
           path: players/{playerId}/fines

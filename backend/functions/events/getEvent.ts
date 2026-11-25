@@ -182,6 +182,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             ...(match.matchOfTheNight != null && { matchOfTheNight: match.matchOfTheNight }),
             userHasRated: userRatingForMatch !== undefined,
             userRating: userRatingForMatch ?? null,
+            // ECO-14: the GM's no-show control on the card needs the marks and the result time.
+            ...(match.noShows && { noShows: match.noShows }),
+            ...(match.completedAt && { completedAt: match.completedAt }),
           },
         };
       })

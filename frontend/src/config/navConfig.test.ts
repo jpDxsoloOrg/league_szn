@@ -156,6 +156,18 @@ describe('admin registry', () => {
   it('no longer registers the Match Card Builder', () => {
     expect(isAdminTab('events')).toBe(false);
   });
+
+  // ECO-14
+  it('drops the GM interference queue and the Shop tab while the economy is off', () => {
+    const features = { ...ALL_ON, economy: false };
+    const adminTabs = (on: typeof ALL_ON) => getVisibleAdminGroups(false, on).flatMap((group) => group.entries.map((entry) => entry.tab));
+    expect(adminTabs(ALL_ON)).toContain('gm-interference');
+    expect(adminTabs(features)).not.toContain('gm-interference');
+    const me = section('me');
+    expect(getVisibleTabs(me, context())).toContainEqual(expect.objectContaining({ path: '/shop' }));
+    expect(getVisibleTabs(me, context({ features }))).not.toContainEqual(expect.objectContaining({ path: '/shop' }));
+    expect(getVisibleTabs(me, context({ isWrestler: false }))).not.toContainEqual(expect.objectContaining({ path: '/shop' }));
+  });
 });
 
 describe('getPageInfo', () => {

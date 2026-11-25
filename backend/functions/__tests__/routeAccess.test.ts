@@ -113,6 +113,8 @@ const STAFF_ROUTES = [
   'DELETE /matches/{matchId}/no-show/{playerId}',
   'POST /players/{playerId}/fines',
   'POST /fines/{entryId}/rescind',
+  // ECO-14
+  'GET /players/{playerId}/ledger',
   'POST /players',
   'DELETE /players/{playerId}',
   'POST /shows',

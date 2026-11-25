@@ -21,6 +21,11 @@ export { siteConfigApi } from './siteConfig.api';
 export { economyApi } from './economy.api';
 // ECO-12
 export { contractsApi } from './contracts.api';
+
+// ECO-14
+export { shopApi, gmInterferenceApi } from './shop.api';
+export { finesApi, noShowsApi } from './fines.api';
+
 export { authApi } from './auth.api';
 export { profileApi } from './profile.api';
 export { statisticsApi } from './statistics.api';

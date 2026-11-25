@@ -36,6 +36,9 @@ import ConfirmModal from './ConfirmModal';
 import DisciplineBadge from './DisciplineBadge';
 import HiddenBadge from './HiddenBadge';
 import PlayerDisciplineModal from './PlayerDisciplineModal';
+// ECO-14
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import PlayerFinesModal from '../economy/PlayerFinesModal';
 import SourceLoadNotice from './SourceLoadNotice';
 import { settleSources } from './loadSources';
 import './adminRoster.css';
@@ -75,6 +78,7 @@ function initialSlotValue(
 
 export default function ManagePlayers() {
   const { t } = useTranslation();
+  const { features } = useSiteConfig();
   const [players, setPlayers] = useState<Player[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [wrestlers, setWrestlers] = useState<Wrestler[]>([]);
@@ -88,6 +92,7 @@ export default function ManagePlayers() {
   const [pendingDelete, setPendingDelete] = useState<Player | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [disciplinePlayer, setDisciplinePlayer] = useState<Player | null>(null);
+  const [finesPlayer, setFinesPlayer] = useState<Player | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   // Form state — FK-backed. The legacy `currentWrestler` / `alternateWrestler`
@@ -529,6 +534,9 @@ export default function ManagePlayers() {
         <div className="ar-row-actions">
           <Button variant="secondary" size="sm" onClick={() => handleEdit(player)}>{t('common.edit', 'Edit')}</Button>
           <Button variant="ghost" size="sm" onClick={() => setDisciplinePlayer(player)}>{t('discipline.admin.open')}</Button>
+          {features.economy && (
+            <Button variant="ghost" size="sm" onClick={() => setFinesPlayer(player)}>{t('economyFines.open')}</Button>
+          )}
           <Button variant="ghost" size="sm" onClick={() => setPendingDelete(player)}>{t('common.delete', 'Delete')}</Button>
         </div>
       ),
@@ -764,6 +772,13 @@ export default function ManagePlayers() {
         onClose={() => setDisciplinePlayer(null)}
         onChanged={() => void refreshPlayers()}
       />
+
+      {features.economy && (
+        <PlayerFinesModal
+          player={finesPlayer ? { playerId: finesPlayer.playerId, name: nameOrUnnamed(finesPlayer.name, unnamedLabel) } : null}
+          onClose={() => setFinesPlayer(null)}
+        />
+      )}
 
       <ConfirmModal
         open={pendingDelete !== null}

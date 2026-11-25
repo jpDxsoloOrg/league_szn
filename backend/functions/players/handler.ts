@@ -15,6 +15,7 @@ import { handler as reactivatePlayerHandler } from './reactivatePlayer';
 import { handler as adjustBalanceHandler } from '../economy/adjustBalance';
 import { handler as getMyLedgerHandler } from './getMyLedger';
 import { issueFineHandler, rescindFineHandler } from '../economy/fines';
+import { handler as getPlayerLedgerHandler } from '../economy/getPlayerLedger';
 
 
 /**
@@ -116,6 +117,14 @@ export const routes: ReadonlyArray<RouteConfig> = [
     method: 'GET',
     handler: getMyLedgerHandler,
     access: 'self-service',
+  },
+
+  // ECO-14: the GM fines view reads a player's ledger.
+  {
+    resource: '/players/{playerId}/ledger',
+    method: 'GET',
+    handler: getPlayerLedgerHandler,
+    access: STAFF,
   },
 
   // Fines (ECO-07)

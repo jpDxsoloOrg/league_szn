@@ -50,6 +50,8 @@ const TAB_COMPONENTS: Record<AdminTab, LazyExoticComponent<ComponentType>> = {
   rivalries: lazy(() => import('./AdminRivalries')),
   'heat-config': lazy(() => import('./AdminHeatConfig')),
   'storyline-requests': lazy(() => import('./ManageStorylineRequests')),
+  // ECO-14
+  'gm-interference': lazy(() => import('./ManageGmInterference')),
   announcements: lazy(() => import('./ManageAnnouncements')),
   videos: lazy(() => import('./ManageVideos')),
   companies: lazy(() => import('./ManageCompanies')),
