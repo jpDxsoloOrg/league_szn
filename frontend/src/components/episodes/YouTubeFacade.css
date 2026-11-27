@@ -1,0 +1,68 @@
+/* Shared by the YouTube facade and the Twitch live card's player. */
+.yt-facade-wrap {
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.yt-facade,
+.yt-facade__frame {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: var(--radius-card);
+  background-color: var(--color-bg);
+}
+
+.yt-facade {
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  cursor: pointer;
+}
+
+.yt-facade:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.yt-facade__thumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.yt-facade__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-scrim);
+  color: var(--color-text);
+  transform: translate(-50%, -50%);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.yt-facade:hover .yt-facade__play,
+.yt-facade:focus-visible .yt-facade__play {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  transform: translate(-50%, -50%) scale(1.06);
+}
+
+.yt-facade__external {
+  text-decoration: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yt-facade__play {
+    transition: none;
+  }
+}
