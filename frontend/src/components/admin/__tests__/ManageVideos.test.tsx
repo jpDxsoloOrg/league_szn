@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const { mockVideosApi } = vi.hoisted(() => ({
-  mockVideosApi: { getAll: vi.fn() },
+  mockVideosApi: { getAll: vi.fn(), update: vi.fn(), create: vi.fn() },
 }));
 
 vi.mock('react-i18next', async () => (await import('./i18nMock')).i18nMock);
@@ -43,5 +43,30 @@ describe('ManageVideos', () => {
     expect(await screen.findByText('videos.currentVideoHint')).toBeInTheDocument();
     expect(screen.getByText('videos.currentThumbnailHint')).toBeInTheDocument();
     expect(screen.queryByText(/amazonaws/)).not.toBeInTheDocument();
+  });
+
+  it('keeps a draft a draft when it is edited and saved', async () => {
+    const user = userEvent.setup();
+    mockVideosApi.getAll.mockResolvedValue([{
+      videoId: 'v2',
+      title: 'Wrestler draft',
+      description: '',
+      videoUrl: storedUrl,
+      category: 'promo',
+      tags: [],
+      isPublished: false,
+      createdAt: '2026-01-02',
+      updatedAt: '2026-01-02',
+    }]);
+    mockVideosApi.update.mockResolvedValue({});
+    render(<ManageVideos />);
+
+    await screen.findByText('Wrestler draft');
+    expect(screen.getByText('videos.draft')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /edit/i }));
+    expect(screen.getByRole('checkbox', { name: 'videos.fields.published' })).not.toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Update Video' }));
+
+    expect(mockVideosApi.update).toHaveBeenCalledWith('v2', expect.objectContaining({ isPublished: false }));
   });
 });
