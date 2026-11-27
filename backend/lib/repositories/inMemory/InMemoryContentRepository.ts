@@ -223,7 +223,7 @@ class VideosImpl implements VideosMethods {
     if (patch.thumbnailUrl !== undefined) fields.thumbnailUrl = patch.thumbnailUrl.trim();
     if (patch.category !== undefined) fields.category = patch.category;
     if (patch.tags !== undefined) fields.tags = patch.tags;
-    if (patch.isPublished !== undefined) fields.isPublished = patch.isPublished ? 'true' : 'false';
+    if (patch.isPublished !== undefined) fields.isPublished = patch.isPublished === true ? 'true' : 'false';
 
     const updated: Video = { ...existing, ...fields, updatedAt: new Date().toISOString() };
     this.store.set(videoId, updated);

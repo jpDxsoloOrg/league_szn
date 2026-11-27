@@ -50,6 +50,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (!category || !['match', 'highlight', 'promo', 'other'].includes(category)) {
       return badRequest('category must be "match", "highlight", "promo", or "other"');
     }
+    if (isPublished !== undefined && typeof isPublished !== 'boolean') {
+      return badRequest('isPublished must be a boolean');
+    }
 
     const video = await videos.create({
       title,

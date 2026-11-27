@@ -36,6 +36,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (body.category !== undefined && !['match', 'highlight', 'promo', 'other'].includes(body.category)) {
       return badRequest('category must be "match", "highlight", "promo", or "other"');
     }
+    if (body.isPublished !== undefined && typeof body.isPublished !== 'boolean') {
+      return badRequest('isPublished must be a boolean');
+    }
 
     const updated = await videos.update(videoId, body);
     return success(updated);
