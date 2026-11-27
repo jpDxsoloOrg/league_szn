@@ -44,6 +44,8 @@ Staff also get these controls at the top of the event page:
 
 Record results with **Record Result** on each match. See [Record Results](admin-record-results).
 
+Once the show is on YouTube, add it in **Admin → Manage Episodes** and link it to the event. The event page then gets a **Watch the episode** button. See [Episodes](admin-episodes).
+
 ## Event Types Explained
 
 | Type | Description |

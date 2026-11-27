@@ -45,7 +45,7 @@ A serverless web application for managing a WWE 2K league with player standings,
 |---------|---------------|
 | **AWS Lambda** | One `api` function (`functions/api/handler.ts`) serves every HTTP route; handler code is organized by feature under `functions/` (`players/`, `matches/`, `championships/`, ...). The other functions are not HTTP: `contenders` and `progression` (async-invoke targets), `postConfirmation` and `preSignUp` (Cognito triggers), and the scheduled jobs `expireChallenges`, `expireContractOffers`, `weeklyJobs`, `recalculateContenders` |
 | **API Gateway** | REST API with a single root `ANY /{proxy+}` route (plus its CORS `OPTIONS`) to the `api` Lambda, which routes in code (`functions/api/routes.ts`); no gateway authorizer, every route authenticates inside the Lambda; 4 GatewayResponses add CORS to gateway-generated errors |
-| **DynamoDB** | NoSQL database with 41 tables defined in `backend/serverless.yml`, including Players, Matches (with TournamentIndex GSI), Championships, ChampionshipHistory, Tournaments, Seasons, SeasonStandings (with PlayerIndex GSI), Divisions - all use on-demand (PAY_PER_REQUEST) billing |
+| **DynamoDB** | NoSQL database with 50 tables defined in `backend/serverless.yml`, including Players, Matches (with TournamentIndex GSI), Championships, ChampionshipHistory, Tournaments, Seasons, SeasonStandings (with PlayerIndex GSI), Divisions - all use on-demand (PAY_PER_REQUEST) billing |
 | **Amazon S3** | Two purposes: (1) hosts frontend static files, (2) stores player/championship images with public read access and presigned URL uploads |
 | **CloudFront** | CDN in front of S3; custom error responses redirect 403/404 to /index.html for SPA routing; HTTPS enforced |
 | **AWS Cognito** | User Pool for authentication - email-based sign-in (`UsernameAttributes: email`), 24hr access tokens, 30-day refresh tokens |
@@ -169,6 +169,22 @@ Versioned release notes at `/patch-notes` (latest) and `/patch-notes/vX.Y.Z`. St
 - Attributes: wins, losses, draws, updatedAt
 - **GSI**: PlayerIndex (playerId, seasonId) - For querying all seasons a player participated in
 
+### Episodes Table
+- **PK**: `episodeId`
+- Attributes: source (`'youtube'`), youtubeVideoId (11-char id; watch, embed and thumbnail URLs are built from it, never stored as given), title, description (plain text), thumbnailUrl (`i.ytimg.com/vi/<id>/hqdefault.jpg`), channelName, airDate (`YYYY-MM-DD`), eventId (optional), isPublished (`'true'`/`'false'` string), createdBy, createdAt, updatedAt
+- **GSI**: PublishedIndex (isPublished, airDate); EventIndex (eventId), sparse
+- New episodes are drafts. `eventId` lives only on the episode; `LeagueEvent` has no episode field, and deleting an event does not cascade
+- Title and channel come from YouTube oEmbed, fetched server-side only by `POST /admin/episodes/youtube-lookup` (`lib/youtube.ts`)
+
+### Videos (Highlights) Table
+- Highlight clips stay in Videos. Optional `episodeId` links a clip to one episode; only staff can set it (Manage Highlights). Sending `null` or `''` removes it. Deleting an episode unlinks its clips and never deletes them
+- `isPublished` is stored as the string `'true'`/`'false'`; the API only accepts a boolean, and the frontend normalises it to a boolean in `videos.api.ts`
+
+### Live stream (SiteConfig)
+- No table: stored in SiteConfig like the ticker settings (`SiteConfigRepository.getLiveStream()` / `setLiveStream()`)
+- Shape: channel (Twitch login, `^[A-Za-z0-9_]{4,25}$`, lowercase), isLive, title (optional, max 120), liveSince, updatedBy, updatedAt
+- The read path reports `isLive: false` once `liveSince` is more than `LIVE_STREAM_MAX_HOURS` (8) old; nothing is written
+
 ## Key Features
 
 ### Public Features (No Auth Required)
@@ -261,6 +277,9 @@ npm run dev  # Starts at http://localhost:3000
 - `GET /standings` - Current standings (optional `?seasonId=` for season-specific)
 - `GET /seasons` - All seasons
 - `GET /divisions` - All divisions
+- `GET /episodes` - Published episodes, newest air date first (optional `?eventId=`)
+- `GET /episodes/{episodeId}` - One episode plus its published highlights (`{ episode, highlights }`); drafts 404 unless the caller is staff
+- `GET /live-stream` - Twitch live card state (`channel`, `isLive` after the 8-hour guard, `title`, `liveSince`)
 
 ### Setup
 - `POST /auth/setup` - Create admin user (one-time setup). Not JWT-protected; requires the deployment's `ADMIN_SETUP_KEY`
@@ -285,6 +304,14 @@ All admin endpoints require a valid JWT token from Cognito in the `Authorization
 - `PUT /divisions/{id}` - Update division
 - `DELETE /divisions/{id}` - Delete division (fails if players assigned)
 - `POST /images/upload-url` - Generate presigned URL for image upload
+
+Episodes and live stream (Moderator or Admin):
+- `GET /admin/episodes` - All episodes, drafts included
+- `POST /admin/episodes/youtube-lookup` - Parse a YouTube link and fetch oEmbed title/channel; returns `oembedAvailable` and `existingEpisodeId` for duplicates
+- `POST /admin/episodes` - Create episode (draft by default; duplicate YouTube ids rejected)
+- `PUT /admin/episodes/{episodeId}` - Update episode (`eventId: null` unlinks the event)
+- `DELETE /admin/episodes/{episodeId}` - Delete episode (unlinks its highlights first)
+- `PUT /admin/live-stream` - Set channel/title and go live or end the stream (live needs a channel)
 
 ## Common Tasks
 
