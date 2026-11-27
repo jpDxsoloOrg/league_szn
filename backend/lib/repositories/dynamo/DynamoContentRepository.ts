@@ -4,6 +4,7 @@ import { NotFoundError } from '../errors';
 import { buildUpdateExpression } from './util';
 import {
   compareActiveAnnouncements,
+  compareEpisodes,
   compareTickerMessages,
   isTickerMessageActive,
   TICKER_KIND,
@@ -17,6 +18,10 @@ import type {
   TickerMessagesMethods,
   VideoCreateInput,
   VideoPatch,
+  VideosMethods,
+  EpisodeCreateInput,
+  EpisodePatch,
+  EpisodesMethods,
   PromoCreateInput,
   PromosMethods,
   StorylineRequestCreateInput,
@@ -27,6 +32,7 @@ import type {
   Announcement,
   TickerMessage,
   Video,
+  Episode,
   Promo,
   PromoType,
   ReactionType,
@@ -158,11 +164,7 @@ function buildAnnouncementsMethods(): AnnouncementsCrud {
 
 // ─── Videos ────────────────────────────────────────────────────────
 
-type VideosCrud = CrudRepository<Video, VideoCreateInput, VideoPatch> & {
-  listPublished(category?: string): Promise<Video[]>;
-};
-
-function buildVideosMethods(): VideosCrud {
+function buildVideosMethods(): VideosMethods {
   return {
     async findById(videoId: string): Promise<Video | null> {
       const result = await dynamoDb.get({
@@ -206,6 +208,7 @@ function buildVideosMethods(): VideosCrud {
         createdAt: now,
         updatedAt: now,
       };
+      if (input.episodeId) item.episodeId = input.episodeId;
       await dynamoDb.put({ TableName: TableNames.VIDEOS, Item: item });
       return item;
     },
@@ -219,12 +222,17 @@ function buildVideosMethods(): VideosCrud {
       if (patch.category !== undefined) fields.category = patch.category;
       if (patch.tags !== undefined) fields.tags = patch.tags;
       if (patch.isPublished !== undefined) fields.isPublished = patch.isPublished === true ? 'true' : 'false';
+      if (typeof patch.episodeId === 'string') fields.episodeId = patch.episodeId;
 
       const expr = buildUpdateExpression(fields, new Date().toISOString());
+      // buildUpdateExpression only SETs; a null link is removed, never stored as NULL.
+      const updateExpression = patch.episodeId === null
+        ? `${expr.UpdateExpression} REMOVE episodeId`
+        : expr.UpdateExpression;
       const result = await dynamoDb.update({
         TableName: TableNames.VIDEOS,
         Key: { videoId },
-        UpdateExpression: expr.UpdateExpression,
+        UpdateExpression: updateExpression,
         ExpressionAttributeNames: expr.ExpressionAttributeNames,
         ExpressionAttributeValues: expr.ExpressionAttributeValues,
         ConditionExpression: 'attribute_exists(videoId)',
@@ -242,6 +250,119 @@ function buildVideosMethods(): VideosCrud {
       await dynamoDb.delete({
         TableName: TableNames.VIDEOS,
         Key: { videoId },
+      });
+    },
+  };
+}
+
+// ─── Episodes ──────────────────────────────────────────────────────
+
+function buildEpisodesMethods(): EpisodesMethods {
+  return {
+    async findById(episodeId: string): Promise<Episode | null> {
+      const result = await dynamoDb.get({
+        TableName: TableNames.EPISODES,
+        Key: { episodeId },
+      });
+      return (result.Item as Episode | undefined) ?? null;
+    },
+
+    async list(): Promise<Episode[]> {
+      const items = await dynamoDb.scanAll({ TableName: TableNames.EPISODES });
+      const episodes = items as unknown as Episode[];
+      return episodes.sort(compareEpisodes);
+    },
+
+    async listPublished(): Promise<Episode[]> {
+      const items = await dynamoDb.queryAll({
+        TableName: TableNames.EPISODES,
+        IndexName: 'PublishedIndex',
+        KeyConditionExpression: 'isPublished = :pub',
+        ExpressionAttributeValues: { ':pub': 'true' },
+        ScanIndexForward: false,
+      });
+      // The index orders by airDate only; settle same-day ties by createdAt.
+      return (items as unknown as Episode[]).sort(compareEpisodes);
+    },
+
+    async listByEvent(eventId: string): Promise<Episode[]> {
+      const items = await dynamoDb.queryAll({
+        TableName: TableNames.EPISODES,
+        IndexName: 'EventIndex',
+        KeyConditionExpression: 'eventId = :eventId',
+        ExpressionAttributeValues: { ':eventId': eventId },
+      });
+      return (items as unknown as Episode[]).sort(compareEpisodes);
+    },
+
+    async findByYoutubeId(youtubeVideoId: string): Promise<Episode | null> {
+      // A small table: a filtered scan is enough for the duplicate check.
+      const items = await dynamoDb.scanAll({
+        TableName: TableNames.EPISODES,
+        FilterExpression: 'youtubeVideoId = :yt',
+        ExpressionAttributeValues: { ':yt': youtubeVideoId },
+      });
+      return (items[0] as unknown as Episode | undefined) ?? null;
+    },
+
+    async create(input: EpisodeCreateInput): Promise<Episode> {
+      const now = new Date().toISOString();
+      const item: Episode = {
+        episodeId: uuidv4(),
+        source: 'youtube',
+        youtubeVideoId: input.youtubeVideoId,
+        title: input.title.trim(),
+        description: input.description?.trim() || '',
+        thumbnailUrl: input.thumbnailUrl,
+        airDate: input.airDate,
+        isPublished: input.isPublished === true ? 'true' : 'false',
+        createdBy: input.createdBy,
+        createdAt: now,
+        updatedAt: now,
+      };
+      if (input.channelName?.trim()) item.channelName = input.channelName.trim();
+      if (input.eventId) item.eventId = input.eventId;
+      await dynamoDb.put({ TableName: TableNames.EPISODES, Item: item });
+      return item;
+    },
+
+    async update(episodeId: string, patch: EpisodePatch): Promise<Episode> {
+      const fields: Record<string, unknown> = {};
+      if (patch.title !== undefined) fields.title = patch.title.trim();
+      if (patch.description !== undefined) fields.description = patch.description.trim();
+      if (patch.airDate !== undefined) fields.airDate = patch.airDate;
+      if (typeof patch.eventId === 'string') fields.eventId = patch.eventId;
+      if (patch.isPublished !== undefined) fields.isPublished = patch.isPublished === true ? 'true' : 'false';
+      if (patch.youtubeVideoId !== undefined) fields.youtubeVideoId = patch.youtubeVideoId;
+      if (patch.thumbnailUrl !== undefined) fields.thumbnailUrl = patch.thumbnailUrl;
+      if (patch.channelName !== undefined) fields.channelName = patch.channelName.trim();
+
+      const expr = buildUpdateExpression(fields, new Date().toISOString());
+      // eventId is the EventIndex key: DynamoDB rejects NULL there, so unlinking REMOVEs it.
+      const updateExpression = patch.eventId === null
+        ? `${expr.UpdateExpression} REMOVE eventId`
+        : expr.UpdateExpression;
+      const result = await dynamoDb.update({
+        TableName: TableNames.EPISODES,
+        Key: { episodeId },
+        UpdateExpression: updateExpression,
+        ExpressionAttributeNames: expr.ExpressionAttributeNames,
+        ExpressionAttributeValues: expr.ExpressionAttributeValues,
+        ConditionExpression: 'attribute_exists(episodeId)',
+        ReturnValues: 'ALL_NEW',
+      }).catch((err: { name?: string }) => {
+        if (err.name === 'ConditionalCheckFailedException') {
+          throw new NotFoundError('Episode', episodeId);
+        }
+        throw err;
+      });
+      return result.Attributes as Episode;
+    },
+
+    async delete(episodeId: string): Promise<void> {
+      await dynamoDb.delete({
+        TableName: TableNames.EPISODES,
+        Key: { episodeId },
       });
     },
   };
@@ -649,6 +770,7 @@ function buildTickerMessagesMethods(): TickerMessagesMethods {
 export class DynamoContentRepository implements ContentRepository {
   announcements = buildAnnouncementsMethods();
   videos = buildVideosMethods();
+  episodes = buildEpisodesMethods();
   tickerMessages = buildTickerMessagesMethods();
   promos = buildPromosMethods();
   storylineRequests = buildStorylineRequestsMethods();

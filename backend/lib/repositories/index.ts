@@ -85,6 +85,10 @@ export type {
   TickerMessagesMethods,
   VideoCreateInput,
   VideoPatch,
+  VideosMethods,
+  EpisodeCreateInput,
+  EpisodePatch,
+  EpisodesMethods,
   PromoCreateInput,
   StorylineRequestCreateInput,
   StorylineRequestReviewInput,
@@ -96,6 +100,7 @@ export {
   TICKER_TEXT_MAX_LENGTH,
   isTickerMessageActive,
   compareTickerMessages,
+  compareEpisodes,
 } from './ContentRepository';
 
 export type {

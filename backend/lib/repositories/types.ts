@@ -52,6 +52,34 @@ export interface Video {
   tags: string[];
   isPublished: string; // 'true' | 'false' — string for DynamoDB GSI
   uploadedBy: string;
+  /** The episode this highlight belongs to, if any. Set by staff only. */
+  episodeId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Where an episode's video lives. Only single YouTube videos exist today. */
+export type EpisodeSource = 'youtube';
+
+/** A full show episode: a YouTube video embedded on the site. */
+export interface Episode {
+  episodeId: string;
+  source: EpisodeSource;
+  /** 11 characters, [A-Za-z0-9_-]. Watch, embed and thumbnail URLs are built from it. */
+  youtubeVideoId: string;
+  title: string;
+  /** Plain text, never HTML. '' when unset. */
+  description: string;
+  /** Always https://i.ytimg.com/vi/<id>/hqdefault.jpg, built from the id. */
+  thumbnailUrl: string;
+  channelName?: string;
+  /** YYYY-MM-DD. */
+  airDate: string;
+  /** Optional league event link (EventIndex, sparse). */
+  eventId?: string;
+  isPublished: string; // 'true' | 'false' — string for DynamoDB GSI
+  /** Caller sub. Left out of public responses. */
+  createdBy: string;
   createdAt: string;
   updatedAt: string;
 }
