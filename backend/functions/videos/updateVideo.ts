@@ -3,6 +3,7 @@ import { getRepositories, NotFoundError } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
+import { checkLinkId } from '../episodes/validation';
 
 interface UpdateVideoBody {
   title?: string;
@@ -12,6 +13,8 @@ interface UpdateVideoBody {
   category?: 'match' | 'highlight' | 'promo' | 'other';
   tags?: string[];
   isPublished?: boolean;
+  /** null or '' unlinks. */
+  episodeId?: string | null;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -24,7 +27,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('videoId is required');
     }
 
-    const { content: { videos } } = getRepositories();
+    const { content: { videos, episodes } } = getRepositories();
     const existing = await videos.findById(videoId);
     if (!existing) {
       return notFound('Video not found');
@@ -40,7 +43,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('isPublished must be a boolean');
     }
 
-    const updated = await videos.update(videoId, body);
+    const link = checkLinkId(body.episodeId, 'episodeId');
+    if (link.error !== undefined) return badRequest(link.error);
+    if (link.value && !(await episodes.findById(link.value))) {
+      return badRequest('Episode not found');
+    }
+
+    const updated = await videos.update(videoId, { ...body, episodeId: link.value });
     return success(updated);
   } catch (err) {
     if (err instanceof NotFoundError) return notFound('Video not found');
