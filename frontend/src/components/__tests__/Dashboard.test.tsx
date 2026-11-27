@@ -77,6 +77,11 @@ vi.mock('../economy/DashboardWallet', () => ({
   default: () => null,
 }));
 
+// Covered in home/__tests__/LiveStreamCard.test.tsx.
+vi.mock('../home/LiveStreamCard', () => ({
+  default: () => <div data-testid="live-stream-card" />,
+}));
+
 // INJ-12: covered in injuries/__tests__/injuries.test.tsx.
 vi.mock('../injuries/DashboardStamina', () => ({
   default: () => null,
@@ -130,6 +135,25 @@ describe('Dashboard', () => {
     await waitFor(() => {
       expect(screen.getByText('No active champions')).toBeInTheDocument();
     });
+  });
+
+  it('puts the live stream card first on the page', async () => {
+    const { container } = renderDashboard();
+    expect(await screen.findByTestId('live-stream-card')).toBeInTheDocument();
+    expect(container.querySelector('.home')?.firstElementChild).toHaveAttribute('data-testid', 'live-stream-card');
+  });
+
+  it('shows the live stream card while the dashboard is still loading', () => {
+    mockGetDashboard.mockReturnValue(new Promise(() => {}));
+    renderDashboard();
+    expect(screen.getByTestId('live-stream-card')).toBeInTheDocument();
+  });
+
+  it('keeps the live stream card when the dashboard fails to load', async () => {
+    mockGetDashboard.mockRejectedValue(new Error('Network error'));
+    renderDashboard();
+    expect(await screen.findByText('Network error')).toBeInTheDocument();
+    expect(screen.getByTestId('live-stream-card')).toBeInTheDocument();
   });
 
   it('renders all dashboard sections after data loads', async () => {

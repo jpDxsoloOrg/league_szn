@@ -676,8 +676,74 @@ export interface Video {
   tags: string[];
   isPublished: boolean;
   uploadedBy?: string;   // Admin lists only; public reads leave it out
+  /** Full episode this highlight belongs to, if staff linked one. */
+  episodeId?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Where an episode's video lives. Only single YouTube videos for now. */
+export type EpisodeSource = 'youtube';
+
+/** A full episode: a YouTube video, optionally linked to a league event. */
+export interface Episode {
+  episodeId: string;
+  source: EpisodeSource;
+  /** 11-character YouTube id. Watch, embed and thumbnail URLs are built from it. */
+  youtubeVideoId: string;
+  title: string;
+  /** Plain text, never HTML. */
+  description: string;
+  thumbnailUrl: string;
+  channelName?: string;
+  /** YYYY-MM-DD. */
+  airDate: string;
+  eventId?: string;
+  /** Normalised from the stored 'true' | 'false' string in `episodes.api.ts`. */
+  isPublished: boolean;
+  /** Admin lists only; public reads leave it out. */
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** `GET /episodes/{episodeId}`: the episode plus its published highlights. */
+export interface EpisodeDetail {
+  episode: Episode;
+  highlights: Video[];
+}
+
+/** `POST /admin/episodes/youtube-lookup` reply. */
+export interface YoutubeLookupResult {
+  youtubeVideoId: string;
+  /** '' when oEmbed was unavailable. */
+  title: string;
+  channelName?: string;
+  thumbnailUrl: string;
+  /** False when YouTube gave no details (private, embedding disabled, or unreachable). */
+  oembedAvailable: boolean;
+  /** Set when this video is already an episode. */
+  existingEpisodeId?: string;
+}
+
+/** `GET /live-stream`: the Twitch stream a GM marked live by hand. */
+export interface LiveStream {
+  /** Twitch login, lowercase. '' when not set up. */
+  channel: string;
+  /** Already passed through the backend's 8-hour stale guard. */
+  isLive: boolean;
+  title?: string;
+  /** ISO timestamp of when the GM went live. */
+  liveSince?: string;
+  /** Present on the admin reply only. */
+  updatedAt?: string;
+}
+
+/** `PUT /admin/live-stream` body. */
+export interface LiveStreamPatch {
+  channel?: string;
+  isLive?: boolean;
+  title?: string;
 }
 
 export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'tag_team_formed' | 'transfer_reviewed' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change' | 'strike_issued' | 'strike_removed' | 'account_reactivated'

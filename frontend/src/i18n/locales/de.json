@@ -324,7 +324,8 @@
       "forgotPassword": "Passwort zurücksetzen",
       "welcome": "Willkommen",
       "playerProfile": "Spielerprofil"
-    }
+    },
+    "episodes": "Episoden"
   },
   "mobileNav": {
     "ariaLabel": "Hauptnavigation",
@@ -459,6 +460,7 @@
       "contractsAndMoney": "Verträge und Geld",
       "challenges": "Herausforderungen",
       "promos": "Promos",
+      "episodes": "Episoden",
       "tips": "Tipps",
       "dashboard": "Dashboard",
       "activity": "Aktivität",
@@ -480,6 +482,7 @@
       "adminTournaments": "Admin: Turniere",
       "adminChallenges": "Admin: Herausforderungen",
       "adminPromos": "Admin: Promos",
+      "adminEpisodes": "Admin: Episoden",
       "adminContenderConfig": "Admin: Herausforderer-Ranglisten",
       "adminDataManagement": "Admin: Datenverwaltung",
       "adminWorkflow": "Admin: Typischer Wochenablauf",
@@ -513,6 +516,7 @@
       "adminTournaments": "Turniere",
       "adminChallenges": "Herausforderungen",
       "adminPromos": "Promos",
+      "adminEpisodes": "Episoden",
       "adminContenderConfig": "Herausforderer-Ranglisten",
       "adminDataManagement": "Datenverwaltung",
       "adminWorkflow": "Typischer Wochenablauf",
@@ -1188,7 +1192,7 @@
         "factions": "Faktionen verwalten",
         "tagTeams": "Tag Teams verwalten",
         "announcements": "Ankündigungen",
-        "videos": "Videos verwalten",
+        "videos": "Highlights verwalten",
         "transfers": "Divisionstransfers",
         "storylineRequests": "Storyline-Anfragen",
         "gmInterference": "GM-Eingriffe",
@@ -1197,7 +1201,8 @@
         "economyConfig": "Wirtschaft",
         "injuryConfig": "Verletzungen & Ausdauer",
         "contracts": "Verträge",
-        "dangerZone": "Gefahrenzone"
+        "dangerZone": "Gefahrenzone",
+        "episodes": "Episoden verwalten"
       },
       "groups": {
         "matchOps": "Match-Operationen",
@@ -1345,7 +1350,7 @@
     }
   },
   "videos": {
-    "title": "Videos verwalten",
+    "title": "Highlights verwalten",
     "upload": "Video hochladen",
     "edit": "Video bearbeiten",
     "allVideos": "Alle Videos",
@@ -1371,7 +1376,8 @@
       "thumbnail": "Vorschaubild (optional)",
       "category": "Kategorie",
       "tags": "Tags (kommagetrennt)",
-      "published": "Veröffentlicht"
+      "published": "Veröffentlicht",
+      "episode": "Verknüpfte Episode"
     },
     "categories": {
       "match": "Match",
@@ -1381,7 +1387,8 @@
     },
     "update": "Video aktualisieren",
     "currentVideoHint": "Es ist bereits ein Video hinterlegt. Wähle nur dann eine Datei aus, wenn du es ersetzen möchtest.",
-    "currentThumbnailHint": "Es ist bereits ein Vorschaubild hinterlegt. Wähle nur dann eine Datei aus, wenn du es ersetzen möchtest."
+    "currentThumbnailHint": "Es ist bereits ein Vorschaubild hinterlegt. Wähle nur dann eine Datei aus, wenn du es ersetzen möchtest.",
+    "noEpisode": "Keine"
   },
   "highlights": {
     "title": "Highlights und Videos",
@@ -2009,7 +2016,8 @@
         "message": "Die offenen Plätze werden entfernt und das Match wird mit den Wrestlern gebucht, die sich angemeldet haben. Niemand sonst kann sich noch einen Platz sichern.",
         "confirm": "Anmeldungen schließen",
         "error": "Anmeldungen für dieses Match konnten nicht geschlossen werden."
-      }
+      },
+      "watchEpisode": "Episode ansehen"
     },
     "commentary": {
       "title": "Kommentator-Ansicht",
@@ -5364,6 +5372,93 @@
       "next": "Nächster Screenshot",
       "position": "{{current}} von {{total}}",
       "untitled": "Screenshot"
+    }
+  },
+  "episodes": {
+    "title": "Episoden",
+    "subtitle": "Ganze Shows vom YouTube-Kanal der Liga, dazu Highlight-Pakete",
+    "tabsLabel": "Episoden-Bereiche",
+    "tabs": {
+      "full": "Ganze Folgen",
+      "highlights": "Highlights"
+    },
+    "noEpisodes": "Noch keine Episoden. Schau bald wieder vorbei!",
+    "loadError": "Episoden konnten nicht geladen werden.",
+    "play": "{{title}} abspielen",
+    "watchOnYoutube": "Auf YouTube ansehen",
+    "airDate": "Ausgestrahlt am {{date}}",
+    "hasEvent": "Matchcard",
+    "fromEpisode": "Aus der Episode: {{title}}",
+    "detail": {
+      "pageTitle": "Episode",
+      "notFound": "Episode nicht gefunden.",
+      "loadError": "Die Episode konnte nicht geladen werden.",
+      "back": "Zurück zu den Episoden",
+      "onTheCard": "Auf der Matchcard",
+      "viewResults": "Alle Ergebnisse ansehen",
+      "highlights": "Highlights aus dieser Episode"
+    },
+    "admin": {
+      "title": "Episoden verwalten",
+      "add": "Episode hinzufügen",
+      "edit": "Episode bearbeiten",
+      "save": "Episode speichern",
+      "allEpisodes": "Alle Episoden",
+      "noEpisodes": "Noch keine Episoden. Füge einen YouTube-Link ein, um die erste anzulegen.",
+      "youtubeUrl": "YouTube-Link",
+      "fetchDetails": "Details abrufen",
+      "urlRequired": "Füge zuerst einen YouTube-Link ein.",
+      "invalidUrl": "Das ist kein Link zu einem YouTube-Video.",
+      "oembedUnavailable": "Die Details konnten nicht von YouTube abgerufen werden. Gib bitte einen Titel ein. Eventuell ist das Einbetten für dieses Video deaktiviert.",
+      "duplicate": "Dieses Video ist bereits eine Episode.",
+      "channel": "Kanal: {{name}}",
+      "fields": {
+        "title": "Titel",
+        "description": "Beschreibung",
+        "airDate": "Sendedatum",
+        "event": "Event",
+        "noEvent": "Kein Event",
+        "published": "Veröffentlicht"
+      },
+      "titleRequired": "Titel ist erforderlich.",
+      "highlightsHint": "Highlight-Pakete verknüpfst du unter „Highlights verwalten“ mit dieser Episode.",
+      "eventMissing": "Verknüpftes Event fehlt",
+      "createSuccess": "Episode hinzugefügt.",
+      "updateSuccess": "Episode aktualisiert.",
+      "deleteSuccess": "Episode gelöscht. Die Verknüpfung ihrer Highlights wurde aufgehoben.",
+      "confirmDelete": "Diese Episode löschen? Ihre Highlights bleiben auf der Seite, verlieren aber die Verknüpfung.",
+      "saveError": "Die Episode konnte nicht gespeichert werden.",
+      "loadError": "Episoden konnten nicht geladen werden.",
+      "deleteError": "Die Episode konnte nicht gelöscht werden."
+    }
+  },
+  "liveStream": {
+    "live": "LIVE",
+    "defaultTitle": "Jetzt live auf Twitch",
+    "play": "Livestream abspielen",
+    "playerTitle": "Twitch-Livestream: {{channel}}",
+    "watchOnTwitch": "Auf Twitch ansehen",
+    "admin": {
+      "title": "Livestream",
+      "description": "Zeigt den Twitch-Player auf dem Dashboard, solange du live bist.",
+      "channel": "Twitch-Kanal",
+      "channelHint": "Dein Twitch-Login, wie in twitch.tv/deinkanal.",
+      "streamTitle": "Stream-Titel (optional)",
+      "titlePlaceholder": "Season 5, Abend 1",
+      "goLive": "Live gehen",
+      "endStream": "Stream beenden",
+      "save": "Einstellungen speichern",
+      "statusLive": "Live seit {{time}}",
+      "autoOff": "Schaltet sich um {{time}} von selbst ab.",
+      "statusOffline": "Offline",
+      "invalidChannel": "Gib einen Twitch-Login mit 4 bis 25 Buchstaben, Ziffern oder Unterstrichen ein.",
+      "channelRequired": "Lege den Kanal fest, bevor du live gehst.",
+      "titleTooLong": "Der Titel darf höchstens {{max}} Zeichen lang sein.",
+      "loadError": "Die Livestream-Einstellungen konnten nicht geladen werden.",
+      "saveError": "Der Livestream konnte nicht gespeichert werden.",
+      "nowLive": "Du bist live. Die Karte erscheint auf dem Dashboard.",
+      "ended": "Stream beendet. Die Karte ist vom Dashboard verschwunden.",
+      "saved": "Livestream-Einstellungen gespeichert."
     }
   }
 }

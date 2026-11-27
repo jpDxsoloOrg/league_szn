@@ -1,0 +1,9 @@
+.episodes-page {
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.episodes-page > * {
+  min-width: 0;
+}

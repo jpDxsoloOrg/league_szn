@@ -66,6 +66,25 @@ export function mergeTickerSettings(stored: Partial<TickerSettings> | undefined)
 }
 
 /**
+ * The Twitch live stream card on the Dashboard. A GM marks it live or
+ * offline by hand; there is no Twitch API. Read rules live in lib/liveStream.ts.
+ */
+export interface LiveStreamSettings {
+  /** Twitch login, lowercase. '' until a GM sets it; the card never shows while empty. */
+  channel: string;
+  /** As stored. Readers pass it through the 8-hour guard in lib/liveStream.ts. */
+  isLive: boolean;
+  /** Optional plain-text headline, at most 120 characters. */
+  title?: string;
+  /** ISO time the stream was marked live. Absent while offline. */
+  liveSince?: string;
+  updatedBy?: string;
+  updatedAt?: string;
+}
+
+export const DEFAULT_LIVE_STREAM: LiveStreamSettings = { channel: '', isLive: false };
+
+/**
  * Admin-tunable knobs for the rivalry-heat formula. These mirror the
  * exported constants in `backend/lib/policies/rivalryHeat.ts`; setting
  * any of them overrides the file default at runtime so the formula

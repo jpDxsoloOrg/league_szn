@@ -9,7 +9,7 @@ Die Seite hat fünf Bereiche. Am Computer stehen sie in der Seitenleiste links, 
 | Bereich | Inhalt |
 |---------|--------|
 | **Start** | [Dashboard](dashboard), [News](news), [Aktivität](activity) |
-| **Events** | [Kalender und Matches](events), [Turniere](tournaments), Highlights |
+| **Events** | [Kalender und Matches](events), [Turniere](tournaments), [Episoden](episodes) |
 | **Ranglisten** | [Tabelle](standings), [Titel](championships), [Herausforderer](contenders), [Statistiken](statistics), Auszeichnungen |
 | **Storylines** | [Rivalitäten](rivalries), [Promos](promos), Faktionen, Tag Teams |
 | **Ich** | [Mein Profil](profile), [Call-outs](challenges), Meine Faktion, Mein Tag Team, Meine Videos, Hilfe, Liga-Regeln |

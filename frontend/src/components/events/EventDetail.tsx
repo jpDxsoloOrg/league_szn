@@ -2,8 +2,8 @@ import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } fr
 import type { ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowDown, ArrowLeft, ArrowUp, CalendarClock, Lock, LockOpen, Mic, Pencil, Plus, Trash2, Trophy } from 'lucide-react';
-import { eventsApi, isApiError, matchesApi, playersApi, tagTeamsApi } from '../../services/api';
+import { ArrowDown, ArrowLeft, ArrowUp, CalendarClock, Lock, LockOpen, Mic, Pencil, Plus, Trash2, Trophy, Tv } from 'lucide-react';
+import { episodesApi, eventsApi, isApiError, matchesApi, playersApi, tagTeamsApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSignupBlock } from '../../hooks/useSignupBlock';
 import { formatInstant } from '../../utils/dateUtils';
@@ -162,6 +162,27 @@ export default function EventDetail() {
       setLoading(false);
     }
   }, [eventId]);
+
+  // The published episode linked to this event, if any. Loaded on its own once
+  // the event is in, so a failure only hides the "Watch the episode" button.
+  const [episodeId, setEpisodeId] = useState<string | null>(null);
+  const loadedEventId = eventData?.eventId;
+  useEffect(() => {
+    if (!loadedEventId) return;
+    const controller = new AbortController();
+    const loadEpisode = async () => {
+      // Clear the previous event's button before looking up this one.
+      setEpisodeId(null);
+      try {
+        const episodes = await episodesApi.getByEvent(loadedEventId, controller.signal);
+        if (!controller.signal.aborted) setEpisodeId(episodes[0]?.episodeId ?? null);
+      } catch {
+        // No button; the event page is unaffected.
+      }
+    };
+    void loadEpisode();
+    return () => controller.abort();
+  }, [loadedEventId]);
 
   // Last-booked / streak / season record for the slot picker. Loaded once per
   // admin visit (per event season) — it changes rarely and the current card's
@@ -900,6 +921,11 @@ export default function EventDetail() {
                 {hasCompletedMatch && (
                   <Button to={`/events/${eventData.eventId}/results`} icon={<Trophy aria-hidden="true" size={18} />}>
                     {t('events.detail.viewResults')}
+                  </Button>
+                )}
+                {episodeId && (
+                  <Button variant="secondary" to={`/episodes/${episodeId}`} icon={<Tv aria-hidden="true" size={18} />}>
+                    {t('events.detail.watchEpisode')}
                   </Button>
                 )}
                 {enrichedMatches.length > 0 && (

@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { NotFoundError } from '../errors';
 import {
   compareActiveAnnouncements,
+  compareEpisodes,
   compareTickerMessages,
   isTickerMessageActive,
 } from '../ContentRepository';
@@ -19,11 +20,16 @@ import type {
   StorylineRequestsMethods,
   VideoCreateInput,
   VideoPatch,
+  VideosMethods,
+  EpisodeCreateInput,
+  EpisodePatch,
+  EpisodesMethods,
 } from '../ContentRepository';
 import type {
   Announcement,
   TickerMessage,
   Video,
+  Episode,
   Promo,
   PromoType,
   ReactionType,
@@ -169,10 +175,6 @@ class TickerMessagesImpl implements TickerMessagesMethods {
 
 // ─── Videos ────────────────────────────────────────────────────────
 
-type VideosMethods = CrudRepository<Video, VideoCreateInput, VideoPatch> & {
-  listPublished(category?: string): Promise<Video[]>;
-};
-
 class VideosImpl implements VideosMethods {
   readonly store = new Map<string, Video>();
 
@@ -208,6 +210,7 @@ class VideosImpl implements VideosMethods {
       createdAt: now,
       updatedAt: now,
     };
+    if (input.episodeId) item.episodeId = input.episodeId;
     this.store.set(item.videoId, item);
     return item;
   }
@@ -223,15 +226,89 @@ class VideosImpl implements VideosMethods {
     if (patch.thumbnailUrl !== undefined) fields.thumbnailUrl = patch.thumbnailUrl.trim();
     if (patch.category !== undefined) fields.category = patch.category;
     if (patch.tags !== undefined) fields.tags = patch.tags;
-    if (patch.isPublished !== undefined) fields.isPublished = patch.isPublished ? 'true' : 'false';
+    if (patch.isPublished !== undefined) fields.isPublished = patch.isPublished === true ? 'true' : 'false';
+    if (typeof patch.episodeId === 'string') fields.episodeId = patch.episodeId;
 
     const updated: Video = { ...existing, ...fields, updatedAt: new Date().toISOString() };
+    if (patch.episodeId === null) delete updated.episodeId;
     this.store.set(videoId, updated);
     return updated;
   }
 
   async delete(videoId: string): Promise<void> {
     this.store.delete(videoId);
+  }
+}
+
+// ─── Episodes ──────────────────────────────────────────────────────
+
+class EpisodesImpl implements EpisodesMethods {
+  readonly store = new Map<string, Episode>();
+
+  async findById(episodeId: string): Promise<Episode | null> {
+    const row = this.store.get(episodeId);
+    return row ? { ...row } : null;
+  }
+
+  async list(): Promise<Episode[]> {
+    return Array.from(this.store.values(), (row) => ({ ...row })).sort(compareEpisodes);
+  }
+
+  async listPublished(): Promise<Episode[]> {
+    return (await this.list()).filter((row) => row.isPublished === 'true');
+  }
+
+  async listByEvent(eventId: string): Promise<Episode[]> {
+    return (await this.list()).filter((row) => row.eventId === eventId);
+  }
+
+  async findByYoutubeId(youtubeVideoId: string): Promise<Episode | null> {
+    return (await this.list()).find((row) => row.youtubeVideoId === youtubeVideoId) ?? null;
+  }
+
+  async create(input: EpisodeCreateInput): Promise<Episode> {
+    const now = new Date().toISOString();
+    const item: Episode = {
+      episodeId: uuidv4(),
+      source: 'youtube',
+      youtubeVideoId: input.youtubeVideoId,
+      title: input.title.trim(),
+      description: input.description?.trim() || '',
+      thumbnailUrl: input.thumbnailUrl,
+      airDate: input.airDate,
+      isPublished: input.isPublished === true ? 'true' : 'false',
+      createdBy: input.createdBy,
+      createdAt: now,
+      updatedAt: now,
+    };
+    if (input.channelName?.trim()) item.channelName = input.channelName.trim();
+    if (input.eventId) item.eventId = input.eventId;
+    this.store.set(item.episodeId, item);
+    return { ...item };
+  }
+
+  async update(episodeId: string, patch: EpisodePatch): Promise<Episode> {
+    const existing = this.store.get(episodeId);
+    if (!existing) throw new NotFoundError('Episode', episodeId);
+
+    const fields: Partial<Episode> = {};
+    if (patch.title !== undefined) fields.title = patch.title.trim();
+    if (patch.description !== undefined) fields.description = patch.description.trim();
+    if (patch.airDate !== undefined) fields.airDate = patch.airDate;
+    if (typeof patch.eventId === 'string') fields.eventId = patch.eventId;
+    if (patch.isPublished !== undefined) fields.isPublished = patch.isPublished === true ? 'true' : 'false';
+    if (patch.youtubeVideoId !== undefined) fields.youtubeVideoId = patch.youtubeVideoId;
+    if (patch.thumbnailUrl !== undefined) fields.thumbnailUrl = patch.thumbnailUrl;
+    if (patch.channelName !== undefined) fields.channelName = patch.channelName.trim();
+
+    const updated: Episode = { ...existing, ...fields, updatedAt: new Date().toISOString() };
+    if (patch.eventId === null) delete updated.eventId;
+    this.store.set(episodeId, updated);
+    return { ...updated };
+  }
+
+  async delete(episodeId: string): Promise<void> {
+    this.store.delete(episodeId);
   }
 }
 
@@ -442,6 +519,7 @@ class StorylineRequestsImpl implements StorylineRequestsMethods {
 export class InMemoryContentRepository implements ContentRepository {
   readonly announcements: AnnouncementsImpl;
   readonly videos: VideosImpl;
+  readonly episodes: EpisodesImpl;
   readonly tickerMessages: TickerMessagesImpl;
   readonly promos: PromosImpl;
   readonly storylineRequests: StorylineRequestsImpl;
@@ -449,6 +527,7 @@ export class InMemoryContentRepository implements ContentRepository {
   constructor() {
     this.announcements = new AnnouncementsImpl();
     this.videos = new VideosImpl();
+    this.episodes = new EpisodesImpl();
     this.tickerMessages = new TickerMessagesImpl();
     this.promos = new PromosImpl();
     this.storylineRequests = new StorylineRequestsImpl();

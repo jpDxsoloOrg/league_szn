@@ -25,6 +25,7 @@ Click on any event to see its full details:
 - Results for completed matches, including draws
 - **View Full Results** once at least one match is finished
 - **Commentary View**, which gives each match a page of wrestler details for the people calling the show
+- **Watch the episode**, when the show is on YouTube. It opens the [episode](episodes) with the card alongside
 
 ## Getting Booked
 

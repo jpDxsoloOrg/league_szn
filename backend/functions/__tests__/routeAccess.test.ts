@@ -91,6 +91,9 @@ const PUBLIC_ROUTES = new Set([
   'GET /tag-teams/{tagTeamId}',
   'GET /videos',
   'GET /videos/{videoId}',
+  'GET /episodes',
+  'GET /episodes/{episodeId}',
+  'GET /live-stream',
   'GET /announcements/active',
   // LEGACY_ENTRY_ROUTES in api/routes.ts (entry points without a route table)
   'GET /standings',
@@ -250,6 +253,12 @@ const STAFF_ROUTES = [
   'DELETE /stipulations/{stipulationId}',
   'POST /tournaments',
   'PUT /tournaments/{tournamentId}',
+  'GET /admin/episodes',
+  'POST /admin/episodes',
+  'POST /admin/episodes/youtube-lookup',
+  'PUT /admin/episodes/{episodeId}',
+  'DELETE /admin/episodes/{episodeId}',
+  'PUT /admin/live-stream',
 ];
 
 type TableEntry = { route: RouteConfig; key: string };

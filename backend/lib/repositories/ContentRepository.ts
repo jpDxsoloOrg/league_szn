@@ -3,6 +3,7 @@ import type {
   Announcement,
   TickerMessage,
   Video,
+  Episode,
   Promo,
   PromoType,
   ReactionType,
@@ -89,6 +90,7 @@ export interface VideoCreateInput {
   tags?: string[];
   isPublished?: boolean;
   uploadedBy: string;
+  episodeId?: string;
 }
 
 export interface VideoPatch {
@@ -99,6 +101,52 @@ export interface VideoPatch {
   category?: 'match' | 'highlight' | 'promo' | 'other';
   tags?: string[];
   isPublished?: boolean;
+  /** null removes the link. */
+  episodeId?: string | null;
+}
+
+export interface VideosMethods extends CrudRepository<Video, VideoCreateInput, VideoPatch> {
+  listPublished(category?: string): Promise<Video[]>;
+}
+
+// ─── Episode input types ────────────────────────────────────────────
+
+export interface EpisodeCreateInput {
+  youtubeVideoId: string;
+  title: string;
+  description?: string;
+  thumbnailUrl: string;
+  channelName?: string;
+  airDate: string;
+  eventId?: string;
+  /** Defaults to false: episodes start as drafts. */
+  isPublished?: boolean;
+  createdBy: string;
+}
+
+export interface EpisodePatch {
+  title?: string;
+  description?: string;
+  airDate?: string;
+  /** null removes the link. */
+  eventId?: string | null;
+  isPublished?: boolean;
+  youtubeVideoId?: string;
+  thumbnailUrl?: string;
+  channelName?: string;
+}
+
+/** Newest air date first, then newest created. */
+export const compareEpisodes = (a: Episode, b: Episode): number =>
+  b.airDate.localeCompare(a.airDate) || (b.createdAt || '').localeCompare(a.createdAt || '');
+
+export interface EpisodesMethods extends CrudRepository<Episode, EpisodeCreateInput, EpisodePatch> {
+  /** Published episodes, newest air date first. */
+  listPublished(): Promise<Episode[]>;
+  /** Every episode (drafts too) linked to the event. */
+  listByEvent(eventId: string): Promise<Episode[]>;
+  /** The episode for a YouTube video, for the duplicate check. */
+  findByYoutubeId(youtubeVideoId: string): Promise<Episode | null>;
 }
 
 // ─── Promo input types ──────────────────────────────────────────────
@@ -170,9 +218,9 @@ export interface ContentRepository {
   announcements: CrudRepository<Announcement, AnnouncementCreateInput, AnnouncementPatch> & {
     listActive(): Promise<Announcement[]>;
   };
-  videos: CrudRepository<Video, VideoCreateInput, VideoPatch> & {
-    listPublished(category?: string): Promise<Video[]>;
-  };
+  videos: VideosMethods;
+  /** Full episodes (YouTube videos). Highlights stay in videos, linked by episodeId. */
+  episodes: EpisodesMethods;
   /** GM ticker messages, stored in the Announcements table (kind 'ticker'). */
   tickerMessages: TickerMessagesMethods;
   promos: PromosMethods;

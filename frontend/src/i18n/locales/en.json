@@ -324,7 +324,8 @@
       "forgotPassword": "Reset Password",
       "welcome": "Welcome",
       "playerProfile": "Player Profile"
-    }
+    },
+    "episodes": "Episodes"
   },
   "mobileNav": {
     "ariaLabel": "Primary",
@@ -459,6 +460,7 @@
       "contractsAndMoney": "Contracts and Money",
       "challenges": "Challenges",
       "promos": "Promos",
+      "episodes": "Episodes",
       "tips": "Tips",
       "dashboard": "Dashboard",
       "activity": "Activity",
@@ -480,6 +482,7 @@
       "adminTournaments": "Admin: Tournaments",
       "adminChallenges": "Admin: Challenges",
       "adminPromos": "Admin: Promos",
+      "adminEpisodes": "Admin: Episodes",
       "adminContenderConfig": "Admin: Contender Rankings",
       "adminDataManagement": "Admin: Data Management",
       "adminWorkflow": "Admin: Typical Workflow",
@@ -513,6 +516,7 @@
       "adminTournaments": "Tournaments",
       "adminChallenges": "Challenges",
       "adminPromos": "Promos",
+      "adminEpisodes": "Episodes",
       "adminContenderConfig": "Contender Rankings",
       "adminDataManagement": "Data Management",
       "adminWorkflow": "Typical Workflow",
@@ -1188,7 +1192,7 @@
         "factions": "Manage Factions",
         "tagTeams": "Manage Tag Teams",
         "announcements": "Announcements",
-        "videos": "Manage Videos",
+        "videos": "Manage Highlights",
         "transfers": "Division Transfers",
         "storylineRequests": "Storyline Requests",
         "gmInterference": "GM Interference",
@@ -1197,7 +1201,8 @@
         "economyConfig": "Economy Settings",
         "injuryConfig": "Injury & Stamina",
         "contracts": "Contracts",
-        "dangerZone": "Danger Zone"
+        "dangerZone": "Danger Zone",
+        "episodes": "Manage Episodes"
       },
       "groups": {
         "matchOps": "Match Operations",
@@ -1345,7 +1350,7 @@
     }
   },
   "videos": {
-    "title": "Manage Videos",
+    "title": "Manage Highlights",
     "upload": "Upload Video",
     "edit": "Edit Video",
     "allVideos": "All Videos",
@@ -1371,7 +1376,8 @@
       "thumbnail": "Thumbnail Image (optional)",
       "category": "Category",
       "tags": "Tags (comma-separated)",
-      "published": "Published"
+      "published": "Published",
+      "episode": "Linked episode"
     },
     "categories": {
       "match": "Match",
@@ -1381,7 +1387,8 @@
     },
     "update": "Update Video",
     "currentVideoHint": "A video is already attached. Choose a file only to replace it.",
-    "currentThumbnailHint": "A thumbnail is already attached. Choose a file only to replace it."
+    "currentThumbnailHint": "A thumbnail is already attached. Choose a file only to replace it.",
+    "noEpisode": "None"
   },
   "highlights": {
     "title": "Highlights & Videos",
@@ -2009,7 +2016,8 @@
         "message": "The open spots are removed and the match is booked with the wrestlers who signed up. Nobody else can claim a spot.",
         "confirm": "Close sign-ups",
         "error": "Could not close sign-ups for this match."
-      }
+      },
+      "watchEpisode": "Watch the episode"
     },
     "commentary": {
       "title": "Commentary View",
@@ -5364,6 +5372,93 @@
       "next": "Next screenshot",
       "position": "{{current}} of {{total}}",
       "untitled": "Screenshot"
+    }
+  },
+  "episodes": {
+    "title": "Episodes",
+    "subtitle": "Full shows from the league's YouTube channel, plus highlight packages",
+    "tabsLabel": "Episodes sections",
+    "tabs": {
+      "full": "Full Episodes",
+      "highlights": "Highlights"
+    },
+    "noEpisodes": "No episodes yet. Check back soon!",
+    "loadError": "Failed to load episodes.",
+    "play": "Play {{title}}",
+    "watchOnYoutube": "Watch on YouTube",
+    "airDate": "Aired {{date}}",
+    "hasEvent": "Match card",
+    "fromEpisode": "From episode: {{title}}",
+    "detail": {
+      "pageTitle": "Episode",
+      "notFound": "Episode not found.",
+      "loadError": "Failed to load the episode.",
+      "back": "Back to Episodes",
+      "onTheCard": "On the card",
+      "viewResults": "View full results",
+      "highlights": "Highlights from this episode"
+    },
+    "admin": {
+      "title": "Manage Episodes",
+      "add": "Add Episode",
+      "edit": "Edit Episode",
+      "save": "Save Episode",
+      "allEpisodes": "All Episodes",
+      "noEpisodes": "No episodes yet. Paste a YouTube link to add the first one.",
+      "youtubeUrl": "YouTube link",
+      "fetchDetails": "Fetch details",
+      "urlRequired": "Paste a YouTube link first.",
+      "invalidUrl": "That isn't a YouTube video link.",
+      "oembedUnavailable": "Couldn't fetch details from YouTube; enter a title. Embedding may be disabled for this video.",
+      "duplicate": "This video is already an episode.",
+      "channel": "Channel: {{name}}",
+      "fields": {
+        "title": "Title",
+        "description": "Description",
+        "airDate": "Air date",
+        "event": "Event",
+        "noEvent": "No event",
+        "published": "Published"
+      },
+      "titleRequired": "Title is required.",
+      "highlightsHint": "Link highlight packages to this episode from Manage Highlights.",
+      "eventMissing": "Linked event missing",
+      "createSuccess": "Episode added.",
+      "updateSuccess": "Episode updated.",
+      "deleteSuccess": "Episode deleted. Its highlights were unlinked.",
+      "confirmDelete": "Delete this episode? Its highlights stay on the site but lose the link.",
+      "saveError": "Failed to save the episode.",
+      "loadError": "Failed to load episodes.",
+      "deleteError": "Failed to delete the episode."
+    }
+  },
+  "liveStream": {
+    "live": "LIVE",
+    "defaultTitle": "Live now on Twitch",
+    "play": "Play the live stream",
+    "playerTitle": "Twitch live stream: {{channel}}",
+    "watchOnTwitch": "Watch on Twitch",
+    "admin": {
+      "title": "Live stream",
+      "description": "Shows the Twitch player on the Dashboard while you're live.",
+      "channel": "Twitch channel",
+      "channelHint": "Your Twitch login, as in twitch.tv/yourchannel.",
+      "streamTitle": "Stream title (optional)",
+      "titlePlaceholder": "Season 5, Night 1",
+      "goLive": "Go live",
+      "endStream": "End stream",
+      "save": "Save settings",
+      "statusLive": "Live since {{time}}",
+      "autoOff": "Switches off by itself at {{time}}.",
+      "statusOffline": "Offline",
+      "invalidChannel": "Enter a Twitch login of 4 to 25 letters, numbers or underscores.",
+      "channelRequired": "Set the channel before going live.",
+      "titleTooLong": "Keep the title to {{max}} characters.",
+      "loadError": "Failed to load the live stream settings.",
+      "saveError": "Failed to save the live stream.",
+      "nowLive": "You're live. The card is on the Dashboard.",
+      "ended": "Stream ended. The card is gone from the Dashboard.",
+      "saved": "Live stream settings saved."
     }
   }
 }
