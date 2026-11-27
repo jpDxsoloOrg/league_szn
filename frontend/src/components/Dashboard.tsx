@@ -12,6 +12,7 @@ import DashboardBuildNudge from './builds/DashboardBuildNudge';
 import DashboardWallet from './economy/DashboardWallet';
 import DashboardStamina from './injuries/DashboardStamina';
 import HomeHero from './home/HomeHero';
+import LiveStreamCard from './home/LiveStreamCard';
 import LatestResults from './home/LatestResults';
 import SeasonSummary from './home/SeasonSummary';
 import TopOfTable from './home/TopOfTable';
@@ -71,6 +72,8 @@ export default function Dashboard() {
 
   return (
     <div className="home">
+      {/* Shows itself only while a GM has marked the Twitch stream live. */}
+      <LiveStreamCard />
       <HomeHero inProgressEvents={data.inProgressEvents ?? []} upcomingEvents={data.upcomingEvents} />
       <ChampionCarousel champions={data.currentChampions} />
       <div className="home-columns">

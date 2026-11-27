@@ -1,0 +1,35 @@
+.live-card {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.live-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.live-card__title {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  overflow-wrap: anywhere;
+}
+
+/* No thumbnail without the Twitch API, so the placeholder is a branded wash. */
+.live-card__placeholder {
+  background-image: linear-gradient(135deg, var(--color-violet), var(--color-bg) 70%);
+}
+
+.live-card__channel {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 1rem;
+  color: var(--color-text);
+  font-family: var(--font-label);
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+}
