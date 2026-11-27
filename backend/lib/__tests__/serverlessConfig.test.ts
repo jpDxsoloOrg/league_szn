@@ -1,29 +1,13 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
-
-type CfnResource = { Type: string; DependsOn?: string[]; Properties: Record<string, unknown> };
-type BridgeFragment = { Resources: Record<string, CfnResource> };
-interface LegacyBridge {
-  (): BridgeFragment;
-  LEGACY_HTTP_FUNCTIONS: ReadonlyArray<string>;
-  buildLegacyBridge: () => BridgeFragment;
-  permissionLogicalId: (functionName: string) => string;
-}
-
-const legacyBridge = createRequire(__filename)('../../legacy-bridge.js') as LegacyBridge;
 
 const backendRoot = resolve(__dirname, '../..');
 const template = readFileSync(join(backendRoot, 'serverless.yml'), 'utf8');
 
-/**
- * Splits the `resources` list's `Resources` section into one text block per
- * logical ID. `resources:` is a list so legacy-bridge.js can be merged in
- * (INFRA-207 PR 2a).
- */
+/** Splits the `resources.Resources` section into one text block per logical ID. */
 function resourceBlocks(): Map<string, string> {
-  const start = template.indexOf('\n- Resources:\n');
+  const start = template.indexOf('\n  Resources:\n');
   const end = template.indexOf('\n  Outputs:\n');
   const blocks = new Map<string, string>();
   let currentId: string | null = null;
@@ -59,7 +43,7 @@ function sourceFiles(directory: string): string[] {
 
 describe('serverless.yml data protection', () => {
   it('finds the tables it checks', () => {
-    expect(template.indexOf('\n- Resources:\n')).toBeGreaterThan(0);
+    expect(template.indexOf('\n  Resources:\n')).toBeGreaterThan(0);
     expect(blocksOfType('AWS::DynamoDB::Table').length).toBeGreaterThanOrEqual(41);
   });
 
@@ -209,19 +193,21 @@ describe.each(['deploy-dev.yml', 'deploy-prod.yml'])('%s INFRA-207 deploy rails'
     expect(steps[gateIndex]).toContain('node scripts/check-api-cutover.js --stage ');
   });
 
-  it('diffs the packaged templates against the live stack before the deploy (PR 2a until 2b)', () => {
-    const diffIndex = indexOf('Diff packaged templates against live stack');
-    expect(diffIndex).toBeGreaterThan(indexOf('Check generated stacks for dependency cycles'));
-    expect(deployIndex).toBeGreaterThan(diffIndex);
-    const stage = workflow === 'deploy-dev.yml' ? 'devtest' : 'dev';
-    expect(steps[diffIndex]).toContain(`node scripts/diff-live-template.js --stage ${stage}`);
-    expect(steps[diffIndex]).not.toContain('continue-on-error');
+  it('no longer runs the 2a-only live template diff (INFRA-207 PR 2b)', () => {
+    expect(indexOf('Diff packaged templates against live stack')).toBe(-1);
+    expect(steps.join('\n')).not.toContain('diff-live-template');
   });
 });
 
-/** Functions with no http events in their own right: kept by INFRA-207 (plan 3). */
-const NON_HTTP_FUNCTIONS = [
-  'adminAuthorizer',
+/**
+ * Every function INFRA-207 keeps after deploy 2b (plan section 6, PR 2b): the
+ * one HTTP entry point, the two async-invoke targets, the Cognito triggers and
+ * the scheduled jobs.
+ */
+const KEPT_FUNCTIONS = [
+  'api',
+  'contenders',
+  'progression',
   'postConfirmation',
   'preSignUp',
   'expireChallenges',
@@ -247,7 +233,26 @@ function eventTypesByFunction(): Map<string, string[]> {
   return byFunction;
 }
 
-describe('serverless.yml INFRA-207 cut-over (PR 2a)', () => {
+/**
+ * The `key: value` settings in one function's block, comments and order
+ * ignored. Keys are flattened: `timeout` and an event's `path` share one map,
+ * so use it only for a block whose keys are unique.
+ */
+function functionSettings(name: string): Map<string, string> {
+  const section = template.slice(template.indexOf('\nfunctions:\n'), template.indexOf('\nresources:\n'));
+  const settings = new Map<string, string>();
+  let inBlock = false;
+  for (const line of section.split('\n')) {
+    const header = /^ {2}([A-Za-z0-9]+):$/.exec(line);
+    if (header) inBlock = header[1] === name;
+    if (!inBlock || header) continue;
+    const setting = /^\s+(?:- )?([A-Za-z]+): (.+)$/.exec(line.replace(/\s+#.*$/, ''));
+    if (setting && !line.trimStart().startsWith('#')) settings.set(setting[1], setting[2]);
+  }
+  return settings;
+}
+
+describe('serverless.yml INFRA-207 single API Lambda (PR 2b)', () => {
   it('declares http events on no function except api', () => {
     const withHttp = [...eventTypesByFunction()]
       .filter(([, types]) => types.some((type) => type === 'http' || type === 'httpApi'))
@@ -255,63 +260,29 @@ describe('serverless.yml INFRA-207 cut-over (PR 2a)', () => {
     expect(withHttp).toEqual(['api']);
   });
 
-  it('no longer declares the login function', () => {
+  it('serves api through one root ANY /{proxy+} event', () => {
+    expect(eventTypesByFunction().get('api')).toEqual(['http']);
+    const api = functionSettings('api');
+    expect(api.get('handler')).toBe('functions/api/handler.handler');
+    expect(api.get('timeout')).toBe('29');
+    expect(api.get('path')).toBe('/{proxy+}');
+    expect(api.get('method')).toBe('any');
+    expect(api.get('cors')).toBe('*corsConfig');
+  });
+
+  it('keeps only the api, async-invoke, Cognito trigger and scheduled functions', () => {
+    expect([...functionNames()].sort()).toEqual([...KEPT_FUNCTIONS].sort());
+  });
+
+  it('declares no gateway authorizer', () => {
+    expect(functionNames()).not.toContain('adminAuthorizer');
     expect(functionNames()).not.toContain('login');
+    expect(template).not.toMatch(/^\s+authorizer:/m);
+    expect(template).not.toContain('functions/auth/authorizer');
   });
 
-  it('merges legacy-bridge.js into resources', () => {
-    expect(template).toMatch(/^- \$\{file\(\.\/legacy-bridge\.js\)\}$/m);
-  });
-
-  it('bridges every event-less legacy HTTP function, and only those', () => {
-    const expected = [...functionNames()]
-      .filter((name) => name !== 'api' && !NON_HTTP_FUNCTIONS.includes(name))
-      .sort();
-    expect([...legacyBridge.LEGACY_HTTP_FUNCTIONS].sort()).toEqual(expected);
-  });
-
-  it('emits each permission and the authorizer under its live logical ID, in Serverless form', () => {
-    const { Resources } = legacyBridge.buildLegacyBridge();
-    expect(Object.keys(Resources).length).toBe(legacyBridge.LEGACY_HTTP_FUNCTIONS.length + 2);
-    expect(Resources.GetStandingsLambdaPermissionApiGateway).toEqual({
-      Type: 'AWS::Lambda::Permission',
-      Properties: {
-        FunctionName: { 'Fn::GetAtt': ['GetStandingsLambdaFunction', 'Arn'] },
-        Action: 'lambda:InvokeFunction',
-        Principal: 'apigateway.amazonaws.com',
-        SourceArn: {
-          'Fn::Join': ['', [
-            'arn:', { Ref: 'AWS::Partition' }, ':execute-api:', { Ref: 'AWS::Region' }, ':',
-            { Ref: 'AWS::AccountId' }, ':', { Ref: 'ApiGatewayRestApi' }, '/*/*',
-          ]],
-        },
-      },
-    });
-    expect(Resources.AdminAuthorizerLambdaPermissionApiGateway.Properties.FunctionName).toEqual({
-      'Fn::GetAtt': ['AdminAuthorizerLambdaFunction', 'Arn'],
-    });
-    expect(Resources.AdminAuthorizerApiGatewayAuthorizer).toEqual({
-      Type: 'AWS::ApiGateway::Authorizer',
-      DependsOn: [],
-      Properties: {
-        IdentitySource: 'method.request.header.Authorization',
-        Name: 'adminAuthorizer',
-        RestApiId: { Ref: 'ApiGatewayRestApi' },
-        AuthorizerUri: {
-          'Fn::Join': ['', [
-            'arn:', { Ref: 'AWS::Partition' }, ':apigateway:', { Ref: 'AWS::Region' },
-            ':lambda:path/2015-03-31/functions/', { 'Fn::GetAtt': ['AdminAuthorizerLambdaFunction', 'Arn'] },
-            '/invocations',
-          ]],
-        },
-        Type: 'TOKEN',
-      },
-    });
-    expect(legacyBridge.permissionLogicalId('rivalryNotes')).toBe('RivalryNotesLambdaPermissionApiGateway');
-  });
-
-  it('is what Serverless\'s ${file()} resolves: a function returning the Resources fragment', () => {
-    expect(typeof legacyBridge).toBe('function');
-    expect(legacyBridge()).toEqual(legacyBridge.buildLegacyBridge());
+  it('no longer merges legacy-bridge.js into resources', () => {
+    expect(template).not.toContain('legacy-bridge');
+    expect(template).toMatch(/^resources:\n {2}Resources:$/m);
   });
 });

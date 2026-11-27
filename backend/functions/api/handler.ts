@@ -46,9 +46,9 @@ function stripOfflinePrefix(value: string): string {
  * - Offline keeps the `/dev` stage prefix on event.path and event.resource;
  *   API Gateway does not. Strip it so the route table matches.
  * - Offline always fills requestContext.authorizer with a fake principal and
- *   no groups, which dispatch would take as gateway-verified. Drop it so
- *   authenticate() installs the offline Admin context, as the gateway
- *   authorizer's offline bypass used to.
+ *   no groups. Drop it so no handler sees that fake principal; dispatch then
+ *   calls authenticate(), which installs the offline Admin context, as the
+ *   gateway authorizer's offline bypass used to.
  *
  * Does nothing unless IS_OFFLINE is 'true'.
  */

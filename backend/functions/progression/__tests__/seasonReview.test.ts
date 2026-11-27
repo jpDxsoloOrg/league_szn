@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Callback, Context } from 'aws-lambda';
+
+vi.mock('../../../lib/authenticate', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../lib/authenticate')>();
+  const { presetCallerAuthenticate } = await import('../../../lib/__tests__/presetCallerAuth');
+  return { ...actual, authenticate: presetCallerAuthenticate(actual.authenticate) };
+});
 import type { Repositories } from '../../../lib/repositories/registry';
 import type { ProgressionTrack } from '../../../lib/repositories';
 

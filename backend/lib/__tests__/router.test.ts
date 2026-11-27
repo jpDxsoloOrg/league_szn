@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context, Callback } from 'aws-lambda';
+
+vi.mock('../authenticate', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../authenticate')>();
+  const { presetCallerAuthenticate } = await import('./presetCallerAuth');
+  return { ...actual, authenticate: presetCallerAuthenticate(actual.authenticate) };
+});
 import { createRouter, rejectOverlongQuery, ADMIN_ONLY, STAFF, type RouteConfig } from '../router';
 
 const ctx = {} as Context;

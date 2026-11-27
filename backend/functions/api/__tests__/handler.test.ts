@@ -120,8 +120,9 @@ describe('api handler', () => {
     const staff = await call(makeEvent('POST', '/players', {
       authorizer: { principalId: 'offlineContext_authorizer_principalId' },
     }));
-    // A principal with no groups fails the staff check instead of becoming Admin.
-    expect(staff.statusCode).toBe(403);
+    // The router does not trust a preset principal: with no token it is a 401,
+    // not Admin.
+    expect(staff.statusCode).toBe(401);
   });
 
   it('serves POST /auth/setup before the router, through createAdminUser', async () => {
