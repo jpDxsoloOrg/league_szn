@@ -18,7 +18,7 @@ Spielt ein Video auf der Seite nicht ab, funktioniert **Auf YouTube ansehen** im
 
 ## Die Event-Card
 
-Gehört eine Episode zu einem Event der Liga, zeigt ihre Seite den Abschnitt **Auf der Card**: Name, Typ und Status des Events und jedes Match mit seinen Teilnehmern. Sobald Ergebnisse vorliegen, sind die Sieger hervorgehoben. Klicke auf den Namen des Events, um es zu öffnen, oder auf **Ergebnisse ansehen** für alle Ergebnisse.
+Gehört eine Episode zu einem Event der Liga, zeigt ihre Seite den Abschnitt **Auf der Matchcard**: Name, Typ und Status des Events und jedes Match mit seinen Teilnehmern. Sobald Ergebnisse vorliegen, sind die Sieger hervorgehoben. Klicke auf den Namen des Events, um es zu öffnen, oder auf **Alle Ergebnisse ansehen** für alle Ergebnisse.
 
 Das geht auch andersherum: Die Seite eines Events mit Episode zeigt **Episode ansehen**. Siehe [Events & PPV](events).
 

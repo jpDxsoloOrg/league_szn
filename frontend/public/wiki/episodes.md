@@ -18,7 +18,7 @@ If a video won't play on the site, **Watch on YouTube** always works.
 
 ## The event card
 
-When an episode belongs to a league event, the episode page shows **On the card**: the event's name, its type and status, and every match with its participants. Winners are highlighted once results are in. Click the event name to open the event, or **View results** for the full results.
+When an episode belongs to a league event, the episode page shows **On the card**: the event's name, its type and status, and every match with its participants. Winners are highlighted once results are in. Click the event name to open the event, or **View full results** for the full results.
 
 It works the other way round too: the page of an event with an episode shows **Watch the episode**. See [Events & PPV](events).
 
