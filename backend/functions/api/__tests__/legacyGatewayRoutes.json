@@ -1,0 +1,1047 @@
+[
+  {
+    "method": "POST",
+    "path": "/auth/setup",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/auth/login",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/admin/users",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "POST",
+    "path": "/admin/users/role",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "POST",
+    "path": "/admin/users/toggle-enabled",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "POST",
+    "path": "/admin/users/delete",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "POST",
+    "path": "/admin/users/sync-roles",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "POST",
+    "path": "/admin/users/bulk",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/site-config",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "PUT",
+    "path": "/admin/site-config",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "DELETE",
+    "path": "/admin/clear-all",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "POST",
+    "path": "/admin/seed-data",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/admin/export-data",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/admin/heat-config",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "PUT",
+    "path": "/admin/heat-config",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/admin/economy-config",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "PUT",
+    "path": "/admin/economy-config",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/economy/catalog",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/admin/injury-config",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "PUT",
+    "path": "/admin/injury-config",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "POST",
+    "path": "/admin/injury-recovery",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "POST",
+    "path": "/shop/purchase",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "POST",
+    "path": "/shop/gm-interference",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/shop/gm-interference",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/gm-interference",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "POST",
+    "path": "/gm-interference/{requestId}/resolve",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "ANY",
+    "path": "/players",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/players/me",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/players/booking-summary",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/players/{playerId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/players/{playerId}/statistics",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/players/{playerId}/discipline",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/players/{playerId}/strikes",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/players/{playerId}/strikes/{strikeId}/remove",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/players/{playerId}/reactivate",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/builds/rules",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/players/{playerId}/build",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "PUT",
+    "path": "/players/me/build",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/players/{playerId}/ledger/adjust",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/players/me/ledger",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/players/{playerId}/ledger",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/players/{playerId}/fines",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/fines/{entryId}/rescind",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/players/me/overall",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "PUT",
+    "path": "/players/me/overall",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/admin/overalls",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "POST",
+    "path": "/transfers",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/transfers/me",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/admin/transfers",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "PUT",
+    "path": "/admin/transfers/{requestId}",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "POST",
+    "path": "/storyline-requests",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/storyline-requests/me",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/admin/storyline-requests",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "PUT",
+    "path": "/admin/storyline-requests/{requestId}",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "ANY",
+    "path": "/matches",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "PUT",
+    "path": "/matches/{matchId}/result",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/matches/{matchId}/slots/{slotId}/claim",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/matches/{matchId}/slots/{slotId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "PUT",
+    "path": "/matches/{matchId}/motn",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/matches/{matchId}/ratings",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/matches/{matchId}/no-show",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "DELETE",
+    "path": "/matches/{matchId}/no-show/{playerId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/simulate",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/matches/{matchId}/simulate",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/matches/{matchId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/championships",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/championships/{championshipId}/history",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/championships/{championshipId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/championships/{championshipId}/vacate",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/championships/{championshipId}/assign",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/tournaments",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/tournaments",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "PUT",
+    "path": "/tournaments/{tournamentId}",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/dashboard",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/ticker",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/standings",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/activity",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/seasons",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/seasons",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "PUT",
+    "path": "/seasons/{seasonId}",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "DELETE",
+    "path": "/seasons/{seasonId}",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/seasons/{seasonId}/awards",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/seasons/{seasonId}/awards",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "DELETE",
+    "path": "/seasons/{seasonId}/awards/{awardId}",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "ANY",
+    "path": "/companies",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/companies/{companyId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/shows",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/shows/{showId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/locations",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/locations",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "POST",
+    "path": "/locations/bulk",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/locations/{locationId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "PUT",
+    "path": "/locations/{locationId}",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "DELETE",
+    "path": "/locations/{locationId}",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/divisions",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/divisions",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "PUT",
+    "path": "/divisions/{divisionId}",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "DELETE",
+    "path": "/divisions/{divisionId}",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "ANY",
+    "path": "/wrestlers",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/wrestlers/{wrestlerId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/wrestlers/import",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/wrestlers/reset-assignments",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/stipulations",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/stipulations",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "PUT",
+    "path": "/stipulations/{stipulationId}",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "DELETE",
+    "path": "/stipulations/{stipulationId}",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "ANY",
+    "path": "/match-types",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/match-types/{matchTypeId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/events",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/events/{eventId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/events/{eventId}/commentary",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/events/{eventId}/check-in",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/events/{eventId}/check-in/me",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/events/{eventId}/check-ins/summary",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/events/{eventId}/check-ins",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/championships/{championshipId}/contenders",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/admin/contenders/recalculate",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/admin/contenders/overrides",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "DELETE",
+    "path": "/admin/contenders/overrides/{championshipId}/{playerId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/admin/progression/recompute",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/progression/tracks",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "PUT",
+    "path": "/progression/tracks/{trackId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/progression/tracks/{trackId}/players",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/progression/players/{playerId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "PUT",
+    "path": "/progression/players/{playerId}/consideration",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/progression/players/{playerId}/execute",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/progression/players/{playerId}/reset-goals",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/progression/players/{playerId}/history",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/progression/considerations",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/progression/events",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/progression/reviews/{seasonId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/progression/reviews/{seasonId}/apply",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/images/upload-url",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/api-docs",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/api-docs/spec",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/statistics",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/rivalries",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/rivalries/activity",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/rivalries/{rivalryId}/messages",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/rivalries/{rivalryId}/notes",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/rivalries/{rivalryId}/notes/{noteId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/rivalry-requests",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/rivalry-requests/{rivalryId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/rivalry-requests/{rivalryId}/respond",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/rivalry-requests/{rivalryId}/recompute-heat",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/contracts",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/contracts/{contractId}/accept",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/contracts/{contractId}/decline",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/contracts/{contractId}/withdraw",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/contracts/{contractId}/release",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/players/me/contracts",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/players/{playerId}/contract",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/free-agents",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/injuries",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/players/{playerId}/injuries",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/players/{playerId}/injuries",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/players/{playerId}/injuries/heal",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "PATCH",
+    "path": "/players/{playerId}/injuries/current",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "PATCH",
+    "path": "/players/{playerId}/stamina",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/players/{playerId}/condition",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/challenges",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/challenges/{challengeId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/challenges/{challengeId}/respond",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/challenges/{challengeId}/cancel",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/challenges/bulk-delete",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/promos",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/promos/{promoId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/promos/{promoId}/react",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/admin/promos/{promoId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/admin/promos/bulk-delete",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/stables",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/stables/standings",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/stables/{stableId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/stables/{stableId}/approve",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/stables/{stableId}/reject",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/stables/{stableId}/invitations",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/stables/{stableId}/invitations/{invitationId}/respond",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/stables/{stableId}/disband",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/stables/{stableId}/reactivate",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/stables/{stableId}/remove-member",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/stables/{stableId}/messages",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/stables/{stableId}/direct-messages",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/stables/{stableId}/direct-messages/{partnerPlayerId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/stables/{stableId}/stats",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/stables/{stableId}/schedule",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/stables/{stableId}/promos",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/tag-teams",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/tag-teams/standings",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/tag-teams/admin",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/tag-teams/{tagTeamId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/tag-teams/{tagTeamId}/respond",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/tag-teams/{tagTeamId}/approve",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/tag-teams/{tagTeamId}/reject",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "POST",
+    "path": "/tag-teams/{tagTeamId}/dissolve",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/videos",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/videos/{videoId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/admin/videos",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/admin/videos/{videoId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/announcements/active",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/admin/announcements",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/admin/announcements/{announcementId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/admin/ticker-messages",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "ANY",
+    "path": "/admin/ticker-messages/{messageId}",
+    "hasAuthorizer": false
+  },
+  {
+    "method": "GET",
+    "path": "/notifications",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "GET",
+    "path": "/notifications/unread-count",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "PUT",
+    "path": "/notifications/{notificationId}/read",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "PUT",
+    "path": "/notifications/mark-all-read",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "DELETE",
+    "path": "/notifications/delete-read",
+    "hasAuthorizer": true
+  },
+  {
+    "method": "DELETE",
+    "path": "/notifications/{notificationId}",
+    "hasAuthorizer": true
+  }
+]

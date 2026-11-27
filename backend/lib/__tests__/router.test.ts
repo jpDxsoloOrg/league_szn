@@ -140,6 +140,80 @@ describe('createRouter', () => {
       expect(byIdHandler).not.toHaveBeenCalled();
     });
 
+    it.each([
+      ['/a/{x}/c first', ['/a/{x}/c', '/a/b/{y}']],
+      ['/a/b/{y} first', ['/a/b/{y}', '/a/{x}/c']],
+    ])('prefers the leftmost literal over fewer params (%s)', async (_label, order) => {
+      const handlers: Record<string, ReturnType<typeof vi.fn>> = {
+        '/a/{x}/c': vi.fn().mockResolvedValue({ statusCode: 200, body: '{"route":"x"}' }),
+        '/a/b/{y}': vi.fn().mockImplementation(async (event: APIGatewayProxyEvent) => ({
+          statusCode: 200,
+          body: JSON.stringify({ route: 'y', y: event.pathParameters?.y, resource: event.resource }),
+        })),
+      };
+      const routes: ReadonlyArray<RouteConfig> = order.map((resource) => ({
+        method: 'GET' as const,
+        resource,
+        handler: handlers[resource] as RouteConfig['handler'],
+        access: 'public' as const,
+      }));
+      const handler = createRouter(routes);
+
+      const result = await handler(
+        makeEvent({ httpMethod: 'GET', path: '/a/b/c', resource: '/{proxy+}' }),
+        ctx,
+        cb
+      );
+
+      expect(result?.statusCode).toBe(200);
+      expect(JSON.parse(result!.body)).toEqual({ route: 'y', y: 'c', resource: '/a/b/{y}' });
+      expect(handlers['/a/{x}/c']).not.toHaveBeenCalled();
+    });
+
+    it('resolves the resource before the method: 405 instead of a {param} sibling', async () => {
+      const meHandler = vi.fn().mockResolvedValue({ statusCode: 200, body: '{}' });
+      const deleteHandler = vi.fn().mockResolvedValue({ statusCode: 200, body: '{}' });
+      const routes: ReadonlyArray<RouteConfig> = [
+        { method: 'GET', resource: '/players/me', handler: meHandler as RouteConfig['handler'], access: 'public' },
+        { method: 'DELETE', resource: '/players/{playerId}', handler: deleteHandler as RouteConfig['handler'], access: 'self-service' },
+      ];
+      const handler = createRouter(routes);
+
+      const result = await handler(
+        makeEvent({ httpMethod: 'DELETE', path: '/players/me', resource: '/{proxy+}' }),
+        ctx,
+        cb
+      );
+
+      expect(result?.statusCode).toBe(405);
+      expect(deleteHandler).not.toHaveBeenCalled();
+      expect(meHandler).not.toHaveBeenCalled();
+    });
+
+    it('still dispatches the {param} sibling for a path that is not the literal', async () => {
+      const deleteHandler = vi.fn().mockImplementation(async (event: APIGatewayProxyEvent) => ({
+        statusCode: 200,
+        body: JSON.stringify({ playerId: event.pathParameters?.playerId }),
+      }));
+      const routes: ReadonlyArray<RouteConfig> = [
+        { method: 'GET', resource: '/players/me', handler: vi.fn() as RouteConfig['handler'], access: 'public' },
+        { method: 'DELETE', resource: '/players/{playerId}', handler: deleteHandler as RouteConfig['handler'], access: STAFF },
+      ];
+      const handler = createRouter(routes);
+      const requestContext = {
+        authorizer: { principalId: 'admin-sub', groups: 'Admin' },
+      } as unknown as APIGatewayProxyEvent['requestContext'];
+
+      const result = await handler(
+        makeEvent({ httpMethod: 'DELETE', path: '/players/p1', resource: '/{proxy+}', requestContext }),
+        ctx,
+        cb
+      );
+
+      expect(result?.statusCode).toBe(200);
+      expect(JSON.parse(result!.body)).toEqual({ playerId: 'p1' });
+    });
+
     it('returns 405 when path matches a registered route but method does not', async () => {
       const routes: ReadonlyArray<RouteConfig> = [
         { method: 'GET', resource: '/players/{playerId}', handler: vi.fn() as RouteConfig['handler'], access: 'public' },

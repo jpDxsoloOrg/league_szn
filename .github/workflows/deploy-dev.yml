@@ -90,6 +90,16 @@ jobs:
           DEV_ACM_CERTIFICATE_ARN: ${{ secrets.DEV_ACM_CERTIFICATE_ARN }}
           ADMIN_SETUP_KEY: ${{ secrets.ADMIN_SETUP_KEY }}
 
+      - name: Check generated stacks against resource limits
+        working-directory: backend
+        run: npm run check-stack-limits
+
+      # INFRA-207 cut-over gate (plan section 7.3). Reads live state and refuses a
+      # template that would undo the /{proxy+} migration on this stage.
+      - name: Check API cut-over gate
+        working-directory: backend
+        run: node scripts/check-api-cutover.js --stage devtest
+
       - name: Deploy backend to dev
         id: deploy_backend
         working-directory: backend
@@ -99,6 +109,37 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           DEV_ACM_CERTIFICATE_ARN: ${{ secrets.DEV_ACM_CERTIFICATE_ARN }}
           ADMIN_SETUP_KEY: ${{ secrets.ADMIN_SETUP_KEY }}
+
+      # API Gateway Deployments are snapshots taken before CloudFormation cleanup,
+      # so a deploy that removes gateway paths leaves them on the stage until a
+      # new deployment is created (INFRA-207 plan section 4). The previous
+      # deploymentId is logged for rollback with aws apigateway update-stage.
+      # continue-on-error keeps a failed refresh from skipping the frontend
+      # deploy; the "Fail if API stage refresh failed" step at the end of the job
+      # still turns the run red so the stale stage gets noticed.
+      - name: Refresh API stage deployment
+        id: refresh_stage
+        if: steps.deploy_backend.outcome == 'success'
+        continue-on-error: true
+        run: |
+          REST_API_ID=$(aws cloudformation describe-stack-resource \
+            --stack-name wwe-2k-league-api-devtest \
+            --logical-resource-id ApiGatewayRestApi \
+            --query "StackResourceDetail.PhysicalResourceId" \
+            --output text)
+          PREVIOUS_DEPLOYMENT_ID=$(aws apigateway get-stage \
+            --rest-api-id "$REST_API_ID" \
+            --stage-name devtest \
+            --query deploymentId \
+            --output text)
+          echo "Previous devtest stage deploymentId (rollback target): $PREVIOUS_DEPLOYMENT_ID"
+          NEW_DEPLOYMENT_ID=$(aws apigateway create-deployment \
+            --rest-api-id "$REST_API_ID" \
+            --stage-name devtest \
+            --description "post-deploy refresh $GITHUB_SHA" \
+            --query id \
+            --output text)
+          echo "New devtest stage deploymentId: $NEW_DEPLOYMENT_ID"
 
       - name: Extract Cognito IDs from CloudFormation
         id: cognito
@@ -240,6 +281,12 @@ jobs:
       #     name: page-screenshots
       #     path: screenshots/
       #     retention-days: 30
+
+      - name: Fail if API stage refresh failed
+        if: ${{ !cancelled() && steps.refresh_stage.outcome == 'failure' }}
+        run: |
+          echo "::error::Refreshing the devtest API stage deployment failed. The stage may still serve removed gateway paths; run aws apigateway create-deployment --stage-name devtest by hand (check the CI role's apigateway:POST permission on /restapis/*/deployments)."
+          exit 1
 
       - name: Deployment summary
         if: always()

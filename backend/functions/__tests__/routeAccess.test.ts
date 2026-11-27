@@ -3,6 +3,7 @@ import { join, relative } from 'node:path';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context, Callback } from 'aws-lambda';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { createRouter, type RouteAccess, type RouteConfig } from '../../lib/router';
+import { LEGACY_ENTRY_ROUTES } from '../api/routes';
 
 vi.mock('../../lib/authenticate', () => ({
   authenticate: async () => ({ ok: false }),
@@ -14,6 +15,79 @@ const serverlessPath = join(functionsDir, '..', 'serverless.yml');
 /** handler.ts files with no route table. Each is listed with its reason. */
 const NO_ROUTE_TABLE = new Set([
   'activity/handler.ts', // One public GET; rejects every other method itself.
+  'api/handler.ts', // merged table; checked in api/__tests__ (INFRA-207).
+]);
+
+/**
+ * Every route open without a token (INFRA-207). Generated from the route
+ * tables when the gateway authorizer was retired, then reviewed. A new or
+ * changed public route needs a reviewed edit here.
+ */
+const PUBLIC_ROUTES = new Set([
+  // Domain route tables
+  'GET /site-config',
+  'GET /economy/catalog',
+  'GET /players',
+  'GET /players/{playerId}',
+  'GET /players/{playerId}/statistics',
+  'GET /builds/rules',
+  'GET /players/{playerId}/build',
+  'GET /matches',
+  'GET /championships',
+  'GET /championships/{championshipId}/history',
+  'GET /tournaments',
+  'GET /dashboard',
+  'GET /ticker',
+  'GET /seasons',
+  'GET /seasons/{seasonId}/awards',
+  'GET /companies',
+  'GET /companies/{companyId}',
+  'GET /shows',
+  'GET /shows/{showId}',
+  'GET /locations',
+  'GET /locations/{locationId}',
+  'GET /divisions',
+  'GET /wrestlers',
+  'GET /wrestlers/{wrestlerId}',
+  'GET /stipulations',
+  'GET /match-types',
+  'GET /events',
+  'GET /events/{eventId}',
+  'GET /events/{eventId}/commentary',
+  'GET /championships/{championshipId}/contenders',
+  'GET /progression/players/{playerId}',
+  'GET /progression/tracks',
+  'GET /progression/considerations',
+  'GET /progression/players/{playerId}/history',
+  'GET /rivalry-requests',
+  'GET /rivalry-requests/{rivalryId}',
+  'GET /players/{playerId}/contract',
+  'GET /free-agents',
+  'GET /players/{playerId}/injuries',
+  'GET /challenges',
+  'GET /challenges/{challengeId}',
+  'GET /promos',
+  'GET /promos/{promoId}',
+  'GET /stables',
+  'GET /stables/standings',
+  'GET /stables/{stableId}',
+  'GET /stables/{stableId}/stats',
+  'GET /stables/{stableId}/schedule',
+  'GET /stables/{stableId}/promos',
+  'GET /tag-teams',
+  'GET /tag-teams/standings',
+  'GET /tag-teams/{tagTeamId}',
+  'GET /videos',
+  'GET /videos/{videoId}',
+  'GET /announcements/active',
+  // LEGACY_ENTRY_ROUTES in api/routes.ts (entry points without a route table)
+  'GET /standings',
+  'GET /activity',
+  'GET /statistics',
+  'GET /rivalries',
+  'GET /rivalries/activity',
+  'GET /api-docs',
+  'GET /api-docs/spec',
 ]);
 
 /**
@@ -251,6 +325,14 @@ describe('route access declarations', () => {
       expect(access, key).toBeDefined();
       if (route.method !== 'GET') expect(access, key).not.toBe('public');
     }
+  });
+
+  it('opens exactly the reviewed PUBLIC_ROUTES without a token', () => {
+    const publicKeys = [...entries.map(({ route }) => route), ...LEGACY_ENTRY_ROUTES]
+      .filter((route) => route.access === 'public')
+      .map((route) => `${route.method} ${route.resource}`);
+    expect(new Set(publicKeys)).toEqual(PUBLIC_ROUTES);
+    expect(publicKeys.length).toBe(PUBLIC_ROUTES.size);
   });
 
   it('keeps every non-GET route either role-gated or on the self-service list', () => {
