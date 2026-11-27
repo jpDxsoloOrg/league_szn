@@ -44,7 +44,7 @@ let roster: RosterSeed;
 async function promoAged(
   ageDays: number,
   promoType: PromoType,
-  extra: { playerId?: string; rivalryId?: string; targetPromoId?: string } = {},
+  extra: { playerId?: string; rivalryId?: string; targetPromoId?: string; targetPlayerId?: string } = {},
 ): Promise<Promo> {
   vi.setSystemTime(NOW - ageDays * DAY_MS);
   const promo = await repos.content.promos.create({
@@ -265,10 +265,12 @@ describe('getActivity', () => {
 
 describe('rivalry reads', () => {
   let rivalryId: string;
+  let rivalPlayerId: string;
 
   beforeEach(async () => {
     _resetMemoForTesting();
     const rival = await repos.roster.players.create({ name: 'R', currentWrestler: 'Kane' });
+    rivalPlayerId = rival.playerId;
     const rivalry = await repos.rivalries.create({
       title: 'Feud',
       requestedBy: roster.visibleId,
@@ -281,17 +283,17 @@ describe('rivalry reads', () => {
     await repos.rivalries.update(rivalryId, { status: 'active' });
   });
 
-  it('getRivalry fills recentPromos from unarchived promos only', async () => {
-    const shown = await promoAged(2, 'open-mic');
-    await promoAged(30, 'open-mic');
-    for (let n = 0; n < 6; n++) await promoAged(5, 'call-out');
+  it('getRivalry keeps the feud\'s archived promos and leaves unrelated ones out', async () => {
+    const tagged = await promoAged(30, 'rivalry', { rivalryId });
+    const callOut = await promoAged(20, 'call-out', { targetPlayerId: rivalPlayerId });
+    for (let n = 0; n < 25; n++) await promoAged(1, 'open-mic');
 
     const { body } = await call<{ recentPromos: PromoRow[] }>(
       getRivalry,
       makeEvent({ pathParameters: { rivalryId } }),
     );
 
-    expect(promoIds(body.recentPromos)).toEqual([shown.promoId]);
+    expect(promoIds(body.recentPromos)).toEqual([callOut.promoId, tagged.promoId]);
   });
 
   it('getRivalryActivity leaves archived promos out', async () => {

@@ -45,7 +45,7 @@ A rivalry's page shows its heat, head-to-head record and next event, with these 
 
 - **Overview** — A summary of the story so far.
 - **Match History** and **Future Matches** — Matches tied to the rivalry.
-- **Promos** — Promos tagged to the rivalry, and promos where one rival targets the other, from the last 4 days. Older promos still open from a direct link.
+- **Promos** — Promos tagged to the rivalry, and promos where one rival targets the other. Unlike the public promo feeds, this tab keeps the feud's older promos, up to the latest 20.
 - **Notes & Plans** — Only the rivals and the GMs can open this tab. Rivals can add storyline notes. Only GMs can add plans. Everything here is visible to both rivals and the GMs.
 - **Messages** — Only the rivals and the GMs can open this tab. It's one shared thread, and everything you post is seen by your opponent and the GMs.
 

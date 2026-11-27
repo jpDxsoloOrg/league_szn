@@ -12,7 +12,7 @@ Responses don't appear in the main feed. To read them, open the promo with **Vie
 
 ## How long promos stay up
 
-Promos leave public feeds 4 days after they're posted, unless staff have pinned them. They aren't deleted: a direct link still opens them, and they still count towards [rivalry heat](rivalry-heat-explained).
+Promos leave public feeds 4 days after they're posted, unless staff have pinned them. They aren't deleted: a direct link still opens them, they still count towards [rivalry heat](rivalry-heat-explained), and a rivalry's Promos tab keeps showing them.
 
 ## Creating a promo
 

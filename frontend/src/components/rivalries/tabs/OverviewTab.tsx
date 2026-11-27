@@ -5,6 +5,9 @@ import type { HydratedRivalry } from '../../../types/rivalry';
 import { formatCalendarDate } from '../../../utils/dateUtils';
 import { resolvePlayerFullLabel } from '../rivalryUtils';
 
+/** The Overview card previews the latest few; the Promos tab lists them all. */
+const OVERVIEW_PROMOS = 5;
+
 interface TabProps {
   hydrated: HydratedRivalry;
   players: Player[];
@@ -92,7 +95,7 @@ export default function OverviewTab({ hydrated, players, showNotesLink }: TabPro
             <p className="rivalry-tab__empty">{t('rivalries.detail.noRecentPromos')}</p>
           ) : (
             <ul className="rivalry-detail-promos">
-              {hydrated.recentPromos.map((p) => {
+              {hydrated.recentPromos.slice(0, OVERVIEW_PROMOS).map((p) => {
                 const author = playerLookup.get(p.playerId);
                 return (
                   <li key={p.promoId}>

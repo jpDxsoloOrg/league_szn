@@ -45,7 +45,7 @@ Die Seite einer Rivalität zeigt ihre Hitze, die direkte Bilanz und das nächste
 
 - **Übersicht** — Eine Zusammenfassung der bisherigen Geschichte.
 - **Kampfhistorie** und **Zukünftige Kämpfe** — Matches, die zur Rivalität gehören.
-- **Promos** — Der Rivalität zugeordnete Promos und Promos, in denen ein Rivale den anderen anspricht, aus den letzten 4 Tagen. Ältere Promos lassen sich weiterhin über einen direkten Link öffnen.
+- **Promos** — Der Rivalität zugeordnete Promos und Promos, in denen ein Rivale den anderen anspricht. Anders als die öffentlichen Promo-Feeds behält dieser Tab auch ältere Promos der Fehde, bis zu den letzten 20.
 - **Notizen & Pläne** — Diesen Tab können nur die Rivalen und die GMs öffnen. Rivalen können Storyline-Notizen hinzufügen. Pläne können nur GMs hinzufügen. Alles hier sehen beide Rivalen und die GMs.
 - **Nachrichten** — Diesen Tab können nur die Rivalen und die GMs öffnen. Es ist ein gemeinsamer Verlauf. Alles, was du schreibst, sehen dein Gegner und die GMs.
 

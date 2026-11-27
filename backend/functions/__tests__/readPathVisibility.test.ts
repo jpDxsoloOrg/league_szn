@@ -46,7 +46,7 @@ let repos: Repositories;
 let roster: RosterSeed;
 
 async function createPromo(
-  extra: Partial<Pick<Promo, 'playerId' | 'title' | 'targetPromoId'>> = {},
+  extra: Partial<Pick<Promo, 'playerId' | 'title' | 'targetPromoId' | 'rivalryId'>> = {},
   isHidden = false,
 ): Promise<Promo> {
   const promo = await repos.content.promos.create({
@@ -281,7 +281,7 @@ describe('moderated promos in other feeds', () => {
     expect(body.items.map((item) => item.id)).toEqual([`promo-${shown.promoId}`]);
   });
 
-  it('getRivalry leaves them out before taking the recent five', async () => {
+  it('getRivalry leaves them out before applying its cap', async () => {
     const rival = await repos.roster.players.create({ name: 'R', currentWrestler: 'Kane' });
     const { rivalryId } = await repos.rivalries.create({
       title: 'Feud',
@@ -291,8 +291,8 @@ describe('moderated promos in other feeds', () => {
         { playerId: rival.playerId, role: 'rival' },
       ],
     });
-    const shown = await createPromo();
-    for (let count = 0; count < 6; count++) await createPromo({}, true);
+    const shown = await createPromo({ rivalryId });
+    for (let count = 0; count < 21; count++) await createPromo({ rivalryId }, true);
 
     const { body } = await call<{ recentPromos: PromoRow[] }>(
       getRivalry,

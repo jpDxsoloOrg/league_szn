@@ -12,7 +12,7 @@ Antworten erscheinen nicht im Haupt-Feed. Um sie zu lesen, öffne die Promo mit 
 
 ## Wie lange Promos sichtbar bleiben
 
-Promos verschwinden 4 Tage nach dem Posten aus den öffentlichen Feeds, außer das Liga-Team hat sie angepinnt. Gelöscht werden sie nicht: Ein direkter Link öffnet sie weiterhin, und sie zählen weiter für die [Rivalitäts-Hitze](rivalry-heat-explained).
+Promos verschwinden 4 Tage nach dem Posten aus den öffentlichen Feeds, außer das Liga-Team hat sie angepinnt. Gelöscht werden sie nicht: Ein direkter Link öffnet sie weiterhin, sie zählen weiter für die [Rivalitäts-Hitze](rivalry-heat-explained), und der Promos-Tab einer Rivalität zeigt sie weiterhin.
 
 ## Eine Promo erstellen
 
