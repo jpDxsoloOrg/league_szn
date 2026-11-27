@@ -1,9 +1,20 @@
+/**
+ * Access rules for the merged route table served by the single `api` Lambda
+ * (INFRA-207). Since deploy 2a, serverless.yml has one http event, ANY
+ * /{proxy+} on `api`, and every route is authorized in code by lib/router
+ * dispatch, so the merged table in functions/api/routes.ts is the source of
+ * truth here, not the serverless.yml events.
+ * See docs/plans/plan-infra-207-api-simplification.md section 5.10.
+ */
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context, Callback } from 'aws-lambda';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { createRouter, type RouteAccess, type RouteConfig } from '../../lib/router';
-import { LEGACY_ENTRY_ROUTES } from '../api/routes';
+import { PRE_ROUTER_UNAUTHENTICATED_WRITES } from '../api/handler';
+import { allRoutes } from '../api/routes';
+import { concretePath, gatewayResource } from '../api/__tests__/gatewayRouting';
+import legacyGatewayRoutes from '../api/__tests__/legacyGatewayRoutes.json';
 
 vi.mock('../../lib/authenticate', () => ({
   authenticate: async () => ({ ok: false }),
@@ -240,8 +251,9 @@ const STAFF_ROUTES = [
   'PUT /tournaments/{tournamentId}',
 ];
 
-type TableEntry = { file: string; route: RouteConfig; key: string };
-type GatewayEvent = { handlerFile: string; path: string; method: string; hasAuthorizer: boolean };
+type TableEntry = { route: RouteConfig; key: string };
+type HttpEvent = { functionName: string; path: string; method: string; hasAuthorizer: boolean };
+type LegacyGatewayRoute = { method: string; path: string; hasAuthorizer: boolean };
 
 function findHandlerFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -251,26 +263,29 @@ function findHandlerFiles(dir: string): string[] {
   });
 }
 
-/** Reads the http events of each routed function out of serverless.yml. */
-function parseGatewayEvents(): GatewayEvent[] {
-  const events: GatewayEvent[] = [];
-  let handlerFile = '';
-  let current: GatewayEvent | null = null;
+/** Every http event in serverless.yml, with the function that declares it. */
+function parseHttpEvents(): HttpEvent[] {
+  const events: HttpEvent[] = [];
+  let functionName = '';
+  let current: HttpEvent | null = null;
   for (const line of readFileSync(serverlessPath, 'utf8').split('\n')) {
-    const handlerLine = /^ {4}handler: functions\/(.+\/handler)\.handler\s*$/.exec(line);
-    const otherHandlerLine = /^ {4}handler: /.test(line);
-    const pathLine = /^ {10}path: (\S+)\s*$/.exec(line);
-    const methodLine = /^ {10}method: (\S+)\s*$/.exec(line);
-    if (otherHandlerLine) {
-      handlerFile = handlerLine ? `${handlerLine[1]}.ts` : '';
+    const functionLine = /^ {2}([A-Za-z0-9]+):\s*$/.exec(line);
+    if (functionLine) {
+      functionName = functionLine[1];
       current = null;
     }
-    if (pathLine && handlerFile) {
-      current = { handlerFile, path: `/${pathLine[1]}`, method: '', hasAuthorizer: false };
+    if (/^\s*- http:/.test(line)) {
+      current = { functionName, path: '', method: '', hasAuthorizer: false };
       events.push(current);
+      continue;
     }
-    if (methodLine && current) current.method = methodLine[1].toUpperCase();
-    if (/^ {10}authorizer: adminAuthorizer/.test(line) && current) current.hasAuthorizer = true;
+    if (!current) continue;
+    const pathLine = /^ {10}path: (\S+)\s*$/.exec(line);
+    const methodLine = /^ {10}method: (\S+)\s*$/.exec(line);
+    if (pathLine) current.path = pathLine[1];
+    if (methodLine) current.method = methodLine[1].toUpperCase();
+    if (/^\s+authorizer:/.test(line)) current.hasAuthorizer = true;
+    if (/^ {0,9}\S/.test(line) && !/^\s*- http:/.test(line)) current = null;
   }
   return events;
 }
@@ -298,9 +313,35 @@ async function callRoute(
 const asRoles = (access: RouteAccess) => (typeof access === 'object' ? [...access.roles].sort() : []);
 const caller = (groups: string) => ({ principalId: 'sub-1', groups });
 
+const entries: TableEntry[] = allRoutes.map((route) => ({ route, key: `${route.method} ${route.resource}` }));
+const routeByKey = new Map(entries.map((entry) => [entry.key, entry.route]));
+const templates = [...new Set(allRoutes.map((route) => route.resource))];
+
+/**
+ * The merged-table route that serves `method path` through /{proxy+}, picked
+ * the way API Gateway picks a resource (routes.test.ts proves the router
+ * agrees with this model), or undefined when none does.
+ */
+function servingRoute(method: string, path: string): RouteConfig | undefined {
+  const resource = gatewayResource(templates, concretePath(path));
+  return resource === null ? undefined : routeByKey.get(`${method} ${resource}`);
+}
+
+describe('serverless.yml http events', () => {
+  it('has exactly one http event: ANY /{proxy+} on api, with no gateway authorizer', () => {
+    expect(parseHttpEvents()).toEqual([
+      { functionName: 'api', path: '/{proxy+}', method: 'ANY', hasAuthorizer: false },
+    ]);
+  });
+
+  it('declares no httpApi events either', () => {
+    expect(readFileSync(serverlessPath, 'utf8')).not.toMatch(/^\s*- httpApi:/m);
+  });
+});
+
 describe('route access declarations', () => {
-  const entries: TableEntry[] = [];
   const handlerFiles = findHandlerFiles(functionsDir);
+  const tables = new Map<string, ReadonlyArray<RouteConfig>>();
 
   beforeAll(async () => {
     for (const fullPath of handlerFiles) {
@@ -308,15 +349,19 @@ describe('route access declarations', () => {
       if (NO_ROUTE_TABLE.has(file)) continue;
       const loaded = (await import(/* @vite-ignore */ fullPath)) as { routes?: ReadonlyArray<RouteConfig> };
       if (!loaded.routes) throw new Error(`${file} does not export a route table`);
-      for (const route of loaded.routes) {
-        entries.push({ file, route, key: `${route.method} ${route.resource}` });
-      }
+      tables.set(file, loaded.routes);
     }
   }, 60000);
 
-  it('finds every route table', () => {
+  it('serves every domain route table through the merged table', () => {
     expect(handlerFiles.length).toBeGreaterThanOrEqual(30);
-    expect(new Set(entries.map((entry) => entry.file)).size).toBe(handlerFiles.length - NO_ROUTE_TABLE.size);
+    expect(tables.size).toBe(handlerFiles.length - NO_ROUTE_TABLE.size);
+    const merged = new Set(allRoutes);
+    for (const [file, routes] of tables) {
+      for (const route of routes) {
+        expect(merged.has(route), `${route.method} ${route.resource} in ${file}`).toBe(true);
+      }
+    }
   });
 
   it('gives every route a valid declaration, with no public writes', () => {
@@ -328,11 +373,20 @@ describe('route access declarations', () => {
   });
 
   it('opens exactly the reviewed PUBLIC_ROUTES without a token', () => {
-    const publicKeys = [...entries.map(({ route }) => route), ...LEGACY_ENTRY_ROUTES]
-      .filter((route) => route.access === 'public')
-      .map((route) => `${route.method} ${route.resource}`);
+    const publicKeys = entries.filter(({ route }) => route.access === 'public').map(({ key }) => key);
     expect(new Set(publicKeys)).toEqual(PUBLIC_ROUTES);
     expect(publicKeys.length).toBe(PUBLIC_ROUTES.size);
+  });
+
+  it('allows no unauthenticated write except the pre-router allowlist', () => {
+    expect([...PRE_ROUTER_UNAUTHENTICATED_WRITES.keys()]).toEqual(['POST /auth/setup']);
+    // The allowlisted write is handled before the router and is not in the table.
+    for (const key of PRE_ROUTER_UNAUTHENTICATED_WRITES.keys()) expect(routeByKey.has(key), key).toBe(false);
+    // The RouteConfig type already forbids it; this catches a cast that slips past.
+    const openWrites = entries.filter(
+      ({ route }) => route.method !== 'GET' && (route.access as RouteAccess) === 'public',
+    );
+    expect(openWrites.map(({ key }) => key)).toEqual([]);
   });
 
   it('keeps every non-GET route either role-gated or on the self-service list', () => {
@@ -351,9 +405,9 @@ describe('route access declarations', () => {
 
   it('declares every audited route as Admin plus Moderator', () => {
     for (const key of STAFF_ROUTES) {
-      const entry = entries.find((candidate) => candidate.key === key);
-      expect(entry, key).toBeDefined();
-      expect(asRoles(entry!.route.access), key).toEqual(['Admin', 'Moderator']);
+      const route = routeByKey.get(key);
+      expect(route, key).toBeDefined();
+      expect(asRoles(route!.access), key).toEqual(['Admin', 'Moderator']);
     }
   });
 
@@ -378,47 +432,40 @@ describe('route access declarations', () => {
         expect(moderator.reached, entry.key).toBe(true);
         continue;
       }
-      expect(wrestler, entry.key).toEqual({ statusCode: 403, reached: false });
+      const roles = asRoles(access);
+      // hasRole: Moderator passes any check that does not require Admin.
+      if (roles.includes('Wrestler')) expect(wrestler.reached, entry.key).toBe(true);
+      else expect(wrestler, entry.key).toEqual({ statusCode: 403, reached: false });
       expect(noGroups, entry.key).toEqual({ statusCode: 403, reached: false });
-      expect(moderator.reached, entry.key).toBe(asRoles(access).includes('Moderator'));
+      expect(moderator.reached, entry.key).toBe(roles.some((role) => role !== 'Admin'));
     }
   });
 
-  it('matches every gateway event to a route', () => {
-    const gatewayEvents = parseGatewayEvents();
-    expect(gatewayEvents.length).toBeGreaterThan(100);
-    for (const { handlerFile, path, method } of gatewayEvents) {
-      const label = `${method} ${path} in ${handlerFile}`;
-      if (NO_ROUTE_TABLE.has(handlerFile)) continue;
-      const matches = entries.filter(
-        ({ file, route }) =>
-          file === handlerFile && route.resource === path && (method === 'ANY' || route.method === method),
-      );
-      expect(matches.length, label).toBeGreaterThan(0);
-    }
-  });
-
-  it('exposes every discipline route through the gateway, with auth left to the router', () => {
-    const disciplineEvents = parseGatewayEvents().filter(
-      ({ handlerFile, path }) => handlerFile === 'players/handler.ts'
-        && /\/(discipline|strikes|reactivate)/.test(path),
-    );
-    expect(disciplineEvents.map(({ method, path }) => `${method} ${path}`).sort()).toEqual([
+  it('serves every discipline route, none of them public', () => {
+    const discipline = [
       'GET /players/{playerId}/discipline',
       'POST /players/{playerId}/reactivate',
       'POST /players/{playerId}/strikes',
       'POST /players/{playerId}/strikes/{strikeId}/remove',
-    ]);
-    expect(disciplineEvents.every(({ hasAuthorizer }) => !hasAuthorizer)).toBe(true);
+    ];
+    for (const key of discipline) {
+      const [method, path] = key.split(' ');
+      const route = servingRoute(method, path);
+      expect(route && `${route.method} ${route.resource}`, key).toBe(key);
+      expect(route?.access, key).not.toBe('public');
+    }
   });
 
-  it('never marks a route public behind the gateway authorizer', () => {
-    for (const { handlerFile, path, method, hasAuthorizer } of parseGatewayEvents()) {
-      if (!hasAuthorizer || NO_ROUTE_TABLE.has(handlerFile)) continue;
-      const route = entries.find(
-        (entry) => entry.file === handlerFile && entry.route.resource === path && entry.route.method === method,
-      );
-      expect(route?.route.access, `${method} ${path}`).not.toBe('public');
+  it('keeps every formerly gateway-authorized route non-public', () => {
+    const authorized = (legacyGatewayRoutes as LegacyGatewayRoute[]).filter((route) => route.hasAuthorizer);
+    expect(authorized.length).toBe(57);
+    for (const { method, path } of authorized) {
+      const methods = method === 'ANY' ? ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] : [method];
+      const served = methods.map((candidate) => servingRoute(candidate, path)).filter(Boolean);
+      expect(served.length, `${method} ${path}`).toBeGreaterThan(0);
+      for (const route of served) {
+        expect(route?.access, `${route?.method} ${route?.resource} (was ${method} ${path})`).not.toBe('public');
+      }
     }
   });
 });

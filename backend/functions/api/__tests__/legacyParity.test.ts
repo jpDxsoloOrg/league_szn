@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import type { APIGatewayProxyEvent } from 'aws-lambda';
 import { describe, expect, it, vi } from 'vitest';
 import { PRE_ROUTER_UNAUTHENTICATED_WRITES } from '../handler';
@@ -18,8 +20,10 @@ vi.mock('../../../lib/accountStatus', () => ({
 type LegacyGatewayRoute = { method: string; path: string; hasAuthorizer: boolean };
 
 /**
- * Gateway routes deliberately dropped by INFRA-207. POST /auth/login had no
- * traffic in 90 days and the frontend signs in through Cognito directly.
+ * Gateway routes deliberately dropped by INFRA-207: the only allowed
+ * exception to parity. POST /auth/login had no traffic in 90 days and the
+ * frontend signs in through Cognito directly; PR 2a deleted its function and
+ * handler. The fixture keeps the event, so the deletion stays visible here.
  */
 const DELETED_ON_PURPOSE = new Set(['POST /auth/login']);
 
@@ -69,6 +73,15 @@ describe('legacy gateway route parity', () => {
       expect(fixture, key).toContainEqual(expect.objectContaining({ method, path }));
       expect(routesByKey.has(key), key).toBe(false);
     }
+  });
+
+  it('answers 404 for the deleted routes, which no handler serves any more (PR 2a)', async () => {
+    for (const key of DELETED_ON_PURPOSE) {
+      const [method, path] = key.split(' ');
+      expect(PRE_ROUTER_UNAUTHENTICATED_WRITES.has(key), key).toBe(false);
+      expect(await probe(method, path), key).toEqual({ statusCode: 404, ranRoute: null });
+    }
+    expect(existsSync(join(__dirname, '../../auth/login.ts'))).toBe(false);
   });
 
   it('keeps every formerly gateway-authorized route non-public', async () => {

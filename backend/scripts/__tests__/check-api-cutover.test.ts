@@ -170,6 +170,41 @@ describe('check-api-cutover: check A', () => {
   });
 });
 
+describe('check-api-cutover: check D', () => {
+  /** Today's live API before deploy 1: explicit routes, no proxy. */
+  const PRE_PR1_API = ['/', '/players', '/players/{playerId}'];
+
+  it('fails a 2a template over a stage that never ran deploy 1 (no live proxy)', async () => {
+    const result = await gate(deploy2a, { authorizer: true, resources: PRE_PR1_API });
+    expect(result.ok).toBe(false);
+    expect(failureText(result)).toMatch(/^Check D failed: template is proxy-only but the live API has no \/\{proxy\+\} resource/);
+    expect(failureText(result)).toContain('proxy-parity-check.js');
+  });
+
+  it('fails a 2b template over a stage that never ran deploy 1, without refreshing the stage', async () => {
+    const result = await gate(deploy2b, { authorizer: true, resources: PRE_PR1_API });
+    expect(result.ok).toBe(false);
+    expect(failureText(result)).toMatch(/^Check D failed/);
+    expect(result.createDeployment).not.toHaveBeenCalled();
+  });
+
+  it('passes a PR 1 template over a stage without the proxy (deploy 1 itself)', async () => {
+    const result = await gate(pre2a, { authorizer: true, resources: PRE_PR1_API });
+    expect(result.ok).toBe(true);
+  });
+
+  it('passes a 2a template once the live API has the proxy beside the explicit routes', async () => {
+    const result = await gate(deploy2a, { authorizer: true, resources: EXPLICIT_API });
+    expect(result.ok).toBe(true);
+    expect(result.messages).toContain('Check D passed.');
+  });
+
+  it('does not run once the live authorizer is absent (stage has run 2b)', async () => {
+    const result = await gate(deploy2b, { authorizer: false, resources: ['/'] });
+    expect(result.ok).toBe(true);
+  });
+});
+
 describe('check-api-cutover: check B', () => {
   it('fails the first 2b deploy when the live API still has explicit routes', async () => {
     const result = await gate(deploy2b, { authorizer: true, resources: EXPLICIT_API });

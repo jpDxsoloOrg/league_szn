@@ -1,13 +1,29 @@
 import { readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
+
+type CfnResource = { Type: string; DependsOn?: string[]; Properties: Record<string, unknown> };
+type BridgeFragment = { Resources: Record<string, CfnResource> };
+interface LegacyBridge {
+  (): BridgeFragment;
+  LEGACY_HTTP_FUNCTIONS: ReadonlyArray<string>;
+  buildLegacyBridge: () => BridgeFragment;
+  permissionLogicalId: (functionName: string) => string;
+}
+
+const legacyBridge = createRequire(__filename)('../../legacy-bridge.js') as LegacyBridge;
 
 const backendRoot = resolve(__dirname, '../..');
 const template = readFileSync(join(backendRoot, 'serverless.yml'), 'utf8');
 
-/** Splits the `resources.Resources` section into one text block per logical ID. */
+/**
+ * Splits the `resources` list's `Resources` section into one text block per
+ * logical ID. `resources:` is a list so legacy-bridge.js can be merged in
+ * (INFRA-207 PR 2a).
+ */
 function resourceBlocks(): Map<string, string> {
-  const start = template.indexOf('\n  Resources:\n');
+  const start = template.indexOf('\n- Resources:\n');
   const end = template.indexOf('\n  Outputs:\n');
   const blocks = new Map<string, string>();
   let currentId: string | null = null;
@@ -43,6 +59,7 @@ function sourceFiles(directory: string): string[] {
 
 describe('serverless.yml data protection', () => {
   it('finds the tables it checks', () => {
+    expect(template.indexOf('\n- Resources:\n')).toBeGreaterThan(0);
     expect(blocksOfType('AWS::DynamoDB::Table').length).toBeGreaterThanOrEqual(41);
   });
 
@@ -161,6 +178,13 @@ describe.each(['deploy-dev.yml', 'deploy-prod.yml'])('%s INFRA-207 deploy rails'
     expect(refresh).toMatch(/aws apigateway get-stage[\s\S]*echo "Previous [\s\S]*aws apigateway create-deployment/);
   });
 
+  it('caps stage throttling in the refresh step (INFRA-207 PR 2a, plan 7.5)', () => {
+    const refresh = steps[indexOf('Refresh API stage deployment')];
+    expect(refresh).toMatch(/aws apigateway create-deployment[\s\S]*aws apigateway update-stage/);
+    expect(refresh).toContain("'op=replace,path=/*/*/throttling/rateLimit,value=500'");
+    expect(refresh).toContain("'op=replace,path=/*/*/throttling/burstLimit,value=1000'");
+  });
+
   it('keeps deploying the frontend when the stage refresh fails, then fails the job at the end', () => {
     const refresh = steps[indexOf('Refresh API stage deployment')];
     expect(refresh).toContain('id: refresh_stage');
@@ -183,5 +207,111 @@ describe.each(['deploy-dev.yml', 'deploy-prod.yml'])('%s INFRA-207 deploy rails'
     expect(deployIndex).toBeGreaterThan(gateIndex);
     expect(steps[limitsIndex]).toContain('npm run check-stack-limits');
     expect(steps[gateIndex]).toContain('node scripts/check-api-cutover.js --stage ');
+  });
+
+  it('diffs the packaged templates against the live stack before the deploy (PR 2a until 2b)', () => {
+    const diffIndex = indexOf('Diff packaged templates against live stack');
+    expect(diffIndex).toBeGreaterThan(indexOf('Check generated stacks for dependency cycles'));
+    expect(deployIndex).toBeGreaterThan(diffIndex);
+    const stage = workflow === 'deploy-dev.yml' ? 'devtest' : 'dev';
+    expect(steps[diffIndex]).toContain(`node scripts/diff-live-template.js --stage ${stage}`);
+    expect(steps[diffIndex]).not.toContain('continue-on-error');
+  });
+});
+
+/** Functions with no http events in their own right: kept by INFRA-207 (plan 3). */
+const NON_HTTP_FUNCTIONS = [
+  'adminAuthorizer',
+  'postConfirmation',
+  'preSignUp',
+  'expireChallenges',
+  'expireContractOffers',
+  'weeklyJobs',
+  'recalculateContenders',
+];
+
+/** Function name -> the event types declared under its `events:` list. */
+function eventTypesByFunction(): Map<string, string[]> {
+  const section = template.slice(template.indexOf('\nfunctions:\n'), template.indexOf('\nresources:\n'));
+  const byFunction = new Map<string, string[]>();
+  let current = '';
+  for (const line of section.split('\n')) {
+    const header = /^ {2}([A-Za-z0-9]+):$/.exec(line);
+    if (header) {
+      current = header[1];
+      byFunction.set(current, []);
+    }
+    const event = /^ {6}- ([A-Za-z]+):/.exec(line);
+    if (event && current) byFunction.get(current)?.push(event[1]);
+  }
+  return byFunction;
+}
+
+describe('serverless.yml INFRA-207 cut-over (PR 2a)', () => {
+  it('declares http events on no function except api', () => {
+    const withHttp = [...eventTypesByFunction()]
+      .filter(([, types]) => types.some((type) => type === 'http' || type === 'httpApi'))
+      .map(([name]) => name);
+    expect(withHttp).toEqual(['api']);
+  });
+
+  it('no longer declares the login function', () => {
+    expect(functionNames()).not.toContain('login');
+  });
+
+  it('merges legacy-bridge.js into resources', () => {
+    expect(template).toMatch(/^- \$\{file\(\.\/legacy-bridge\.js\)\}$/m);
+  });
+
+  it('bridges every event-less legacy HTTP function, and only those', () => {
+    const expected = [...functionNames()]
+      .filter((name) => name !== 'api' && !NON_HTTP_FUNCTIONS.includes(name))
+      .sort();
+    expect([...legacyBridge.LEGACY_HTTP_FUNCTIONS].sort()).toEqual(expected);
+  });
+
+  it('emits each permission and the authorizer under its live logical ID, in Serverless form', () => {
+    const { Resources } = legacyBridge.buildLegacyBridge();
+    expect(Object.keys(Resources).length).toBe(legacyBridge.LEGACY_HTTP_FUNCTIONS.length + 2);
+    expect(Resources.GetStandingsLambdaPermissionApiGateway).toEqual({
+      Type: 'AWS::Lambda::Permission',
+      Properties: {
+        FunctionName: { 'Fn::GetAtt': ['GetStandingsLambdaFunction', 'Arn'] },
+        Action: 'lambda:InvokeFunction',
+        Principal: 'apigateway.amazonaws.com',
+        SourceArn: {
+          'Fn::Join': ['', [
+            'arn:', { Ref: 'AWS::Partition' }, ':execute-api:', { Ref: 'AWS::Region' }, ':',
+            { Ref: 'AWS::AccountId' }, ':', { Ref: 'ApiGatewayRestApi' }, '/*/*',
+          ]],
+        },
+      },
+    });
+    expect(Resources.AdminAuthorizerLambdaPermissionApiGateway.Properties.FunctionName).toEqual({
+      'Fn::GetAtt': ['AdminAuthorizerLambdaFunction', 'Arn'],
+    });
+    expect(Resources.AdminAuthorizerApiGatewayAuthorizer).toEqual({
+      Type: 'AWS::ApiGateway::Authorizer',
+      DependsOn: [],
+      Properties: {
+        IdentitySource: 'method.request.header.Authorization',
+        Name: 'adminAuthorizer',
+        RestApiId: { Ref: 'ApiGatewayRestApi' },
+        AuthorizerUri: {
+          'Fn::Join': ['', [
+            'arn:', { Ref: 'AWS::Partition' }, ':apigateway:', { Ref: 'AWS::Region' },
+            ':lambda:path/2015-03-31/functions/', { 'Fn::GetAtt': ['AdminAuthorizerLambdaFunction', 'Arn'] },
+            '/invocations',
+          ]],
+        },
+        Type: 'TOKEN',
+      },
+    });
+    expect(legacyBridge.permissionLogicalId('rivalryNotes')).toBe('RivalryNotesLambdaPermissionApiGateway');
+  });
+
+  it('is what Serverless\'s ${file()} resolves: a function returning the Resources fragment', () => {
+    expect(typeof legacyBridge).toBe('function');
+    expect(legacyBridge()).toEqual(legacyBridge.buildLegacyBridge());
   });
 });

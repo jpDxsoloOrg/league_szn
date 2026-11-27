@@ -7,9 +7,11 @@
  * does not count parameters, and stacks-map.js alone cannot show the totals,
  * so this reads the packaged output in .serverless/.
  *
- * ROOT_MAX is 485 until INFRA-207 deploy 2a (a "must not grow" check: the live
- * root holds 478 resources and the plugin pins deployed resources in place),
- * then 450. See docs/plans/plan-infra-207-api-simplification.md section 7.1.
+ * ROOT_MAX was 485 in INFRA-207 PR 1 (a "must not grow" check: the live root
+ * held 478 resources and the plugin pins deployed resources in place). From
+ * deploy 2a it is 450: 2a drops the 281 Methods and 44 Resources root held,
+ * so the packaged 2a root must already pass at 450.
+ * See docs/plans/plan-infra-207-api-simplification.md section 7.1.
  *
  * Usage: npx serverless package --stage <stage> && node scripts/check-stack-limits.js [dir]
  */
@@ -17,7 +19,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT_MAX = 485;
+const ROOT_MAX = 450;
 const NESTED_MAX = 450;
 const MAX_PARAMETERS = 180;
 const MAX_OUTPUTS = 180;
