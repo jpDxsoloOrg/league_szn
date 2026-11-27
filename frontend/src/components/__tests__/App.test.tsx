@@ -55,6 +55,7 @@ vi.mock('../contenders/MyContenderStatus', () => ({ default: () => <div>MyConten
 vi.mock('../events/EventsCalendar', () => ({ default: () => <div data-testid="events">Events</div> }));
 vi.mock('../events/EventDetail', () => ({ default: () => <div>EventDetail</div> }));
 vi.mock('../events/EventResults', () => ({ default: () => <div>EventResults</div> }));
+vi.mock('../episodes/Episodes', () => ({ default: () => <div data-testid="episodes">Episodes</div> }));
 vi.mock('../profile/WrestlerProfile', () => ({ default: () => <div data-testid="profile">Profile</div> }));
 vi.mock('../ErrorBoundary', () => ({
   default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -244,6 +245,25 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'promos.guest.title' })).toBeInTheDocument();
     expect(screen.queryByText('PromoEditor')).not.toBeInTheDocument();
     expect(container.querySelector('.App')).toHaveAttribute('data-section', 'storylines');
+  });
+
+  it.each([
+    ['/episodes', 'episodes'],
+    ['/episodes/highlights', 'episodes'],
+  ])('renders %s publicly', async (path, testId) => {
+    mockUseAuth.mockReturnValue(unauthenticatedAuth());
+    testEntries = [path];
+    const { container } = render(<App />);
+    expect(await screen.findByTestId(testId)).toBeInTheDocument();
+    expect(container.querySelector('.App')).toHaveAttribute('data-section', 'events');
+  });
+
+  it('redirects /highlights into the Episodes section', async () => {
+    mockUseAuth.mockReturnValue(unauthenticatedAuth());
+    testEntries = ['/highlights'];
+    render(<App />);
+
+    expect(await screen.findByTestId('navigate')).toHaveAttribute('data-to', '/episodes/highlights');
   });
 
   it('redirects /guide to /guide/wiki', async () => {

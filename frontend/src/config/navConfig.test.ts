@@ -49,6 +49,9 @@ describe('section routing', () => {
     ['/events', 'events'],
     ['/events/e1/commentary', 'events'],
     ['/tournaments', 'events'],
+    ['/episodes', 'events'],
+    ['/episodes/highlights', 'events'],
+    ['/episodes/abc', 'events'],
     ['/highlights', 'events'],
     ['/standings', 'rankings'],
     ['/stats/tale-of-tape', 'rankings'],
@@ -180,6 +183,10 @@ describe('admin registry', () => {
 describe('getPageInfo', () => {
   const t = (key: string) => key;
 
+  it('titles an episode page with Episodes as its parent', () => {
+    expect(getPageInfo('/episodes/abc', t)).toEqual({ title: 'episodes.detail.pageTitle', parent: 'nav.episodes' });
+  });
+
   it('gives every admin tab its own title', () => {
     const titles = ADMIN_TABS.map((tab) => getPageInfo(`/admin/${tab}`, t).title);
     expect(new Set(titles).size).toBe(ADMIN_TABS.length);
@@ -197,6 +204,8 @@ describe('getPageInfo', () => {
     ['/promos/p1', 'promos.thread.title'],
     ['/player/p1', 'nav.pages.playerProfile'],
     ['/nowhere', 'notFound.title'],
+    ['/episodes', 'nav.episodes'],
+    ['/episodes/highlights', 'episodes.tabs.highlights'],
   ])('titles %s', (path, title) => {
     expect(getPageInfo(path, t).title).toBe(title);
   });

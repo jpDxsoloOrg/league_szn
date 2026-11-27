@@ -22,7 +22,6 @@ import {
   Dices,
   FileText,
   FileSignature,
-  Film,
   Flag,
   Flame,
   Gavel,
@@ -140,7 +139,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { path: '/events', labelKey: 'nav.tabs.calendar', icon: Calendar },
       { path: '/matches', labelKey: 'nav.tabs.matches', icon: Swords },
       { path: '/tournaments', labelKey: 'nav.tournaments', icon: GitBranch },
-      { path: '/highlights', labelKey: 'nav.highlights', icon: Film },
+      { path: '/episodes', labelKey: 'nav.episodes', icon: Tv, matches: ['/highlights'] },
     ],
   },
   {
@@ -488,6 +487,9 @@ const STATIC_TITLE_KEYS: Record<string, string> = {
   '/stats/best-matches': 'statistics.nav.bestMatches',
   '/stats/match-types': 'statistics.nav.matchTypeLeaderboards',
   '/stats': 'statistics.playerStats.title',
+  // Only the Highlights tab: a '/episodes' key would match every episode page
+  // before DETAIL_TITLES runs. '/episodes' takes its title from the nav tab.
+  '/episodes/highlights': 'episodes.tabs.highlights',
 };
 
 const DETAIL_TITLES: { pattern: RegExp; titleKey: string; parentKey: string }[] = [
@@ -498,6 +500,7 @@ const DETAIL_TITLES: { pattern: RegExp; titleKey: string; parentKey: string }[] 
   { pattern: /^\/rivalries\/[^/]+/, titleKey: 'nav.rivalries', parentKey: 'nav.rivalries' },
   { pattern: /^\/factions\/.+/, titleKey: 'nav.factions', parentKey: 'nav.factions' },
   { pattern: /^\/tag-teams\/[^/]+/, titleKey: 'nav.tagTeams', parentKey: 'nav.tagTeams' },
+  { pattern: /^\/episodes\/(?!highlights$)[^/]+/, titleKey: 'episodes.detail.pageTitle', parentKey: 'nav.episodes' },
 ];
 
 function getAdminPageInfo(path: string, t: TranslateFn): PageInfo {
