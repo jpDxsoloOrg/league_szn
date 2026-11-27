@@ -5393,8 +5393,7 @@
       "back": "Back to Episodes",
       "onTheCard": "On the card",
       "viewResults": "View full results",
-      "highlights": "Highlights from this episode",
-      "versus": "vs."
+      "highlights": "Highlights from this episode"
     },
     "admin": {
       "title": "Manage Episodes",

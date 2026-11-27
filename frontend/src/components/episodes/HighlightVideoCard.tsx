@@ -19,11 +19,14 @@ export interface HighlightVideoCardProps {
   video: Video;
   /** Linked episode, shown as a "From episode" link when known. */
   episode?: { episodeId: string; title: string };
+  /** `h3` when the cards sit under a section heading. */
+  headingLevel?: 'h2' | 'h3';
 }
 
 /** A site-hosted highlight package with a native player. */
-export default function HighlightVideoCard({ video, episode }: HighlightVideoCardProps) {
+export default function HighlightVideoCard({ video, episode, headingLevel = 'h2' }: HighlightVideoCardProps) {
   const { t } = useTranslation();
+  const Heading = headingLevel;
   const mediaUrl = toMediaUrl(video.videoUrl);
   const posterUrl = video.thumbnailUrl ? toMediaUrl(video.thumbnailUrl) : undefined;
 
@@ -40,7 +43,7 @@ export default function HighlightVideoCard({ video, episode }: HighlightVideoCar
         {t('highlights.videoNotSupported')}
       </video>
       <div className="highlight-info">
-        <h2 className="highlight-title">{video.title}</h2>
+        <Heading className="highlight-title">{video.title}</Heading>
         <div className="highlight-meta">
           <Badge tone={CATEGORY_TONES[video.category]}>{t(`videos.categories.${video.category}`)}</Badge>
           <span className="highlight-date">{new Date(video.createdAt).toLocaleDateString()}</span>

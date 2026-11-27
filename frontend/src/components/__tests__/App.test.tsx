@@ -56,6 +56,7 @@ vi.mock('../events/EventsCalendar', () => ({ default: () => <div data-testid="ev
 vi.mock('../events/EventDetail', () => ({ default: () => <div>EventDetail</div> }));
 vi.mock('../events/EventResults', () => ({ default: () => <div>EventResults</div> }));
 vi.mock('../episodes/Episodes', () => ({ default: () => <div data-testid="episodes">Episodes</div> }));
+vi.mock('../episodes/EpisodeDetail', () => ({ default: () => <div data-testid="episode-detail">EpisodeDetail</div> }));
 vi.mock('../profile/WrestlerProfile', () => ({ default: () => <div data-testid="profile">Profile</div> }));
 vi.mock('../ErrorBoundary', () => ({
   default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -250,6 +251,7 @@ describe('App', () => {
   it.each([
     ['/episodes', 'episodes'],
     ['/episodes/highlights', 'episodes'],
+    ['/episodes/0b7c3f8e-1d2a-4c5b-9e6f-7a8b9c0d1e2f', 'episode-detail'],
   ])('renders %s publicly', async (path, testId) => {
     mockUseAuth.mockReturnValue(unauthenticatedAuth());
     testEntries = [path];

@@ -1,0 +1,44 @@
+.episode-detail {
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.episode-detail > * {
+  min-width: 0;
+}
+
+.episode-detail__back {
+  justify-self: start;
+}
+
+.episode-detail__player {
+  width: 100%;
+  max-width: 60rem;
+}
+
+.episode-detail__description {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 60rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.episode-detail__description p {
+  margin: 0;
+}
+
+.episode-detail__highlights {
+  display: grid;
+  gap: 1rem;
+}
+
+.episode-detail__section-title {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+}
