@@ -4,6 +4,7 @@ The Dashboard is the first page in the Home section. It shows what's happening i
 
 ## What You'll See
 
+- **Live stream** — While the league streams a show on Twitch, a **Live** card with the player sits first on the page. It only appears during the stream. See [Episodes](episodes).
 - **Next event** — The top of the page shows the event running now, marked **Live**. If nothing is live, it shows the next event with a countdown and the main event once it's booked. Use **See the card** to open it. If no event has been created yet, it shows the next planned show. Other live and upcoming events are listed underneath.
 - **Current Champions** — Active titles with their champions, reign lengths and defenses. Click one to go to the Titles page.
 - **Recent Results** — The latest five completed matches. A drawn match shows as a draw. When a side is a registered tag team, the result uses the team name, such as *The Usos def. The New Day*. Click a result to open its event, or the Matches tab if it wasn't part of one.

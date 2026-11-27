@@ -44,6 +44,8 @@ Oben auf der Event-Seite findet das Team außerdem diese Steuerelemente:
 
 Ergebnisse trägst du mit **Ergebnis eintragen** am jeweiligen Match ein. Siehe [Ergebnisse eintragen](admin-record-results).
 
+Ist die Show auf YouTube, füge sie unter **Admin → Episoden verwalten** hinzu und verknüpfe sie mit dem Event. Die Event-Seite bekommt dann die Schaltfläche **Episode ansehen**. Siehe [Episoden](admin-episodes).
+
 ## Event-Typen erklärt
 
 | Typ | Beschreibung |

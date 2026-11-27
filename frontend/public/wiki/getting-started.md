@@ -9,7 +9,7 @@ The site has five sections. On a computer they are listed in the sidebar on the 
 | Section | What's in it |
 |---------|--------------|
 | **Home** | [Dashboard](dashboard), [News](news), [Activity](activity) |
-| **Events** | [Calendar and Matches](events), [Tournaments](tournaments), Highlights |
+| **Events** | [Calendar and Matches](events), [Tournaments](tournaments), [Episodes](episodes) |
 | **Rankings** | [Standings](standings), [Titles](championships), [Contenders](contenders), [Stats](statistics), Awards |
 | **Storylines** | [Rivalries](rivalries), [Promos](promos), Factions, Tag Teams |
 | **Me** | [My Profile](profile), [Call-outs](challenges), My Faction, My Tag Team, My Videos, Help, League Rules |

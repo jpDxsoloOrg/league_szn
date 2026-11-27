@@ -25,6 +25,7 @@ Klicke auf ein Event für die vollständigen Details:
 - Ergebnisse abgeschlossener Matches, auch Unentschieden
 - **Vollständige Ergebnisse anzeigen**, sobald mindestens ein Match beendet ist
 - Die **Kommentator-Ansicht**, die zu jedem Match eine Seite mit Wrestler-Details für die Kommentatoren der Show bietet
+- **Episode ansehen**, wenn die Show auf YouTube ist. Das öffnet die [Episode](episodes) mit der Card daneben
 
 ## Gebucht werden
 
