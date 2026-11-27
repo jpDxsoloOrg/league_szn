@@ -1,0 +1,37 @@
+.episode-lookup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.episode-lookup input {
+  flex: 1 1 16rem;
+}
+
+.episode-lookup__error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--text-dense);
+}
+
+.episode-lookup__preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.episode-lookup__thumb {
+  width: 10rem;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-control);
+  object-fit: cover;
+}
+
+.episode-lookup__text {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}

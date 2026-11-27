@@ -88,7 +88,8 @@ const RequestRivalry = lazy(() => import('./components/rivalries/RequestRivalry'
 const WrestlerProfile = lazy(() => import('./components/profile/WrestlerProfile'));
 const PublicProfile = lazy(() => import('./components/profile/PublicProfile'));
 const MyVideos = lazy(() => import('./components/profile/MyVideos'));
-const Highlights = lazy(() => import('./components/Highlights'));
+const Episodes = lazy(() => import('./components/episodes/Episodes'));
+const EpisodeDetail = lazy(() => import('./components/episodes/EpisodeDetail'));
 const MeHub = lazy(() => import('./components/shell/MeHub'));
 const WikiLayout = lazy(async () => {
   const { WikiLayout: Layout } = await import('./components/Wiki');
@@ -177,7 +178,10 @@ function AppLayout() {
             <Route path="/matches" element={<MatchSearch />} />
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/awards" element={<SeasonAwardsPage />} />
-            <Route path="/highlights" element={<Highlights />} />
+            <Route path="/episodes" element={<Episodes />} />
+            <Route path="/episodes/highlights" element={<Episodes />} />
+            <Route path="/episodes/:episodeId" element={<EpisodeDetail />} />
+            <Route path="/highlights" element={<Navigate to="/episodes/highlights" replace />} />
             <Route path="/guide" element={<Navigate to="/guide/wiki" replace />} />
             <Route path="/guide/wiki" element={<WikiLayout />}>
               <Route index element={<WikiIndex />} />

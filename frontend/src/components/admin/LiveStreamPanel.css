@@ -1,0 +1,19 @@
+.live-panel {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.live-panel__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.live-panel__auto-off {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}

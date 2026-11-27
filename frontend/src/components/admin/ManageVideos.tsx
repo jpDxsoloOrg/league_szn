@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Play, Plus, Video as VideoIcon } from 'lucide-react';
-import { videosApi, imagesApi } from '../../services/api';
-import type { Video, VideoCategory } from '../../types';
+import { episodesApi, videosApi, imagesApi } from '../../services/api';
+import type { Episode, Video, VideoCategory } from '../../types';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import DataTable from '../ui/DataTable';
 import EmptyState from '../ui/EmptyState';
 import PageHeader from '../ui/PageHeader';
+import Select from '../ui/Select';
 import Skeleton from '../ui/Skeleton';
 import AdminFormModal from './AdminFormModal';
 import AdminNotice from './AdminNotice';
@@ -25,6 +26,8 @@ const DEFAULT_FORM = {
   category: 'highlight' as VideoCategory,
   tags: '',
   isPublished: true,
+  /** '' means not linked to an episode. */
+  episodeId: '',
 };
 
 export default function ManageVideos() {
@@ -41,6 +44,7 @@ export default function ManageVideos() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [formData, setFormData] = useState(DEFAULT_FORM);
+  const [episodes, setEpisodes] = useState<Episode[]>([]);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const thumbInputRef = useRef<HTMLInputElement>(null);
 
@@ -60,6 +64,33 @@ export default function ManageVideos() {
     loadVideos(controller.signal);
     return () => controller.abort();
   }, [loadVideos]);
+
+  // Episodes for the "Linked episode" picker and column. A failure leaves the
+  // picker on "None" and the videos list untouched.
+  useEffect(() => {
+    const controller = new AbortController();
+    const loadEpisodes = async () => {
+      try {
+        const data = await episodesApi.getAll(controller.signal);
+        if (!controller.signal.aborted) setEpisodes(data);
+      } catch {
+        // Picker offers "None" only.
+      }
+    };
+    void loadEpisodes();
+    return () => controller.abort();
+  }, []);
+
+  const episodeTitles = useMemo(
+    () => new Map(episodes.map((episode) => [episode.episodeId, episode.title])),
+    [episodes],
+  );
+  const episodeOptions = useMemo(() => [
+    { value: '', label: t('videos.noEpisode') },
+    ...[...episodes]
+      .sort((first, second) => second.airDate.localeCompare(first.airDate))
+      .map((episode) => ({ value: episode.episodeId, label: episode.title })),
+  ], [episodes, t]);
 
   const handleVideoUpload = async (file: File): Promise<string> => {
     setUploadProgress(t('videos.uploadingVideo'));
@@ -135,10 +166,11 @@ export default function ManageVideos() {
       };
 
       if (editing) {
-        await videosApi.update(editing.videoId, payload);
+        // null removes an existing link.
+        await videosApi.update(editing.videoId, { ...payload, episodeId: formData.episodeId || null });
         setSuccessMsg(t('videos.updateSuccess'));
       } else {
-        await videosApi.create(payload);
+        await videosApi.create(formData.episodeId ? { ...payload, episodeId: formData.episodeId } : payload);
         setSuccessMsg(t('videos.createSuccess'));
       }
 
@@ -162,6 +194,7 @@ export default function ManageVideos() {
       category: video.category,
       tags: video.tags?.join(', ') || '',
       isPublished: video.isPublished,
+      episodeId: video.episodeId ?? '',
     });
     setShowForm(true);
   };
@@ -248,6 +281,12 @@ export default function ManageVideos() {
               key: 'category',
               header: t('videos.fields.category'),
               render: (video) => <Badge tone="violet">{t(`videos.categories.${video.category}`)}</Badge>,
+            },
+            {
+              key: 'episode',
+              header: t('videos.fields.episode'),
+              render: (video) => (video.episodeId ? episodeTitles.get(video.episodeId) ?? '…' : '—'),
+              hideOnMobile: true,
             },
             {
               key: 'status',
@@ -342,6 +381,16 @@ export default function ManageVideos() {
               placeholder={t('videos.tagsPlaceholder')}
             />
           </div>
+        </div>
+        <div className="ac-field">
+          <label className="ac-field__label" htmlFor="video-episode">{t('videos.fields.episode')}</label>
+          <Select
+            id="video-episode"
+            label={t('videos.fields.episode')}
+            value={formData.episodeId}
+            onValueChange={(value) => setFormData({ ...formData, episodeId: value })}
+            options={episodeOptions}
+          />
         </div>
         <label className="ac-check">
           <input

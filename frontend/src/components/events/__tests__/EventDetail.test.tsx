@@ -18,6 +18,7 @@ const { api, authState } = vi.hoisted(() => ({
     getBookingSummary: vi.fn(),
     getTagTeams: vi.fn(),
     closeSignups: vi.fn(),
+    getEpisodesByEvent: vi.fn(),
   },
   authState: {
     isAdminOrModerator: true,
@@ -52,6 +53,7 @@ vi.mock('../../../services/api', () => ({
     getBookingSummary: api.getBookingSummary,
   },
   tagTeamsApi: { getAll: api.getTagTeams },
+  episodesApi: { getByEvent: api.getEpisodesByEvent },
   isApiError: (err: unknown, status: number) => (err as { status?: number }).status === status,
 }));
 
@@ -207,6 +209,7 @@ describe('EventDetail', () => {
     api.getTagTeams.mockResolvedValue([]);
     api.getCheckIns.mockResolvedValue(null);
     api.getBookingSummary.mockResolvedValue({});
+    api.getEpisodesByEvent.mockResolvedValue([]);
   });
 
   it('renders the card for the public without staff controls', async () => {
@@ -218,6 +221,28 @@ describe('EventDetail', () => {
     expect(screen.getByText('Alpha')).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Manage event' })).not.toBeInTheDocument();
     expect(api.getRoster).not.toHaveBeenCalled();
+  });
+
+  it('links to the episode of this event', async () => {
+    authState.isAdminOrModerator = false;
+    authState.isAuthenticated = false;
+    api.getEpisodesByEvent.mockResolvedValue([{ episodeId: 'ep1', title: 'Summer Slam' }]);
+    renderDetail();
+
+    const button = await screen.findByRole('link', { name: 'events.detail.watchEpisode' });
+    expect(button).toHaveAttribute('href', '/episodes/ep1');
+    expect(api.getEpisodesByEvent).toHaveBeenCalledWith('e1', expect.any(AbortSignal));
+  });
+
+  it('shows no episode button when the event has none or the lookup fails', async () => {
+    authState.isAdminOrModerator = false;
+    authState.isAuthenticated = false;
+    api.getEpisodesByEvent.mockRejectedValue(new Error('down'));
+    renderDetail();
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Summer Slam' })).toBeInTheDocument();
+    await waitFor(() => expect(api.getEpisodesByEvent).toHaveBeenCalled());
+    expect(screen.queryByRole('link', { name: 'events.detail.watchEpisode' })).not.toBeInTheDocument();
   });
 
   it('still opens when the card points at a deleted match', async () => {
