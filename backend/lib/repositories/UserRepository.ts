@@ -7,7 +7,7 @@ import type {
   FantasyPick,
   WrestlerCost,
 } from './types';
-import type { FeatureFlags, RivalryHeatTunables, TickerSettings } from './SiteConfigRepository';
+import type { FeatureFlags, LiveStreamSettings, RivalryHeatTunables, TickerSettings } from './SiteConfigRepository';
 import type { EconomySettings, EconomySettingsInput } from '../policies/economyDefaults';
 import type { InjuryTunables, InjuryTunablesInput } from '../policies/fatigueDefaults'; // INJ-01
 
@@ -94,6 +94,10 @@ export interface SiteConfigMethods {
   updateHeatTunables(patch: Partial<RivalryHeatTunables>): Promise<RivalryHeatTunables>;
   getTickerSettings(): Promise<TickerSettings>;
   updateTickerSettings(patch: Partial<TickerSettings>): Promise<TickerSettings>;
+  /** The stored live stream settings over the defaults, without the 8-hour guard applied. */
+  getLiveStream(): Promise<LiveStreamSettings>;
+  /** Replaces the stored live stream settings. The handler builds the full object. */
+  setLiveStream(settings: LiveStreamSettings): Promise<LiveStreamSettings>;
 
   // ECO-06: once-per-week markers for the weekly jobs (payroll; INJ-05 recovery).
   /** The league week (`weekKey`) the named weekly job last finished, or null. */

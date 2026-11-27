@@ -51,6 +51,7 @@ provider:
     # ECO-03
     CONTRACTS_TABLE: ${self:service}-contracts-${self:provider.stage}
     VIDEOS_TABLE: ${self:service}-videos-${self:provider.stage}
+    EPISODES_TABLE: ${self:service}-episodes-${self:provider.stage}
     ANNOUNCEMENTS_TABLE: ${self:service}-announcements-${self:provider.stage}
     NOTIFICATIONS_TABLE: ${self:service}-notifications-${self:provider.stage}
     WRESTLER_OVERALLS_TABLE: ${self:service}-wrestler-overalls-${self:provider.stage}
@@ -156,6 +157,8 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CONTRACTS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EPISODES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EPISODES_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.ANNOUNCEMENTS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.ANNOUNCEMENTS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.NOTIFICATIONS_TABLE}
@@ -1613,6 +1616,45 @@ resources:
                 KeyType: HASH
               - AttributeName: createdAt
                 KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    EpisodesTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.EPISODES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        AttributeDefinitions:
+          - AttributeName: episodeId
+            AttributeType: S
+          - AttributeName: isPublished
+            AttributeType: S
+          - AttributeName: airDate
+            AttributeType: S
+          - AttributeName: eventId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: episodeId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: PublishedIndex
+            KeySchema:
+              - AttributeName: isPublished
+                KeyType: HASH
+              - AttributeName: airDate
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          # Sparse: episodes without an eventId are not indexed.
+          - IndexName: EventIndex
+            KeySchema:
+              - AttributeName: eventId
+                KeyType: HASH
             Projection:
               ProjectionType: ALL
 

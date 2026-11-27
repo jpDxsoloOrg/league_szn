@@ -13,8 +13,8 @@ import {
   type InjuryTunables,
   type InjuryTunablesInput,
 } from '../../policies/fatigueDefaults';
-import type { FeatureFlags, RivalryHeatTunables, TickerSettings } from '../SiteConfigRepository';
-import { DEFAULT_FEATURES, DEFAULT_HEAT_TUNABLES, mergeTickerSettings } from '../SiteConfigRepository';
+import type { FeatureFlags, LiveStreamSettings, RivalryHeatTunables, TickerSettings } from '../SiteConfigRepository';
+import { DEFAULT_FEATURES, DEFAULT_HEAT_TUNABLES, DEFAULT_LIVE_STREAM, mergeTickerSettings } from '../SiteConfigRepository';
 import type {
   UserRepository,
   NotificationPage,
@@ -380,6 +380,17 @@ class SiteConfigImpl implements SiteConfigMethods {
   async updateTickerSettings(patch: Partial<TickerSettings>): Promise<TickerSettings> {
     this.tickerSettings = mergeTickerSettings({ ...this.tickerSettings, ...patch });
     return this.getTickerSettings();
+  }
+
+  liveStream: LiveStreamSettings = { ...DEFAULT_LIVE_STREAM };
+
+  async getLiveStream(): Promise<LiveStreamSettings> {
+    return { ...this.liveStream };
+  }
+
+  async setLiveStream(settings: LiveStreamSettings): Promise<LiveStreamSettings> {
+    this.liveStream = { ...settings };
+    return { ...this.liveStream };
   }
 
   // ECO-06: weekly job markers.

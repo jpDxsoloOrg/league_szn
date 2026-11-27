@@ -52,6 +52,8 @@ tags:
   - name: Stables
   - name: Tag Teams
   - name: Videos
+  - name: Episodes
+  - name: Live Stream
   - name: Announcements
   - name: Notifications
   - name: Transfers
@@ -134,7 +136,7 @@ components:
         style: { type: string }
         specialty: { type: string }
         stats: { allOf: [{ $ref: '#/components/schemas/CoreStats' }], description: 'Scaled to the budget, plus the style bonus, capped at 100' }
-        spentStats: { allOf: [{ $ref: '#/components/schemas/CoreStats' }], description: After scaling, before the style bonus }
+        spentStats: { allOf: [{ $ref: '#/components/schemas/CoreStats' }], description: 'After scaling, before the style bonus' }
         signatureLevels: { type: array, items: { type: integer } }
         finisherLevels: { type: array, items: { type: integer } }
         scaled: { type: boolean, description: True when the saved build was over budget and was scaled down }
@@ -176,7 +178,7 @@ components:
       type: object
       description: Send either \`matchId\` or \`sides\`, not both.
       properties:
-        matchId: { type: string, description: A scheduled match. Uses its teams (else one side per participant), its sim category and its season for form. }
+        matchId: { type: string, description: 'A scheduled match. Uses its teams (else one side per participant), its sim category and its season for form.' }
         sides:
           type: array
           minItems: 2
@@ -207,7 +209,7 @@ components:
             properties:
               sideId: { type: string, example: side-1 }
               playerIds: { type: array, items: { type: string } }
-              pct: { type: number, description: Win chance in percent, one decimal place }
+              pct: { type: number, description: 'Win chance in percent, one decimal place' }
         winnerSideId: { type: string }
         playByPlay: { type: array, items: { $ref: '#/components/schemas/SimBeat' } }
         specialtyHits: { type: array, items: { type: string }, description: Players fighting in their specialty }
@@ -569,6 +571,7 @@ components:
         summary: { $ref: '#/components/schemas/PlayerDisciplineSummary' }
         nextStrikeOutcome:
           description: Null while deactivated. Send back as expectedOutcome.
+          type: object
           nullable: true
           allOf: [{ $ref: '#/components/schemas/StrikeOutcome' }]
         strikes:
@@ -795,6 +798,7 @@ components:
             a renamed team shows its current name. Also set on event
             \`enrichedMatches[].matchData\` and dashboard \`recentResults[]\`.
           items:
+            type: object
             nullable: true
             allOf: [{ $ref: '#/components/schemas/SideTagTeam' }]
         winners: { type: array, items: { type: string } }
@@ -1266,6 +1270,7 @@ components:
         championshipName: { type: string }
         divisionId: { type: string, nullable: true }
         currentChampion:
+          type: object
           nullable: true
           description: 'Singles titles: a player object (\`playerId\`, \`playerName\`, \`wrestlerName\`, \`imageUrl\`). Tag titles: a TagTeamContenderChampion built from every holder.'
           oneOf:
@@ -1492,7 +1497,7 @@ components:
           description: Stamina one match takes per sim category (integers, 0 to maxStamina).
         formatMultiplier:
           type: object
-          additionalProperties: { type: number, exclusiveMinimum: 0, maximum: 10 }
+          additionalProperties: { type: number, minimum: 0, exclusiveMinimum: true, maximum: 10 }
           description: Drain multiplier per match format key (singles, tag, multiPerson, battleRoyal). Unknown formats use 1.
         enduranceDrainReduction:
           type: number
@@ -1517,10 +1522,10 @@ components:
             type: object
             properties:
               key: { type: string, enum: [minor, moderate, major] }
-              weight: { type: number, exclusiveMinimum: 0 }
+              weight: { type: number, minimum: 0, exclusiveMinimum: true }
               minWeeks: { type: integer, minimum: 1, maximum: 52 }
               maxWeeks: { type: integer, minimum: 1, maximum: 52 }
-        lowStaminaSeverityShift: { type: integer, minimum: 0, description: Below this stamina, injuries lean towards worse severities. }
+        lowStaminaSeverityShift: { type: integer, minimum: 0, description: 'Below this stamina, injuries lean towards worse severities.' }
         weeklyRecovery:
           description: Stamina restored each Sunday 00:00 league time, "full" or a fixed amount.
           oneOf:
@@ -1914,9 +1919,72 @@ components:
         thumbnailUrl: { type: string }
         category: { type: string, enum: [match, highlight, promo, other] }
         tags: { type: array, items: { type: string } }
-        isPublished: { type: boolean }
-        uploadedBy: { type: string }
+        isPublished: { type: string, enum: ['true', 'false'], description: Stored as a string for the PublishedIndex GSI }
+        uploadedBy: { type: string, description: Admin list only; left out of public responses }
+        episodeId: { type: string, description: The episode this highlight belongs to. Absent when unlinked }
         createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Episode:
+      type: object
+      required: [episodeId, source, youtubeVideoId, title, description, thumbnailUrl, airDate, isPublished, createdAt, updatedAt]
+      properties:
+        episodeId: { type: string }
+        source: { type: string, enum: [youtube] }
+        youtubeVideoId: { type: string, pattern: '^[A-Za-z0-9_-]{11}$' }
+        title: { type: string, maxLength: 200 }
+        description: { type: string, maxLength: 5000, description: 'Plain text, never HTML' }
+        thumbnailUrl: { type: string, description: 'Always https://i.ytimg.com/vi/<id>/hqdefault.jpg' }
+        channelName: { type: string }
+        airDate: { type: string, format: date, description: YYYY-MM-DD }
+        eventId: { type: string, description: Linked league event. Absent when unlinked }
+        isPublished: { type: string, enum: ['true', 'false'] }
+        createdBy: { type: string, description: Admin list only; left out of public responses }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    EpisodeDetail:
+      type: object
+      required: [episode, highlights]
+      properties:
+        episode: { $ref: '#/components/schemas/Episode' }
+        highlights:
+          type: array
+          description: Published highlights linked to the episode, newest first
+          items: { $ref: '#/components/schemas/Video' }
+
+    YoutubeLookup:
+      type: object
+      required: [youtubeVideoId, title, thumbnailUrl, oembedAvailable]
+      properties:
+        youtubeVideoId: { type: string }
+        title: { type: string, description: "From oEmbed; '' when oEmbed was unavailable" }
+        channelName: { type: string }
+        thumbnailUrl: { type: string }
+        oembedAvailable: { type: boolean, description: 'False when YouTube details could not be fetched (private, embedding disabled, timeout)' }
+        existingEpisodeId: { type: string, description: Set when this video is already an episode }
+
+    EpisodeWrite:
+      type: object
+      properties:
+        url: { type: string, description: 'Any YouTube video link form (watch, youtu.be, shorts, embed, live) or a bare 11-character id' }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        channelName: { type: string, maxLength: 200 }
+        description: { type: string, maxLength: 5000 }
+        airDate: { type: string, format: date, description: 'YYYY-MM-DD; defaults to today (UTC) on create' }
+        eventId: { type: string, nullable: true, description: "null or '' unlinks on update; omitted on create" }
+        isPublished: { type: boolean, description: Must be a boolean. Defaults to false on create }
+
+    LiveStream:
+      type: object
+      required: [channel, isLive]
+      properties:
+        channel: { type: string, description: "Twitch login, lowercase; '' until set" }
+        isLive: { type: boolean, description: False once liveSince is more than 8 hours old }
+        title: { type: string, maxLength: 120 }
+        liveSince: { type: string, format: date-time, description: Present only while isLive is true }
+        updatedBy: { type: string, description: PUT response only }
+        updatedAt: { type: string, format: date-time, description: PUT response only }
 
     Announcement:
       type: object
@@ -3227,7 +3295,7 @@ paths:
         via \`POST /admin/seed-data\` with \`mode: "import"\`.
       security: [{ BearerAuth: [] }]
       responses:
-        '200': { description: Exported payload including version, exportedAt, stage, data, and counts }
+        '200': { description: 'Exported payload including version, exportedAt, stage, data, and counts' }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
@@ -3272,7 +3340,7 @@ paths:
                           type: object
                           additionalProperties: true
       responses:
-        '200': { description: Completed; body includes message, mode (import only), and createdCounts }
+        '200': { description: 'Completed; body includes message, mode (import only), and createdCounts' }
         '400': { description: 'Bad request (invalid mode, invalid modules/payload usage, missing datasets, or missing required table keys in payload records)', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
@@ -5185,7 +5253,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200': { description: Check-ins grouped by available, tentative, unavailable, noResponse }
+        '200': { description: 'Check-ins grouped by available, tentative, unavailable, noResponse' }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
@@ -5870,6 +5938,7 @@ paths:
                 category: { type: string, enum: [match, highlight, promo, other] }
                 tags: { type: array, items: { type: string } }
                 isPublished: { type: boolean }
+                episodeId: { type: string, nullable: true, description: "Staff only (ignored for wrestlers); '' or null means no link. Must exist" }
       responses:
         '201': { description: Created }
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
@@ -5899,8 +5968,10 @@ paths:
                 category: { type: string, enum: [match, highlight, promo, other] }
                 tags: { type: array, items: { type: string } }
                 isPublished: { type: boolean }
+                episodeId: { type: string, nullable: true, description: "null or '' unlinks. Must exist" }
       responses:
         '200': { description: Updated }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     delete:
@@ -5916,6 +5987,186 @@ paths:
         '204': { description: Deleted }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Episodes ───────────────────────────────────────────────────────
+
+  /episodes:
+    get:
+      tags: [Episodes]
+      summary: List published episodes
+      description: Newest air date first. With eventId, only the published episodes linked to that event.
+      parameters:
+        - name: eventId
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Published episodes (no createdBy)
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Episode' } }
+
+  /episodes/{episodeId}:
+    get:
+      tags: [Episodes]
+      summary: Get an episode with its highlights
+      description: Drafts are 404 except for Admin and Moderator callers.
+      parameters:
+        - name: episodeId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Episode and its published highlights
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EpisodeDetail' }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /admin/episodes:
+    get:
+      tags: [Episodes]
+      summary: List all episodes, drafts included (staff)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Every episode, newest air date first
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Episode' } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    post:
+      tags: [Episodes]
+      summary: Create an episode from a YouTube link (staff)
+      description: Does not call oEmbed; the client sends the title from the lookup. A duplicate video returns 400 with existingEpisodeId.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/EpisodeWrite'
+                - type: object
+                  required: [url, title]
+      responses:
+        '201':
+          description: Created (a draft unless isPublished is true)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Episode' }
+        '400': { description: 'Invalid link, title, date, event or isPublished, or the video is already an episode', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /admin/episodes/youtube-lookup:
+    post:
+      tags: [Episodes]
+      summary: Look up a YouTube link (staff)
+      description: Parses the link and fetches title and channel from YouTube oEmbed. An oEmbed failure is a 200 with oembedAvailable false.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string }
+      responses:
+        '200':
+          description: Lookup result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/YoutubeLookup' }
+        '400': { description: 'Not a YouTube video link', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /admin/episodes/{episodeId}:
+    put:
+      tags: [Episodes]
+      summary: Update an episode (staff)
+      description: url swaps the video and rebuilds the thumbnail; title and channel change only when sent. An empty body is a 400.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: episodeId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EpisodeWrite' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Episode' }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    delete:
+      tags: [Episodes]
+      summary: Delete an episode (staff)
+      description: Unlinks its highlights first; videos are never deleted.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: episodeId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  # ── Live Stream ────────────────────────────────────────────────────
+
+  /live-stream:
+    get:
+      tags: [Live Stream]
+      summary: Get the Twitch live stream status
+      description: isLive is false once liveSince is more than 8 hours old. updatedBy is left out.
+      responses:
+        '200':
+          description: Live stream status
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LiveStream' }
+
+  /admin/live-stream:
+    put:
+      tags: [Live Stream]
+      summary: Set the Twitch live stream (staff)
+      description: Going live stamps liveSince unless the stream is already live inside the 8-hour window (then it is kept). Going offline clears liveSince. isLive true with no channel is a 400.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                channel: { type: string, description: "Twitch login (4-25 letters, digits or underscores), stored lowercase; '' clears it" }
+                isLive: { type: boolean }
+                title: { type: string, maxLength: 120, nullable: true, description: "null or '' clears it" }
+      responses:
+        '200':
+          description: Saved status
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LiveStream' }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   # ── Announcements ──────────────────────────────────────────────────
 
