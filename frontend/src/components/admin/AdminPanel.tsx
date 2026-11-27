@@ -60,6 +60,7 @@ const TAB_COMPONENTS: Record<AdminTab, LazyExoticComponent<ComponentType>> = {
   'gm-interference': lazy(() => import('./ManageGmInterference')),
   announcements: lazy(() => import('./ManageAnnouncements')),
   videos: lazy(() => import('./ManageVideos')),
+  episodes: lazy(() => import('./ManageEpisodes')),
   companies: lazy(() => import('./ManageCompanies')),
   shows: lazy(() => import('./ManageShows')),
   locations: lazy(() => import('./ManageLocations')),

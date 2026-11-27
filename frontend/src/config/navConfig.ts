@@ -317,6 +317,7 @@ export const ADMIN_TABS = [
   'gm-interference',
   'announcements',
   'videos',
+  'episodes',
   'companies',
   'shows',
   'locations',
@@ -407,6 +408,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { tab: 'gm-interference', labelKey: 'admin.panel.tabs.gmInterference', icon: Gavel, minRole: 'Moderator', feature: 'economy' },
       { tab: 'announcements', labelKey: 'admin.panel.tabs.announcements', icon: Megaphone, minRole: 'Moderator' },
       { tab: 'videos', labelKey: 'admin.panel.tabs.videos', icon: Video, minRole: 'Moderator' },
+      { tab: 'episodes', labelKey: 'admin.panel.tabs.episodes', icon: Tv, minRole: 'Moderator' },
     ],
   },
   {

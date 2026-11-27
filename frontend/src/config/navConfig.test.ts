@@ -183,6 +183,12 @@ describe('admin registry', () => {
 describe('getPageInfo', () => {
   const t = (key: string) => key;
 
+  it('registers Manage Episodes for Moderators in Storylines & Content', () => {
+    const group = getVisibleAdminGroups(false, ALL_ON).find((candidate) => candidate.key === 'storylinesContent');
+    expect(group?.entries.map((entry) => entry.tab)).toEqual(expect.arrayContaining(['videos', 'episodes']));
+    expect(getPageInfo('/admin/episodes', t).title).toBe('admin.panel.tabs.episodes');
+  });
+
   it('titles an episode page with Episodes as its parent', () => {
     expect(getPageInfo('/episodes/abc', t)).toEqual({ title: 'episodes.detail.pageTitle', parent: 'nav.episodes' });
   });
