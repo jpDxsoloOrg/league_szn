@@ -34,8 +34,8 @@ import type {
   FantasyPick,
   WrestlerCost,
 } from '../types';
-import type { FeatureFlags, RivalryHeatTunables, TickerSettings } from '../SiteConfigRepository';
-import { DEFAULT_FEATURES, DEFAULT_HEAT_TUNABLES, mergeTickerSettings } from '../SiteConfigRepository';
+import type { FeatureFlags, LiveStreamSettings, RivalryHeatTunables, TickerSettings } from '../SiteConfigRepository';
+import { DEFAULT_FEATURES, DEFAULT_HEAT_TUNABLES, DEFAULT_LIVE_STREAM, mergeTickerSettings } from '../SiteConfigRepository';
 import type { CrudRepository } from '../CrudRepository';
 
 // ─── Notifications sub-object ──────────────────────────────────────
@@ -500,6 +500,7 @@ class FantasyDelegate implements FantasyMethods {
 
 const ECONOMY_CONFIG_KEY = 'economySettings';
 const INJURY_CONFIG_KEY = 'injuryTunables'; // INJ-01
+const LIVE_STREAM_CONFIG_KEY = 'liveStream';
 const weeklyJobConfigKey = (job: string): string => `weeklyJob#${job}`; // ECO-06
 
 class SiteConfigDelegate implements SiteConfigMethods {
@@ -584,6 +585,31 @@ class SiteConfigDelegate implements SiteConfigMethods {
     });
 
     return updated;
+  }
+
+  async getLiveStream(): Promise<LiveStreamSettings> {
+    const result = await dynamoDb.get({
+      TableName: TableNames.SITE_CONFIG,
+      Key: { configKey: LIVE_STREAM_CONFIG_KEY },
+    });
+    const stored = result.Item?.settings as Partial<LiveStreamSettings> | undefined;
+    return { ...DEFAULT_LIVE_STREAM, ...(stored ?? {}) };
+  }
+
+  async setLiveStream(settings: LiveStreamSettings): Promise<LiveStreamSettings> {
+    // The document client rejects undefined values, so optional fields are dropped.
+    const stored = Object.fromEntries(
+      Object.entries(settings).filter(([, value]) => value !== undefined),
+    ) as unknown as LiveStreamSettings;
+    await dynamoDb.put({
+      TableName: TableNames.SITE_CONFIG,
+      Item: {
+        configKey: LIVE_STREAM_CONFIG_KEY,
+        settings: stored,
+        updatedAt: settings.updatedAt ?? new Date().toISOString(),
+      },
+    });
+    return stored;
   }
 
   // ECO-06: weekly job markers, one row per job (`weeklyJob#<job>`).

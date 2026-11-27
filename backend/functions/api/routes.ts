@@ -20,6 +20,7 @@ import { routes as divisionsRoutes } from '../divisions/handler';
 import { routes as episodesRoutes } from '../episodes/handler';
 import { routes as eventsRoutes } from '../events/handler';
 import { routes as injuriesRoutes } from '../injuries/handler';
+import { routes as liveStreamRoutes } from '../liveStream/handler';
 import { routes as locationsRoutes } from '../locations/handler';
 import { routes as matchesRoutes } from '../matches/handler';
 import { routes as matchTypesRoutes } from '../matchTypes/handler';
@@ -105,6 +106,7 @@ const DOMAIN_ROUTE_TABLES: ReadonlyArray<ReadonlyArray<RouteConfig>> = [
   tagTeamsRoutes,
   videosRoutes,
   episodesRoutes,
+  liveStreamRoutes,
   announcementsRoutes,
   notificationsRoutes,
 ];
