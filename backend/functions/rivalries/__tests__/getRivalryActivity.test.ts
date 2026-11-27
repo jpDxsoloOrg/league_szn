@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ctx, cb, makeEvent, withAuth } from './testHelpers';
 
 const mockRivalries = {
@@ -46,6 +46,16 @@ function makeRivalry(overrides: Record<string, unknown> = {}) {
 }
 
 describe('getRivalryActivity', () => {
+  // Fixture promos are dated early May 2026. Pin the clock near them so they
+  // stay inside the promo archive window (lib/promoArchive.ts).
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'], now: Date.parse('2026-05-06T12:00:00.000Z') });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     _resetMemoForTesting();

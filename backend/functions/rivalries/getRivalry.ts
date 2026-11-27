@@ -7,7 +7,6 @@ import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { authenticate } from '../../lib/authenticate';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { findHiddenPlayerIds } from '../../lib/needsWrestler';
-import { isPromoArchived } from '../../lib/promoArchive';
 import type {
   Rivalry,
   RivalryMessage,
@@ -16,7 +15,9 @@ import type {
   RivalryNoteVisibility,
 } from '../../lib/repositories';
 
-const MAX_PROMOS = 5;
+// The rivalry's own promo history: the Promos tab lists these, the Overview
+// shows the first few. Not subject to the 4-day feed archive (lib/promoArchive).
+const MAX_PROMOS = 20;
 const MAX_MESSAGES = 3;
 
 interface HeadToHead {
@@ -115,10 +116,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       endedAt: rivalry.endedAt,
     });
 
-    const now = Date.now();
+    // Every promo here is authored by a participant. Keep only this feud's
+    // (tagged to the rivalry, or targeting another participant) before the
+    // cap, so unrelated promos never crowd them out.
+    const isFeudPromo = (p: { rivalryId?: string; playerId: string; targetPlayerId?: string }): boolean =>
+      p.rivalryId === rivalryId ||
+      (!!p.targetPlayerId && p.targetPlayerId !== p.playerId && participantSet.has(p.targetPlayerId));
     const recentPromos = perPlayerPromos
       .flat()
-      .filter((p) => !p.isHidden && !isPromoArchived(p, now) && !hiddenAuthorIds.has(p.playerId))
+      .filter((p) => !p.isHidden && !hiddenAuthorIds.has(p.playerId) && isFeudPromo(p))
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
       .slice(0, MAX_PROMOS)
       .map((p) => ({

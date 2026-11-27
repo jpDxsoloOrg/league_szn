@@ -11,7 +11,7 @@ Der Feed kann Folgendes enthalten:
 - **Saison-Ereignisse** — Start und Ende einer Saison.
 - **Turnier-Ergebnisse** — Neue Turniere und Turniersieger.
 - **Herausforderungen** — Ausgesprochene, angenommene, abgelehnte, gekonterte oder zurückgezogene Herausforderungen. Einfach abgelaufene Herausforderungen erscheinen nicht.
-- **Promos** — Promo-Beiträge von Wrestlern. Call-outs und Antworten verschwinden 4 Tage nach dem Posten aus dem Feed, außer das Liga-Team hat sie angepinnt.
+- **Promos** — Promo-Beiträge von Wrestlern. Promos verschwinden 4 Tage nach dem Posten aus dem Feed, außer das Liga-Team hat sie angepinnt.
 
 Promos und Herausforderungen mit nicht sichtbaren Spielern erscheinen hier nicht. Match-Ergebnisse und Titelwechsel bleiben, weil sie zur Liga-Geschichte gehören.
 

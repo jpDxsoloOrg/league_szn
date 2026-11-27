@@ -18,11 +18,22 @@ describe('isPromoArchived', () => {
     expect(PROMO_ARCHIVE_DAYS).toBe(4);
   });
 
-  it.each(['call-out', 'response'] as const)('archives a %s just over the window', (promoType) => {
+  const allTypes = [
+    'call-out',
+    'response',
+    'open-mic',
+    'rivalry',
+    'pre-match',
+    'post-match',
+    'championship',
+    'return',
+  ] as const satisfies ReadonlyArray<PromoType>;
+
+  it.each(allTypes)('archives a %s just over the window', (promoType) => {
     expect(isPromoArchived(promo(promoType, postedAgo(windowMs + 1000)), NOW)).toBe(true);
   });
 
-  it.each(['call-out', 'response'] as const)('keeps a %s just under the window', (promoType) => {
+  it.each(allTypes)('keeps a %s just under the window', (promoType) => {
     expect(isPromoArchived(promo(promoType, postedAgo(windowMs - 1000)), NOW)).toBe(false);
   });
 
@@ -30,16 +41,9 @@ describe('isPromoArchived', () => {
     expect(isPromoArchived(promo('call-out', postedAgo(windowMs)), NOW)).toBe(false);
   });
 
-  it('never archives a pinned promo', () => {
-    expect(isPromoArchived(promo('call-out', postedAgo(windowMs * 10), true), NOW)).toBe(false);
+  it.each(allTypes)('never archives a pinned %s', (promoType) => {
+    expect(isPromoArchived(promo(promoType, postedAgo(windowMs * 10), true), NOW)).toBe(false);
   });
-
-  it.each(['open-mic', 'rivalry', 'pre-match', 'post-match', 'championship', 'return'] as const)(
-    'never archives a %s promo',
-    (promoType) => {
-      expect(isPromoArchived(promo(promoType, postedAgo(windowMs * 10)), NOW)).toBe(false);
-    },
-  );
 
   it('leaves a promo with an unreadable date in the feed', () => {
     expect(isPromoArchived(promo('call-out', ''), NOW)).toBe(false);
