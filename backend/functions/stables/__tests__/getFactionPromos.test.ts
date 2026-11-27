@@ -54,6 +54,10 @@ interface PromoSeed {
   isHidden?: boolean;
 }
 
+// Every fixture is dated within the 4-day promo archive window before NOW
+// (lib/promoArchive.ts), so none of them ages out of the feed.
+const NOW = new Date('2026-05-04T12:00:00.000Z');
+
 async function makePromo(seed: PromoSeed): Promise<string> {
   vi.setSystemTime(new Date(seed.createdAt));
   const created = await repos.content.promos.create({
@@ -63,6 +67,7 @@ async function makePromo(seed: PromoSeed): Promise<string> {
     content: seed.content ?? 'lorem ipsum',
     targetPlayerId: seed.target,
   });
+  vi.setSystemTime(NOW);
   if (seed.isHidden) {
     await repos.content.promos.update(created.promoId, { isHidden: true });
   }
@@ -71,7 +76,7 @@ async function makePromo(seed: PromoSeed): Promise<string> {
 
 beforeEach(() => {
   vi.useFakeTimers();
-  vi.setSystemTime(new Date('2026-05-10T12:00:00.000Z'));
+  vi.setSystemTime(NOW);
   vi.clearAllMocks();
   uuidCounter = 0;
   resetRepositoriesForTesting();
@@ -235,11 +240,11 @@ describe('getFactionPromos (FAC-08)', () => {
     });
 
     for (let i = 0; i < 5; i++) {
-      const day = String(i + 1).padStart(2, '0');
+      const hour = String(i + 1).padStart(2, '0');
       await makePromo({
         author: a.playerId,
         content: `p${i + 1}`,
-        createdAt: `2026-05-${day}T00:00:00.000Z`,
+        createdAt: `2026-05-04T${hour}:00:00.000Z`,
       });
     }
 

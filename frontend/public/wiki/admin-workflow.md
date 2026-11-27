@@ -30,7 +30,7 @@ Check the updated standings and contender rankings under **Rankings**. Long list
 
 Under **Promos**, schedule matches from accepted challenges (on the **Call-outs** tab) or from call-out promos when you're ready. Clear hidden promos as needed. A full Admin can also use **Clear Resolved** on the **Call-outs** tab.
 
-Unanswered challenges expire by themselves after 4 days, and call-out and response promos leave the public feeds after 4 days, so you only need to act on the ones you want to book.
+Unanswered challenges expire by themselves after 4 days, and promos leave the public feeds after 4 days unless pinned, so you only need to act on the ones you want to book.
 
 ## 8. Look for hidden players
 

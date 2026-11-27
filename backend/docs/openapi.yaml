@@ -3424,7 +3424,7 @@ paths:
           schema: { type: string, enum: ['true'] }
         - name: includeArchived
           in: query
-          description: 'When "true", includes call-outs and responses past the archive window. Honoured for an authenticated Admin or Moderator; ignored otherwise.'
+          description: 'When "true", includes promos past the archive window (4 days, unpinned). Honoured for an authenticated Admin or Moderator; ignored otherwise.'
           schema: { type: string, enum: ['true'] }
       responses:
         '200': { description: List of promos }

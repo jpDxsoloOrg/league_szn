@@ -6,11 +6,9 @@ Die Seite **Promos** (**Admin → Promos**) hat zwei Tabs. **Promos** verwaltet 
 
 Die Liste zeigt jede Promo, auch verborgene und archivierte. Filtere nach Typ (Offenes Mikro, Ansage, Antwort usw.) und nach Status (angeheftet, ausgeblendet, archiviert).
 
-## Archivierte Ansagen und Antworten
+## Archivierte Promos
 
-Promos vom Typ Ansage und Antwort verschwinden 4 Tage nach dem Posten aus den öffentlichen Feeds. Gelöscht wird nichts. Sie tragen hier das Abzeichen **Archiviert**, lassen sich weiterhin über einen direkten Link öffnen und zählen weiter für die Hitze einer Rivalität.
-
-Eine angepinnte Promo altert nicht. Andere Promo-Typen bleiben im Feed.
+Promos aller Typen verschwinden 4 Tage nach dem Posten aus den öffentlichen Feeds, außer sie sind angepinnt. Pinne eine Promo an, damit sie im Feed bleibt. Gelöscht wird nichts. Sie tragen hier das Abzeichen **Archiviert**, lassen sich weiterhin über einen direkten Link öffnen und zählen weiter für die Hitze einer Rivalität.
 
 ## Anpinnen / Lospinnen
 

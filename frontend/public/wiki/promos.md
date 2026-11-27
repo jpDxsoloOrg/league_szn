@@ -12,7 +12,7 @@ Responses don't appear in the main feed. To read them, open the promo with **Vie
 
 ## How long promos stay up
 
-Call-outs and responses leave public feeds 4 days after they're posted, unless staff have pinned them. They aren't deleted: a direct link still opens them, and they still count towards [rivalry heat](rivalry-heat-explained). Other promo types stay in the feed.
+Promos leave public feeds 4 days after they're posted, unless staff have pinned them. They aren't deleted: a direct link still opens them, and they still count towards [rivalry heat](rivalry-heat-explained).
 
 ## Creating a promo
 

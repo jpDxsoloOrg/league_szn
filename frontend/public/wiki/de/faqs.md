@@ -79,8 +79,8 @@ Den gibt es nicht mehr. Das Liga-Team baut und sortiert eine Card jetzt direkt a
 **Wie lange habe ich Zeit, auf eine Herausforderung zu antworten?**  
 4 Tage. Danach wird sie als Abgelaufen angezeigt und kann nicht mehr beantwortet werden.
 
-**Warum ist mein Call-out aus dem Promo-Feed verschwunden?**  
-Call-outs und Antworten verschwinden 4 Tage nach dem Posten aus den öffentlichen Feeds, außer das Liga-Team hat sie angepinnt. Ein direkter Link funktioniert weiterhin. Andere Promo-Typen bleiben im Feed.
+**Warum ist meine Promo aus dem Promo-Feed verschwunden?**  
+Promos verschwinden 4 Tage nach dem Posten aus den öffentlichen Feeds, außer das Liga-Team hat sie angepinnt. Ein direkter Link funktioniert weiterhin.
 
 ## Turniere
 

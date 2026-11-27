@@ -30,7 +30,7 @@ Sieh dir die aktualisierte Tabelle und die Herausforderer-Ranglisten unter **Ran
 
 Plane unter **Promos** Kämpfe aus angenommenen Herausforderungen (Tab **Call-outs**) oder aus Promos vom Typ Ansage, wenn du so weit bist. Lösche bei Bedarf versteckte Promos. Ein voller Admin kann im Tab **Call-outs** auch **Erledigte löschen** verwenden.
 
-Unbeantwortete Herausforderungen laufen nach 4 Tagen von selbst ab, und Ansagen und Antworten verschwinden nach 4 Tagen aus den öffentlichen Feeds. Du musst dich also nur um die kümmern, die du buchen möchtest.
+Unbeantwortete Herausforderungen laufen nach 4 Tagen von selbst ab, und Promos verschwinden nach 4 Tagen aus den öffentlichen Feeds, sofern sie nicht angepinnt sind. Du musst dich also nur um die kümmern, die du buchen möchtest.
 
 ## 8. Nach ausgeblendeten Spielern sehen
 

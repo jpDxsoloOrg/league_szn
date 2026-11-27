@@ -11,7 +11,7 @@ Items in the feed can include:
 - **Season events** — Season start and end.
 - **Tournament results** — New tournaments and tournament winners.
 - **Challenges** — Challenges issued, accepted, declined, countered or withdrawn. Challenges that simply expire aren't listed.
-- **Promos** — Promo posts from wrestlers. Call-outs and responses leave the feed 4 days after they're posted, unless staff have pinned them.
+- **Promos** — Promo posts from wrestlers. Promos leave the feed 4 days after they're posted, unless staff have pinned them.
 
 Promos and challenges involving a hidden player don't appear here. Match results and title changes stay, because they're league history.
 

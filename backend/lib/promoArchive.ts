@@ -1,10 +1,9 @@
-import type { Promo, PromoType } from './repositories/types';
+import type { Promo } from './repositories/types';
 
-/** Call-outs and their responses leave public feeds this many days after posting. */
+/** Promos of every type leave public feeds this many days after posting. */
 export const PROMO_ARCHIVE_DAYS = 4;
 
 const PROMO_ARCHIVE_MS = PROMO_ARCHIVE_DAYS * 24 * 60 * 60 * 1000;
-const ARCHIVABLE_PROMO_TYPES: ReadonlyArray<PromoType> = ['call-out', 'response'];
 
 /**
  * True when a promo should be left out of public feeds because it has aged
@@ -14,9 +13,9 @@ const ARCHIVABLE_PROMO_TYPES: ReadonlyArray<PromoType> = ['call-out', 'response'
  * and still count towards rivalry heat.
  */
 export function isPromoArchived(
-  promo: Pick<Promo, 'promoType' | 'createdAt' | 'isPinned'>,
+  promo: Pick<Promo, 'createdAt' | 'isPinned'>,
   now: number = Date.now(),
 ): boolean {
-  if (promo.isPinned || !ARCHIVABLE_PROMO_TYPES.includes(promo.promoType)) return false;
+  if (promo.isPinned) return false;
   return now - Date.parse(promo.createdAt) > PROMO_ARCHIVE_MS;
 }

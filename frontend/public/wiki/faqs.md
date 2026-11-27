@@ -79,8 +79,8 @@ It's gone. Staff now build and reorder a card on the event's own page.
 **How long do I have to answer a challenge?**  
 4 days. After that it shows as Expired and can't be answered.
 
-**Why did my call-out disappear from the promo feed?**  
-Call-outs and responses leave public feeds 4 days after they are posted, unless a staff member has pinned them. A direct link still works. Other promo types stay in the feed.
+**Why did my promo disappear from the promo feed?**  
+Promos leave public feeds 4 days after they are posted, unless a staff member has pinned them. A direct link still works.
 
 ## Tournaments
 

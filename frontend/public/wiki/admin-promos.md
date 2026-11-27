@@ -6,11 +6,9 @@ The **Promos** page (**Admin → Promos**) has two tabs. **Promos** manages the 
 
 The list shows every promo, including hidden and archived ones. Filter by type (open mic, call-out, response, and so on) and by status (pinned, hidden, archived).
 
-## Archived Call-outs and Responses
+## Archived Promos
 
-Promos of the call-out and response types leave the public feeds 4 days after they are posted. Nothing is deleted. They show an **Archived** badge here, they still open from a direct link, and they still count towards rivalry heat.
-
-A pinned promo doesn't age out. Other promo types stay in the feed.
+Promos of every type leave the public feeds 4 days after they are posted, unless pinned. Pin a promo to keep it in the feeds. Nothing is deleted. They show an **Archived** badge here, they still open from a direct link, and they still count towards rivalry heat.
 
 ## Pin / Unpin
 
