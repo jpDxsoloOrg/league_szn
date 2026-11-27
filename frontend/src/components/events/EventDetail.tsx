@@ -171,6 +171,8 @@ export default function EventDetail() {
     if (!loadedEventId) return;
     const controller = new AbortController();
     const loadEpisode = async () => {
+      // Clear the previous event's button before looking up this one.
+      setEpisodeId(null);
       try {
         const episodes = await episodesApi.getByEvent(loadedEventId, controller.signal);
         if (!controller.signal.aborted) setEpisodeId(episodes[0]?.episodeId ?? null);

@@ -143,6 +143,19 @@ describe('Dashboard', () => {
     expect(container.querySelector('.home')?.firstElementChild).toHaveAttribute('data-testid', 'live-stream-card');
   });
 
+  it('shows the live stream card while the dashboard is still loading', () => {
+    mockGetDashboard.mockReturnValue(new Promise(() => {}));
+    renderDashboard();
+    expect(screen.getByTestId('live-stream-card')).toBeInTheDocument();
+  });
+
+  it('keeps the live stream card when the dashboard fails to load', async () => {
+    mockGetDashboard.mockRejectedValue(new Error('Network error'));
+    renderDashboard();
+    expect(await screen.findByText('Network error')).toBeInTheDocument();
+    expect(screen.getByTestId('live-stream-card')).toBeInTheDocument();
+  });
+
   it('renders all dashboard sections after data loads', async () => {
     const dataWithContent = {
       ...emptyDashboard,

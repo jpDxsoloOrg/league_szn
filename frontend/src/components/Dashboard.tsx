@@ -49,6 +49,7 @@ export default function Dashboard() {
   if (loading && !data) {
     return (
       <div className="home">
+        <LiveStreamCard />
         <Skeleton variant="block" count={1} className="home-skeleton-hero" />
         <Skeleton variant="cards" count={4} />
       </div>
@@ -58,6 +59,7 @@ export default function Dashboard() {
   if (error !== null && !data) {
     return (
       <div className="home">
+        <LiveStreamCard />
         <EmptyState
           title={t('home.loadError')}
           description={error || undefined}
@@ -72,7 +74,9 @@ export default function Dashboard() {
 
   return (
     <div className="home">
-      {/* Shows itself only while a GM has marked the Twitch stream live. */}
+      {/* Shows itself only while a GM has marked the Twitch stream live. It is
+          first in every branch, so it stays mounted (and keeps playing) while
+          the rest of the dashboard loads or fails. */}
       <LiveStreamCard />
       <HomeHero inProgressEvents={data.inProgressEvents ?? []} upcomingEvents={data.upcomingEvents} />
       <ChampionCarousel champions={data.currentChampions} />
